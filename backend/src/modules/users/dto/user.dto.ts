@@ -1,18 +1,25 @@
-import { IsString, IsEmail, IsEnum, IsOptional, MinLength, IsBoolean } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
+import {
+  IsString,
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  MinLength,
+  IsBoolean,
+} from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { UserRole } from "@prisma/client";
 
 export class CreateUserDto {
-  @ApiProperty({ example: 'joao@empresa.com' })
-  @IsEmail({}, { message: 'Email inválido' })
+  @ApiProperty({ example: "joao@empresa.com" })
+  @IsEmail({}, { message: "Email inválido" })
   email: string;
 
-  @ApiProperty({ example: 'senha123' })
+  @ApiProperty({ example: "senha123" })
   @IsString()
-  @MinLength(6, { message: 'Senha deve ter no mínimo 6 caracteres' })
+  @MinLength(6, { message: "Senha deve ter no mínimo 6 caracteres" })
   password: string;
 
-  @ApiProperty({ example: 'João Silva' })
+  @ApiProperty({ example: "João Silva" })
   @IsString()
   name: string;
 
@@ -22,18 +29,18 @@ export class CreateUserDto {
 }
 
 export class UpdateUserDto {
-  @ApiPropertyOptional({ example: 'joao@empresa.com' })
-  @IsEmail({}, { message: 'Email inválido' })
+  @ApiPropertyOptional({ example: "joao@empresa.com" })
+  @IsEmail({}, { message: "Email inválido" })
   @IsOptional()
   email?: string;
 
-  @ApiPropertyOptional({ example: 'novasenha123' })
+  @ApiPropertyOptional({ example: "novasenha123" })
   @IsString()
-  @MinLength(6, { message: 'Senha deve ter no mínimo 6 caracteres' })
+  @MinLength(6, { message: "Senha deve ter no mínimo 6 caracteres" })
   @IsOptional()
   password?: string;
 
-  @ApiPropertyOptional({ example: 'João Silva' })
+  @ApiPropertyOptional({ example: "João Silva" })
   @IsString()
   @IsOptional()
   name?: string;

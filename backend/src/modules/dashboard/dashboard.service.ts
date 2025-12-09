@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { AccountStatus } from '@prisma/client';
-import { PrismaService } from '../../infrastructure/database/prisma.service';
-import { PayablesService } from '../payables/payables.service';
-import { ReceivablesService } from '../receivables/receivables.service';
+import { Injectable } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import { AccountStatus } from "@prisma/client";
+import { PrismaService } from "../../infrastructure/database/prisma.service";
+import { PayablesService } from "../payables/payables.service";
+import { ReceivablesService } from "../receivables/receivables.service";
 
 @Injectable()
 export class DashboardService {
@@ -22,15 +22,15 @@ export class DashboardService {
 
     // Payables summary
     const payables = await this.prisma.payable.groupBy({
-      by: ['status'],
+      by: ["status"],
       where: { organizationId },
       _sum: { amount: true, paidAmount: true },
       _count: true,
     });
 
-    // Receivables summary  
+    // Receivables summary
     const receivables = await this.prisma.receivable.groupBy({
-      by: ['status'],
+      by: ["status"],
       where: { organizationId },
       _sum: { amount: true, paidAmount: true },
       _count: true,
@@ -46,7 +46,7 @@ export class DashboardService {
         vendor: { select: { name: true } },
         category: { select: { name: true, color: true } },
       },
-      orderBy: { dueDate: 'asc' },
+      orderBy: { dueDate: "asc" },
       take: 10,
     });
 
@@ -60,7 +60,7 @@ export class DashboardService {
         customer: { select: { name: true } },
         category: { select: { name: true, color: true } },
       },
-      orderBy: { dueDate: 'asc' },
+      orderBy: { dueDate: "asc" },
       take: 10,
     });
 
@@ -75,7 +75,7 @@ export class DashboardService {
         vendor: { select: { name: true } },
         category: { select: { name: true, color: true } },
       },
-      orderBy: { dueDate: 'asc' },
+      orderBy: { dueDate: "asc" },
       take: 10,
     });
 
@@ -90,7 +90,7 @@ export class DashboardService {
         customer: { select: { name: true } },
         category: { select: { name: true, color: true } },
       },
-      orderBy: { dueDate: 'asc' },
+      orderBy: { dueDate: "asc" },
       take: 10,
     });
 
@@ -110,10 +110,19 @@ export class DashboardService {
         upcoming: upcomingReceivables,
       },
       balance: {
-        toReceive: receivableTotals.pending + receivableTotals.partial + receivableTotals.overdue,
-        toPay: payableTotals.pending + payableTotals.partial + payableTotals.overdue,
-        net: (receivableTotals.pending + receivableTotals.partial + receivableTotals.overdue) - 
-             (payableTotals.pending + payableTotals.partial + payableTotals.overdue),
+        toReceive:
+          receivableTotals.pending +
+          receivableTotals.partial +
+          receivableTotals.overdue,
+        toPay:
+          payableTotals.pending + payableTotals.partial + payableTotals.overdue,
+        net:
+          receivableTotals.pending +
+          receivableTotals.partial +
+          receivableTotals.overdue -
+          (payableTotals.pending +
+            payableTotals.partial +
+            payableTotals.overdue),
       },
     };
   }
@@ -162,11 +171,14 @@ export class DashboardService {
   // Cron job to update overdue status daily at midnight
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async updateOverdueStatus() {
-    console.log('🔄 Running overdue status update...');
-    
+    console.log("🔄 Running overdue status update...");
+
     const payablesResult = await this.payablesService.updateOverdueStatus();
-    const receivablesResult = await this.receivablesService.updateOverdueStatus();
-    
-    console.log(`✅ Updated ${payablesResult.count} payables and ${receivablesResult.count} receivables to OVERDUE status`);
+    const receivablesResult =
+      await this.receivablesService.updateOverdueStatus();
+
+    console.log(
+      `✅ Updated ${payablesResult.count} payables and ${receivablesResult.count} receivables to OVERDUE status`,
+    );
   }
 }

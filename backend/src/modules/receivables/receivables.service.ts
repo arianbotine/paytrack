@@ -1,7 +1,15 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { AccountStatus, Prisma } from '@prisma/client';
-import { PrismaService } from '../../infrastructure/database/prisma.service';
-import { CreateReceivableDto, UpdateReceivableDto, ReceivableFilterDto } from './dto/receivable.dto';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { AccountStatus, Prisma } from "@prisma/client";
+import { PrismaService } from "../../infrastructure/database/prisma.service";
+import {
+  CreateReceivableDto,
+  UpdateReceivableDto,
+  ReceivableFilterDto,
+} from "./dto/receivable.dto";
 
 @Injectable()
 export class ReceivablesService {
@@ -12,11 +20,14 @@ export class ReceivablesService {
       organizationId,
       ...(filters?.customerId && { customerId: filters.customerId }),
       ...(filters?.categoryId && { categoryId: filters.categoryId }),
-      ...(filters?.status && filters.status.length > 0 && { status: { in: filters.status } }),
+      ...(filters?.status &&
+        filters.status.length > 0 && { status: { in: filters.status } }),
       ...(filters?.dueDateFrom || filters?.dueDateTo
         ? {
             dueDate: {
-              ...(filters?.dueDateFrom && { gte: new Date(filters.dueDateFrom) }),
+              ...(filters?.dueDateFrom && {
+                gte: new Date(filters.dueDateFrom),
+              }),
               ...(filters?.dueDateTo && { lte: new Date(filters.dueDateTo) }),
             },
           }
@@ -38,7 +49,7 @@ export class ReceivablesService {
           },
         },
       },
-      orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
+      orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
       skip: filters?.skip,
       take: filters?.take,
     });
@@ -68,7 +79,7 @@ export class ReceivablesService {
     });
 
     if (!receivable) {
-      throw new NotFoundException('Conta a receber não encontrada');
+      throw new NotFoundException("Conta a receber não encontrada");
     }
 
     return receivable;
@@ -110,18 +121,26 @@ export class ReceivablesService {
     return receivable;
   }
 
-  async update(id: string, organizationId: string, updateDto: UpdateReceivableDto) {
+  async update(
+    id: string,
+    organizationId: string,
+    updateDto: UpdateReceivableDto,
+  ) {
     const receivable = await this.findOne(id, organizationId);
 
     if (receivable.status === AccountStatus.PAID) {
-      throw new BadRequestException('Não é possível editar uma conta já recebida');
+      throw new BadRequestException(
+        "Não é possível editar uma conta já recebida",
+      );
     }
 
     const { tagIds, ...data } = updateDto;
 
     // Handle tags update
     if (tagIds !== undefined) {
-      await this.prisma.receivableTag.deleteMany({ where: { receivableId: id } });
+      await this.prisma.receivableTag.deleteMany({
+        where: { receivableId: id },
+      });
 
       if (tagIds.length > 0) {
         await this.prisma.receivableTag.createMany({
@@ -152,8 +171,13 @@ export class ReceivablesService {
   async remove(id: string, organizationId: string) {
     const receivable = await this.findOne(id, organizationId);
 
-    if (receivable.status === AccountStatus.PAID || receivable.status === AccountStatus.PARTIAL) {
-      throw new BadRequestException('Não é possível excluir uma conta com recebimentos realizados');
+    if (
+      receivable.status === AccountStatus.PAID ||
+      receivable.status === AccountStatus.PARTIAL
+    ) {
+      throw new BadRequestException(
+        "Não é possível excluir uma conta com recebimentos realizados",
+      );
     }
 
     await this.prisma.receivable.delete({ where: { id } });
@@ -164,7 +188,9 @@ export class ReceivablesService {
     const receivable = await this.findOne(id, organizationId);
 
     if (receivable.status === AccountStatus.PAID) {
-      throw new BadRequestException('Não é possível cancelar uma conta já recebida');
+      throw new BadRequestException(
+        "Não é possível cancelar uma conta já recebida",
+      );
     }
 
     return this.prisma.receivable.update({

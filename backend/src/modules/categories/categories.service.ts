@@ -1,20 +1,28 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { CategoryType } from '@prisma/client';
-import { PrismaService } from '../../infrastructure/database/prisma.service';
-import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { CategoryType } from "@prisma/client";
+import { PrismaService } from "../../infrastructure/database/prisma.service";
+import { CreateCategoryDto, UpdateCategoryDto } from "./dto/category.dto";
 
 @Injectable()
 export class CategoriesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(organizationId: string, type?: CategoryType, includeInactive = false) {
+  async findAll(
+    organizationId: string,
+    type?: CategoryType,
+    includeInactive = false,
+  ) {
     return this.prisma.category.findMany({
       where: {
         organizationId,
         ...(type ? { type } : {}),
         ...(includeInactive ? {} : { isActive: true }),
       },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
   }
 
@@ -24,7 +32,7 @@ export class CategoriesService {
     });
 
     if (!category) {
-      throw new NotFoundException('Categoria não encontrada');
+      throw new NotFoundException("Categoria não encontrada");
     }
 
     return category;
@@ -41,7 +49,7 @@ export class CategoriesService {
     });
 
     if (existing) {
-      throw new ConflictException('Categoria já existe com este nome');
+      throw new ConflictException("Categoria já existe com este nome");
     }
 
     return this.prisma.category.create({
@@ -52,7 +60,11 @@ export class CategoriesService {
     });
   }
 
-  async update(id: string, organizationId: string, updateDto: UpdateCategoryDto) {
+  async update(
+    id: string,
+    organizationId: string,
+    updateDto: UpdateCategoryDto,
+  ) {
     const category = await this.findOne(id, organizationId);
 
     // Check if name is being changed and if it conflicts
@@ -67,7 +79,7 @@ export class CategoriesService {
       });
 
       if (existing) {
-        throw new ConflictException('Categoria já existe com este nome');
+        throw new ConflictException("Categoria já existe com este nome");
       }
     }
 
@@ -81,11 +93,13 @@ export class CategoriesService {
     const category = await this.findOne(id, organizationId);
 
     // Check usage
-    const usageCount = await this.prisma.payable.count({
-      where: { categoryId: id },
-    }) + await this.prisma.receivable.count({
-      where: { categoryId: id },
-    });
+    const usageCount =
+      (await this.prisma.payable.count({
+        where: { categoryId: id },
+      })) +
+      (await this.prisma.receivable.count({
+        where: { categoryId: id },
+      }));
 
     if (usageCount > 0) {
       return this.prisma.category.update({

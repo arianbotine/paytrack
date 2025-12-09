@@ -1,5 +1,5 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
+import { PrismaClient } from "@prisma/client";
 
 @Injectable()
 export class PrismaService
@@ -8,7 +8,10 @@ export class PrismaService
 {
   constructor() {
     super({
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+      log:
+        process.env.NODE_ENV === "development"
+          ? ["query", "error", "warn"]
+          : ["error"],
     });
   }
 
@@ -21,18 +24,19 @@ export class PrismaService
   }
 
   async cleanDatabase() {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('cleanDatabase is not allowed in production');
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("cleanDatabase is not allowed in production");
     }
 
     const models = Reflect.ownKeys(this).filter(
-      (key) => typeof key === 'string' && !key.startsWith('_') && !key.startsWith('$'),
+      (key) =>
+        typeof key === "string" && !key.startsWith("_") && !key.startsWith("$"),
     );
 
     return Promise.all(
       models.map((modelKey) => {
         const model = this[modelKey as string];
-        if (model && typeof model.deleteMany === 'function') {
+        if (model && typeof model.deleteMany === "function") {
           return model.deleteMany();
         }
         return Promise.resolve();

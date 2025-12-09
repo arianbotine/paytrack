@@ -1,7 +1,15 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { AccountStatus, Prisma } from '@prisma/client';
-import { PrismaService } from '../../infrastructure/database/prisma.service';
-import { CreatePayableDto, UpdatePayableDto, PayableFilterDto } from './dto/payable.dto';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { AccountStatus, Prisma } from "@prisma/client";
+import { PrismaService } from "../../infrastructure/database/prisma.service";
+import {
+  CreatePayableDto,
+  UpdatePayableDto,
+  PayableFilterDto,
+} from "./dto/payable.dto";
 
 @Injectable()
 export class PayablesService {
@@ -12,11 +20,14 @@ export class PayablesService {
       organizationId,
       ...(filters?.vendorId && { vendorId: filters.vendorId }),
       ...(filters?.categoryId && { categoryId: filters.categoryId }),
-      ...(filters?.status && filters.status.length > 0 && { status: { in: filters.status } }),
+      ...(filters?.status &&
+        filters.status.length > 0 && { status: { in: filters.status } }),
       ...(filters?.dueDateFrom || filters?.dueDateTo
         ? {
             dueDate: {
-              ...(filters?.dueDateFrom && { gte: new Date(filters.dueDateFrom) }),
+              ...(filters?.dueDateFrom && {
+                gte: new Date(filters.dueDateFrom),
+              }),
               ...(filters?.dueDateTo && { lte: new Date(filters.dueDateTo) }),
             },
           }
@@ -38,7 +49,7 @@ export class PayablesService {
           },
         },
       },
-      orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
+      orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
       skip: filters?.skip,
       take: filters?.take,
     });
@@ -68,7 +79,7 @@ export class PayablesService {
     });
 
     if (!payable) {
-      throw new NotFoundException('Conta a pagar não encontrada');
+      throw new NotFoundException("Conta a pagar não encontrada");
     }
 
     return payable;
@@ -110,11 +121,15 @@ export class PayablesService {
     return payable;
   }
 
-  async update(id: string, organizationId: string, updateDto: UpdatePayableDto) {
+  async update(
+    id: string,
+    organizationId: string,
+    updateDto: UpdatePayableDto,
+  ) {
     const payable = await this.findOne(id, organizationId);
 
     if (payable.status === AccountStatus.PAID) {
-      throw new BadRequestException('Não é possível editar uma conta já paga');
+      throw new BadRequestException("Não é possível editar uma conta já paga");
     }
 
     const { tagIds, ...data } = updateDto;
@@ -152,8 +167,13 @@ export class PayablesService {
   async remove(id: string, organizationId: string) {
     const payable = await this.findOne(id, organizationId);
 
-    if (payable.status === AccountStatus.PAID || payable.status === AccountStatus.PARTIAL) {
-      throw new BadRequestException('Não é possível excluir uma conta com pagamentos realizados');
+    if (
+      payable.status === AccountStatus.PAID ||
+      payable.status === AccountStatus.PARTIAL
+    ) {
+      throw new BadRequestException(
+        "Não é possível excluir uma conta com pagamentos realizados",
+      );
     }
 
     await this.prisma.payable.delete({ where: { id } });
@@ -164,7 +184,9 @@ export class PayablesService {
     const payable = await this.findOne(id, organizationId);
 
     if (payable.status === AccountStatus.PAID) {
-      throw new BadRequestException('Não é possível cancelar uma conta já paga');
+      throw new BadRequestException(
+        "Não é possível cancelar uma conta já paga",
+      );
     }
 
     return this.prisma.payable.update({

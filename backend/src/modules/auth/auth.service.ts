@@ -1,10 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
-import { PrismaService } from '../../infrastructure/database/prisma.service';
-import { LoginDto, AuthResponseDto } from './dto/auth.dto';
-import { JwtPayload } from '../../shared/decorators/current-user.decorator';
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
+import * as bcrypt from "bcrypt";
+import { PrismaService } from "../../infrastructure/database/prisma.service";
+import { LoginDto, AuthResponseDto } from "./dto/auth.dto";
+import { JwtPayload } from "../../shared/decorators/current-user.decorator";
 
 @Injectable()
 export class AuthService {
@@ -24,17 +24,17 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Credenciais inválidas');
+      throw new UnauthorizedException("Credenciais inválidas");
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Credenciais inválidas');
+      throw new UnauthorizedException("Credenciais inválidas");
     }
 
     if (!user.organization.isActive) {
-      throw new UnauthorizedException('Organização inativa');
+      throw new UnauthorizedException("Organização inativa");
     }
 
     const tokens = await this.generateTokens(user);
@@ -54,9 +54,12 @@ export class AuthService {
 
   async refreshTokens(refreshToken: string): Promise<AuthResponseDto> {
     try {
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      });
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(
+        refreshToken,
+        {
+          secret: this.configService.get<string>("JWT_REFRESH_SECRET"),
+        },
+      );
 
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
@@ -64,7 +67,7 @@ export class AuthService {
       });
 
       if (!user || !user.isActive || !user.organization.isActive) {
-        throw new UnauthorizedException('Token inválido');
+        throw new UnauthorizedException("Token inválido");
       }
 
       const tokens = await this.generateTokens(user);
@@ -81,7 +84,7 @@ export class AuthService {
         },
       };
     } catch (error) {
-      throw new UnauthorizedException('Token inválido ou expirado');
+      throw new UnauthorizedException("Token inválido ou expirado");
     }
   }
 
@@ -92,7 +95,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Usuário não encontrado');
+      throw new UnauthorizedException("Usuário não encontrado");
     }
 
     return {
@@ -115,12 +118,15 @@ export class AuthService {
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('JWT_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '15m'),
+        secret: this.configService.get<string>("JWT_SECRET"),
+        expiresIn: this.configService.get<string>("JWT_EXPIRES_IN", "15m"),
       }),
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d'),
+        secret: this.configService.get<string>("JWT_REFRESH_SECRET"),
+        expiresIn: this.configService.get<string>(
+          "JWT_REFRESH_EXPIRES_IN",
+          "7d",
+        ),
       }),
     ]);
 

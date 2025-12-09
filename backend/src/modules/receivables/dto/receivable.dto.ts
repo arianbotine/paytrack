@@ -1,29 +1,38 @@
-import { IsString, IsNumber, IsEnum, IsOptional, IsDateString, IsArray, IsUUID, Min } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PaymentMethod, AccountStatus } from '@prisma/client';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  IsDateString,
+  IsArray,
+  IsUUID,
+  Min,
+} from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { PaymentMethod, AccountStatus } from "@prisma/client";
+import { Type, Transform } from "class-transformer";
 
 export class CreateReceivableDto {
-  @ApiProperty({ example: 'uuid-do-cliente' })
+  @ApiProperty({ example: "uuid-do-cliente" })
   @IsUUID()
   customerId: string;
 
-  @ApiPropertyOptional({ example: 'uuid-da-categoria' })
+  @ApiPropertyOptional({ example: "uuid-da-categoria" })
   @IsUUID()
   @IsOptional()
   categoryId?: string;
 
-  @ApiProperty({ example: 'Venda de produtos' })
+  @ApiProperty({ example: "Venda de produtos" })
   @IsString()
   description: string;
 
-  @ApiProperty({ example: 1500.00 })
+  @ApiProperty({ example: 1500.0 })
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01, { message: 'Valor deve ser maior que zero' })
+  @Min(0.01, { message: "Valor deve ser maior que zero" })
   @Type(() => Number)
   amount: number;
 
-  @ApiProperty({ example: '2025-12-15' })
+  @ApiProperty({ example: "2025-12-15" })
   @IsDateString()
   dueDate: string;
 
@@ -31,47 +40,50 @@ export class CreateReceivableDto {
   @IsEnum(PaymentMethod)
   paymentMethod: PaymentMethod;
 
-  @ApiPropertyOptional({ example: 'Observações' })
+  @ApiPropertyOptional({ example: "Observações" })
   @IsString()
   @IsOptional()
   notes?: string;
 
-  @ApiPropertyOptional({ example: 'PED-12345' })
+  @ApiPropertyOptional({ example: "PED-12345" })
   @IsString()
   @IsOptional()
   documentNumber?: string;
 
-  @ApiPropertyOptional({ type: [String], example: ['uuid-tag-1', 'uuid-tag-2'] })
+  @ApiPropertyOptional({
+    type: [String],
+    example: ["uuid-tag-1", "uuid-tag-2"],
+  })
   @IsArray()
-  @IsUUID('4', { each: true })
+  @IsUUID("4", { each: true })
   @IsOptional()
   tagIds?: string[];
 }
 
 export class UpdateReceivableDto {
-  @ApiPropertyOptional({ example: 'uuid-do-cliente' })
+  @ApiPropertyOptional({ example: "uuid-do-cliente" })
   @IsUUID()
   @IsOptional()
   customerId?: string;
 
-  @ApiPropertyOptional({ example: 'uuid-da-categoria' })
+  @ApiPropertyOptional({ example: "uuid-da-categoria" })
   @IsUUID()
   @IsOptional()
   categoryId?: string;
 
-  @ApiPropertyOptional({ example: 'Venda de produtos' })
+  @ApiPropertyOptional({ example: "Venda de produtos" })
   @IsString()
   @IsOptional()
   description?: string;
 
-  @ApiPropertyOptional({ example: 1500.00 })
+  @ApiPropertyOptional({ example: 1500.0 })
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01, { message: 'Valor deve ser maior que zero' })
+  @Min(0.01, { message: "Valor deve ser maior que zero" })
   @Type(() => Number)
   @IsOptional()
   amount?: number;
 
-  @ApiPropertyOptional({ example: '2025-12-15' })
+  @ApiPropertyOptional({ example: "2025-12-15" })
   @IsDateString()
   @IsOptional()
   dueDate?: string;
@@ -81,12 +93,12 @@ export class UpdateReceivableDto {
   @IsOptional()
   paymentMethod?: PaymentMethod;
 
-  @ApiPropertyOptional({ example: 'Observações' })
+  @ApiPropertyOptional({ example: "Observações" })
   @IsString()
   @IsOptional()
   notes?: string;
 
-  @ApiPropertyOptional({ example: 'PED-12345' })
+  @ApiPropertyOptional({ example: "PED-12345" })
   @IsString()
   @IsOptional()
   documentNumber?: string;
@@ -96,42 +108,49 @@ export class UpdateReceivableDto {
   @IsOptional()
   status?: AccountStatus;
 
-  @ApiPropertyOptional({ type: [String], example: ['uuid-tag-1', 'uuid-tag-2'] })
+  @ApiPropertyOptional({
+    type: [String],
+    example: ["uuid-tag-1", "uuid-tag-2"],
+  })
   @IsArray()
-  @IsUUID('4', { each: true })
+  @IsUUID("4", { each: true })
   @IsOptional()
   tagIds?: string[];
 }
 
 export class ReceivableFilterDto {
-  @ApiPropertyOptional({ example: 'uuid-do-cliente' })
+  @ApiPropertyOptional({ example: "uuid-do-cliente" })
   @IsUUID()
   @IsOptional()
   customerId?: string;
 
-  @ApiPropertyOptional({ example: 'uuid-da-categoria' })
+  @ApiPropertyOptional({ example: "uuid-da-categoria" })
   @IsUUID()
   @IsOptional()
   categoryId?: string;
 
-  @ApiPropertyOptional({ type: [String], enum: AccountStatus, example: [AccountStatus.PENDING, AccountStatus.OVERDUE] })
+  @ApiPropertyOptional({
+    type: [String],
+    enum: AccountStatus,
+    example: [AccountStatus.PENDING, AccountStatus.OVERDUE],
+  })
   @IsArray()
   @IsEnum(AccountStatus, { each: true })
   @IsOptional()
   @Transform(({ value }) => {
-    if (typeof value === 'string') {
-      return value.split(',').map((s: string) => s.trim());
+    if (typeof value === "string") {
+      return value.split(",").map((s: string) => s.trim());
     }
     return value;
   })
   status?: AccountStatus[];
 
-  @ApiPropertyOptional({ example: '2025-12-01' })
+  @ApiPropertyOptional({ example: "2025-12-01" })
   @IsDateString()
   @IsOptional()
   dueDateFrom?: string;
 
-  @ApiPropertyOptional({ example: '2025-12-31' })
+  @ApiPropertyOptional({ example: "2025-12-31" })
   @IsDateString()
   @IsOptional()
   dueDateTo?: string;

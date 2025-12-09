@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../infrastructure/database/prisma.service';
-import { UpdateOrganizationDto } from './dto/organization.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "../../infrastructure/database/prisma.service";
+import { UpdateOrganizationDto } from "./dto/organization.dto";
 
 @Injectable()
 export class OrganizationsService {
@@ -12,7 +12,7 @@ export class OrganizationsService {
     });
 
     if (!organization) {
-      throw new NotFoundException('Organização não encontrada');
+      throw new NotFoundException("Organização não encontrada");
     }
 
     return organization;
