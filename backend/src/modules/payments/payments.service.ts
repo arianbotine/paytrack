@@ -8,9 +8,15 @@ import { PrismaService } from "../../infrastructure/database/prisma.service";
 import { CreatePaymentDto, QuickPaymentDto } from "./dto/payment.dto";
 import { MoneyUtils } from "../../shared/utils/money.utils";
 
+type Allocation = {
+  payableId?: string;
+  receivableId?: string;
+  amount: Prisma.Decimal;
+};
+
 @Injectable()
 export class PaymentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(organizationId: string) {
     const payments = await this.prisma.payment.findMany({
@@ -265,7 +271,69 @@ export class PaymentsService {
     });
   }
 
-  private validateAllocations(allocations: any[], totalAmount: number) {
+  private async updatePayableOnRemove(
+    tx: Prisma.TransactionClient,
+    allocation: Allocation
+  ) {
+    const payable = await tx.payable.findUnique({
+      where: { id: allocation.payableId },
+    });
+    const newPaidAmount = Math.max(
+      0,
+      Number(payable!.paidAmount) - Number(allocation.amount)
+    );
+    let newStatus: AccountStatus;
+    if (newPaidAmount === 0) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      newStatus =
+        payable!.dueDate < today
+          ? AccountStatus.OVERDUE
+          : AccountStatus.PENDING;
+    } else {
+      newStatus = AccountStatus.PARTIAL;
+    }
+    await tx.payable.update({
+      where: { id: allocation.payableId },
+      data: {
+        paidAmount: MoneyUtils.toDecimal(newPaidAmount),
+        status: newStatus,
+      },
+    });
+  }
+
+  private async updateReceivableOnRemove(
+    tx: Prisma.TransactionClient,
+    allocation: Allocation
+  ) {
+    const receivable = await tx.receivable.findUnique({
+      where: { id: allocation.receivableId },
+    });
+    const newPaidAmount = Math.max(
+      0,
+      Number(receivable!.paidAmount) - Number(allocation.amount)
+    );
+    let newStatus: AccountStatus;
+    if (newPaidAmount === 0) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      newStatus =
+        receivable!.dueDate < today
+          ? AccountStatus.OVERDUE
+          : AccountStatus.PENDING;
+    } else {
+      newStatus = AccountStatus.PARTIAL;
+    }
+    await tx.receivable.update({
+      where: { id: allocation.receivableId },
+      data: {
+        paidAmount: MoneyUtils.toDecimal(newPaidAmount),
+        status: newStatus,
+      },
+    });
+  }
+
+  private validateAllocations(allocations: Allocation[], totalAmount: number) {
     if (!allocations || allocations.length === 0) {
       throw new BadRequestException("Pelo menos uma alocação é necessária");
     }
@@ -281,7 +349,7 @@ export class PaymentsService {
 
   private async validateAllocationAccounts(
     organizationId: string,
-    allocations: any[]
+    allocations: Allocation[]
   ) {
     for (const allocation of allocations) {
       if (!allocation.payableId && !allocation.receivableId) {

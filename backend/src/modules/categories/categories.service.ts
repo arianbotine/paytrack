@@ -9,7 +9,7 @@ import { CreateCategoryDto, UpdateCategoryDto } from "./dto/category.dto";
 
 @Injectable()
 export class CategoriesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(
     organizationId: string,

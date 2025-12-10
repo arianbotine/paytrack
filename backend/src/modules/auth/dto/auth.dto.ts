@@ -5,31 +5,31 @@ export class LoginDto {
   @ApiProperty({ example: "admin@paytrack.com" })
   @IsEmail({}, { message: "Email inválido" })
   @IsNotEmpty({ message: "Email é obrigatório" })
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: "admin123" })
   @IsString()
   @IsNotEmpty({ message: "Senha é obrigatória" })
   @MinLength(6, { message: "Senha deve ter no mínimo 6 caracteres" })
-  password: string;
+  password!: string;
 }
 
 export class RefreshTokenDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty({ message: "Refresh token é obrigatório" })
-  refreshToken: string;
+  refreshToken!: string;
 }
 
 export class AuthResponseDto {
   @ApiProperty()
-  accessToken: string;
+  accessToken!: string;
 
   @ApiProperty()
-  refreshToken: string;
+  refreshToken!: string;
 
   @ApiProperty()
-  user: {
+  user!: {
     id: string;
     email: string;
     name: string;

@@ -4,7 +4,7 @@ import { UpdateOrganizationDto } from "./dto/organization.dto";
 
 @Injectable()
 export class OrganizationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findOne(id: string) {
     const organization = await this.prisma.organization.findUnique({

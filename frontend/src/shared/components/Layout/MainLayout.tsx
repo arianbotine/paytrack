@@ -33,6 +33,8 @@ import {
   Person as UsersIcon,
   Logout as LogoutIcon,
   ChevronLeft as ChevronLeftIcon,
+  DarkMode as DarkModeIcon,
+  LightMode as LightModeIcon,
 } from "@mui/icons-material";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useUIStore } from "@/lib/stores/uiStore";
@@ -65,7 +67,13 @@ export function MainLayout() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const { user, logout } = useAuthStore();
-  const { sidebarOpen, toggleSidebar, setSidebarOpen } = useUIStore();
+  const {
+    sidebarOpen,
+    toggleSidebar,
+    setSidebarOpen,
+    themeMode,
+    toggleThemeMode,
+  } = useUIStore();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -195,6 +203,16 @@ export function MainLayout() {
           </IconButton>
 
           <Box sx={{ flexGrow: 1 }} />
+
+          <Tooltip title={themeMode === "dark" ? "Modo claro" : "Modo escuro"}>
+            <IconButton
+              onClick={toggleThemeMode}
+              color="inherit"
+              sx={{ mr: 1 }}
+            >
+              {themeMode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
+            </IconButton>
+          </Tooltip>
 
           <Tooltip title="Perfil">
             <IconButton onClick={handleProfileMenu} size="small" sx={{ ml: 2 }}>

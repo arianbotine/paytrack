@@ -17,4 +17,35 @@ export default defineConfig({
     port: 5173,
     host: true,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Core React vendor chunk
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          // UI framework chunk
+          "vendor-mui": [
+            "@mui/material",
+            "@mui/icons-material",
+            "@mui/x-date-pickers",
+          ],
+          // Data & forms chunk
+          "vendor-data": [
+            "@tanstack/react-query",
+            "react-hook-form",
+            "@hookform/resolvers",
+            "zod",
+            "zustand",
+            "axios",
+          ],
+          // Charts chunk
+          "vendor-charts": ["recharts"],
+          // Animation chunk
+          "vendor-animation": ["framer-motion"],
+          // Date utilities
+          "vendor-date": ["date-fns"],
+        },
+      },
+    },
+  },
 });

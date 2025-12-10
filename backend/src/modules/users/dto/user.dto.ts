@@ -12,20 +12,20 @@ import { UserRole } from "@prisma/client";
 export class CreateUserDto {
   @ApiProperty({ example: "joao@empresa.com" })
   @IsEmail({}, { message: "Email inválido" })
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: "senha123" })
   @IsString()
   @MinLength(6, { message: "Senha deve ter no mínimo 6 caracteres" })
-  password: string;
+  password!: string;
 
   @ApiProperty({ example: "João Silva" })
   @IsString()
-  name: string;
+  name!: string;
 
   @ApiProperty({ enum: UserRole, example: UserRole.ACCOUNTANT })
   @IsEnum(UserRole)
-  role: UserRole;
+  role!: UserRole;
 }
 
 export class UpdateUserDto {
@@ -57,11 +57,11 @@ export class UpdateUserDto {
 }
 
 export class UserResponseDto {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  id!: string;
+  email!: string;
+  name!: string;
+  role!: UserRole;
+  isActive!: boolean;
+  createdAt!: Date;
+  updatedAt!: Date;
 }

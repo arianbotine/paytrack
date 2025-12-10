@@ -14,7 +14,7 @@ import { MoneyUtils } from "../../shared/utils/money.utils";
 
 @Injectable()
 export class PayablesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(organizationId: string, filters?: PayableFilterDto) {
     const where: Prisma.PayableWhereInput = {
@@ -137,7 +137,7 @@ export class PayablesService {
   async update(
     id: string,
     organizationId: string,
-    updateDto: UpdatePayableDto
+    updateDto: UpdatePayableDto,
   ) {
     const payable = await this.findOne(id, organizationId);
 
@@ -185,7 +185,7 @@ export class PayablesService {
       payable.status === AccountStatus.PARTIAL
     ) {
       throw new BadRequestException(
-        "Não é possível excluir uma conta com pagamentos realizados"
+        "Não é possível excluir uma conta com pagamentos realizados",
       );
     }
 
@@ -198,7 +198,7 @@ export class PayablesService {
 
     if (payable.status === AccountStatus.PAID) {
       throw new BadRequestException(
-        "Não é possível cancelar uma conta já paga"
+        "Não é possível cancelar uma conta já paga",
       );
     }
 

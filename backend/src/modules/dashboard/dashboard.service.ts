@@ -5,12 +5,21 @@ import { PrismaService } from "../../infrastructure/database/prisma.service";
 import { PayablesService } from "../payables/payables.service";
 import { ReceivablesService } from "../receivables/receivables.service";
 
+type GroupedItem = {
+  _sum: {
+    amount: import("@prisma/client").Decimal | null;
+    paidAmount: import("@prisma/client").Decimal | null;
+  };
+  _count: number;
+  status: AccountStatus;
+};
+
 @Injectable()
 export class DashboardService {
   constructor(
-    private prisma: PrismaService,
-    private payablesService: PayablesService,
-    private receivablesService: ReceivablesService,
+    private readonly prisma: PrismaService,
+    private readonly payablesService: PayablesService,
+    private readonly receivablesService: ReceivablesService
   ) {}
 
   async getSummary(organizationId: string) {
@@ -127,7 +136,7 @@ export class DashboardService {
     };
   }
 
-  private calculateTotals(grouped: any[]) {
+  private calculateTotals(grouped: GroupedItem[]) {
     const totals = {
       total: 0,
       paid: 0,
@@ -178,7 +187,7 @@ export class DashboardService {
       await this.receivablesService.updateOverdueStatus();
 
     console.log(
-      `✅ Updated ${payablesResult.count} payables and ${receivablesResult.count} receivables to OVERDUE status`,
+      `✅ Updated ${payablesResult.count} payables and ${receivablesResult.count} receivables to OVERDUE status`
     );
   }
 }

@@ -4,12 +4,13 @@ import {
   ConflictException,
 } from "@nestjs/common";
 import * as bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../infrastructure/database/prisma.service";
 import { CreateUserDto, UpdateUserDto } from "./dto/user.dto";
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(organizationId: string) {
     const users = await this.prisma.user.findMany({
@@ -102,7 +103,7 @@ export class UsersService {
       }
     }
 
-    const data: any = { ...updateDto };
+    const data: Prisma.UserUpdateInput = { ...updateDto };
 
     if (updateDto.password) {
       data.password = await bcrypt.hash(updateDto.password, 10);

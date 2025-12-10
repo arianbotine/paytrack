@@ -5,11 +5,11 @@ import { CategoryType } from "@prisma/client";
 export class CreateCategoryDto {
   @ApiProperty({ example: "Aluguel" })
   @IsString()
-  name: string;
+  name!: string;
 
   @ApiProperty({ enum: CategoryType, example: CategoryType.PAYABLE })
   @IsEnum(CategoryType)
-  type: CategoryType;
+  type!: CategoryType;
 
   @ApiPropertyOptional({ example: "#EF4444" })
   @IsString()

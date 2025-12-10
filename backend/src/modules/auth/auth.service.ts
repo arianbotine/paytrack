@@ -2,16 +2,21 @@ import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
 import * as bcrypt from "bcryptjs";
+import { Prisma, User } from "@prisma/client";
 import { PrismaService } from "../../infrastructure/database/prisma.service";
 import { LoginDto, AuthResponseDto } from "./dto/auth.dto";
 import { JwtPayload } from "../../shared/decorators/current-user.decorator";
 
+type UserWithOrganization = Prisma.UserGetPayload<{
+  include: { organization: true };
+}>;
+
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
-    private jwtService: JwtService,
-    private configService: ConfigService
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService
   ) {}
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
@@ -53,39 +58,35 @@ export class AuthService {
   }
 
   async refreshTokens(refreshToken: string): Promise<AuthResponseDto> {
-    try {
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(
-        refreshToken,
-        {
-          secret: this.configService.get<string>("JWT_REFRESH_SECRET"),
-        }
-      );
-
-      const user = await this.prisma.user.findUnique({
-        where: { id: payload.sub },
-        include: { organization: true },
-      });
-
-      if (!user || !user.isActive || !user.organization.isActive) {
-        throw new UnauthorizedException("Token inválido");
+    const payload = await this.jwtService.verifyAsync<JwtPayload>(
+      refreshToken,
+      {
+        secret: this.configService.get<string>("JWT_REFRESH_SECRET"),
       }
+    );
 
-      const tokens = await this.generateTokens(user);
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      include: { organization: true },
+    });
 
-      return {
-        ...tokens,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          organizationId: user.organizationId,
-          organizationName: user.organization.name,
-        },
-      };
-    } catch (error) {
-      throw new UnauthorizedException("Token inválido ou expirado");
+    if (!user || !user.isActive || !user.organization.isActive) {
+      throw new UnauthorizedException("Token inválido");
     }
+
+    const tokens = await this.generateTokens(user);
+
+    return {
+      ...tokens,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        organizationId: user.organizationId,
+        organizationName: user.organization.name,
+      },
+    };
   }
 
   async getProfile(userId: string) {
@@ -108,7 +109,7 @@ export class AuthService {
     };
   }
 
-  private async generateTokens(user: any) {
+  private async generateTokens(user: UserWithOrganization) {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,

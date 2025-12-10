@@ -4,7 +4,7 @@ import { CreateCustomerDto, UpdateCustomerDto } from "./dto/customer.dto";
 
 @Injectable()
 export class CustomersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(organizationId: string, includeInactive = false) {
     return this.prisma.customer.findMany({

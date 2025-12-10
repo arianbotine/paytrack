@@ -15,7 +15,7 @@ import { Type, Transform } from "class-transformer";
 export class CreateReceivableDto {
   @ApiProperty({ example: "uuid-do-cliente" })
   @IsUUID()
-  customerId: string;
+  customerId!: string;
 
   @ApiPropertyOptional({ example: "uuid-da-categoria" })
   @IsUUID()
@@ -24,21 +24,21 @@ export class CreateReceivableDto {
 
   @ApiProperty({ example: "Venda de produtos" })
   @IsString()
-  description: string;
+  description!: string;
 
-  @ApiProperty({ example: 1500.0 })
+  @ApiProperty({ example: 1500 })
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01, { message: "Valor deve ser maior que zero" })
   @Type(() => Number)
-  amount: number;
+  amount!: number;
 
   @ApiProperty({ example: "2025-12-15" })
   @IsDateString()
-  dueDate: string;
+  dueDate!: string;
 
   @ApiProperty({ enum: PaymentMethod, example: PaymentMethod.PIX })
   @IsEnum(PaymentMethod)
-  paymentMethod: PaymentMethod;
+  paymentMethod!: PaymentMethod;
 
   @ApiPropertyOptional({ example: "Observações" })
   @IsString()
@@ -76,7 +76,7 @@ export class UpdateReceivableDto {
   @IsOptional()
   description?: string;
 
-  @ApiPropertyOptional({ example: 1500.0 })
+  @ApiPropertyOptional({ example: 1500 })
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01, { message: "Valor deve ser maior que zero" })
   @Type(() => Number)

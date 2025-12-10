@@ -4,7 +4,7 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 export class CreateCustomerDto {
   @ApiProperty({ example: "João Silva" })
   @IsString()
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({ example: "12345678900" })
   @IsString()

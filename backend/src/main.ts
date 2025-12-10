@@ -21,7 +21,7 @@ async function bootstrap() {
       transformOptions: {
         enableImplicitConversion: true,
       },
-    })
+    }),
   );
 
   // Global prefix

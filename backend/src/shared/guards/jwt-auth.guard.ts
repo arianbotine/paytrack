@@ -7,6 +7,7 @@ import {
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
+import { Request } from "express";
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
 import { JwtPayload } from "../decorators/current-user.decorator";
 
@@ -15,7 +16,7 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private jwtService: JwtService,
-    private configService: ConfigService,
+    private configService: ConfigService
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -47,7 +48,7 @@ export class JwtAuthGuard implements CanActivate {
     return true;
   }
 
-  private extractTokenFromHeader(request: any): string | undefined {
+  private extractTokenFromHeader(request: Request): string | undefined {
     const [type, token] = request.headers.authorization?.split(" ") ?? [];
     return type === "Bearer" ? token : undefined;
   }

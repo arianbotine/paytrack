@@ -26,7 +26,7 @@ console.log("Is valid money (number):", MoneyUtils.isValidMoney(123.45)); // tru
 console.log("Is valid money (string):", MoneyUtils.isValidMoney("123.45")); // true
 console.log(
   "Is valid money (Decimal):",
-  MoneyUtils.isValidMoney(new Decimal("123.45"))
+  MoneyUtils.isValidMoney(new Decimal("123.45")),
 ); // true
 console.log("Is valid money (invalid):", MoneyUtils.isValidMoney("abc")); // false
 

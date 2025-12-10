@@ -4,7 +4,7 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 export class CreateTagDto {
   @ApiProperty({ example: "Urgente" })
   @IsString()
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({ example: "#EF4444" })
   @IsString()

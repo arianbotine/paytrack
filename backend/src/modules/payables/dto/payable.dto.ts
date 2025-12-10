@@ -15,7 +15,7 @@ import { Type, Transform } from "class-transformer";
 export class CreatePayableDto {
   @ApiProperty({ example: "uuid-do-credor" })
   @IsUUID()
-  vendorId: string;
+  vendorId!: string;
 
   @ApiPropertyOptional({ example: "uuid-da-categoria" })
   @IsUUID()
@@ -24,21 +24,21 @@ export class CreatePayableDto {
 
   @ApiProperty({ example: "Aluguel do escritório" })
   @IsString()
-  description: string;
+  description!: string;
 
-  @ApiProperty({ example: 1500.0 })
+  @ApiProperty({ example: 1500 })
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01, { message: "Valor deve ser maior que zero" })
   @Type(() => Number)
-  amount: number;
+  amount!: number;
 
   @ApiProperty({ example: "2025-12-15" })
   @IsDateString()
-  dueDate: string;
+  dueDate!: string;
 
   @ApiProperty({ enum: PaymentMethod, example: PaymentMethod.BANK_TRANSFER })
   @IsEnum(PaymentMethod)
-  paymentMethod: PaymentMethod;
+  paymentMethod!: PaymentMethod;
 
   @ApiPropertyOptional({ example: "Observações" })
   @IsString()
@@ -76,7 +76,7 @@ export class UpdatePayableDto {
   @IsOptional()
   description?: string;
 
-  @ApiPropertyOptional({ example: 1500.0 })
+  @ApiPropertyOptional({ example: 1500 })
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01, { message: "Valor deve ser maior que zero" })
   @Type(() => Number)

@@ -66,15 +66,13 @@ async function main() {
         type: CategoryType.PAYABLE,
       },
     });
-    if (!category) {
-      category = await prisma.category.create({
-        data: {
-          ...catData,
-          organizationId: organization.id,
-          type: CategoryType.PAYABLE,
-        },
-      });
-    }
+    category ??= await prisma.category.create({
+      data: {
+        ...catData,
+        organizationId: organization.id,
+        type: CategoryType.PAYABLE,
+      },
+    });
     payableCategories.push(category);
   }
 
@@ -96,15 +94,13 @@ async function main() {
         type: CategoryType.RECEIVABLE,
       },
     });
-    if (!category) {
-      category = await prisma.category.create({
-        data: {
-          ...catData,
-          organizationId: organization.id,
-          type: CategoryType.RECEIVABLE,
-        },
-      });
-    }
+    category ??= await prisma.category.create({
+      data: {
+        ...catData,
+        organizationId: organization.id,
+        type: CategoryType.RECEIVABLE,
+      },
+    });
     receivableCategories.push(category);
   }
 
@@ -125,14 +121,12 @@ async function main() {
         organizationId: organization.id,
       },
     });
-    if (!tag) {
-      tag = await prisma.tag.create({
-        data: {
-          ...tagData,
-          organizationId: organization.id,
-        },
-      });
-    }
+    tag ??= await prisma.tag.create({
+      data: {
+        ...tagData,
+        organizationId: organization.id,
+      },
+    });
     tags.push(tag);
   }
 
@@ -213,7 +207,7 @@ async function main() {
         vendorId: vendors[0].id,
         categoryId: payableCategories[0].id,
         description: "Aluguel do escritório - Dezembro/2025",
-        amount: 3500.0,
+        amount: 3500,
         dueDate: new Date(today.getFullYear(), today.getMonth(), 10),
         paymentMethod: PaymentMethod.BANK_TRANSFER,
         status: AccountStatus.PENDING,
@@ -242,8 +236,8 @@ async function main() {
         vendorId: vendors[2].id,
         categoryId: payableCategories[2].id,
         description: "Manutenção de sistemas",
-        amount: 1200.0,
-        paidAmount: 600.0,
+        amount: 1200,
+        paidAmount: 600,
         dueDate: new Date(
           today.getFullYear(),
           today.getMonth(),
@@ -259,8 +253,8 @@ async function main() {
         vendorId: vendors[0].id,
         categoryId: payableCategories[0].id,
         description: "Aluguel do escritório - Novembro/2025",
-        amount: 3500.0,
-        paidAmount: 3500.0,
+        amount: 3500,
+        paidAmount: 3500,
         dueDate: new Date(today.getFullYear(), today.getMonth() - 1, 10),
         paymentMethod: PaymentMethod.BANK_TRANSFER,
         status: AccountStatus.PAID,
@@ -278,7 +272,7 @@ async function main() {
         customerId: customers[0].id,
         categoryId: receivableCategories[0].id,
         description: "Venda de produtos - Pedido #001",
-        amount: 2500.0,
+        amount: 2500,
         dueDate: new Date(
           today.getFullYear(),
           today.getMonth(),
@@ -295,7 +289,7 @@ async function main() {
         customerId: customers[1].id,
         categoryId: receivableCategories[1].id,
         description: "Consultoria - Projeto Alpha",
-        amount: 15000.0,
+        amount: 15000,
         dueDate: new Date(
           today.getFullYear(),
           today.getMonth(),
@@ -311,8 +305,8 @@ async function main() {
         customerId: customers[2].id,
         categoryId: receivableCategories[0].id,
         description: "Venda de serviços - Mês anterior",
-        amount: 4200.0,
-        paidAmount: 4200.0,
+        amount: 4200,
+        paidAmount: 4200,
         dueDate: new Date(today.getFullYear(), today.getMonth() - 1, 20),
         paymentMethod: PaymentMethod.PIX,
         status: AccountStatus.PAID,
@@ -324,7 +318,7 @@ async function main() {
         customerId: customers[0].id,
         categoryId: receivableCategories[2].id,
         description: "Comissão sobre vendas - Novembro",
-        amount: 1800.0,
+        amount: 1800,
         dueDate: new Date(
           today.getFullYear(),
           today.getMonth(),
@@ -344,11 +338,13 @@ async function main() {
   console.log("   Password: admin123");
 }
 
-main()
-  .catch((e) => {
+(async () => {
+  try {
+    await main();
+  } catch (e) {
     console.error("❌ Seed error:", e);
     process.exit(1);
-  })
-  .finally(async () => {
+  } finally {
     await prisma.$disconnect();
-  });
+  }
+})();

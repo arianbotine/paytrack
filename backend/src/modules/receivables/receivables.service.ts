@@ -14,7 +14,7 @@ import { MoneyUtils } from "../../shared/utils/money.utils";
 
 @Injectable()
 export class ReceivablesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(organizationId: string, filters?: ReceivableFilterDto) {
     const where: Prisma.ReceivableWhereInput = {
@@ -140,13 +140,13 @@ export class ReceivablesService {
   async update(
     id: string,
     organizationId: string,
-    updateDto: UpdateReceivableDto
+    updateDto: UpdateReceivableDto,
   ) {
     const receivable = await this.findOne(id, organizationId);
 
     if (receivable.status === AccountStatus.PAID) {
       throw new BadRequestException(
-        "Não é possível editar uma conta já recebida"
+        "Não é possível editar uma conta já recebida",
       );
     }
 
@@ -192,7 +192,7 @@ export class ReceivablesService {
       receivable.status === AccountStatus.PARTIAL
     ) {
       throw new BadRequestException(
-        "Não é possível excluir uma conta com recebimentos realizados"
+        "Não é possível excluir uma conta com recebimentos realizados",
       );
     }
 
@@ -205,7 +205,7 @@ export class ReceivablesService {
 
     if (receivable.status === AccountStatus.PAID) {
       throw new BadRequestException(
-        "Não é possível cancelar uma conta já recebida"
+        "Não é possível cancelar uma conta já recebida",
       );
     }
 

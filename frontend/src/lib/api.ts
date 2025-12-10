@@ -48,12 +48,12 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         useAuthStore.getState().logout();
-        window.location.href = "/login";
-        return Promise.reject(refreshError);
+        globalThis.location.href = "/login";
+        throw refreshError;
       }
     }
 
-    return Promise.reject(error);
+    throw error;
   }
 );
 

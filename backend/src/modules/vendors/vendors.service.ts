@@ -4,7 +4,7 @@ import { CreateVendorDto, UpdateVendorDto } from "./dto/vendor.dto";
 
 @Injectable()
 export class VendorsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(organizationId: string, includeInactive = false) {
     return this.prisma.vendor.findMany({
