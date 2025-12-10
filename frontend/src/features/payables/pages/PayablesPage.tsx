@@ -122,7 +122,11 @@ export const PayablesPage: React.FC = () => {
     },
   });
 
-  const { data: payablesData, isLoading } = useQuery({
+  const {
+    data: payablesData,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["payables", statusFilter, page, rowsPerPage],
     queryFn: async () => {
       const params: Record<string, string | number> = {
@@ -328,6 +332,12 @@ export const PayablesPage: React.FC = () => {
           </Select>
         </FormControl>
       </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Erro ao carregar contas a pagar: {error.message}
+        </Alert>
+      )}
 
       <TableContainer component={Paper}>
         <Table>

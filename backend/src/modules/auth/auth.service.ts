@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
-import * as bcrypt from "bcrypt";
+import * as bcrypt from "bcryptjs";
 import { PrismaService } from "../../infrastructure/database/prisma.service";
 import { LoginDto, AuthResponseDto } from "./dto/auth.dto";
 import { JwtPayload } from "../../shared/decorators/current-user.decorator";
@@ -11,7 +11,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-    private configService: ConfigService,
+    private configService: ConfigService
   ) {}
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
@@ -58,7 +58,7 @@ export class AuthService {
         refreshToken,
         {
           secret: this.configService.get<string>("JWT_REFRESH_SECRET"),
-        },
+        }
       );
 
       const user = await this.prisma.user.findUnique({
@@ -125,7 +125,7 @@ export class AuthService {
         secret: this.configService.get<string>("JWT_REFRESH_SECRET"),
         expiresIn: this.configService.get<string>(
           "JWT_REFRESH_EXPIRES_IN",
-          "7d",
+          "7d"
         ),
       }),
     ]);

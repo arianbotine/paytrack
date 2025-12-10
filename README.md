@@ -6,24 +6,46 @@ Sistema completo para gestão de contas a pagar e receber com arquitetura multi-
 
 ### Pré-requisitos
 
-- Docker e Docker Compose
-- Node.js 20+ (opcional, para desenvolvimento local)
+- **Node.js 18+** e **npm**
+- **Docker** e **Docker Compose** (apenas para o banco de dados)
+
+### Configuração Inicial
+
+```bash
+# 1. Clonar o repositório
+git clone <repo-url>
+cd paytrack
+
+# 2. Copiar arquivos de ambiente
+make setup-env
+# ou manualmente:
+cp .env.example .env
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+
+# 3. Instalar dependências
+make install
+
+# 4. Configuração inicial (banco de dados + migrations + seed)
+make init
+```
 
 ### Executar a Aplicação
 
 ```bash
 # Iniciar todos os serviços
-docker-compose up -d
-
-# Ou usando Makefile
 make up
+
+# Parar todos os serviços
+make down
 ```
 
 A aplicação estará disponível em:
 
-- **Frontend**: http://localhost:5174
-- **Backend API**: http://localhost:3001
-- **Swagger Docs**: http://localhost:3001/api/docs
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:3000
+- **Swagger Docs**: http://localhost:3000/api/docs
+- **Database**: localhost:5433
 
 ### Credenciais de Acesso
 
@@ -32,85 +54,115 @@ A aplicação estará disponível em:
 
 ## 📊 Logs da Aplicação
 
-Os logs são salvos automaticamente na pasta `logs/` com informações de PID no nome do arquivo.
+Os logs são salvos automaticamente na pasta `logs/` em tempo real.
+
+> **💡 Dica**: Os logs são **automaticamente limpos** a cada inicialização da aplicação (`make up`) para evitar acumulação de logs antigos durante o desenvolvimento.
 
 ### Estrutura dos Logs
 
 ```
 logs/
-├── backend_pid<PID>.log     # Log do backend (NestJS)
-└── frontend_pid<PID>.log    # Log do frontend (Vite)
+├── backend.log      # Log do backend (NestJS)
+├── frontend.log     # Log do frontend (Vite)
+├── db.log           # Log do banco de dados (PostgreSQL)
+├── backend.pid      # PID do processo backend
+└── frontend.pid     # PID do processo frontend
 ```
 
 ### Visualizar Logs
 
 ```bash
-# Ver informações sobre logs disponíveis
+# Menu interativo de logs
 ./view-logs.sh
 
-# Seguir logs em tempo real
-tail -f logs/$(ls -t logs/backend_pid*.log | head -1)
-tail -f logs/$(ls -t logs/frontend_pid*.log | head -1)
+# Ou comandos diretos:
+./view-logs.sh all        # Todos os logs
+./view-logs.sh backend    # Apenas backend
+./view-logs.sh frontend   # Apenas frontend
+./view-logs.sh db         # Apenas database
 
-# Ver logs completos
-cat logs/$(ls -t logs/backend_pid*.log | head -1)
-cat logs/$(ls -t logs/frontend_pid*.log | head -1)
+# Via Makefile
+make logs            # Menu interativo
+make logs-backend    # Logs do backend
+make logs-frontend   # Logs do frontend
+make logs-db         # Logs do banco
 ```
-
-# Seguir logs do backend em tempo real
-
-tail -f logs/backend/$(ls -t logs/backend/ | head -1)
-
-# Seguir logs do frontend em tempo real
-
-tail -f logs/frontend/$(ls -t logs/frontend/ | head -1)
-
-# Ver logs via Docker
-
-docker-compose logs -f backend
-docker-compose logs -f frontend
-
-````
 
 ### Formato dos Logs
 
-Cada linha de log inclui:
+Cada linha de log inclui timestamp:
 
-- Timestamp: `[2025-12-08 23:18:16]`
-- PID do processo: `[PID:1]`
-- Mensagem original
-
-## 🛠️ Desenvolvimento
-
-### Com Docker (Recomendado)
-
-```bash
-# Iniciar desenvolvimento
-docker-compose up -d
-
-# Editar código localmente - hot-reload automático
-# Backend: backend/src/
-# Frontend: frontend/src/
-````
-
-### Localmente (Sem Docker)
-
-```bash
-# Backend
-cd backend
-npm install
-npm run start:dev
-
-# Frontend (terminal separado)
-cd frontend
-npm install
-npm run dev
 ```
+[2025-12-09 10:30:45] [Nest] 12345  - LOG [Bootstrap] Application is running on: http://localhost:3000
+```
+
+## 🛠️ Comandos de Desenvolvimento
+
+### Makefile
+
+```bash
+# === Desenvolvimento ===
+make up              # Inicia todos os serviços
+make down            # Para todos os serviços
+make restart         # Reinicia todos os serviços
+make status          # Mostra status dos serviços
+
+# === Logs ===
+make logs            # Menu interativo de logs
+make logs-backend    # Logs do backend
+make logs-frontend   # Logs do frontend
+make logs-db         # Logs do banco
+
+# === Banco de Dados ===
+make db-shell        # Shell do PostgreSQL
+make migrate         # Executar migrations
+make seed            # Popular banco com dados
+make studio          # Abrir Prisma Studio
+make generate        # Regenerar Prisma Client
+
+# === Instalação ===
+make install         # Instalar todas as dependências
+make setup-env       # Criar arquivos .env
+make init            # Setup inicial completo
+make clean           # Limpar containers e volumes
+
+# === Ajuda ===
+make help            # Lista todos os comandos
+```
+
+## ⚙️ Variáveis de Ambiente
+
+Edite o arquivo `.env` na raiz do projeto:
+
+| Variável       | Descrição                | Padrão                  |
+| -------------- | ------------------------ | ----------------------- |
+| `DB_USER`      | Usuário do PostgreSQL    | `paytrack`              |
+| `DB_PASSWORD`  | Senha do PostgreSQL      | `paytrack123`           |
+| `DB_NAME`      | Nome do banco            | `paytrack`              |
+| `DB_PORT`      | Porta do PostgreSQL      | `5433`                  |
+| `DATABASE_URL` | URL de conexão Prisma    | `postgresql://...`      |
+| `API_PORT`     | Porta do backend         | `3000`                  |
+| `WEB_PORT`     | Porta do frontend        | `5173`                  |
+| `JWT_SECRET`   | Secret para JWT          | `super-secret-...`      |
+| `VITE_API_URL` | URL da API para frontend | `http://localhost:3000` |
 
 ## 🗄️ Banco de Dados
 
-- **PostgreSQL**: localhost:5433
-- **Credenciais**: paytrack/paytrack123
+O PostgreSQL roda em Docker para facilitar o setup:
+
+- **Host**: localhost
+- **Porta**: 5433 (configurável via `DB_PORT`)
+- **Usuário**: paytrack
+- **Senha**: paytrack123
+- **Database**: paytrack
+
+```bash
+# Acessar shell do PostgreSQL
+make db-shell
+
+# Abrir Prisma Studio (interface visual)
+make studio
+```
 
 ## 🏗️ Arquitetura
 
@@ -118,6 +170,7 @@ npm run dev
 - **Frontend**: React + Vite + Material-UI + TanStack Query
 - **Autenticação**: JWT com RBAC
 - **Multi-tenant**: Suporte a múltiplas organizações
+- **Desenvolvimento**: Backend e Frontend rodam localmente, apenas DB em Docker
 
 ## 📝 Funcionalidades
 
@@ -133,9 +186,6 @@ npm run dev
 ## 🛑 Parar a Aplicação
 
 ```bash
-# Parar todos os serviços
-docker-compose down
-
-# Ou usando Makefile
+# Parar todos os serviços graciosamente
 make down
 ```

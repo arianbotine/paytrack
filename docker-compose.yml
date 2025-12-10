@@ -10,54 +10,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "${DB_PORT:-5433}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-paytrack}"]
       interval: 10s
       timeout: 5s
       retries: 5
-
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: paytrack-api
-    restart: unless-stopped
-    environment:
-      NODE_ENV: development
-      DATABASE_URL: postgresql://${DB_USER:-paytrack}:${DB_PASSWORD:-paytrack123}@db:5432/${DB_NAME:-paytrack}?schema=public
-      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-in-production}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-super-secret-refresh-key-change-in-production}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
-      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-      - ./logs:/app/logs
-    ports:
-      - "3001:3000"
-    depends_on:
-      db:
-        condition: service_healthy
-    command: ./start-with-logs.sh
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: paytrack-web
-    restart: unless-stopped
-    environment:
-      VITE_API_URL: http://paytrack-api:3000
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - ./logs:/app/logs
-    ports:
-      - "5174:5173"
-    depends_on:
-      - backend
-    command: ./start-with-logs.sh
 
 volumes:
   postgres_data:

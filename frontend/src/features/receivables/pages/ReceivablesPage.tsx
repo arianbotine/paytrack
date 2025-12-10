@@ -123,7 +123,11 @@ export const ReceivablesPage: React.FC = () => {
     },
   });
 
-  const { data: receivablesData, isLoading } = useQuery({
+  const {
+    data: receivablesData,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["receivables", statusFilter, page, rowsPerPage],
     queryFn: async () => {
       const params: Record<string, string | number> = {
@@ -329,6 +333,12 @@ export const ReceivablesPage: React.FC = () => {
           </Select>
         </FormControl>
       </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Erro ao carregar contas a receber: {error.message}
+        </Alert>
+      )}
 
       <TableContainer component={Paper}>
         <Table>

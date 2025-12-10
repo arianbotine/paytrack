@@ -10,6 +10,7 @@ import {
   UpdateReceivableDto,
   ReceivableFilterDto,
 } from "./dto/receivable.dto";
+import { MoneyUtils } from "../../shared/utils/money.utils";
 
 @Injectable()
 export class ReceivablesService {
@@ -34,25 +35,36 @@ export class ReceivablesService {
         : {}),
     };
 
-    return this.prisma.receivable.findMany({
-      where,
-      include: {
-        customer: {
-          select: { id: true, name: true },
-        },
-        category: {
-          select: { id: true, name: true, color: true },
-        },
-        tags: {
-          include: {
-            tag: { select: { id: true, name: true, color: true } },
+    const [data, total] = await Promise.all([
+      this.prisma.receivable.findMany({
+        where,
+        include: {
+          customer: {
+            select: { id: true, name: true },
+          },
+          category: {
+            select: { id: true, name: true, color: true },
+          },
+          tags: {
+            include: {
+              tag: { select: { id: true, name: true, color: true } },
+            },
           },
         },
-      },
-      orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
-      skip: filters?.skip,
-      take: filters?.take,
-    });
+        orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+        skip: filters?.skip,
+        take: filters?.take,
+      }),
+      this.prisma.receivable.count({ where }),
+    ]);
+
+    // Transform Decimal fields to numbers for JSON serialization
+    const transformedData = MoneyUtils.transformMoneyFieldsArray(data, [
+      "amount",
+      "paidAmount",
+    ]);
+
+    return { data: transformedData, total };
   }
 
   async findOne(id: string, organizationId: string) {
@@ -82,7 +94,11 @@ export class ReceivablesService {
       throw new NotFoundException("Conta a receber não encontrada");
     }
 
-    return receivable;
+    // Transform Decimal fields to numbers for JSON serialization
+    return MoneyUtils.transformMoneyFields(receivable, [
+      "amount",
+      "paidAmount",
+    ]);
   }
 
   async create(organizationId: string, createDto: CreateReceivableDto) {
@@ -94,7 +110,7 @@ export class ReceivablesService {
         customerId: data.customerId,
         categoryId: data.categoryId,
         description: data.description,
-        amount: new Prisma.Decimal(data.amount),
+        amount: MoneyUtils.toDecimal(data.amount),
         dueDate: new Date(data.dueDate),
         paymentMethod: data.paymentMethod,
         notes: data.notes,
@@ -124,13 +140,13 @@ export class ReceivablesService {
   async update(
     id: string,
     organizationId: string,
-    updateDto: UpdateReceivableDto,
+    updateDto: UpdateReceivableDto
   ) {
     const receivable = await this.findOne(id, organizationId);
 
     if (receivable.status === AccountStatus.PAID) {
       throw new BadRequestException(
-        "Não é possível editar uma conta já recebida",
+        "Não é possível editar uma conta já recebida"
       );
     }
 
@@ -153,7 +169,7 @@ export class ReceivablesService {
       where: { id },
       data: {
         ...data,
-        ...(data.amount && { amount: new Prisma.Decimal(data.amount) }),
+        ...(data.amount && { amount: MoneyUtils.toDecimal(data.amount) }),
         ...(data.dueDate && { dueDate: new Date(data.dueDate) }),
       },
       include: {
@@ -176,7 +192,7 @@ export class ReceivablesService {
       receivable.status === AccountStatus.PARTIAL
     ) {
       throw new BadRequestException(
-        "Não é possível excluir uma conta com recebimentos realizados",
+        "Não é possível excluir uma conta com recebimentos realizados"
       );
     }
 
@@ -189,7 +205,7 @@ export class ReceivablesService {
 
     if (receivable.status === AccountStatus.PAID) {
       throw new BadRequestException(
-        "Não é possível cancelar uma conta já recebida",
+        "Não é possível cancelar uma conta já recebida"
       );
     }
 

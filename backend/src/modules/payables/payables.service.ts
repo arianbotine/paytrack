@@ -10,6 +10,7 @@ import {
   UpdatePayableDto,
   PayableFilterDto,
 } from "./dto/payable.dto";
+import { MoneyUtils } from "../../shared/utils/money.utils";
 
 @Injectable()
 export class PayablesService {
@@ -34,25 +35,36 @@ export class PayablesService {
         : {}),
     };
 
-    return this.prisma.payable.findMany({
-      where,
-      include: {
-        vendor: {
-          select: { id: true, name: true },
-        },
-        category: {
-          select: { id: true, name: true, color: true },
-        },
-        tags: {
-          include: {
-            tag: { select: { id: true, name: true, color: true } },
+    const [data, total] = await Promise.all([
+      this.prisma.payable.findMany({
+        where,
+        include: {
+          vendor: {
+            select: { id: true, name: true },
+          },
+          category: {
+            select: { id: true, name: true, color: true },
+          },
+          tags: {
+            include: {
+              tag: { select: { id: true, name: true, color: true } },
+            },
           },
         },
-      },
-      orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
-      skip: filters?.skip,
-      take: filters?.take,
-    });
+        orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+        skip: filters?.skip,
+        take: filters?.take,
+      }),
+      this.prisma.payable.count({ where }),
+    ]);
+
+    // Transform Decimal fields to numbers for JSON serialization
+    const transformedData = MoneyUtils.transformMoneyFieldsArray(data, [
+      "amount",
+      "paidAmount",
+    ]);
+
+    return { data: transformedData, total };
   }
 
   async findOne(id: string, organizationId: string) {
@@ -82,7 +94,8 @@ export class PayablesService {
       throw new NotFoundException("Conta a pagar não encontrada");
     }
 
-    return payable;
+    // Transform Decimal fields to numbers for JSON serialization
+    return MoneyUtils.transformMoneyFields(payable, ["amount", "paidAmount"]);
   }
 
   async create(organizationId: string, createDto: CreatePayableDto) {
@@ -94,7 +107,7 @@ export class PayablesService {
         vendorId: data.vendorId,
         categoryId: data.categoryId,
         description: data.description,
-        amount: new Prisma.Decimal(data.amount),
+        amount: MoneyUtils.toDecimal(data.amount),
         dueDate: new Date(data.dueDate),
         paymentMethod: data.paymentMethod,
         notes: data.notes,
@@ -124,7 +137,7 @@ export class PayablesService {
   async update(
     id: string,
     organizationId: string,
-    updateDto: UpdatePayableDto,
+    updateDto: UpdatePayableDto
   ) {
     const payable = await this.findOne(id, organizationId);
 
@@ -149,7 +162,7 @@ export class PayablesService {
       where: { id },
       data: {
         ...data,
-        ...(data.amount && { amount: new Prisma.Decimal(data.amount) }),
+        ...(data.amount && { amount: MoneyUtils.toDecimal(data.amount) }),
         ...(data.dueDate && { dueDate: new Date(data.dueDate) }),
       },
       include: {
@@ -172,7 +185,7 @@ export class PayablesService {
       payable.status === AccountStatus.PARTIAL
     ) {
       throw new BadRequestException(
-        "Não é possível excluir uma conta com pagamentos realizados",
+        "Não é possível excluir uma conta com pagamentos realizados"
       );
     }
 
@@ -185,7 +198,7 @@ export class PayablesService {
 
     if (payable.status === AccountStatus.PAID) {
       throw new BadRequestException(
-        "Não é possível cancelar uma conta já paga",
+        "Não é possível cancelar uma conta já paga"
       );
     }
 

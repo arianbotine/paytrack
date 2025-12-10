@@ -6,13 +6,14 @@ import {
 import { AccountStatus, Prisma } from "@prisma/client";
 import { PrismaService } from "../../infrastructure/database/prisma.service";
 import { CreatePaymentDto, QuickPaymentDto } from "./dto/payment.dto";
+import { MoneyUtils } from "../../shared/utils/money.utils";
 
 @Injectable()
 export class PaymentsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(organizationId: string) {
-    return this.prisma.payment.findMany({
+    const payments = await this.prisma.payment.findMany({
       where: { organizationId },
       include: {
         allocations: {
@@ -36,6 +37,9 @@ export class PaymentsService {
       },
       orderBy: { paymentDate: "desc" },
     });
+
+    // Transform Decimal fields to numbers
+    return MoneyUtils.transformMoneyFieldsArray(payments, ["amount"]);
   }
 
   async findOne(id: string, organizationId: string) {
@@ -69,7 +73,28 @@ export class PaymentsService {
       throw new NotFoundException("Pagamento não encontrado");
     }
 
-    return payment;
+    // Transform Decimal fields to numbers
+    const transformedPayment = MoneyUtils.transformMoneyFields(payment, [
+      "amount",
+    ]);
+
+    // Transform amounts in allocations
+    const transformedAllocations = transformedPayment.allocations.map(
+      (allocation) => ({
+        ...allocation,
+        payable: allocation.payable
+          ? MoneyUtils.transformMoneyFields(allocation.payable, ["amount"])
+          : allocation.payable,
+        receivable: allocation.receivable
+          ? MoneyUtils.transformMoneyFields(allocation.receivable, ["amount"])
+          : allocation.receivable,
+      })
+    );
+
+    return {
+      ...transformedPayment,
+      allocations: transformedAllocations,
+    };
   }
 
   async create(organizationId: string, createDto: CreatePaymentDto) {
@@ -87,7 +112,7 @@ export class PaymentsService {
         const payment = await tx.payment.create({
           data: {
             organizationId,
-            amount: new Prisma.Decimal(paymentData.amount),
+            amount: MoneyUtils.toDecimal(paymentData.amount),
             paymentDate: new Date(paymentData.paymentDate),
             paymentMethod: paymentData.paymentMethod,
             notes: paymentData.notes,
@@ -95,7 +120,7 @@ export class PaymentsService {
               create: allocations.map((a) => ({
                 payableId: a.payableId,
                 receivableId: a.receivableId,
-                amount: new Prisma.Decimal(a.amount),
+                amount: MoneyUtils.toDecimal(a.amount),
               })),
             },
           },
@@ -110,7 +135,7 @@ export class PaymentsService {
             await this.updatePayableBalance(
               tx,
               allocation.payableId,
-              allocation.amount,
+              allocation.amount
             );
           }
 
@@ -118,7 +143,7 @@ export class PaymentsService {
             await this.updateReceivableBalance(
               tx,
               allocation.receivableId,
-              allocation.amount,
+              allocation.amount
             );
           }
         }
@@ -128,12 +153,12 @@ export class PaymentsService {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         throw new BadRequestException(
-          "Erro ao processar o pagamento: dados inválidos",
+          "Erro ao processar o pagamento: dados inválidos"
         );
       }
       if (error instanceof Prisma.PrismaClientValidationError) {
         throw new BadRequestException(
-          "Erro de validação nos dados do pagamento",
+          "Erro de validação nos dados do pagamento"
         );
       }
       if (
@@ -178,7 +203,7 @@ export class PaymentsService {
           });
           const newPaidAmount = Math.max(
             0,
-            Number(payable!.paidAmount) - Number(allocation.amount),
+            Number(payable!.paidAmount) - Number(allocation.amount)
           );
 
           let newStatus: AccountStatus;
@@ -197,7 +222,7 @@ export class PaymentsService {
           await tx.payable.update({
             where: { id: allocation.payableId },
             data: {
-              paidAmount: new Prisma.Decimal(newPaidAmount),
+              paidAmount: MoneyUtils.toDecimal(newPaidAmount),
               status: newStatus,
             },
           });
@@ -209,7 +234,7 @@ export class PaymentsService {
           });
           const newPaidAmount = Math.max(
             0,
-            Number(receivable!.paidAmount) - Number(allocation.amount),
+            Number(receivable!.paidAmount) - Number(allocation.amount)
           );
 
           let newStatus: AccountStatus;
@@ -227,7 +252,7 @@ export class PaymentsService {
           await tx.receivable.update({
             where: { id: allocation.receivableId },
             data: {
-              paidAmount: new Prisma.Decimal(newPaidAmount),
+              paidAmount: MoneyUtils.toDecimal(newPaidAmount),
               status: newStatus,
             },
           });
@@ -249,24 +274,24 @@ export class PaymentsService {
     const totalAllocation = allocations.reduce((sum, a) => sum + a.amount, 0);
     if (Math.abs(totalAllocation - totalAmount) > 0.01) {
       throw new BadRequestException(
-        "A soma das alocações deve ser igual ao valor do pagamento",
+        "A soma das alocações deve ser igual ao valor do pagamento"
       );
     }
   }
 
   private async validateAllocationAccounts(
     organizationId: string,
-    allocations: any[],
+    allocations: any[]
   ) {
     for (const allocation of allocations) {
       if (!allocation.payableId && !allocation.receivableId) {
         throw new BadRequestException(
-          "Cada alocação deve ter uma conta a pagar ou a receber",
+          "Cada alocação deve ter uma conta a pagar ou a receber"
         );
       }
       if (allocation.payableId && allocation.receivableId) {
         throw new BadRequestException(
-          "Cada alocação deve ter apenas uma conta",
+          "Cada alocação deve ter apenas uma conta"
         );
       }
 
@@ -275,7 +300,7 @@ export class PaymentsService {
         await this.validatePayableAccount(
           organizationId,
           allocation.payableId,
-          allocation.amount,
+          allocation.amount
         );
       }
 
@@ -283,7 +308,7 @@ export class PaymentsService {
         await this.validateReceivableAccount(
           organizationId,
           allocation.receivableId,
-          allocation.amount,
+          allocation.amount
         );
       }
     }
@@ -292,7 +317,7 @@ export class PaymentsService {
   private async validatePayableAccount(
     organizationId: string,
     payableId: string,
-    allocationAmount: number,
+    allocationAmount: number
   ) {
     const payable = await this.prisma.payable.findFirst({
       where: { id: payableId, organizationId },
@@ -305,14 +330,14 @@ export class PaymentsService {
       payable.status === AccountStatus.CANCELLED
     ) {
       throw new BadRequestException(
-        `Conta a pagar já está ${payable.status === AccountStatus.PAID ? "paga" : "cancelada"}`,
+        `Conta a pagar já está ${payable.status === AccountStatus.PAID ? "paga" : "cancelada"}`
       );
     }
 
     const remainingAmount = Number(payable.amount) - Number(payable.paidAmount);
     if (allocationAmount > remainingAmount + 0.01) {
       throw new BadRequestException(
-        `Valor da alocação maior que o saldo restante da conta (R$ ${remainingAmount.toFixed(2)})`,
+        `Valor da alocação maior que o saldo restante da conta (R$ ${remainingAmount.toFixed(2)})`
       );
     }
   }
@@ -320,14 +345,14 @@ export class PaymentsService {
   private async validateReceivableAccount(
     organizationId: string,
     receivableId: string,
-    allocationAmount: number,
+    allocationAmount: number
   ) {
     const receivable = await this.prisma.receivable.findFirst({
       where: { id: receivableId, organizationId },
     });
     if (!receivable) {
       throw new NotFoundException(
-        `Conta a receber ${receivableId} não encontrada`,
+        `Conta a receber ${receivableId} não encontrada`
       );
     }
     if (
@@ -335,7 +360,7 @@ export class PaymentsService {
       receivable.status === AccountStatus.CANCELLED
     ) {
       throw new BadRequestException(
-        `Conta a receber já está ${receivable.status === AccountStatus.PAID ? "recebida" : "cancelada"}`,
+        `Conta a receber já está ${receivable.status === AccountStatus.PAID ? "recebida" : "cancelada"}`
       );
     }
 
@@ -343,7 +368,7 @@ export class PaymentsService {
       Number(receivable.amount) - Number(receivable.paidAmount);
     if (allocationAmount > remainingAmount + 0.01) {
       throw new BadRequestException(
-        `Valor da alocação maior que o saldo restante da conta (R$ ${remainingAmount.toFixed(2)})`,
+        `Valor da alocação maior que o saldo restante da conta (R$ ${remainingAmount.toFixed(2)})`
       );
     }
   }
@@ -351,7 +376,7 @@ export class PaymentsService {
   private async updatePayableBalance(
     tx: Prisma.TransactionClient,
     payableId: string,
-    allocationAmount: number,
+    allocationAmount: number
   ) {
     const payable = await tx.payable.findUnique({ where: { id: payableId } });
     if (!payable) {
@@ -371,7 +396,7 @@ export class PaymentsService {
     await tx.payable.update({
       where: { id: payableId },
       data: {
-        paidAmount: new Prisma.Decimal(newPaidAmount),
+        paidAmount: MoneyUtils.toDecimal(newPaidAmount),
         status: newStatus,
       },
     });
@@ -380,14 +405,14 @@ export class PaymentsService {
   private async updateReceivableBalance(
     tx: Prisma.TransactionClient,
     receivableId: string,
-    allocationAmount: number,
+    allocationAmount: number
   ) {
     const receivable = await tx.receivable.findUnique({
       where: { id: receivableId },
     });
     if (!receivable) {
       throw new NotFoundException(
-        `Conta a receber ${receivableId} não encontrada`,
+        `Conta a receber ${receivableId} não encontrada`
       );
     }
 
@@ -404,7 +429,7 @@ export class PaymentsService {
     await tx.receivable.update({
       where: { id: receivableId },
       data: {
-        paidAmount: new Prisma.Decimal(newPaidAmount),
+        paidAmount: MoneyUtils.toDecimal(newPaidAmount),
         status: newStatus,
       },
     });
