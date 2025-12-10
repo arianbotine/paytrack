@@ -2,15 +2,15 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-} from "@nestjs/common";
-import { AccountStatus, Prisma } from "@prisma/client";
-import { PrismaService } from "../../infrastructure/database/prisma.service";
+} from '@nestjs/common';
+import { AccountStatus, Prisma } from '@prisma/client';
+import { PrismaService } from '../../infrastructure/database/prisma.service';
 import {
   CreateReceivableDto,
   UpdateReceivableDto,
   ReceivableFilterDto,
-} from "./dto/receivable.dto";
-import { MoneyUtils } from "../../shared/utils/money.utils";
+} from './dto/receivable.dto';
+import { MoneyUtils } from '../../shared/utils/money.utils';
 
 @Injectable()
 export class ReceivablesService {
@@ -51,7 +51,7 @@ export class ReceivablesService {
             },
           },
         },
-        orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+        orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
         skip: filters?.skip,
         take: filters?.take,
       }),
@@ -60,11 +60,18 @@ export class ReceivablesService {
 
     // Transform Decimal fields to numbers for JSON serialization
     const transformedData = MoneyUtils.transformMoneyFieldsArray(data, [
-      "amount",
-      "paidAmount",
+      'amount',
+      'paidAmount',
     ]);
 
-    return { data: transformedData, total };
+    // Map paidAmount to receivedAmount for frontend compatibility
+    const mappedData = transformedData.map(receivable => ({
+      ...receivable,
+      receivedAmount: receivable.paidAmount,
+      paidAmount: undefined, // Remove the original field
+    }));
+
+    return { data: mappedData, total };
   }
 
   async findOne(id: string, organizationId: string) {
@@ -91,14 +98,21 @@ export class ReceivablesService {
     });
 
     if (!receivable) {
-      throw new NotFoundException("Conta a receber não encontrada");
+      throw new NotFoundException('Conta a receber não encontrada');
     }
 
     // Transform Decimal fields to numbers for JSON serialization
-    return MoneyUtils.transformMoneyFields(receivable, [
-      "amount",
-      "paidAmount",
+    const transformed = MoneyUtils.transformMoneyFields(receivable, [
+      'amount',
+      'paidAmount',
     ]);
+
+    // Map paidAmount to receivedAmount for frontend compatibility
+    return {
+      ...transformed,
+      receivedAmount: transformed.paidAmount,
+      paidAmount: undefined, // Remove the original field
+    };
   }
 
   async create(organizationId: string, createDto: CreateReceivableDto) {
@@ -118,7 +132,7 @@ export class ReceivablesService {
         ...(tagIds && tagIds.length > 0
           ? {
               tags: {
-                create: tagIds.map((tagId) => ({ tagId })),
+                create: tagIds.map(tagId => ({ tagId })),
               },
             }
           : {}),
@@ -134,19 +148,30 @@ export class ReceivablesService {
       },
     });
 
-    return receivable;
+    // Transform Decimal fields to numbers for JSON serialization
+    const transformed = MoneyUtils.transformMoneyFields(receivable, [
+      'amount',
+      'paidAmount',
+    ]);
+
+    // Map paidAmount to receivedAmount for frontend compatibility
+    return {
+      ...transformed,
+      receivedAmount: transformed.paidAmount,
+      paidAmount: undefined, // Remove the original field
+    };
   }
 
   async update(
     id: string,
     organizationId: string,
-    updateDto: UpdateReceivableDto,
+    updateDto: UpdateReceivableDto
   ) {
     const receivable = await this.findOne(id, organizationId);
 
     if (receivable.status === AccountStatus.PAID) {
       throw new BadRequestException(
-        "Não é possível editar uma conta já recebida",
+        'Não é possível editar uma conta já recebida'
       );
     }
 
@@ -160,12 +185,12 @@ export class ReceivablesService {
 
       if (tagIds.length > 0) {
         await this.prisma.receivableTag.createMany({
-          data: tagIds.map((tagId) => ({ receivableId: id, tagId })),
+          data: tagIds.map(tagId => ({ receivableId: id, tagId })),
         });
       }
     }
 
-    return this.prisma.receivable.update({
+    const updatedReceivable = await this.prisma.receivable.update({
       where: { id },
       data: {
         ...data,
@@ -182,6 +207,19 @@ export class ReceivablesService {
         },
       },
     });
+
+    // Transform Decimal fields to numbers for JSON serialization
+    const transformed = MoneyUtils.transformMoneyFields(updatedReceivable, [
+      'amount',
+      'paidAmount',
+    ]);
+
+    // Map paidAmount to receivedAmount for frontend compatibility
+    return {
+      ...transformed,
+      receivedAmount: transformed.paidAmount,
+      paidAmount: undefined, // Remove the original field
+    };
   }
 
   async remove(id: string, organizationId: string) {
@@ -192,7 +230,7 @@ export class ReceivablesService {
       receivable.status === AccountStatus.PARTIAL
     ) {
       throw new BadRequestException(
-        "Não é possível excluir uma conta com recebimentos realizados",
+        'Não é possível excluir uma conta com recebimentos realizados'
       );
     }
 
@@ -205,7 +243,7 @@ export class ReceivablesService {
 
     if (receivable.status === AccountStatus.PAID) {
       throw new BadRequestException(
-        "Não é possível cancelar uma conta já recebida",
+        'Não é possível cancelar uma conta já recebida'
       );
     }
 

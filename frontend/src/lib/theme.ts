@@ -1,43 +1,43 @@
-import { createTheme, alpha } from "@mui/material/styles";
-import { PaletteMode } from "@mui/material";
+import { createTheme, alpha } from '@mui/material/styles';
+import { PaletteMode } from '@mui/material';
 
 // Modern color palette inspired by Tailwind/Stripe
 const colors = {
   primary: {
-    main: "#2563eb",
-    light: "#3b82f6",
-    dark: "#1d4ed8",
-    contrastText: "#ffffff",
+    main: '#2563eb',
+    light: '#3b82f6',
+    dark: '#1d4ed8',
+    contrastText: '#ffffff',
   },
   secondary: {
-    main: "#7c3aed",
-    light: "#8b5cf6",
-    dark: "#6d28d9",
-    contrastText: "#ffffff",
+    main: '#7c3aed',
+    light: '#8b5cf6',
+    dark: '#6d28d9',
+    contrastText: '#ffffff',
   },
   success: {
-    main: "#10b981",
-    light: "#34d399",
-    dark: "#059669",
-    contrastText: "#ffffff",
+    main: '#10b981',
+    light: '#34d399',
+    dark: '#059669',
+    contrastText: '#ffffff',
   },
   warning: {
-    main: "#f59e0b",
-    light: "#fbbf24",
-    dark: "#d97706",
-    contrastText: "#ffffff",
+    main: '#f59e0b',
+    light: '#fbbf24',
+    dark: '#d97706',
+    contrastText: '#ffffff',
   },
   error: {
-    main: "#ef4444",
-    light: "#f87171",
-    dark: "#dc2626",
-    contrastText: "#ffffff",
+    main: '#ef4444',
+    light: '#f87171',
+    dark: '#dc2626',
+    contrastText: '#ffffff',
   },
   info: {
-    main: "#06b6d4",
-    light: "#22d3ee",
-    dark: "#0891b2",
-    contrastText: "#ffffff",
+    main: '#06b6d4',
+    light: '#22d3ee',
+    dark: '#0891b2',
+    contrastText: '#ffffff',
   },
 };
 
@@ -47,17 +47,18 @@ const getDesignTokens = (mode: PaletteMode) => ({
     mode,
     ...colors,
     background: {
-      default: mode === "light" ? "#f8fafc" : "#0f172a",
-      paper: mode === "light" ? "#ffffff" : "#1e293b",
+      default: mode === 'light' ? '#f8fafc' : '#0f172a',
+      paper: mode === 'light' ? '#ffffff' : '#1e293b',
     },
     text: {
-      primary: mode === "light" ? "#0f172a" : "#f1f5f9",
-      secondary: mode === "light" ? "#475569" : "#94a3b8",
+      primary: mode === 'light' ? '#0f172a' : '#f1f5f9',
+      secondary: mode === 'light' ? '#475569' : '#94a3b8',
     },
-    divider: mode === "light" ? "#e2e8f0" : "#334155",
+    divider: mode === 'light' ? '#e2e8f0' : '#334155',
     action: {
-      hover: mode === "light" ? alpha("#2563eb", 0.04) : alpha("#3b82f6", 0.08),
-      selected: mode === "light" ? alpha("#2563eb", 0.08) : alpha("#3b82f6", 0.16),
+      hover: mode === 'light' ? alpha('#2563eb', 0.04) : alpha('#3b82f6', 0.08),
+      selected:
+        mode === 'light' ? alpha('#2563eb', 0.08) : alpha('#3b82f6', 0.16),
     },
   },
 });
@@ -69,48 +70,48 @@ export const getTheme = (mode: PaletteMode) =>
     typography: {
       fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
       h1: {
-        fontSize: "clamp(1.875rem, 4vw, 2.5rem)",
+        fontSize: 'clamp(1.875rem, 4vw, 2.5rem)',
         fontWeight: 700,
-        letterSpacing: "-0.02em",
+        letterSpacing: '-0.02em',
         lineHeight: 1.2,
       },
       h2: {
-        fontSize: "clamp(1.5rem, 3vw, 2rem)",
+        fontSize: 'clamp(1.5rem, 3vw, 2rem)',
         fontWeight: 700,
-        letterSpacing: "-0.01em",
+        letterSpacing: '-0.01em',
         lineHeight: 1.3,
       },
       h3: {
-        fontSize: "clamp(1.25rem, 2.5vw, 1.75rem)",
+        fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
         fontWeight: 600,
-        letterSpacing: "-0.01em",
+        letterSpacing: '-0.01em',
         lineHeight: 1.3,
       },
       h4: {
-        fontSize: "clamp(1.125rem, 2vw, 1.5rem)",
+        fontSize: 'clamp(1.125rem, 2vw, 1.5rem)',
         fontWeight: 600,
         lineHeight: 1.4,
       },
       h5: {
-        fontSize: "clamp(1rem, 1.5vw, 1.25rem)",
+        fontSize: 'clamp(1rem, 1.5vw, 1.25rem)',
         fontWeight: 600,
         lineHeight: 1.4,
       },
       h6: {
-        fontSize: "clamp(0.875rem, 1.25vw, 1rem)",
+        fontSize: 'clamp(0.875rem, 1.25vw, 1rem)',
         fontWeight: 600,
         lineHeight: 1.5,
       },
       body1: {
-        fontSize: "0.9375rem",
+        fontSize: '0.9375rem',
         lineHeight: 1.6,
       },
       body2: {
-        fontSize: "0.875rem",
+        fontSize: '0.875rem',
         lineHeight: 1.5,
       },
       button: {
-        textTransform: "none" as const,
+        textTransform: 'none' as const,
         fontWeight: 500,
       },
     },
@@ -118,14 +119,14 @@ export const getTheme = (mode: PaletteMode) =>
       borderRadius: 10,
     },
     shadows: [
-      "none",
-      "0 1px 2px 0 rgb(0 0 0 / 0.05)",
-      "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
-      "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
-      "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
-      "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
-      "0 25px 50px -12px rgb(0 0 0 / 0.25)",
-      ...Array(18).fill("0 25px 50px -12px rgb(0 0 0 / 0.25)"),
+      'none',
+      '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+      '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+      '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+      '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+      '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+      '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+      ...Array(18).fill('0 25px 50px -12px rgb(0 0 0 / 0.25)'),
     ] as any,
     transitions: {
       duration: {
@@ -138,30 +139,30 @@ export const getTheme = (mode: PaletteMode) =>
         leavingScreen: 195,
       },
       easing: {
-        easeInOut: "cubic-bezier(0.4, 0, 0.2, 1)",
-        easeOut: "cubic-bezier(0.0, 0, 0.2, 1)",
-        easeIn: "cubic-bezier(0.4, 0, 1, 1)",
-        sharp: "cubic-bezier(0.4, 0, 0.6, 1)",
+        easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        easeOut: 'cubic-bezier(0.0, 0, 0.2, 1)',
+        easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
+        sharp: 'cubic-bezier(0.4, 0, 0.6, 1)',
       },
     },
     components: {
       MuiCssBaseline: {
         styleOverrides: {
           body: {
-            scrollbarWidth: "thin",
-            "&::-webkit-scrollbar": {
-              width: "8px",
-              height: "8px",
+            scrollbarWidth: 'thin',
+            '&::-webkit-scrollbar': {
+              width: '8px',
+              height: '8px',
             },
-            "&::-webkit-scrollbar-track": {
-              background: "transparent",
+            '&::-webkit-scrollbar-track': {
+              background: 'transparent',
             },
-            "&::-webkit-scrollbar-thumb": {
-              background: mode === "light" ? "#cbd5e1" : "#475569",
-              borderRadius: "4px",
+            '&::-webkit-scrollbar-thumb': {
+              background: mode === 'light' ? '#cbd5e1' : '#475569',
+              borderRadius: '4px',
             },
-            "&::-webkit-scrollbar-thumb:hover": {
-              background: mode === "light" ? "#94a3b8" : "#64748b",
+            '&::-webkit-scrollbar-thumb:hover': {
+              background: mode === 'light' ? '#94a3b8' : '#64748b',
             },
           },
         },
@@ -173,26 +174,27 @@ export const getTheme = (mode: PaletteMode) =>
         styleOverrides: {
           root: {
             borderRadius: 8,
-            padding: "8px 16px",
+            padding: '8px 16px',
             fontWeight: 500,
-            transition: "all 0.2s ease-in-out",
-            "&:hover": {
-              transform: "translateY(-1px)",
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              transform: 'translateY(-1px)',
             },
-            "&:active": {
-              transform: "translateY(0)",
+            '&:active': {
+              transform: 'translateY(0)',
             },
           },
           contained: {
-            boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
-            "&:hover": {
-              boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+            boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+            '&:hover': {
+              boxShadow:
+                '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
             },
           },
           outlined: {
-            borderWidth: "1.5px",
-            "&:hover": {
-              borderWidth: "1.5px",
+            borderWidth: '1.5px',
+            '&:hover': {
+              borderWidth: '1.5px',
             },
           },
         },
@@ -204,11 +206,11 @@ export const getTheme = (mode: PaletteMode) =>
         styleOverrides: {
           root: {
             borderRadius: 12,
-            border: `1px solid ${mode === "light" ? "#e2e8f0" : "#334155"}`,
-            backgroundImage: "none",
-            transition: "all 0.2s ease-in-out",
-            "&:hover": {
-              borderColor: mode === "light" ? "#cbd5e1" : "#475569",
+            border: `1px solid ${mode === 'light' ? '#e2e8f0' : '#334155'}`,
+            backgroundImage: 'none',
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              borderColor: mode === 'light' ? '#cbd5e1' : '#475569',
             },
           },
         },
@@ -219,28 +221,28 @@ export const getTheme = (mode: PaletteMode) =>
         },
         styleOverrides: {
           root: {
-            backgroundImage: "none",
+            backgroundImage: 'none',
             borderRadius: 12,
           },
           outlined: {
-            borderColor: mode === "light" ? "#e2e8f0" : "#334155",
+            borderColor: mode === 'light' ? '#e2e8f0' : '#334155',
           },
         },
       },
       MuiTextField: {
         defaultProps: {
-          size: "small",
+          size: 'small',
         },
         styleOverrides: {
           root: {
-            "& .MuiOutlinedInput-root": {
+            '& .MuiOutlinedInput-root': {
               borderRadius: 8,
-              transition: "all 0.2s ease-in-out",
-              "&:hover .MuiOutlinedInput-notchedOutline": {
+              transition: 'all 0.2s ease-in-out',
+              '&:hover .MuiOutlinedInput-notchedOutline': {
                 borderColor: colors.primary.main,
               },
-              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                borderWidth: "2px",
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderWidth: '2px',
               },
             },
           },
@@ -252,8 +254,8 @@ export const getTheme = (mode: PaletteMode) =>
             borderRadius: 8,
           },
           notchedOutline: {
-            borderColor: mode === "light" ? "#e2e8f0" : "#334155",
-            transition: "border-color 0.2s ease-in-out",
+            borderColor: mode === 'light' ? '#e2e8f0' : '#334155',
+            transition: 'border-color 0.2s ease-in-out',
           },
         },
       },
@@ -261,30 +263,30 @@ export const getTheme = (mode: PaletteMode) =>
         styleOverrides: {
           paper: {
             borderRadius: 16,
-            boxShadow: "0 25px 50px -12px rgb(0 0 0 / 0.25)",
+            boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
           },
         },
       },
       MuiDialogTitle: {
         styleOverrides: {
           root: {
-            fontSize: "1.25rem",
+            fontSize: '1.25rem',
             fontWeight: 600,
-            padding: "20px 24px 16px",
+            padding: '20px 24px 16px',
           },
         },
       },
       MuiDialogContent: {
         styleOverrides: {
           root: {
-            padding: "16px 24px",
+            padding: '16px 24px',
           },
         },
       },
       MuiDialogActions: {
         styleOverrides: {
           root: {
-            padding: "16px 24px 20px",
+            padding: '16px 24px 20px',
             gap: 8,
           },
         },
@@ -292,11 +294,11 @@ export const getTheme = (mode: PaletteMode) =>
       MuiTableHead: {
         styleOverrides: {
           root: {
-            "& .MuiTableCell-head": {
-              backgroundColor: mode === "light" ? "#f8fafc" : "#1e293b",
+            '& .MuiTableCell-head': {
+              backgroundColor: mode === 'light' ? '#f8fafc' : '#1e293b',
               fontWeight: 600,
-              color: mode === "light" ? "#475569" : "#94a3b8",
-              borderBottom: `1px solid ${mode === "light" ? "#e2e8f0" : "#334155"}`,
+              color: mode === 'light' ? '#475569' : '#94a3b8',
+              borderBottom: `1px solid ${mode === 'light' ? '#e2e8f0' : '#334155'}`,
             },
           },
         },
@@ -304,9 +306,10 @@ export const getTheme = (mode: PaletteMode) =>
       MuiTableRow: {
         styleOverrides: {
           root: {
-            transition: "background-color 0.15s ease-in-out",
-            "&:hover": {
-              backgroundColor: mode === "light" ? "#f8fafc" : alpha("#3b82f6", 0.04),
+            transition: 'background-color 0.15s ease-in-out',
+            '&:hover': {
+              backgroundColor:
+                mode === 'light' ? '#f8fafc' : alpha('#3b82f6', 0.04),
             },
           },
         },
@@ -314,8 +317,8 @@ export const getTheme = (mode: PaletteMode) =>
       MuiTableCell: {
         styleOverrides: {
           root: {
-            borderBottom: `1px solid ${mode === "light" ? "#f1f5f9" : "#1e293b"}`,
-            padding: "12px 16px",
+            borderBottom: `1px solid ${mode === 'light' ? '#f1f5f9' : '#1e293b'}`,
+            padding: '12px 16px',
           },
         },
       },
@@ -326,19 +329,19 @@ export const getTheme = (mode: PaletteMode) =>
             borderRadius: 6,
           },
           filled: {
-            "&.MuiChip-colorSuccess": {
+            '&.MuiChip-colorSuccess': {
               backgroundColor: alpha(colors.success.main, 0.1),
               color: colors.success.dark,
             },
-            "&.MuiChip-colorError": {
+            '&.MuiChip-colorError': {
               backgroundColor: alpha(colors.error.main, 0.1),
               color: colors.error.dark,
             },
-            "&.MuiChip-colorWarning": {
+            '&.MuiChip-colorWarning': {
               backgroundColor: alpha(colors.warning.main, 0.1),
               color: colors.warning.dark,
             },
-            "&.MuiChip-colorInfo": {
+            '&.MuiChip-colorInfo': {
               backgroundColor: alpha(colors.info.main, 0.1),
               color: colors.info.dark,
             },
@@ -348,12 +351,12 @@ export const getTheme = (mode: PaletteMode) =>
       MuiTooltip: {
         styleOverrides: {
           tooltip: {
-            backgroundColor: mode === "light" ? "#1e293b" : "#f1f5f9",
-            color: mode === "light" ? "#f1f5f9" : "#1e293b",
-            fontSize: "0.75rem",
+            backgroundColor: mode === 'light' ? '#1e293b' : '#f1f5f9',
+            color: mode === 'light' ? '#f1f5f9' : '#1e293b',
+            fontSize: '0.75rem',
             fontWeight: 500,
             borderRadius: 6,
-            padding: "6px 10px",
+            padding: '6px 10px',
           },
         },
       },
@@ -384,16 +387,16 @@ export const getTheme = (mode: PaletteMode) =>
         styleOverrides: {
           root: {
             borderRadius: 8,
-            margin: "2px 8px",
-            transition: "all 0.15s ease-in-out",
-            "&.Mui-selected": {
+            margin: '2px 8px',
+            transition: 'all 0.15s ease-in-out',
+            '&.Mui-selected': {
               backgroundColor: colors.primary.main,
-              color: "#ffffff",
-              "&:hover": {
+              color: '#ffffff',
+              '&:hover': {
                 backgroundColor: colors.primary.dark,
               },
-              "& .MuiListItemIcon-root": {
-                color: "#ffffff",
+              '& .MuiListItemIcon-root': {
+                color: '#ffffff',
               },
             },
           },
@@ -402,16 +405,16 @@ export const getTheme = (mode: PaletteMode) =>
       MuiDrawer: {
         styleOverrides: {
           paper: {
-            borderRight: `1px solid ${mode === "light" ? "#e2e8f0" : "#334155"}`,
+            borderRight: `1px solid ${mode === 'light' ? '#e2e8f0' : '#334155'}`,
           },
         },
       },
       MuiAppBar: {
         styleOverrides: {
           root: {
-            backgroundColor: mode === "light" ? "#ffffff" : "#1e293b",
-            color: mode === "light" ? "#0f172a" : "#f1f5f9",
-            boxShadow: "none",
+            backgroundColor: mode === 'light' ? '#ffffff' : '#1e293b',
+            color: mode === 'light' ? '#0f172a' : '#f1f5f9',
+            boxShadow: 'none',
           },
         },
       },
@@ -419,7 +422,7 @@ export const getTheme = (mode: PaletteMode) =>
         styleOverrides: {
           root: {
             borderRadius: 8,
-            transition: "all 0.15s ease-in-out",
+            transition: 'all 0.15s ease-in-out',
           },
         },
       },
@@ -434,8 +437,9 @@ export const getTheme = (mode: PaletteMode) =>
         styleOverrides: {
           paper: {
             borderRadius: 10,
-            boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
-            border: `1px solid ${mode === "light" ? "#e2e8f0" : "#334155"}`,
+            boxShadow:
+              '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+            border: `1px solid ${mode === 'light' ? '#e2e8f0' : '#334155'}`,
           },
         },
       },
@@ -443,10 +447,11 @@ export const getTheme = (mode: PaletteMode) =>
         styleOverrides: {
           root: {
             borderRadius: 6,
-            margin: "2px 6px",
-            padding: "8px 12px",
-            "&:hover": {
-              backgroundColor: mode === "light" ? "#f1f5f9" : alpha("#3b82f6", 0.08),
+            margin: '2px 6px',
+            padding: '8px 12px',
+            '&:hover': {
+              backgroundColor:
+                mode === 'light' ? '#f1f5f9' : alpha('#3b82f6', 0.08),
             },
           },
         },
@@ -454,14 +459,14 @@ export const getTheme = (mode: PaletteMode) =>
       MuiDivider: {
         styleOverrides: {
           root: {
-            borderColor: mode === "light" ? "#e2e8f0" : "#334155",
+            borderColor: mode === 'light' ? '#e2e8f0' : '#334155',
           },
         },
       },
       MuiSkeleton: {
         styleOverrides: {
           root: {
-            backgroundColor: mode === "light" ? "#e2e8f0" : "#334155",
+            backgroundColor: mode === 'light' ? '#e2e8f0' : '#334155',
           },
         },
       },
@@ -469,7 +474,7 @@ export const getTheme = (mode: PaletteMode) =>
         styleOverrides: {
           root: {
             borderRadius: 4,
-            backgroundColor: mode === "light" ? "#e2e8f0" : "#334155",
+            backgroundColor: mode === 'light' ? '#e2e8f0' : '#334155',
           },
         },
       },
@@ -492,7 +497,7 @@ export const getTheme = (mode: PaletteMode) =>
       MuiTab: {
         styleOverrides: {
           root: {
-            textTransform: "none",
+            textTransform: 'none',
             fontWeight: 500,
             minHeight: 48,
           },
@@ -502,12 +507,12 @@ export const getTheme = (mode: PaletteMode) =>
         styleOverrides: {
           root: {
             borderRadius: 8,
-            textTransform: "none",
+            textTransform: 'none',
             fontWeight: 500,
-            "&.Mui-selected": {
+            '&.Mui-selected': {
               backgroundColor: colors.primary.main,
-              color: "#ffffff",
-              "&:hover": {
+              color: '#ffffff',
+              '&:hover': {
                 backgroundColor: colors.primary.dark,
               },
             },
@@ -517,15 +522,15 @@ export const getTheme = (mode: PaletteMode) =>
       MuiToggleButtonGroup: {
         styleOverrides: {
           root: {
-            backgroundColor: mode === "light" ? "#f1f5f9" : "#1e293b",
+            backgroundColor: mode === 'light' ? '#f1f5f9' : '#1e293b',
             padding: 4,
             borderRadius: 10,
             gap: 4,
           },
           grouped: {
-            border: "none",
-            borderRadius: "6px !important",
-            "&:not(:first-of-type)": {
+            border: 'none',
+            borderRadius: '6px !important',
+            '&:not(:first-of-type)': {
               marginLeft: 0,
             },
           },
@@ -534,7 +539,7 @@ export const getTheme = (mode: PaletteMode) =>
       MuiTablePagination: {
         styleOverrides: {
           root: {
-            borderTop: `1px solid ${mode === "light" ? "#e2e8f0" : "#334155"}`,
+            borderTop: `1px solid ${mode === 'light' ? '#e2e8f0' : '#334155'}`,
           },
           selectLabel: {
             marginBottom: 0,
@@ -548,4 +553,4 @@ export const getTheme = (mode: PaletteMode) =>
   });
 
 // Default light theme for backward compatibility
-export const theme = getTheme("light");
+export const theme = getTheme('light');

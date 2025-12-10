@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import {
   Box,
   Card,
@@ -14,28 +14,28 @@ import {
   InputAdornment,
   IconButton,
   CircularProgress,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Visibility,
   VisibilityOff,
   Login as LoginIcon,
-} from "@mui/icons-material";
-import { api } from "@/lib/api";
-import { useAuthStore } from "@/lib/stores/authStore";
+} from '@mui/icons-material';
+import { api } from '@/lib/api';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 const loginSchema = z.object({
-  email: z.string().email("Email inválido"),
-  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
+  email: z.string().email('Email inválido'),
+  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const setAuth = useAuthStore(state => state.setAuth);
 
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const {
@@ -48,15 +48,15 @@ export function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     setLoading(true);
-    setError("");
+    setError('');
 
     try {
-      const response = await api.post("/auth/login", data);
+      const response = await api.post('/auth/login', data);
       const { accessToken, refreshToken, user } = response.data;
       setAuth(user, accessToken, refreshToken);
-      navigate("/dashboard");
+      navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || "Erro ao fazer login");
+      setError(err.response?.data?.message || 'Erro ao fazer login');
     } finally {
       setLoading(false);
     }
@@ -65,17 +65,17 @@ export function LoginPage() {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        bgcolor: "background.default",
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        bgcolor: 'background.default',
         p: 2,
       }}
     >
-      <Card sx={{ maxWidth: 400, width: "100%" }}>
+      <Card sx={{ maxWidth: 400, width: '100%' }}>
         <CardContent sx={{ p: 4 }}>
-          <Box sx={{ textAlign: "center", mb: 4 }}>
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Typography
               variant="h4"
               component="h1"
@@ -101,7 +101,7 @@ export function LoginPage() {
               label="Email"
               type="email"
               margin="normal"
-              {...register("email")}
+              {...register('email')}
               error={!!errors.email}
               helperText={errors.email?.message}
               autoComplete="email"
@@ -111,9 +111,9 @@ export function LoginPage() {
             <TextField
               fullWidth
               label="Senha"
-              type={showPassword ? "text" : "password"}
+              type={showPassword ? 'text' : 'password'}
               margin="normal"
-              {...register("password")}
+              {...register('password')}
               error={!!errors.password}
               helperText={errors.password?.message}
               autoComplete="current-password"
@@ -146,11 +146,11 @@ export function LoginPage() {
                 )
               }
             >
-              {loading ? "Entrando..." : "Entrar"}
+              {loading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
 
-          <Box sx={{ mt: 3, textAlign: "center" }}>
+          <Box sx={{ mt: 3, textAlign: 'center' }}>
             <Typography variant="caption" color="text.secondary">
               Demo: admin@paytrack.com / admin123
             </Typography>

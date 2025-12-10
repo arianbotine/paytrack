@@ -4,8 +4,8 @@ import {
   Typography,
   Box,
   alpha,
-} from "@mui/material";
-import { motion, AnimatePresence } from "framer-motion";
+} from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface LoadingOverlayProps {
   open: boolean;
@@ -19,22 +19,22 @@ export function LoadingOverlay({ open, message }: LoadingOverlayProps) {
         <Backdrop
           open={open}
           sx={{
-            zIndex: (theme) => theme.zIndex.drawer + 1,
-            bgcolor: (theme) => alpha(theme.palette.background.default, 0.8),
-            backdropFilter: "blur(4px)",
+            zIndex: theme => theme.zIndex.drawer + 1,
+            bgcolor: theme => alpha(theme.palette.background.default, 0.8),
+            backdropFilter: 'blur(4px)',
           }}
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           >
             <Box
               sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
                 gap: 2,
               }}
             >
@@ -61,9 +61,9 @@ export function InlineLoading({ size = 24, message }: InlineLoadingProps) {
   return (
     <Box
       sx={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         gap: 2,
         py: 4,
       }}

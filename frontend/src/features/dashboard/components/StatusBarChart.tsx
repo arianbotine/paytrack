@@ -1,5 +1,5 @@
-import React from "react";
-import { Box, Card, CardContent, Typography, useTheme } from "@mui/material";
+import React from 'react';
+import { Box, Card, CardContent, Typography, useTheme } from '@mui/material';
 import {
   BarChart,
   Bar,
@@ -8,8 +8,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from "recharts";
-import { motion } from "framer-motion";
+} from 'recharts';
+import { motion } from 'framer-motion';
 
 interface StatusData {
   name: string;
@@ -25,10 +25,10 @@ interface StatusBarChartProps {
 }
 
 const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    notation: "compact",
+  new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    notation: 'compact',
     maximumFractionDigits: 1,
   }).format(value);
 
@@ -37,12 +37,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return (
       <Box
         sx={{
-          bgcolor: "background.paper",
+          bgcolor: 'background.paper',
           p: 1.5,
           borderRadius: 1,
           boxShadow: 2,
-          border: "1px solid",
-          borderColor: "divider",
+          border: '1px solid',
+          borderColor: 'divider',
         }}
       >
         <Typography variant="subtitle2" fontWeight="bold">
@@ -62,14 +62,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export const StatusBarChart: React.FC<StatusBarChartProps> = ({
   payableData,
   receivableData,
-  title = "Status das Contas",
+  title = 'Status das Contas',
   isLoading,
 }) => {
   const theme = useTheme();
-  const isDarkMode = theme.palette.mode === "dark";
+  const isDarkMode = theme.palette.mode === 'dark';
 
   const colors = {
-    grid: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+    grid: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
     text: theme.palette.text.secondary,
     pending: theme.palette.warning.main,
     overdue: theme.palette.error.main,
@@ -80,19 +80,19 @@ export const StatusBarChart: React.FC<StatusBarChartProps> = ({
   // Combine data for horizontal comparison
   const combinedData = [
     {
-      name: "Pendente",
-      payable: payableData.find((d) => d.name === "PENDING")?.value || 0,
-      receivable: receivableData.find((d) => d.name === "PENDING")?.value || 0,
+      name: 'Pendente',
+      payable: payableData.find(d => d.name === 'PENDING')?.value || 0,
+      receivable: receivableData.find(d => d.name === 'PENDING')?.value || 0,
     },
     {
-      name: "Vencido",
-      payable: payableData.find((d) => d.name === "OVERDUE")?.value || 0,
-      receivable: receivableData.find((d) => d.name === "OVERDUE")?.value || 0,
+      name: 'Vencido',
+      payable: payableData.find(d => d.name === 'OVERDUE')?.value || 0,
+      receivable: receivableData.find(d => d.name === 'OVERDUE')?.value || 0,
     },
     {
-      name: "Parcial",
-      payable: payableData.find((d) => d.name === "PARTIAL")?.value || 0,
-      receivable: receivableData.find((d) => d.name === "PARTIAL")?.value || 0,
+      name: 'Parcial',
+      payable: payableData.find(d => d.name === 'PARTIAL')?.value || 0,
+      receivable: receivableData.find(d => d.name === 'PARTIAL')?.value || 0,
     },
   ];
 
@@ -102,7 +102,7 @@ export const StatusBarChart: React.FC<StatusBarChartProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.4 }}
     >
-      <Card sx={{ height: "100%" }}>
+      <Card sx={{ height: '100%' }}>
         <CardContent>
           <Typography variant="h6" fontWeight="bold" gutterBottom>
             {title}
@@ -115,9 +115,9 @@ export const StatusBarChart: React.FC<StatusBarChartProps> = ({
             <Box
               sx={{
                 height: 250,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               <Typography color="text.secondary">Carregando...</Typography>
@@ -172,32 +172,32 @@ export const StatusBarChart: React.FC<StatusBarChartProps> = ({
           {/* Legend */}
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "center",
+              display: 'flex',
+              justifyContent: 'center',
               gap: 3,
               mt: 1,
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <Box
                 sx={{
                   width: 12,
                   height: 12,
                   borderRadius: 0.5,
-                  bgcolor: "success.main",
+                  bgcolor: 'success.main',
                 }}
               />
               <Typography variant="caption" color="text.secondary">
                 A Receber
               </Typography>
             </Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <Box
                 sx={{
                   width: 12,
                   height: 12,
                   borderRadius: 0.5,
-                  bgcolor: "error.main",
+                  bgcolor: 'error.main',
                 }}
               />
               <Typography variant="caption" color="text.secondary">

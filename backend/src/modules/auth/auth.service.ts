@@ -1,11 +1,11 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
-import { ConfigService } from "@nestjs/config";
-import * as bcrypt from "bcryptjs";
-import { Prisma, User } from "@prisma/client";
-import { PrismaService } from "../../infrastructure/database/prisma.service";
-import { LoginDto, AuthResponseDto } from "./dto/auth.dto";
-import { JwtPayload } from "../../shared/decorators/current-user.decorator";
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcryptjs';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../infrastructure/database/prisma.service';
+import { LoginDto, AuthResponseDto } from './dto/auth.dto';
+import { JwtPayload } from '../../shared/decorators/current-user.decorator';
 
 type UserWithOrganization = Prisma.UserGetPayload<{
   include: { organization: true };
@@ -29,17 +29,17 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException("Credenciais inválidas");
+      throw new UnauthorizedException('Credenciais inválidas');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException("Credenciais inválidas");
+      throw new UnauthorizedException('Credenciais inválidas');
     }
 
     if (!user.organization.isActive) {
-      throw new UnauthorizedException("Organização inativa");
+      throw new UnauthorizedException('Organização inativa');
     }
 
     const tokens = await this.generateTokens(user);
@@ -61,7 +61,7 @@ export class AuthService {
     const payload = await this.jwtService.verifyAsync<JwtPayload>(
       refreshToken,
       {
-        secret: this.configService.get<string>("JWT_REFRESH_SECRET"),
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       }
     );
 
@@ -71,7 +71,7 @@ export class AuthService {
     });
 
     if (!user || !user.isActive || !user.organization.isActive) {
-      throw new UnauthorizedException("Token inválido");
+      throw new UnauthorizedException('Token inválido');
     }
 
     const tokens = await this.generateTokens(user);
@@ -96,7 +96,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException("Usuário não encontrado");
+      throw new UnauthorizedException('Usuário não encontrado');
     }
 
     return {
@@ -119,14 +119,14 @@ export class AuthService {
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>("JWT_SECRET"),
-        expiresIn: this.configService.get<string>("JWT_EXPIRES_IN", "15m"),
+        secret: this.configService.get<string>('JWT_SECRET'),
+        expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '15m'),
       }),
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>("JWT_REFRESH_SECRET"),
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
         expiresIn: this.configService.get<string>(
-          "JWT_REFRESH_EXPIRES_IN",
-          "7d"
+          'JWT_REFRESH_EXPIRES_IN',
+          '7d'
         ),
       }),
     ]);

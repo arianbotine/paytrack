@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { PrismaService } from "../../infrastructure/database/prisma.service";
-import { CreateCustomerDto, UpdateCustomerDto } from "./dto/customer.dto";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../infrastructure/database/prisma.service';
+import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
 
 @Injectable()
 export class CustomersService {
@@ -12,7 +12,7 @@ export class CustomersService {
         organizationId,
         ...(includeInactive ? {} : { isActive: true }),
       },
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
     });
   }
 
@@ -22,7 +22,7 @@ export class CustomersService {
     });
 
     if (!customer) {
-      throw new NotFoundException("Cliente não encontrado");
+      throw new NotFoundException('Cliente não encontrado');
     }
 
     return customer;
@@ -40,7 +40,7 @@ export class CustomersService {
   async update(
     id: string,
     organizationId: string,
-    updateDto: UpdateCustomerDto,
+    updateDto: UpdateCustomerDto
   ) {
     await this.findOne(id, organizationId);
 

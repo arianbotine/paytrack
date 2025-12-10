@@ -2,6 +2,21 @@
 
 Sistema completo para gestão de contas a pagar e receber com arquitetura multi-tenant.
 
+## ✨ Funcionalidades
+
+- ✅ **Formatação automática** de código ao salvar
+- ✅ **Linting** integrado com correção automática
+- ✅ **TypeScript** com tipagem rigorosa
+- ✅ **Arquitetura multi-tenant** com isolamento por organização
+- ✅ **API REST** completa com documentação Swagger
+- ✅ **Frontend React** moderno com Material-UI
+- ✅ **Banco PostgreSQL** com Prisma ORM
+- ✅ **Autenticação JWT** com refresh tokens
+- ✅ **Controle de permissões** baseado em roles
+- ✅ **Gestão completa** de contas a pagar/receber
+- ✅ **Sistema de pagamentos** com allocations
+- ✅ **Dashboard** com métricas e relatórios
+
 ## 🚀 Início Rápido
 
 ### Pré-requisitos
@@ -129,6 +144,45 @@ make clean           # Limpar containers e volumes
 # === Ajuda ===
 make help            # Lista todos os comandos
 ```
+
+## 💻 Desenvolvimento
+
+### Formatação Automática de Código
+
+O projeto está configurado para **formatar automaticamente** o código ao salvar arquivos:
+
+- **Prettier**: Formatação consistente (aspas simples, ponto e vírgula, indentação)
+- **ESLint**: Linting com correção automática
+- **EditorConfig**: Padronização básica de editor
+
+#### Como Funciona
+
+1. **Ao salvar** um arquivo (Ctrl/Cmd + S), o VS Code automaticamente:
+
+   - Formata o código com Prettier
+   - Corrige problemas simples de ESLint
+   - Adiciona ponto e vírgula quando necessário
+
+2. **Comandos manuais**:
+
+   ```bash
+   # Backend - Formatar código
+   cd backend && npm run format
+
+   # Backend - Verificar/corrigir linting
+   cd backend && npm run lint -- --fix
+
+   # Frontend - Verificar/corrigir linting
+   cd frontend && npm run lint -- --fix
+   ```
+
+#### Extensões Recomendadas do VS Code
+
+- **Prettier** (`esbenp.prettier-vscode`)
+- **ESLint** (`dbaeumer.vscode-eslint`)
+- **EditorConfig** (`editorconfig.editorconfig`)
+
+Para mais detalhes, consulte [`FORMATTING.md`](FORMATTING.md).
 
 ## ⚙️ Variáveis de Ambiente
 

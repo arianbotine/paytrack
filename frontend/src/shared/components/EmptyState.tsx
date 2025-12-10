@@ -1,15 +1,15 @@
-import { ReactNode } from "react";
-import { Box, Typography, Button, alpha } from "@mui/material";
+import { ReactNode } from 'react';
+import { Box, Typography, Button, alpha } from '@mui/material';
 import {
   Inbox as InboxIcon,
   SearchOff as SearchOffIcon,
   Error as ErrorIcon,
   CloudOff as CloudOffIcon,
   Add as AddIcon,
-} from "@mui/icons-material";
-import { motion } from "framer-motion";
+} from '@mui/icons-material';
+import { motion } from 'framer-motion';
 
-type EmptyStateVariant = "empty" | "no-results" | "error" | "offline";
+type EmptyStateVariant = 'empty' | 'no-results' | 'error' | 'offline';
 
 interface EmptyStateProps {
   variant?: EmptyStateVariant;
@@ -22,20 +22,20 @@ interface EmptyStateProps {
 
 const variantIcons: Record<EmptyStateVariant, ReactNode> = {
   empty: <InboxIcon sx={{ fontSize: 64 }} />,
-  "no-results": <SearchOffIcon sx={{ fontSize: 64 }} />,
+  'no-results': <SearchOffIcon sx={{ fontSize: 64 }} />,
   error: <ErrorIcon sx={{ fontSize: 64 }} />,
   offline: <CloudOffIcon sx={{ fontSize: 64 }} />,
 };
 
 const variantColors: Record<EmptyStateVariant, string> = {
-  empty: "primary.main",
-  "no-results": "warning.main",
-  error: "error.main",
-  offline: "text.secondary",
+  empty: 'primary.main',
+  'no-results': 'warning.main',
+  error: 'error.main',
+  offline: 'text.secondary',
 };
 
 export function EmptyState({
-  variant = "empty",
+  variant = 'empty',
   title,
   description,
   actionLabel,
@@ -49,28 +49,28 @@ export function EmptyState({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
     >
       <Box
         sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
           py: 8,
           px: 3,
         }}
       >
         <Box
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             width: 120,
             height: 120,
-            borderRadius: "50%",
-            bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+            borderRadius: '50%',
+            bgcolor: theme => alpha(theme.palette.primary.main, 0.08),
             color: iconColor,
             mb: 3,
           }}

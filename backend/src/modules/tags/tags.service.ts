@@ -2,9 +2,9 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
-} from "@nestjs/common";
-import { PrismaService } from "../../infrastructure/database/prisma.service";
-import { CreateTagDto, UpdateTagDto } from "./dto/tag.dto";
+} from '@nestjs/common';
+import { PrismaService } from '../../infrastructure/database/prisma.service';
+import { CreateTagDto, UpdateTagDto } from './dto/tag.dto';
 
 @Injectable()
 export class TagsService {
@@ -13,7 +13,7 @@ export class TagsService {
   async findAll(organizationId: string) {
     return this.prisma.tag.findMany({
       where: { organizationId },
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
     });
   }
 
@@ -23,7 +23,7 @@ export class TagsService {
     });
 
     if (!tag) {
-      throw new NotFoundException("Tag não encontrada");
+      throw new NotFoundException('Tag não encontrada');
     }
 
     return tag;
@@ -35,7 +35,7 @@ export class TagsService {
     });
 
     if (existing) {
-      throw new ConflictException("Tag já existe com este nome");
+      throw new ConflictException('Tag já existe com este nome');
     }
 
     return this.prisma.tag.create({
@@ -59,7 +59,7 @@ export class TagsService {
       });
 
       if (existing) {
-        throw new ConflictException("Tag já existe com este nome");
+        throw new ConflictException('Tag já existe com este nome');
       }
     }
 

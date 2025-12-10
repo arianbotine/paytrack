@@ -1,9 +1,9 @@
-import { Component, ErrorInfo, ReactNode } from "react";
-import { Box, Typography, Button, Paper, alpha } from "@mui/material";
+import { Component, ErrorInfo, ReactNode } from 'react';
+import { Box, Typography, Button, Paper, alpha } from '@mui/material';
 import {
   ErrorOutline as ErrorIcon,
   Refresh as RefreshIcon,
-} from "@mui/icons-material";
+} from '@mui/icons-material';
 
 interface Props {
   children: ReactNode;
@@ -41,7 +41,7 @@ export class ErrorBoundary extends Component<Props, State> {
     });
 
     // Log error to an error reporting service
-    console.error("Error caught by boundary:", error, errorInfo);
+    console.error('Error caught by boundary:', error, errorInfo);
   }
 
   handleRetry = () => {
@@ -61,9 +61,9 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <Box
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             minHeight: 400,
             p: 3,
           }}
@@ -72,24 +72,24 @@ export class ErrorBoundary extends Component<Props, State> {
             elevation={0}
             sx={{
               maxWidth: 480,
-              width: "100%",
-              textAlign: "center",
+              width: '100%',
+              textAlign: 'center',
               p: 4,
               border: 1,
-              borderColor: "divider",
+              borderColor: 'divider',
             }}
           >
             <Box
               sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 width: 80,
                 height: 80,
-                borderRadius: "50%",
-                bgcolor: (theme) => alpha(theme.palette.error.main, 0.1),
-                color: "error.main",
-                mx: "auto",
+                borderRadius: '50%',
+                bgcolor: theme => alpha(theme.palette.error.main, 0.1),
+                color: 'error.main',
+                mx: 'auto',
                 mb: 3,
               }}
             >
@@ -111,10 +111,10 @@ export class ErrorBoundary extends Component<Props, State> {
                   mt: 2,
                   mb: 3,
                   p: 2,
-                  bgcolor: "grey.100",
+                  bgcolor: 'grey.100',
                   borderRadius: 1,
-                  textAlign: "left",
-                  overflow: "auto",
+                  textAlign: 'left',
+                  overflow: 'auto',
                   maxHeight: 200,
                 }}
               >
@@ -122,11 +122,11 @@ export class ErrorBoundary extends Component<Props, State> {
                   variant="caption"
                   component="pre"
                   sx={{
-                    fontFamily: "monospace",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
+                    fontFamily: 'monospace',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
                     m: 0,
-                    color: "error.dark",
+                    color: 'error.dark',
                   }}
                 >
                   {this.state.error.toString()}

@@ -1,7 +1,7 @@
-import { useMemo, ReactNode } from "react";
-import { ThemeProvider } from "@mui/material/styles";
-import { useUIStore } from "@/lib/stores/uiStore";
-import { getTheme } from "@/lib/theme";
+import { useMemo, ReactNode } from 'react';
+import { ThemeProvider } from '@mui/material/styles';
+import { useUIStore } from '@/lib/stores/uiStore';
+import { getTheme } from '@/lib/theme';
 
 interface ThemeWrapperProps {
   children: ReactNode;

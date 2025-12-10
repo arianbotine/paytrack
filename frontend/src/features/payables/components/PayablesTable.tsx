@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Box,
   Paper,
@@ -13,21 +13,21 @@ import {
   Tooltip,
   Typography,
   TablePagination,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Payment as PaymentIcon,
   Warning as WarningIcon,
   Error as ErrorIcon,
-} from "@mui/icons-material";
-import { format, parseISO, differenceInDays, isAfter } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { motion, AnimatePresence } from "framer-motion";
-import { StatusChip } from "../../../shared/components/StatusChip";
-import { TableSkeleton, EmptyState } from "../../../shared/components";
-import type { Payable } from "../types";
-import { formatCurrency } from "../types";
+} from '@mui/icons-material';
+import { format, parseISO, differenceInDays, isAfter } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { motion, AnimatePresence } from 'framer-motion';
+import { StatusChip } from '../../../shared/components/StatusChip';
+import { TableSkeleton, EmptyState } from '../../../shared/components';
+import type { Payable } from '../types';
+import { formatCurrency } from '../types';
 
 interface PayablesTableProps {
   payables: Payable[];
@@ -43,13 +43,13 @@ interface PayablesTableProps {
 }
 
 const getDueDateAlert = (dueDate: string, status: string) => {
-  if (status === "PAID" || status === "CANCELLED") return null;
+  if (status === 'PAID' || status === 'CANCELLED') return null;
 
   const today = new Date();
   const due = parseISO(dueDate);
   const daysUntilDue = differenceInDays(due, today);
 
-  if (status === "OVERDUE" || isAfter(today, due)) {
+  if (status === 'OVERDUE' || isAfter(today, due)) {
     return (
       <Tooltip title="Conta vencida!">
         <ErrorIcon color="error" fontSize="small" />
@@ -85,7 +85,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
   return (
     <TableContainer
       component={Paper}
-      sx={{ borderRadius: 2, overflow: "hidden" }}
+      sx={{ borderRadius: 2, overflow: 'hidden' }}
     >
       <Table>
         <TableHead>
@@ -127,8 +127,8 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                   <TableCell>
                     <Box
                       sx={{
-                        display: "flex",
-                        flexDirection: "column",
+                        display: 'flex',
+                        flexDirection: 'column',
                         gap: 0.5,
                       }}
                     >
@@ -142,7 +142,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                       )}
                       {payable.tags.length > 0 && (
                         <Box
-                          sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}
+                          sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}
                         >
                           {payable.tags.map(({ tag }) => (
                             <Chip
@@ -151,9 +151,9 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                               size="small"
                               sx={{
                                 height: 20,
-                                fontSize: "0.7rem",
-                                backgroundColor: tag.color || "#e0e0e0",
-                                color: "#fff",
+                                fontSize: '0.7rem',
+                                backgroundColor: tag.color || '#e0e0e0',
+                                color: '#fff',
                               }}
                             />
                           ))}
@@ -168,8 +168,8 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                         label={payable.category.name}
                         size="small"
                         sx={{
-                          backgroundColor: payable.category.color || "#e0e0e0",
-                          color: "#fff",
+                          backgroundColor: payable.category.color || '#e0e0e0',
+                          color: '#fff',
                         }}
                       />
                     )}
@@ -180,8 +180,8 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      {format(parseISO(payable.dueDate), "dd/MM/yyyy", {
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {format(parseISO(payable.dueDate), 'dd/MM/yyyy', {
                         locale: ptBR,
                       })}
                       {getDueDateAlert(payable.dueDate, payable.status)}
@@ -194,8 +194,8 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                     <Typography
                       color={
                         payable.paidAmount > 0
-                          ? "success.main"
-                          : "text.secondary"
+                          ? 'success.main'
+                          : 'text.secondary'
                       }
                     >
                       {formatCurrency(payable.paidAmount)}
@@ -204,42 +204,48 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                   <TableCell align="right">
                     <Box
                       sx={{
-                        display: "flex",
-                        justifyContent: "flex-end",
+                        display: 'flex',
+                        justifyContent: 'flex-end',
                         gap: 0.5,
                       }}
                     >
                       <Tooltip title="Registrar Pagamento">
-                        <IconButton
-                          size="small"
-                          color="success"
-                          disabled={
-                            payable.status === "PAID" ||
-                            payable.status === "CANCELLED"
-                          }
-                          onClick={() => onPayment(payable)}
-                        >
-                          <PaymentIcon />
-                        </IconButton>
+                        <span>
+                          <IconButton
+                            size="small"
+                            color="success"
+                            disabled={
+                              payable.status === 'PAID' ||
+                              payable.status === 'CANCELLED'
+                            }
+                            onClick={() => onPayment(payable)}
+                          >
+                            <PaymentIcon />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                       <Tooltip title="Editar">
-                        <IconButton
-                          size="small"
-                          onClick={() => onEdit(payable)}
-                          disabled={payable.status === "PAID"}
-                        >
-                          <EditIcon />
-                        </IconButton>
+                        <span>
+                          <IconButton
+                            size="small"
+                            onClick={() => onEdit(payable)}
+                            disabled={payable.status === 'PAID'}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                       <Tooltip title="Excluir">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => onDelete(payable)}
-                          disabled={payable.paidAmount > 0}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
+                        <span>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => onDelete(payable)}
+                            disabled={payable.paidAmount > 0}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                     </Box>
                   </TableCell>
@@ -255,7 +261,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
         page={page}
         onPageChange={(_, newPage) => onPageChange(newPage)}
         rowsPerPage={rowsPerPage}
-        onRowsPerPageChange={(e) => {
+        onRowsPerPageChange={e => {
           onRowsPerPageChange(parseInt(e.target.value, 10));
         }}
         labelRowsPerPage="Linhas por página"

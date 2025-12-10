@@ -1,22 +1,22 @@
-import React, { useState, useCallback } from "react";
-import { Box, Alert } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import { AnimatedPage } from "../../../shared/components";
-import { PageHeader } from "../../../shared/components/PageHeader";
-import { ConfirmDialog } from "../../../shared/components/ConfirmDialog";
+import React, { useState, useCallback } from 'react';
+import { Box, Alert } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { AnimatedPage } from '../../../shared/components';
+import { PageHeader } from '../../../shared/components/PageHeader';
+import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import {
   ReceivablesTable,
   ReceivableFormDialog,
   ReceivableFilters,
-} from "../components";
+} from '../components';
 import {
   useReceivables,
   useCustomers,
   useReceivableCategories,
   useTags,
   useReceivableOperations,
-} from "../hooks/useReceivables";
-import type { Receivable, ReceivableFormData } from "../types";
+} from '../hooks/useReceivables';
+import type { Receivable, ReceivableFormData } from '../types';
 
 export const ReceivablesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -24,8 +24,9 @@ export const ReceivablesPage: React.FC = () => {
   // State
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedReceivable, setSelectedReceivable] = useState<Receivable | null>(null);
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [selectedReceivable, setSelectedReceivable] =
+    useState<Receivable | null>(null);
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -112,7 +113,7 @@ export const ReceivablesPage: React.FC = () => {
         <PageHeader
           title="Contas a Receber"
           subtitle="Gerencie seus recebimentos"
-          action={{ label: "Nova Conta", onClick: () => handleOpenDialog() }}
+          action={{ label: 'Nova Conta', onClick: () => handleOpenDialog() }}
         />
 
         <ReceivableFilters

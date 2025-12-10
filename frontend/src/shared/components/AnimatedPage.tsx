@@ -1,6 +1,6 @@
-import { ReactNode } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useLocation } from "react-router-dom";
+import { ReactNode } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from 'react-router-dom';
 
 interface AnimatedPageProps {
   children: ReactNode;
@@ -22,8 +22,8 @@ const pageVariants = {
 };
 
 const pageTransition = {
-  type: "tween",
-  ease: "easeInOut",
+  type: 'tween',
+  ease: 'easeInOut',
   duration: 0.2,
 };
 
@@ -39,7 +39,7 @@ export function AnimatedPage({ children }: AnimatedPageProps) {
         exit="exit"
         variants={pageVariants}
         transition={pageTransition}
-        style={{ width: "100%", height: "100%" }}
+        style={{ width: '100%', height: '100%' }}
       >
         {children}
       </motion.div>
@@ -64,7 +64,7 @@ export const staggerItem = {
     opacity: 1,
     y: 0,
     transition: {
-      type: "spring",
+      type: 'spring',
       stiffness: 300,
       damping: 24,
     },
@@ -84,7 +84,7 @@ export const scaleIn = {
   initial: { opacity: 0, scale: 0.95 },
   animate: { opacity: 1, scale: 1 },
   exit: { opacity: 0, scale: 0.95 },
-  transition: { duration: 0.2, ease: "easeOut" },
+  transition: { duration: 0.2, ease: 'easeOut' },
 };
 
 // Slide animations
@@ -92,12 +92,12 @@ export const slideInFromRight = {
   initial: { opacity: 0, x: 20 },
   animate: { opacity: 1, x: 0 },
   exit: { opacity: 0, x: 20 },
-  transition: { duration: 0.2, ease: "easeOut" },
+  transition: { duration: 0.2, ease: 'easeOut' },
 };
 
 export const slideInFromBottom = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: 20 },
-  transition: { duration: 0.2, ease: "easeOut" },
+  transition: { duration: 0.2, ease: 'easeOut' },
 };

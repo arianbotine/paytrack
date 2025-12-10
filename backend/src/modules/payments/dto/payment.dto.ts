@@ -7,25 +7,25 @@ import {
   ValidateNested,
   IsUUID,
   Min,
-} from "class-validator";
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { PaymentMethod } from "@prisma/client";
-import { Type } from "class-transformer";
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { PaymentMethod } from '@prisma/client';
+import { Type } from 'class-transformer';
 
 export class QuickPaymentAllocationDto {
-  @ApiPropertyOptional({ example: "uuid-da-conta-a-pagar" })
+  @ApiPropertyOptional({ example: 'uuid-da-conta-a-pagar' })
   @IsUUID()
   @IsOptional()
   payableId?: string;
 
-  @ApiPropertyOptional({ example: "uuid-da-conta-a-receber" })
+  @ApiPropertyOptional({ example: 'uuid-da-conta-a-receber' })
   @IsUUID()
   @IsOptional()
   receivableId?: string;
 
   @ApiProperty({ example: 1000 })
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01, { message: "Valor deve ser maior que zero" })
+  @Min(0.01, { message: 'Valor deve ser maior que zero' })
   @Type(() => Number)
   amount!: number;
 }
@@ -33,11 +33,11 @@ export class QuickPaymentAllocationDto {
 export class CreatePaymentDto {
   @ApiProperty({ example: 1500 })
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01, { message: "Valor deve ser maior que zero" })
+  @Min(0.01, { message: 'Valor deve ser maior que zero' })
   @Type(() => Number)
   amount!: number;
 
-  @ApiProperty({ example: "2025-12-08" })
+  @ApiProperty({ example: '2025-12-08' })
   @IsDateString()
   paymentDate!: string;
 
@@ -45,7 +45,7 @@ export class CreatePaymentDto {
   @IsEnum(PaymentMethod)
   paymentMethod!: PaymentMethod;
 
-  @ApiPropertyOptional({ example: "Observações do pagamento" })
+  @ApiPropertyOptional({ example: 'Observações do pagamento' })
   @IsOptional()
   notes?: string;
 
@@ -57,20 +57,20 @@ export class CreatePaymentDto {
 }
 
 export class QuickPaymentDto {
-  @ApiProperty({ example: "payable", enum: ["payable", "receivable"] })
-  type!: "payable" | "receivable";
+  @ApiProperty({ example: 'payable', enum: ['payable', 'receivable'] })
+  type!: 'payable' | 'receivable';
 
-  @ApiProperty({ example: "uuid-da-conta" })
+  @ApiProperty({ example: 'uuid-da-conta' })
   @IsUUID()
   accountId!: string;
 
   @ApiProperty({ example: 1500 })
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01, { message: "Valor deve ser maior que zero" })
+  @Min(0.01, { message: 'Valor deve ser maior que zero' })
   @Type(() => Number)
   amount!: number;
 
-  @ApiProperty({ example: "2025-12-08" })
+  @ApiProperty({ example: '2025-12-08' })
   @IsDateString()
   paymentDate!: string;
 
@@ -78,7 +78,7 @@ export class QuickPaymentDto {
   @IsEnum(PaymentMethod)
   paymentMethod!: PaymentMethod;
 
-  @ApiPropertyOptional({ example: "Observações" })
+  @ApiPropertyOptional({ example: 'Observações' })
   @IsOptional()
   notes?: string;
 }

@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Box,
   Paper,
@@ -12,28 +12,22 @@ import {
   Chip,
   Tooltip,
   Typography,
-  TablePagination,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Delete as DeleteIcon,
   AccountBalance as PayableIcon,
   RequestQuote as ReceivableIcon,
-} from "@mui/icons-material";
-import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { motion, AnimatePresence } from "framer-motion";
-import { TableSkeleton, EmptyState } from "../../../shared/components";
-import type { Payment } from "../types";
-import { formatCurrency, getMethodLabel } from "../types";
+} from '@mui/icons-material';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { motion, AnimatePresence } from 'framer-motion';
+import { TableSkeleton, EmptyState } from '../../../shared/components';
+import type { Payment } from '../types';
+import { formatCurrency, getMethodLabel } from '../types';
 
 interface PaymentsTableProps {
   payments: Payment[];
-  totalCount: number;
-  page: number;
-  rowsPerPage: number;
   isLoading: boolean;
-  onPageChange: (page: number) => void;
-  onRowsPerPageChange: (rowsPerPage: number) => void;
   onDelete: (payment: Payment) => void;
 }
 
@@ -41,18 +35,13 @@ const MotionTableRow = motion.create(TableRow);
 
 export const PaymentsTable: React.FC<PaymentsTableProps> = ({
   payments,
-  totalCount,
-  page,
-  rowsPerPage,
   isLoading,
-  onPageChange,
-  onRowsPerPageChange,
   onDelete,
 }) => {
   return (
     <TableContainer
       component={Paper}
-      sx={{ borderRadius: 2, overflow: "hidden" }}
+      sx={{ borderRadius: 2, overflow: 'hidden' }}
     >
       <Table>
         <TableHead>
@@ -68,7 +57,7 @@ export const PaymentsTable: React.FC<PaymentsTableProps> = ({
         </TableHead>
         <TableBody>
           {isLoading ? (
-            <TableSkeleton columns={7} rows={rowsPerPage} />
+            <TableSkeleton columns={7} rows={5} />
           ) : payments.length === 0 ? (
             <TableRow>
               <TableCell colSpan={7}>
@@ -82,7 +71,7 @@ export const PaymentsTable: React.FC<PaymentsTableProps> = ({
           ) : (
             <AnimatePresence mode="popLayout">
               {payments.map((payment, index) => {
-                const allocation = payment.allocations[0];
+                const allocation = payment.allocations?.[0];
                 const isPayable = !!allocation?.payable;
 
                 return (
@@ -95,7 +84,7 @@ export const PaymentsTable: React.FC<PaymentsTableProps> = ({
                     transition={{ delay: index * 0.03, duration: 0.2 }}
                   >
                     <TableCell>
-                      {format(parseISO(payment.paymentDate), "dd/MM/yyyy", {
+                      {format(parseISO(payment.paymentDate), 'dd/MM/yyyy', {
                         locale: ptBR,
                       })}
                     </TableCell>
@@ -136,14 +125,14 @@ export const PaymentsTable: React.FC<PaymentsTableProps> = ({
                     <TableCell align="right">
                       <Typography
                         fontWeight="medium"
-                        color={isPayable ? "error.main" : "success.main"}
+                        color={isPayable ? 'error.main' : 'success.main'}
                       >
-                        {isPayable ? "-" : "+"} {formatCurrency(payment.amount)}
+                        {isPayable ? '-' : '+'} {formatCurrency(payment.amount)}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {payment.reference || "-"}
+                        {payment.reference || '-'}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
@@ -164,20 +153,6 @@ export const PaymentsTable: React.FC<PaymentsTableProps> = ({
           )}
         </TableBody>
       </Table>
-      <TablePagination
-        component="div"
-        count={totalCount}
-        page={page}
-        onPageChange={(_, newPage) => onPageChange(newPage)}
-        rowsPerPage={rowsPerPage}
-        onRowsPerPageChange={(e) => {
-          onRowsPerPageChange(parseInt(e.target.value, 10));
-        }}
-        labelRowsPerPage="Linhas por página"
-        labelDisplayedRows={({ from, to, count }) =>
-          `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`
-        }
-      />
     </TableContainer>
   );
 };

@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Card,
   CardContent,
@@ -13,13 +13,13 @@ import {
   Paper,
   Alert,
   Box,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Warning as WarningIcon,
   Schedule as ScheduleIcon,
-} from "@mui/icons-material";
-import { format } from "date-fns";
-import { motion } from "framer-motion";
+} from '@mui/icons-material';
+import { format } from 'date-fns';
+import { motion } from 'framer-motion';
 
 interface Account {
   id: string;
@@ -34,15 +34,15 @@ interface Account {
 interface AccountsTableProps {
   title: string;
   accounts: Account[];
-  type: "payable" | "receivable";
+  type: 'payable' | 'receivable';
   emptyMessage: string;
-  alertColor: "error" | "warning";
+  alertColor: 'error' | 'warning';
 }
 
 const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
+  new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
   }).format(value);
 
 export const AccountsTable: React.FC<AccountsTableProps> = ({
@@ -52,8 +52,8 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
   emptyMessage,
   alertColor,
 }) => {
-  const entityName = type === "payable" ? "vendor" : "customer";
-  const entityLabel = type === "payable" ? "Credor" : "Cliente";
+  const entityName = type === 'payable' ? 'vendor' : 'customer';
+  const entityLabel = type === 'payable' ? 'Credor' : 'Cliente';
 
   return (
     <motion.div
@@ -61,17 +61,17 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.5 }}
     >
-      <Card sx={{ height: "100%" }}>
+      <Card sx={{ height: '100%' }}>
         <CardContent>
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
+              display: 'flex',
+              alignItems: 'center',
               gap: 1,
               mb: 2,
             }}
           >
-            {alertColor === "error" ? (
+            {alertColor === 'error' ? (
               <WarningIcon color="error" />
             ) : (
               <ScheduleIcon color="warning" />
@@ -84,7 +84,7 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                 label={accounts.length}
                 size="small"
                 color={alertColor}
-                sx={{ ml: "auto" }}
+                sx={{ ml: 'auto' }}
               />
             )}
           </Box>
@@ -94,8 +94,8 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
               severity="success"
               sx={{
                 borderRadius: 2,
-                "& .MuiAlert-icon": {
-                  alignItems: "center",
+                '& .MuiAlert-icon': {
+                  alignItems: 'center',
                 },
               }}
             >
@@ -123,7 +123,7 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      style={{ display: "table-row" }}
+                      style={{ display: 'table-row' }}
                     >
                       <TableCell>
                         <Typography
@@ -154,7 +154,7 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                         <Chip
                           label={format(
                             new Date(account.dueDate),
-                            "dd/MM/yyyy"
+                            'dd/MM/yyyy'
                           )}
                           size="small"
                           color={alertColor}

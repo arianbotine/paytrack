@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Box,
   Button,
@@ -24,33 +24,33 @@ import {
   Typography,
   Grid,
   Alert,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Person as PersonIcon,
-} from "@mui/icons-material";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { api } from "../../../lib/api";
-import { PageHeader } from "../../../shared/components/PageHeader";
-import { ConfirmDialog } from "../../../shared/components/ConfirmDialog";
-import { useUIStore } from "../../../lib/stores/uiStore";
-import { useAuthStore } from "../../../lib/stores/authStore";
+} from '@mui/icons-material';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { api } from '../../../lib/api';
+import { PageHeader } from '../../../shared/components/PageHeader';
+import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { useUIStore } from '../../../lib/stores/uiStore';
+import { useAuthStore } from '../../../lib/stores/authStore';
 
 const userSchema = z.object({
-  name: z.string().min(1, "Nome é obrigatório").max(100),
-  email: z.string().email("E-mail inválido"),
+  name: z.string().min(1, 'Nome é obrigatório').max(100),
+  email: z.string().email('E-mail inválido'),
   password: z
     .string()
-    .min(6, "Senha deve ter pelo menos 6 caracteres")
+    .min(6, 'Senha deve ter pelo menos 6 caracteres')
     .optional()
-    .or(z.literal("")),
-  role: z.enum(["OWNER", "ADMIN", "ACCOUNTANT", "VIEWER"]),
+    .or(z.literal('')),
+  role: z.enum(['OWNER', 'ADMIN', 'ACCOUNTANT', 'VIEWER']),
 });
 
 type UserFormData = z.infer<typeof userSchema>;
@@ -59,17 +59,17 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: "OWNER" | "ADMIN" | "ACCOUNTANT" | "VIEWER";
+  role: 'OWNER' | 'ADMIN' | 'ACCOUNTANT' | 'VIEWER';
   isActive: boolean;
   createdAt: string;
   lastLogin?: string;
 }
 
 const ROLES = [
-  { value: "OWNER", label: "Proprietário", color: "error" as const },
-  { value: "ADMIN", label: "Administrador", color: "warning" as const },
-  { value: "ACCOUNTANT", label: "Contador", color: "info" as const },
-  { value: "VIEWER", label: "Visualizador", color: "default" as const },
+  { value: 'OWNER', label: 'Proprietário', color: 'error' as const },
+  { value: 'ADMIN', label: 'Administrador', color: 'warning' as const },
+  { value: 'ACCOUNTANT', label: 'Contador', color: 'info' as const },
+  { value: 'VIEWER', label: 'Visualizador', color: 'default' as const },
 ];
 
 export const UsersPage: React.FC = () => {
@@ -81,7 +81,7 @@ export const UsersPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const canManageUsers =
-    currentUser?.role === "OWNER" || currentUser?.role === "ADMIN";
+    currentUser?.role === 'OWNER' || currentUser?.role === 'ADMIN';
 
   const {
     control,
@@ -91,26 +91,26 @@ export const UsersPage: React.FC = () => {
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
     defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      role: "VIEWER",
+      name: '',
+      email: '',
+      password: '',
+      role: 'VIEWER',
     },
   });
 
   const { data: users = [], isLoading } = useQuery({
-    queryKey: ["users"],
+    queryKey: ['users'],
     queryFn: async () => {
-      const response = await api.get("/users");
+      const response = await api.get('/users');
       return response.data;
     },
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: UserFormData) => api.post("/users", data),
+    mutationFn: (data: UserFormData) => api.post('/users', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      showNotification("Usuário criado com sucesso!", "success");
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      showNotification('Usuário criado com sucesso!', 'success');
       handleCloseDialog();
     },
     onError: (error: unknown) => {
@@ -118,8 +118,8 @@ export const UsersPage: React.FC = () => {
         response?: { data?: { message?: string } };
       };
       const message =
-        errorResponse.response?.data?.message || "Erro ao criar usuário";
-      showNotification(message, "error");
+        errorResponse.response?.data?.message || 'Erro ao criar usuário';
+      showNotification(message, 'error');
     },
   });
 
@@ -132,8 +132,8 @@ export const UsersPage: React.FC = () => {
       return api.patch(`/users/${id}`, payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      showNotification("Usuário atualizado com sucesso!", "success");
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      showNotification('Usuário atualizado com sucesso!', 'success');
       handleCloseDialog();
     },
     onError: (error: unknown) => {
@@ -141,16 +141,16 @@ export const UsersPage: React.FC = () => {
         response?: { data?: { message?: string } };
       };
       const message =
-        errorResponse.response?.data?.message || "Erro ao atualizar usuário";
-      showNotification(message, "error");
+        errorResponse.response?.data?.message || 'Erro ao atualizar usuário';
+      showNotification(message, 'error');
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/users/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      showNotification("Usuário excluído com sucesso!", "success");
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      showNotification('Usuário excluído com sucesso!', 'success');
       setDeleteDialogOpen(false);
       setSelectedUser(null);
     },
@@ -159,8 +159,8 @@ export const UsersPage: React.FC = () => {
         response?: { data?: { message?: string } };
       };
       const message =
-        errorResponse.response?.data?.message || "Erro ao excluir usuário";
-      showNotification(message, "error");
+        errorResponse.response?.data?.message || 'Erro ao excluir usuário';
+      showNotification(message, 'error');
     },
   });
 
@@ -170,16 +170,16 @@ export const UsersPage: React.FC = () => {
       reset({
         name: user.name,
         email: user.email,
-        password: "",
+        password: '',
         role: user.role,
       });
     } else {
       setSelectedUser(null);
       reset({
-        name: "",
-        email: "",
-        password: "",
-        role: "VIEWER",
+        name: '',
+        email: '',
+        password: '',
+        role: 'VIEWER',
       });
     }
     setDialogOpen(true);
@@ -211,7 +211,7 @@ export const UsersPage: React.FC = () => {
   };
 
   const getRoleChip = (role: string) => {
-    const roleConfig = ROLES.find((r) => r.value === role);
+    const roleConfig = ROLES.find(r => r.value === role);
     return (
       <Chip
         label={roleConfig?.label || role}
@@ -225,9 +225,9 @@ export const UsersPage: React.FC = () => {
     // Can't edit yourself
     if (user.id === currentUser?.id) return false;
     // OWNER can edit anyone
-    if (currentUser?.role === "OWNER") return true;
+    if (currentUser?.role === 'OWNER') return true;
     // ADMIN can edit non-OWNER users
-    if (currentUser?.role === "ADMIN" && user.role !== "OWNER") return true;
+    if (currentUser?.role === 'ADMIN' && user.role !== 'OWNER') return true;
     return false;
   };
 
@@ -235,12 +235,12 @@ export const UsersPage: React.FC = () => {
     // Can't delete yourself
     if (user.id === currentUser?.id) return false;
     // OWNER can delete anyone
-    if (currentUser?.role === "OWNER") return true;
+    if (currentUser?.role === 'OWNER') return true;
     // ADMIN can delete non-OWNER and non-ADMIN users
     if (
-      currentUser?.role === "ADMIN" &&
-      user.role !== "OWNER" &&
-      user.role !== "ADMIN"
+      currentUser?.role === 'ADMIN' &&
+      user.role !== 'OWNER' &&
+      user.role !== 'ADMIN'
     )
       return true;
     return false;
@@ -265,7 +265,7 @@ export const UsersPage: React.FC = () => {
       <PageHeader
         title="Usuários"
         subtitle="Gerencie os usuários da organização"
-        action={{ label: "Novo Usuário", onClick: () => handleOpenDialog() }}
+        action={{ label: 'Novo Usuário', onClick: () => handleOpenDialog() }}
       />
 
       <TableContainer component={Paper}>
@@ -298,7 +298,7 @@ export const UsersPage: React.FC = () => {
               users.map((user: User) => (
                 <TableRow key={user.id} hover>
                   <TableCell>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <PersonIcon color="action" />
                       <Box>
                         <Typography fontWeight="medium">{user.name}</Typography>
@@ -314,8 +314,8 @@ export const UsersPage: React.FC = () => {
                   <TableCell>{getRoleChip(user.role)}</TableCell>
                   <TableCell>
                     <Chip
-                      label={user.isActive ? "Ativo" : "Inativo"}
-                      color={user.isActive ? "success" : "default"}
+                      label={user.isActive ? 'Ativo' : 'Inativo'}
+                      color={user.isActive ? 'success' : 'default'}
                       size="small"
                       variant="outlined"
                     />
@@ -327,10 +327,10 @@ export const UsersPage: React.FC = () => {
                           "dd/MM/yyyy 'às' HH:mm",
                           { locale: ptBR }
                         )
-                      : "Nunca acessou"}
+                      : 'Nunca acessou'}
                   </TableCell>
                   <TableCell>
-                    {format(parseISO(user.createdAt), "dd/MM/yyyy", {
+                    {format(parseISO(user.createdAt), 'dd/MM/yyyy', {
                       locale: ptBR,
                     })}
                   </TableCell>
@@ -338,8 +338,8 @@ export const UsersPage: React.FC = () => {
                     <Tooltip
                       title={
                         canEditUser(user)
-                          ? "Editar"
-                          : "Sem permissão para editar"
+                          ? 'Editar'
+                          : 'Sem permissão para editar'
                       }
                     >
                       <span>
@@ -355,8 +355,8 @@ export const UsersPage: React.FC = () => {
                     <Tooltip
                       title={
                         canDeleteUser(user)
-                          ? "Excluir"
-                          : "Sem permissão para excluir"
+                          ? 'Excluir'
+                          : 'Sem permissão para excluir'
                       }
                     >
                       <span>
@@ -387,7 +387,7 @@ export const UsersPage: React.FC = () => {
       >
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogTitle>
-            {selectedUser ? "Editar Usuário" : "Novo Usuário"}
+            {selectedUser ? 'Editar Usuário' : 'Novo Usuário'}
           </DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{ mt: 0.5 }}>
@@ -433,8 +433,8 @@ export const UsersPage: React.FC = () => {
                       {...field}
                       label={
                         selectedUser
-                          ? "Nova Senha (deixe em branco para manter)"
-                          : "Senha"
+                          ? 'Nova Senha (deixe em branco para manter)'
+                          : 'Senha'
                       }
                       type="password"
                       fullWidth
@@ -453,21 +453,21 @@ export const UsersPage: React.FC = () => {
                     <FormControl fullWidth error={!!errors.role}>
                       <InputLabel>Perfil</InputLabel>
                       <Select {...field} label="Perfil">
-                        {ROLES.filter((role) => {
+                        {ROLES.filter(role => {
                           // Only OWNER can assign OWNER role
                           if (
-                            role.value === "OWNER" &&
-                            currentUser?.role !== "OWNER"
+                            role.value === 'OWNER' &&
+                            currentUser?.role !== 'OWNER'
                           ) {
                             return false;
                           }
                           return true;
-                        }).map((role) => (
+                        }).map(role => (
                           <MenuItem key={role.value} value={role.value}>
                             <Box
                               sx={{
-                                display: "flex",
-                                alignItems: "center",
+                                display: 'flex',
+                                alignItems: 'center',
                                 gap: 1,
                               }}
                             >
@@ -512,7 +512,7 @@ export const UsersPage: React.FC = () => {
               variant="contained"
               disabled={createMutation.isPending || updateMutation.isPending}
             >
-              {selectedUser ? "Salvar" : "Criar"}
+              {selectedUser ? 'Salvar' : 'Criar'}
             </Button>
           </DialogActions>
         </form>

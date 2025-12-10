@@ -1,5 +1,5 @@
-import React from "react";
-import { Box, Card, CardContent, Typography, useTheme } from "@mui/material";
+import React from 'react';
+import { Box, Card, CardContent, Typography, useTheme } from '@mui/material';
 import {
   PieChart,
   Pie,
@@ -7,8 +7,8 @@ import {
   ResponsiveContainer,
   Tooltip,
   Legend,
-} from "recharts";
-import { motion } from "framer-motion";
+} from 'recharts';
+import { motion } from 'framer-motion';
 
 interface CategoryData {
   name: string;
@@ -24,9 +24,9 @@ interface CategoryDonutChartProps {
 }
 
 const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
+  new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
   }).format(value);
 
 const CustomTooltip = ({ active, payload }: any) => {
@@ -35,12 +35,12 @@ const CustomTooltip = ({ active, payload }: any) => {
     return (
       <Box
         sx={{
-          bgcolor: "background.paper",
+          bgcolor: 'background.paper',
           p: 1.5,
           borderRadius: 1,
           boxShadow: 2,
-          border: "1px solid",
-          borderColor: "divider",
+          border: '1px solid',
+          borderColor: 'divider',
         }}
       >
         <Typography variant="subtitle2" fontWeight="bold">
@@ -55,13 +55,13 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 const CustomLegend = ({ payload }: any) => {
   return (
-    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 2 }}>
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
       {payload.map((entry: any, index: number) => (
         <Box
           key={index}
           sx={{
-            display: "flex",
-            alignItems: "center",
+            display: 'flex',
+            alignItems: 'center',
             gap: 0.5,
           }}
         >
@@ -69,7 +69,7 @@ const CustomLegend = ({ payload }: any) => {
             sx={{
               width: 12,
               height: 12,
-              borderRadius: "50%",
+              borderRadius: '50%',
               backgroundColor: entry.color,
             }}
           />
@@ -98,10 +98,10 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
     theme.palette.warning.main,
     theme.palette.error.main,
     theme.palette.info.main,
-    "#8884d8",
-    "#82ca9d",
-    "#ffc658",
-    "#ff7c43",
+    '#8884d8',
+    '#82ca9d',
+    '#ffc658',
+    '#ff7c43',
   ];
 
   const total = data.reduce((sum, item) => sum + item.value, 0);
@@ -112,7 +112,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.3 }}
     >
-      <Card sx={{ height: "100%" }}>
+      <Card sx={{ height: '100%' }}>
         <CardContent>
           <Typography variant="h6" fontWeight="bold" gutterBottom>
             {title}
@@ -127,9 +127,9 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
             <Box
               sx={{
                 height: 250,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               <Typography color="text.secondary">Carregando...</Typography>
@@ -138,9 +138,9 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
             <Box
               sx={{
                 height: 250,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               <Typography color="text.secondary">
@@ -148,7 +148,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
               </Typography>
             </Box>
           ) : (
-            <Box sx={{ position: "relative" }}>
+            <Box sx={{ position: 'relative' }}>
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
                   <Pie
@@ -181,11 +181,11 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
               {/* Center text */}
               <Box
                 sx={{
-                  position: "absolute",
-                  top: "40%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  textAlign: "center",
+                  position: 'absolute',
+                  top: '40%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  textAlign: 'center',
                 }}
               >
                 <Typography variant="h6" fontWeight="bold">

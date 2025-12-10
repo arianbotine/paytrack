@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Box,
   Button,
@@ -17,19 +17,19 @@ import {
   TextField,
   Tooltip,
   Typography,
-} from "@mui/material";
-import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { api } from "../../../lib/api";
-import { PageHeader } from "../../../shared/components/PageHeader";
-import { ConfirmDialog } from "../../../shared/components/ConfirmDialog";
-import { useUIStore } from "../../../lib/stores/uiStore";
+} from '@mui/material';
+import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { api } from '../../../lib/api';
+import { PageHeader } from '../../../shared/components/PageHeader';
+import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { useUIStore } from '../../../lib/stores/uiStore';
 
 const tagSchema = z.object({
-  name: z.string().min(1, "Nome é obrigatório").max(50),
+  name: z.string().min(1, 'Nome é obrigatório').max(50),
   color: z.string().optional(),
 });
 
@@ -47,21 +47,21 @@ interface Tag {
 }
 
 const COLORS = [
-  "#1976d2",
-  "#388e3c",
-  "#f57c00",
-  "#d32f2f",
-  "#7b1fa2",
-  "#0097a7",
-  "#455a64",
-  "#5d4037",
-  "#c2185b",
-  "#512da8",
-  "#00796b",
-  "#8d6e63",
-  "#78909c",
-  "#ff5722",
-  "#607d8b",
+  '#1976d2',
+  '#388e3c',
+  '#f57c00',
+  '#d32f2f',
+  '#7b1fa2',
+  '#0097a7',
+  '#455a64',
+  '#5d4037',
+  '#c2185b',
+  '#512da8',
+  '#00796b',
+  '#8d6e63',
+  '#78909c',
+  '#ff5722',
+  '#607d8b',
 ];
 
 export const TagsPage: React.FC = () => {
@@ -79,28 +79,28 @@ export const TagsPage: React.FC = () => {
   } = useForm<TagFormData>({
     resolver: zodResolver(tagSchema),
     defaultValues: {
-      name: "",
+      name: '',
       color: COLORS[0],
     },
   });
 
   const { data: tags = [], isLoading } = useQuery({
-    queryKey: ["tags"],
+    queryKey: ['tags'],
     queryFn: async () => {
-      const response = await api.get("/tags");
+      const response = await api.get('/tags');
       return response.data;
     },
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: TagFormData) => api.post("/tags", data),
+    mutationFn: (data: TagFormData) => api.post('/tags', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      showNotification("Tag criada com sucesso!", "success");
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      showNotification('Tag criada com sucesso!', 'success');
       handleCloseDialog();
     },
     onError: () => {
-      showNotification("Erro ao criar tag", "error");
+      showNotification('Erro ao criar tag', 'error');
     },
   });
 
@@ -108,25 +108,25 @@ export const TagsPage: React.FC = () => {
     mutationFn: ({ id, data }: { id: string; data: TagFormData }) =>
       api.patch(`/tags/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      showNotification("Tag atualizada com sucesso!", "success");
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      showNotification('Tag atualizada com sucesso!', 'success');
       handleCloseDialog();
     },
     onError: () => {
-      showNotification("Erro ao atualizar tag", "error");
+      showNotification('Erro ao atualizar tag', 'error');
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/tags/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      showNotification("Tag excluída com sucesso!", "success");
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+      showNotification('Tag excluída com sucesso!', 'success');
       setDeleteDialogOpen(false);
       setSelectedTag(null);
     },
     onError: () => {
-      showNotification("Erro ao excluir tag", "error");
+      showNotification('Erro ao excluir tag', 'error');
     },
   });
 
@@ -140,7 +140,7 @@ export const TagsPage: React.FC = () => {
     } else {
       setSelectedTag(null);
       reset({
-        name: "",
+        name: '',
         color: COLORS[0],
       });
     }
@@ -177,7 +177,7 @@ export const TagsPage: React.FC = () => {
       <PageHeader
         title="Tags"
         subtitle="Crie tags para organizar suas contas"
-        action={{ label: "Nova Tag", onClick: () => handleOpenDialog() }}
+        action={{ label: 'Nova Tag', onClick: () => handleOpenDialog() }}
       />
 
       <TableContainer component={Paper}>
@@ -212,7 +212,7 @@ export const TagsPage: React.FC = () => {
                       sx={{
                         width: 24,
                         height: 24,
-                        borderRadius: "4px",
+                        borderRadius: '4px',
                         backgroundColor: tag.color || COLORS[0],
                       }}
                     />
@@ -264,10 +264,10 @@ export const TagsPage: React.FC = () => {
         fullWidth
       >
         <form onSubmit={handleSubmit(onSubmit)}>
-          <DialogTitle>{selectedTag ? "Editar Tag" : "Nova Tag"}</DialogTitle>
+          <DialogTitle>{selectedTag ? 'Editar Tag' : 'Nova Tag'}</DialogTitle>
           <DialogContent>
             <Box
-              sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
+              sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}
             >
               <Controller
                 name="name"
@@ -295,25 +295,25 @@ export const TagsPage: React.FC = () => {
                     >
                       Cor
                     </Typography>
-                    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                      {COLORS.map((color) => (
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      {COLORS.map(color => (
                         <Box
                           key={color}
                           onClick={() => field.onChange(color)}
                           sx={{
                             width: 32,
                             height: 32,
-                            borderRadius: "4px",
+                            borderRadius: '4px',
                             backgroundColor: color,
-                            cursor: "pointer",
+                            cursor: 'pointer',
                             border:
                               field.value === color
-                                ? "3px solid #000"
-                                : "3px solid transparent",
-                            "&:hover": {
-                              transform: "scale(1.1)",
+                                ? '3px solid #000'
+                                : '3px solid transparent',
+                            '&:hover': {
+                              transform: 'scale(1.1)',
                             },
-                            transition: "all 0.2s",
+                            transition: 'all 0.2s',
                           }}
                         />
                       ))}
@@ -330,7 +330,7 @@ export const TagsPage: React.FC = () => {
               variant="contained"
               disabled={createMutation.isPending || updateMutation.isPending}
             >
-              {selectedTag ? "Salvar" : "Criar"}
+              {selectedTag ? 'Salvar' : 'Criar'}
             </Button>
           </DialogActions>
         </form>

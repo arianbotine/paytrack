@@ -2,10 +2,10 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
-} from "@nestjs/common";
-import { CategoryType } from "@prisma/client";
-import { PrismaService } from "../../infrastructure/database/prisma.service";
-import { CreateCategoryDto, UpdateCategoryDto } from "./dto/category.dto";
+} from '@nestjs/common';
+import { CategoryType } from '@prisma/client';
+import { PrismaService } from '../../infrastructure/database/prisma.service';
+import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 
 @Injectable()
 export class CategoriesService {
@@ -14,7 +14,7 @@ export class CategoriesService {
   async findAll(
     organizationId: string,
     type?: CategoryType,
-    includeInactive = false,
+    includeInactive = false
   ) {
     return this.prisma.category.findMany({
       where: {
@@ -22,7 +22,7 @@ export class CategoriesService {
         ...(type ? { type } : {}),
         ...(includeInactive ? {} : { isActive: true }),
       },
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
     });
   }
 
@@ -32,7 +32,7 @@ export class CategoriesService {
     });
 
     if (!category) {
-      throw new NotFoundException("Categoria não encontrada");
+      throw new NotFoundException('Categoria não encontrada');
     }
 
     return category;
@@ -49,7 +49,7 @@ export class CategoriesService {
     });
 
     if (existing) {
-      throw new ConflictException("Categoria já existe com este nome");
+      throw new ConflictException('Categoria já existe com este nome');
     }
 
     return this.prisma.category.create({
@@ -63,7 +63,7 @@ export class CategoriesService {
   async update(
     id: string,
     organizationId: string,
-    updateDto: UpdateCategoryDto,
+    updateDto: UpdateCategoryDto
   ) {
     const category = await this.findOne(id, organizationId);
 
@@ -79,7 +79,7 @@ export class CategoriesService {
       });
 
       if (existing) {
-        throw new ConflictException("Categoria já existe com este nome");
+        throw new ConflictException('Categoria já existe com este nome');
       }
     }
 

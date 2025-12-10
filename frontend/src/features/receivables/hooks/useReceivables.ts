@@ -1,24 +1,24 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../../../lib/api";
-import { useUIStore } from "../../../lib/stores/uiStore";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../../../lib/api';
+import { useUIStore } from '../../../lib/stores/uiStore';
 import type {
   ReceivableFormData,
   ReceivablesResponse,
   Customer,
   Category,
   Tag,
-} from "../types";
+} from '../types';
 
 // ============================================================
 // Query Keys
 // ============================================================
 
 export const receivableKeys = {
-  all: ["receivables"] as const,
-  lists: () => [...receivableKeys.all, "list"] as const,
+  all: ['receivables'] as const,
+  lists: () => [...receivableKeys.all, 'list'] as const,
   list: (filters: Record<string, unknown>) =>
     [...receivableKeys.lists(), filters] as const,
-  details: () => [...receivableKeys.all, "detail"] as const,
+  details: () => [...receivableKeys.all, 'detail'] as const,
   detail: (id: string) => [...receivableKeys.details(), id] as const,
 };
 
@@ -44,10 +44,10 @@ export const useReceivables = ({
         skip: page * rowsPerPage,
         take: rowsPerPage,
       };
-      if (status && status !== "ALL") {
+      if (status && status !== 'ALL') {
         params.status = status;
       }
-      const response = await api.get("/receivables", { params });
+      const response = await api.get('/receivables', { params });
       return response.data;
     },
   });
@@ -59,9 +59,9 @@ export const useReceivables = ({
 
 export const useCustomers = () => {
   return useQuery({
-    queryKey: ["customers"],
+    queryKey: ['customers'],
     queryFn: async (): Promise<Customer[]> => {
-      const response = await api.get("/customers");
+      const response = await api.get('/customers');
       return response.data;
     },
     staleTime: 5 * 60 * 1000,
@@ -70,10 +70,10 @@ export const useCustomers = () => {
 
 export const useReceivableCategories = () => {
   return useQuery({
-    queryKey: ["categories", "RECEIVABLE"],
+    queryKey: ['categories', 'RECEIVABLE'],
     queryFn: async (): Promise<Category[]> => {
-      const response = await api.get("/categories", {
-        params: { type: "RECEIVABLE" },
+      const response = await api.get('/categories', {
+        params: { type: 'RECEIVABLE' },
       });
       return response.data;
     },
@@ -83,9 +83,9 @@ export const useReceivableCategories = () => {
 
 export const useTags = () => {
   return useQuery({
-    queryKey: ["tags"],
+    queryKey: ['tags'],
     queryFn: async (): Promise<Tag[]> => {
-      const response = await api.get("/tags");
+      const response = await api.get('/tags');
       return response.data;
     },
     staleTime: 5 * 60 * 1000,
@@ -101,15 +101,15 @@ export const useCreateReceivable = (onSuccess?: () => void) => {
   const { showNotification } = useUIStore();
 
   return useMutation({
-    mutationFn: (data: ReceivableFormData) => api.post("/receivables", data),
+    mutationFn: (data: ReceivableFormData) => api.post('/receivables', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: receivableKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      showNotification("Conta a receber criada com sucesso!", "success");
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showNotification('Conta a receber criada com sucesso!', 'success');
       onSuccess?.();
     },
     onError: () => {
-      showNotification("Erro ao criar conta a receber", "error");
+      showNotification('Erro ao criar conta a receber', 'error');
     },
   });
 };
@@ -123,12 +123,12 @@ export const useUpdateReceivable = (onSuccess?: () => void) => {
       api.patch(`/receivables/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: receivableKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      showNotification("Conta a receber atualizada com sucesso!", "success");
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showNotification('Conta a receber atualizada com sucesso!', 'success');
       onSuccess?.();
     },
     onError: () => {
-      showNotification("Erro ao atualizar conta a receber", "error");
+      showNotification('Erro ao atualizar conta a receber', 'error');
     },
   });
 };
@@ -141,12 +141,12 @@ export const useDeleteReceivable = (onSuccess?: () => void) => {
     mutationFn: (id: string) => api.delete(`/receivables/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: receivableKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      showNotification("Conta a receber excluída com sucesso!", "success");
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showNotification('Conta a receber excluída com sucesso!', 'success');
       onSuccess?.();
     },
     onError: () => {
-      showNotification("Erro ao excluir conta a receber", "error");
+      showNotification('Erro ao excluir conta a receber', 'error');
     },
   });
 };

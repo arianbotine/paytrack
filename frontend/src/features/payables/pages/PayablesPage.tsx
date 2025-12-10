@@ -1,22 +1,22 @@
-import React, { useState, useCallback } from "react";
-import { Box, Alert } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import { AnimatedPage } from "../../../shared/components";
-import { PageHeader } from "../../../shared/components/PageHeader";
-import { ConfirmDialog } from "../../../shared/components/ConfirmDialog";
+import React, { useState, useCallback } from 'react';
+import { Box, Alert } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { AnimatedPage } from '../../../shared/components';
+import { PageHeader } from '../../../shared/components/PageHeader';
+import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import {
   PayablesTable,
   PayableFormDialog,
   PayableFilters,
-} from "../components";
+} from '../components';
 import {
   usePayables,
   useVendors,
   useCategories,
   useTags,
   usePayableOperations,
-} from "../hooks/usePayables";
-import type { Payable, PayableFormData } from "../types";
+} from '../hooks/usePayables';
+import type { Payable, PayableFormData } from '../types';
 
 export const PayablesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -25,7 +25,7 @@ export const PayablesPage: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedPayable, setSelectedPayable] = useState<Payable | null>(null);
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -112,7 +112,7 @@ export const PayablesPage: React.FC = () => {
         <PageHeader
           title="Contas a Pagar"
           subtitle="Gerencie suas obrigações financeiras"
-          action={{ label: "Nova Conta", onClick: () => handleOpenDialog() }}
+          action={{ label: 'Nova Conta', onClick: () => handleOpenDialog() }}
         />
 
         <PayableFilters

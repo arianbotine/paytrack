@@ -3,11 +3,11 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
-} from "@nestjs/common";
-import { Reflector } from "@nestjs/core";
-import { UserRole } from "@prisma/client";
-import { ROLES_KEY } from "../decorators/roles.decorator";
-import { JwtPayload } from "../decorators/current-user.decorator";
+} from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { UserRole } from '@prisma/client';
+import { ROLES_KEY } from '../decorators/roles.decorator';
+import { JwtPayload } from '../decorators/current-user.decorator';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -16,7 +16,7 @@ export class RolesGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(
       ROLES_KEY,
-      [context.getHandler(), context.getClass()],
+      [context.getHandler(), context.getClass()]
     );
 
     if (!requiredRoles || requiredRoles.length === 0) {
@@ -27,14 +27,14 @@ export class RolesGuard implements CanActivate {
     const user = request.user as JwtPayload;
 
     if (!user) {
-      throw new ForbiddenException("Usuário não autenticado");
+      throw new ForbiddenException('Usuário não autenticado');
     }
 
-    const hasRole = requiredRoles.some((role) => user.role === role);
+    const hasRole = requiredRoles.some(role => user.role === role);
 
     if (!hasRole) {
       throw new ForbiddenException(
-        "Você não tem permissão para acessar este recurso",
+        'Você não tem permissão para acessar este recurso'
       );
     }
 

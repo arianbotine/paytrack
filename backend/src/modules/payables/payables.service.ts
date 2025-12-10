@@ -2,15 +2,15 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-} from "@nestjs/common";
-import { AccountStatus, Prisma } from "@prisma/client";
-import { PrismaService } from "../../infrastructure/database/prisma.service";
+} from '@nestjs/common';
+import { AccountStatus, Prisma } from '@prisma/client';
+import { PrismaService } from '../../infrastructure/database/prisma.service';
 import {
   CreatePayableDto,
   UpdatePayableDto,
   PayableFilterDto,
-} from "./dto/payable.dto";
-import { MoneyUtils } from "../../shared/utils/money.utils";
+} from './dto/payable.dto';
+import { MoneyUtils } from '../../shared/utils/money.utils';
 
 @Injectable()
 export class PayablesService {
@@ -51,7 +51,7 @@ export class PayablesService {
             },
           },
         },
-        orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+        orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
         skip: filters?.skip,
         take: filters?.take,
       }),
@@ -60,8 +60,8 @@ export class PayablesService {
 
     // Transform Decimal fields to numbers for JSON serialization
     const transformedData = MoneyUtils.transformMoneyFieldsArray(data, [
-      "amount",
-      "paidAmount",
+      'amount',
+      'paidAmount',
     ]);
 
     return { data: transformedData, total };
@@ -91,11 +91,11 @@ export class PayablesService {
     });
 
     if (!payable) {
-      throw new NotFoundException("Conta a pagar não encontrada");
+      throw new NotFoundException('Conta a pagar não encontrada');
     }
 
     // Transform Decimal fields to numbers for JSON serialization
-    return MoneyUtils.transformMoneyFields(payable, ["amount", "paidAmount"]);
+    return MoneyUtils.transformMoneyFields(payable, ['amount', 'paidAmount']);
   }
 
   async create(organizationId: string, createDto: CreatePayableDto) {
@@ -115,7 +115,7 @@ export class PayablesService {
         ...(tagIds && tagIds.length > 0
           ? {
               tags: {
-                create: tagIds.map((tagId) => ({ tagId })),
+                create: tagIds.map(tagId => ({ tagId })),
               },
             }
           : {}),
@@ -137,12 +137,12 @@ export class PayablesService {
   async update(
     id: string,
     organizationId: string,
-    updateDto: UpdatePayableDto,
+    updateDto: UpdatePayableDto
   ) {
     const payable = await this.findOne(id, organizationId);
 
     if (payable.status === AccountStatus.PAID) {
-      throw new BadRequestException("Não é possível editar uma conta já paga");
+      throw new BadRequestException('Não é possível editar uma conta já paga');
     }
 
     const { tagIds, ...data } = updateDto;
@@ -153,7 +153,7 @@ export class PayablesService {
 
       if (tagIds.length > 0) {
         await this.prisma.payableTag.createMany({
-          data: tagIds.map((tagId) => ({ payableId: id, tagId })),
+          data: tagIds.map(tagId => ({ payableId: id, tagId })),
         });
       }
     }
@@ -185,7 +185,7 @@ export class PayablesService {
       payable.status === AccountStatus.PARTIAL
     ) {
       throw new BadRequestException(
-        "Não é possível excluir uma conta com pagamentos realizados",
+        'Não é possível excluir uma conta com pagamentos realizados'
       );
     }
 
@@ -198,7 +198,7 @@ export class PayablesService {
 
     if (payable.status === AccountStatus.PAID) {
       throw new BadRequestException(
-        "Não é possível cancelar uma conta já paga",
+        'Não é possível cancelar uma conta já paga'
       );
     }
 

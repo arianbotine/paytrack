@@ -1,17 +1,17 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { Box } from "@mui/material";
-import { useSearchParams } from "react-router-dom";
-import { AnimatedPage } from "../../../shared/components";
-import { PageHeader } from "../../../shared/components/PageHeader";
-import { ConfirmDialog } from "../../../shared/components/ConfirmDialog";
-import { PaymentsTable, PaymentFormDialog } from "../components";
+import React, { useState, useCallback, useEffect } from 'react';
+import { Box } from '@mui/material';
+import { useSearchParams } from 'react-router-dom';
+import { AnimatedPage } from '../../../shared/components';
+import { PageHeader } from '../../../shared/components/PageHeader';
+import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { PaymentsTable, PaymentFormDialog } from '../components';
 import {
   usePayments,
   usePendingPayables,
   usePendingReceivables,
   usePaymentOperations,
-} from "../hooks/usePayments";
-import type { Payment, PaymentFormData, PaymentType } from "../types";
+} from '../hooks/usePayments';
+import type { Payment, PaymentFormData, PaymentType } from '../types';
 
 export const PaymentsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -20,22 +20,23 @@ export const PaymentsPage: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
-  const [paymentType, setPaymentType] = useState<PaymentType>("PAYABLE");
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [paymentType, setPaymentType] = useState<PaymentType>('PAYABLE');
 
-  const preSelectedPayableId = searchParams.get("payableId");
-  const preSelectedReceivableId = searchParams.get("receivableId");
+  const preSelectedPayableId = searchParams.get('payableId');
+  const preSelectedReceivableId = searchParams.get('receivableId');
 
   // Queries
-  const { data: paymentsData, isLoading } = usePayments({ page, rowsPerPage });
+  const { data: paymentsData, isLoading } = usePayments({
+    page: 0,
+    rowsPerPage: 100,
+  });
   const { data: pendingPayables = [] } = usePendingPayables();
   const { data: pendingReceivables = [] } = usePendingReceivables();
 
   // Mutations
   const handleCloseDialog = useCallback(() => {
     setDialogOpen(false);
-    window.history.replaceState({}, "", "/payments");
+    window.history.replaceState({}, '', '/payments');
   }, []);
 
   const handleCloseDeleteDialog = useCallback(() => {
@@ -52,7 +53,7 @@ export const PaymentsPage: React.FC = () => {
   // Open dialog with pre-selected account from URL params
   useEffect(() => {
     if (preSelectedPayableId || preSelectedReceivableId) {
-      setPaymentType(preSelectedPayableId ? "PAYABLE" : "RECEIVABLE");
+      setPaymentType(preSelectedPayableId ? 'PAYABLE' : 'RECEIVABLE');
       setDialogOpen(true);
     }
   }, [preSelectedPayableId, preSelectedReceivableId]);
@@ -65,15 +66,6 @@ export const PaymentsPage: React.FC = () => {
   const handleDelete = useCallback((payment: Payment) => {
     setSelectedPayment(payment);
     setDeleteDialogOpen(true);
-  }, []);
-
-  const handlePageChange = useCallback((newPage: number) => {
-    setPage(newPage);
-  }, []);
-
-  const handleRowsPerPageChange = useCallback((newRowsPerPage: number) => {
-    setRowsPerPage(newRowsPerPage);
-    setPage(0);
   }, []);
 
   const handleSubmit = useCallback(
@@ -90,7 +82,6 @@ export const PaymentsPage: React.FC = () => {
   }, [deleteMutation, selectedPayment]);
 
   const payments = paymentsData?.data || [];
-  const totalCount = paymentsData?.total || 0;
 
   return (
     <AnimatedPage>
@@ -98,17 +89,12 @@ export const PaymentsPage: React.FC = () => {
         <PageHeader
           title="Pagamentos"
           subtitle="Registre pagamentos e recebimentos"
-          action={{ label: "Novo Pagamento", onClick: handleOpenDialog }}
+          action={{ label: 'Novo Pagamento', onClick: handleOpenDialog }}
         />
 
         <PaymentsTable
           payments={payments}
-          totalCount={totalCount}
-          page={page}
-          rowsPerPage={rowsPerPage}
           isLoading={isLoading}
-          onPageChange={handlePageChange}
-          onRowsPerPageChange={handleRowsPerPageChange}
           onDelete={handleDelete}
         />
 

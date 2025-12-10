@@ -1,4 +1,4 @@
-import { Decimal } from "@prisma/client/runtime/library";
+import { Decimal } from '@prisma/client/runtime/library';
 
 /**
  * Utilitário para manipulação precisa de valores monetários
@@ -16,7 +16,7 @@ export class MoneyUtils {
       return value.toNumber();
     }
 
-    if (typeof value === "string") {
+    if (typeof value === 'string') {
       // Converte string para number com parseFloat
       const parsed = Number.parseFloat(value);
       if (Number.isNaN(parsed)) {
@@ -25,7 +25,7 @@ export class MoneyUtils {
       return parsed;
     }
 
-    if (typeof value === "number") {
+    if (typeof value === 'number') {
       // Já é number, retorna como está
       return value;
     }
@@ -39,7 +39,7 @@ export class MoneyUtils {
    * @returns Decimal do Prisma
    */
   static toDecimal(value: number | string): Decimal {
-    if (typeof value === "string") {
+    if (typeof value === 'string') {
       return new Decimal(value);
     }
     return new Decimal(value);
@@ -60,9 +60,9 @@ export class MoneyUtils {
    * @returns String formatada (ex: "R$ 1.234,56")
    */
   static formatBRL(value: number): string {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
     }).format(value);
   }
 
@@ -76,11 +76,11 @@ export class MoneyUtils {
       return !value.isNaN();
     }
 
-    if (typeof value === "number") {
+    if (typeof value === 'number') {
       return !Number.isNaN(value) && Number.isFinite(value);
     }
 
-    if (typeof value === "string") {
+    if (typeof value === 'string') {
       const parsed = Number.parseFloat(value);
       return !Number.isNaN(parsed) && Number.isFinite(parsed);
     }
@@ -120,6 +120,6 @@ export class MoneyUtils {
     items: T[],
     moneyFields: (keyof T)[]
   ): T[] {
-    return items.map((item) => this.transformMoneyFields(item, moneyFields));
+    return items.map(item => this.transformMoneyFields(item, moneyFields));
   }
 }

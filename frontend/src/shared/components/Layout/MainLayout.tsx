@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { useState } from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Drawer,
@@ -19,7 +19,7 @@ import {
   Tooltip,
   useMediaQuery,
   useTheme,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
@@ -35,28 +35,28 @@ import {
   ChevronLeft as ChevronLeftIcon,
   DarkMode as DarkModeIcon,
   LightMode as LightModeIcon,
-} from "@mui/icons-material";
-import { useAuthStore } from "@/lib/stores/authStore";
-import { useUIStore } from "@/lib/stores/uiStore";
+} from '@mui/icons-material';
+import { useAuthStore } from '@/lib/stores/authStore';
+import { useUIStore } from '@/lib/stores/uiStore';
 
 const drawerWidth = 260;
 
 const menuItems = [
-  { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
-  { text: "Contas a Pagar", icon: <PayablesIcon />, path: "/payables" },
-  { text: "Contas a Receber", icon: <ReceivablesIcon />, path: "/receivables" },
-  { text: "Pagamentos", icon: <PaymentsIcon />, path: "/payments" },
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+  { text: 'Contas a Pagar', icon: <PayablesIcon />, path: '/payables' },
+  { text: 'Contas a Receber', icon: <ReceivablesIcon />, path: '/receivables' },
+  { text: 'Pagamentos', icon: <PaymentsIcon />, path: '/payments' },
   { divider: true },
-  { text: "Clientes", icon: <CustomersIcon />, path: "/customers" },
-  { text: "Credores", icon: <VendorsIcon />, path: "/vendors" },
-  { text: "Categorias", icon: <CategoriesIcon />, path: "/categories" },
-  { text: "Tags", icon: <TagsIcon />, path: "/tags" },
+  { text: 'Clientes', icon: <CustomersIcon />, path: '/customers' },
+  { text: 'Credores', icon: <VendorsIcon />, path: '/vendors' },
+  { text: 'Categorias', icon: <CategoriesIcon />, path: '/categories' },
+  { text: 'Tags', icon: <TagsIcon />, path: '/tags' },
   { divider: true },
   {
-    text: "Usuários",
+    text: 'Usuários',
     icon: <UsersIcon />,
-    path: "/users",
-    roles: ["OWNER", "ADMIN"],
+    path: '/users',
+    roles: ['OWNER', 'ADMIN'],
   },
 ];
 
@@ -64,7 +64,7 @@ export function MainLayout() {
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const { user, logout } = useAuthStore();
   const {
@@ -87,7 +87,7 @@ export function MainLayout() {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate('/login');
   };
 
   const handleNavigation = (path: string) => {
@@ -97,20 +97,20 @@ export function MainLayout() {
     }
   };
 
-  const filteredMenuItems = menuItems.filter((item) => {
-    if ("roles" in item && item.roles) {
-      return item.roles.includes(user?.role || "");
+  const filteredMenuItems = menuItems.filter(item => {
+    if ('roles' in item && item.roles) {
+      return item.roles.includes(user?.role || '');
     }
     return true;
   });
 
   const drawer = (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Toolbar
         sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           px: 2,
         }}
       >
@@ -132,7 +132,7 @@ export function MainLayout() {
       <Divider />
       <List sx={{ flex: 1, pt: 1 }}>
         {filteredMenuItems.map((item, index) =>
-          "divider" in item ? (
+          'divider' in item ? (
             <Divider key={index} sx={{ my: 1 }} />
           ) : (
             <ListItem key={item.text} disablePadding sx={{ px: 1 }}>
@@ -142,14 +142,14 @@ export function MainLayout() {
                 sx={{
                   borderRadius: 1,
                   mb: 0.5,
-                  "&.Mui-selected": {
-                    backgroundColor: "primary.main",
-                    color: "primary.contrastText",
-                    "&:hover": {
-                      backgroundColor: "primary.dark",
+                  '&.Mui-selected': {
+                    backgroundColor: 'primary.main',
+                    color: 'primary.contrastText',
+                    '&:hover': {
+                      backgroundColor: 'primary.dark',
                     },
-                    "& .MuiListItemIcon-root": {
-                      color: "primary.contrastText",
+                    '& .MuiListItemIcon-root': {
+                      color: 'primary.contrastText',
                     },
                   },
                 }}
@@ -171,13 +171,13 @@ export function MainLayout() {
   );
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <AppBar
         position="fixed"
         sx={{
-          width: { md: sidebarOpen ? `calc(100% - ${drawerWidth}px)` : "100%" },
+          width: { md: sidebarOpen ? `calc(100% - ${drawerWidth}px)` : '100%' },
           ml: { md: sidebarOpen ? `${drawerWidth}px` : 0 },
-          transition: theme.transitions.create(["margin", "width"], {
+          transition: theme.transitions.create(['margin', 'width'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
           }),
@@ -188,8 +188,8 @@ export function MainLayout() {
         <Toolbar
           sx={{
             borderBottom: 1,
-            borderColor: "divider",
-            bgcolor: "background.paper",
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
           }}
         >
           <IconButton
@@ -204,19 +204,19 @@ export function MainLayout() {
 
           <Box sx={{ flexGrow: 1 }} />
 
-          <Tooltip title={themeMode === "dark" ? "Modo claro" : "Modo escuro"}>
+          <Tooltip title={themeMode === 'dark' ? 'Modo claro' : 'Modo escuro'}>
             <IconButton
               onClick={toggleThemeMode}
               color="inherit"
               sx={{ mr: 1 }}
             >
-              {themeMode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
+              {themeMode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
             </IconButton>
           </Tooltip>
 
           <Tooltip title="Perfil">
             <IconButton onClick={handleProfileMenu} size="small" sx={{ ml: 2 }}>
-              <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main" }}>
+              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
                 {user?.name?.charAt(0).toUpperCase()}
               </Avatar>
             </IconButton>
@@ -225,8 +225,8 @@ export function MainLayout() {
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
             onClose={handleCloseMenu}
-            transformOrigin={{ horizontal: "right", vertical: "top" }}
-            anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
           >
             <Box sx={{ px: 2, py: 1 }}>
               <Typography variant="subtitle2">{user?.name}</Typography>
@@ -259,9 +259,9 @@ export function MainLayout() {
           onClose={() => setSidebarOpen(false)}
           ModalProps={{ keepMounted: true }}
           sx={{
-            display: { xs: "block", md: "none" },
-            "& .MuiDrawer-paper": {
-              boxSizing: "border-box",
+            display: { xs: 'block', md: 'none' },
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
               width: drawerWidth,
             },
           }}
@@ -274,12 +274,12 @@ export function MainLayout() {
           variant="persistent"
           open={sidebarOpen}
           sx={{
-            display: { xs: "none", md: "block" },
-            "& .MuiDrawer-paper": {
-              boxSizing: "border-box",
+            display: { xs: 'none', md: 'block' },
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
               width: drawerWidth,
               borderRight: 1,
-              borderColor: "divider",
+              borderColor: 'divider',
             },
           }}
         >
@@ -292,14 +292,14 @@ export function MainLayout() {
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { md: sidebarOpen ? `calc(100% - ${drawerWidth}px)` : "100%" },
-          transition: theme.transitions.create(["margin", "width"], {
+          width: { md: sidebarOpen ? `calc(100% - ${drawerWidth}px)` : '100%' },
+          transition: theme.transitions.create(['margin', 'width'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
           }),
-          mt: "64px",
-          minHeight: "calc(100vh - 64px)",
-          bgcolor: "background.default",
+          mt: '64px',
+          minHeight: 'calc(100vh - 64px)',
+          bgcolor: 'background.default',
         }}
       >
         <Outlet />

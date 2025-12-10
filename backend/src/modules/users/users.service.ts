@@ -2,11 +2,11 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
-} from "@nestjs/common";
-import * as bcrypt from "bcryptjs";
-import { Prisma } from "@prisma/client";
-import { PrismaService } from "../../infrastructure/database/prisma.service";
-import { CreateUserDto, UpdateUserDto } from "./dto/user.dto";
+} from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../infrastructure/database/prisma.service';
+import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 
 @Injectable()
 export class UsersService {
@@ -24,7 +24,7 @@ export class UsersService {
         createdAt: true,
         updatedAt: true,
       },
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
     });
 
     return users;
@@ -45,7 +45,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException("Usuário não encontrado");
+      throw new NotFoundException('Usuário não encontrado');
     }
 
     return user;
@@ -58,7 +58,7 @@ export class UsersService {
     });
 
     if (existingUser) {
-      throw new ConflictException("Email já cadastrado nesta organização");
+      throw new ConflictException('Email já cadastrado nesta organização');
     }
 
     const hashedPassword = await bcrypt.hash(createDto.password, 10);
@@ -99,7 +99,7 @@ export class UsersService {
       });
 
       if (existingUser) {
-        throw new ConflictException("Email já cadastrado nesta organização");
+        throw new ConflictException('Email já cadastrado nesta organização');
       }
     }
 
@@ -128,7 +128,7 @@ export class UsersService {
     const user = await this.findOne(id, organizationId);
 
     if (id === currentUserId) {
-      throw new ConflictException("Você não pode excluir seu próprio usuário");
+      throw new ConflictException('Você não pode excluir seu próprio usuário');
     }
 
     await this.prisma.user.delete({

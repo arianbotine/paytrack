@@ -1,10 +1,10 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { PaletteMode } from "@mui/material";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { PaletteMode } from '@mui/material';
 
 interface Notification {
   message: string;
-  type: "success" | "error" | "warning" | "info";
+  type: 'success' | 'error' | 'warning' | 'info';
   open: boolean;
 }
 
@@ -16,32 +16,31 @@ interface UIState {
   setSidebarOpen: (open: boolean) => void;
   toggleThemeMode: () => void;
   setThemeMode: (mode: PaletteMode) => void;
-  showNotification: (message: string, type: Notification["type"]) => void;
+  showNotification: (message: string, type: Notification['type']) => void;
   hideNotification: () => void;
 }
 
 export const useUIStore = create<UIState>()(
   persist(
-    (set) => ({
+    set => ({
       sidebarOpen: true,
-      themeMode: "light" as PaletteMode,
+      themeMode: 'light' as PaletteMode,
       notification: {
-        message: "",
-        type: "info",
+        message: '',
+        type: 'info',
         open: false,
       },
 
-      toggleSidebar: () =>
-        set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+      toggleSidebar: () => set(state => ({ sidebarOpen: !state.sidebarOpen })),
 
-      setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      setSidebarOpen: open => set({ sidebarOpen: open }),
 
       toggleThemeMode: () =>
-        set((state) => ({
-          themeMode: state.themeMode === "light" ? "dark" : "light",
+        set(state => ({
+          themeMode: state.themeMode === 'light' ? 'dark' : 'light',
         })),
 
-      setThemeMode: (mode) => set({ themeMode: mode }),
+      setThemeMode: mode => set({ themeMode: mode }),
 
       showNotification: (message, type) =>
         set({
@@ -53,7 +52,7 @@ export const useUIStore = create<UIState>()(
         }),
 
       hideNotification: () =>
-        set((state) => ({
+        set(state => ({
           notification: {
             ...state.notification,
             open: false,
@@ -61,8 +60,8 @@ export const useUIStore = create<UIState>()(
         })),
     }),
     {
-      name: "paytrack-ui",
-      partialize: (state) => ({
+      name: 'paytrack-ui',
+      partialize: state => ({
         sidebarOpen: state.sidebarOpen,
         themeMode: state.themeMode,
       }),

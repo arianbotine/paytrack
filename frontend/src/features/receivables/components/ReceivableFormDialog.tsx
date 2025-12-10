@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect } from 'react';
 import {
   Box,
   Button,
@@ -19,23 +19,23 @@ import {
   FormHelperText,
   useMediaQuery,
   useTheme,
-} from "@mui/material";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { format, parseISO } from "date-fns";
-import { motion, AnimatePresence } from "framer-motion";
+} from '@mui/material';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { format, parseISO } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
 import type {
   Receivable,
   ReceivableFormData,
   Customer,
   Category,
   Tag,
-} from "../types";
+} from '../types';
 import {
   receivableSchema,
   getDefaultFormValues,
   formatCurrency,
-} from "../types";
+} from '../types';
 
 interface ReceivableFormDialogProps {
   open: boolean;
@@ -59,7 +59,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
   onClose,
 }) => {
   const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
+  const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const isEditing = !!receivable;
 
   const {
@@ -78,12 +78,12 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
         reset({
           description: receivable.description,
           amount: receivable.amount,
-          dueDate: format(parseISO(receivable.dueDate), "yyyy-MM-dd"),
+          dueDate: format(parseISO(receivable.dueDate), 'yyyy-MM-dd'),
           customerId: receivable.customer.id,
-          categoryId: receivable.category?.id || "",
-          tagIds: receivable.tags.map((t) => t.tag.id),
-          notes: receivable.notes || "",
-          invoiceNumber: receivable.invoiceNumber || "",
+          categoryId: receivable.category?.id || '',
+          tagIds: receivable.tags.map(t => t.tag.id),
+          notes: receivable.notes || '',
+          invoiceNumber: receivable.invoiceNumber || '',
         });
       } else {
         reset(getDefaultFormValues());
@@ -117,7 +117,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
         >
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogTitle>
-              {isEditing ? "Editar Conta a Receber" : "Nova Conta a Receber"}
+              {isEditing ? 'Editar Conta a Receber' : 'Nova Conta a Receber'}
             </DialogTitle>
             <DialogContent>
               <Grid container spacing={2} sx={{ mt: 0.5 }}>
@@ -146,7 +146,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                       <FormControl fullWidth error={!!errors.customerId}>
                         <InputLabel>Cliente</InputLabel>
                         <Select {...field} label="Cliente">
-                          {customers.map((customer) => (
+                          {customers.map(customer => (
                             <MenuItem key={customer.id} value={customer.id}>
                               {customer.name}
                             </MenuItem>
@@ -171,12 +171,12 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                         <InputLabel>Categoria</InputLabel>
                         <Select {...field} label="Categoria">
                           <MenuItem value="">Sem categoria</MenuItem>
-                          {categories.map((category) => (
+                          {categories.map(category => (
                             <MenuItem key={category.id} value={category.id}>
                               <Box
                                 sx={{
-                                  display: "flex",
-                                  alignItems: "center",
+                                  display: 'flex',
+                                  alignItems: 'center',
                                   gap: 1,
                                 }}
                               >
@@ -184,9 +184,9 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                                   sx={{
                                     width: 16,
                                     height: 16,
-                                    borderRadius: "50%",
+                                    borderRadius: '50%',
                                     backgroundColor:
-                                      category.color || "#e0e0e0",
+                                      category.color || '#e0e0e0',
                                   }}
                                 />
                                 {category.name}
@@ -261,14 +261,14 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                       <Autocomplete
                         multiple
                         options={tags}
-                        getOptionLabel={(option) => option.name}
-                        value={tags.filter((tag) =>
+                        getOptionLabel={option => option.name}
+                        value={tags.filter(tag =>
                           field.value?.includes(tag.id)
                         )}
                         onChange={(_, newValue) => {
-                          field.onChange(newValue.map((tag) => tag.id));
+                          field.onChange(newValue.map(tag => tag.id));
                         }}
-                        renderInput={(params) => (
+                        renderInput={params => (
                           <TextField {...params} label="Tags" />
                         )}
                         renderTags={(value, getTagProps) =>
@@ -279,8 +279,8 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                               label={option.name}
                               size="small"
                               sx={{
-                                backgroundColor: option.color || "#e0e0e0",
-                                color: "#fff",
+                                backgroundColor: option.color || '#e0e0e0',
+                                color: '#fff',
                               }}
                             />
                           ))
@@ -309,7 +309,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
 
               {receivable && receivable.receivedAmount > 0 && (
                 <Alert severity="info" sx={{ mt: 2 }}>
-                  Esta conta já possui recebimentos registrados no valor de{" "}
+                  Esta conta já possui recebimentos registrados no valor de{' '}
                   {formatCurrency(receivable.receivedAmount)}.
                 </Alert>
               )}
@@ -317,7 +317,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
             <DialogActions sx={{ px: 3, pb: 2 }}>
               <Button onClick={handleClose}>Cancelar</Button>
               <Button type="submit" variant="contained" disabled={isSubmitting}>
-                {isEditing ? "Salvar" : "Criar"}
+                {isEditing ? 'Salvar' : 'Criar'}
               </Button>
             </DialogActions>
           </form>

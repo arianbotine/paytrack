@@ -1,24 +1,24 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../../../lib/api";
-import { useUIStore } from "../../../lib/stores/uiStore";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../../../lib/api';
+import { useUIStore } from '../../../lib/stores/uiStore';
 import type {
   PayableFormData,
   PayablesResponse,
   Vendor,
   Category,
   Tag,
-} from "../types";
+} from '../types';
 
 // ============================================================
 // Query Keys
 // ============================================================
 
 export const payableKeys = {
-  all: ["payables"] as const,
-  lists: () => [...payableKeys.all, "list"] as const,
+  all: ['payables'] as const,
+  lists: () => [...payableKeys.all, 'list'] as const,
   list: (filters: Record<string, unknown>) =>
     [...payableKeys.lists(), filters] as const,
-  details: () => [...payableKeys.all, "detail"] as const,
+  details: () => [...payableKeys.all, 'detail'] as const,
   detail: (id: string) => [...payableKeys.details(), id] as const,
 };
 
@@ -44,10 +44,10 @@ export const usePayables = ({
         skip: page * rowsPerPage,
         take: rowsPerPage,
       };
-      if (status && status !== "ALL") {
+      if (status && status !== 'ALL') {
         params.status = status;
       }
-      const response = await api.get("/payables", { params });
+      const response = await api.get('/payables', { params });
       return response.data;
     },
   });
@@ -59,9 +59,9 @@ export const usePayables = ({
 
 export const useVendors = () => {
   return useQuery({
-    queryKey: ["vendors"],
+    queryKey: ['vendors'],
     queryFn: async (): Promise<Vendor[]> => {
-      const response = await api.get("/vendors");
+      const response = await api.get('/vendors');
       return response.data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -70,10 +70,10 @@ export const useVendors = () => {
 
 export const useCategories = () => {
   return useQuery({
-    queryKey: ["categories", "PAYABLE"],
+    queryKey: ['categories', 'PAYABLE'],
     queryFn: async (): Promise<Category[]> => {
-      const response = await api.get("/categories", {
-        params: { type: "PAYABLE" },
+      const response = await api.get('/categories', {
+        params: { type: 'PAYABLE' },
       });
       return response.data;
     },
@@ -83,9 +83,9 @@ export const useCategories = () => {
 
 export const useTags = () => {
   return useQuery({
-    queryKey: ["tags"],
+    queryKey: ['tags'],
     queryFn: async (): Promise<Tag[]> => {
-      const response = await api.get("/tags");
+      const response = await api.get('/tags');
       return response.data;
     },
     staleTime: 5 * 60 * 1000,
@@ -101,15 +101,15 @@ export const useCreatePayable = (onSuccess?: () => void) => {
   const { showNotification } = useUIStore();
 
   return useMutation({
-    mutationFn: (data: PayableFormData) => api.post("/payables", data),
+    mutationFn: (data: PayableFormData) => api.post('/payables', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: payableKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      showNotification("Conta a pagar criada com sucesso!", "success");
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showNotification('Conta a pagar criada com sucesso!', 'success');
       onSuccess?.();
     },
     onError: () => {
-      showNotification("Erro ao criar conta a pagar", "error");
+      showNotification('Erro ao criar conta a pagar', 'error');
     },
   });
 };
@@ -123,12 +123,12 @@ export const useUpdatePayable = (onSuccess?: () => void) => {
       api.patch(`/payables/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: payableKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      showNotification("Conta a pagar atualizada com sucesso!", "success");
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showNotification('Conta a pagar atualizada com sucesso!', 'success');
       onSuccess?.();
     },
     onError: () => {
-      showNotification("Erro ao atualizar conta a pagar", "error");
+      showNotification('Erro ao atualizar conta a pagar', 'error');
     },
   });
 };
@@ -141,12 +141,12 @@ export const useDeletePayable = (onSuccess?: () => void) => {
     mutationFn: (id: string) => api.delete(`/payables/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: payableKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      showNotification("Conta a pagar excluída com sucesso!", "success");
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showNotification('Conta a pagar excluída com sucesso!', 'success');
       onSuccess?.();
     },
     onError: () => {
-      showNotification("Erro ao excluir conta a pagar", "error");
+      showNotification('Erro ao excluir conta a pagar', 'error');
     },
   });
 };

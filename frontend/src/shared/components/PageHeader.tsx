@@ -1,5 +1,5 @@
-import { Box, Typography, Button } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
+import { Box, Typography, Button } from '@mui/material';
+import { Add as AddIcon } from '@mui/icons-material';
 
 interface PageHeaderAction {
   label: string;
@@ -16,9 +16,9 @@ export function PageHeader({ title, subtitle, action }: PageHeaderProps) {
   return (
     <Box
       sx={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
         mb: 3,
       }}
     >

@@ -1,19 +1,22 @@
-import { useQuery } from "@tanstack/react-query";
-import { Box, Grid, Typography, Skeleton } from "@mui/material";
+import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Box, Grid, Typography, Skeleton } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
   Warning as WarningIcon,
-} from "@mui/icons-material";
-import { api } from "@/lib/api";
-import { AnimatedPage, ErrorBoundary } from "../../../shared/components";
+} from '@mui/icons-material';
+import { AxiosError } from 'axios';
+import { api } from '@/lib/api';
+import { AnimatedPage, ErrorBoundary } from '../../../shared/components';
 import {
   SummaryCard,
   BalanceCard,
   CashFlowChart,
   StatusBarChart,
   AccountsTable,
-} from "../components";
+} from '../components';
 
 interface DashboardData {
   payables: {
@@ -48,12 +51,12 @@ interface DashboardData {
 }
 
 // Generate mock cash flow data based on current balance
-function generateCashFlowData(balance: DashboardData["balance"]) {
-  const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"];
+function generateCashFlowData(balance: DashboardData['balance']) {
+  const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
   const baseReceivables = balance.toReceive / 3;
   const basePayables = balance.toPay / 3;
 
-  return months.map((month) => ({
+  return months.map(month => ({
     month,
     receivables: Math.round(baseReceivables * (0.8 + Math.random() * 0.4)),
     payables: Math.round(basePayables * (0.8 + Math.random() * 0.4)),
@@ -62,11 +65,11 @@ function generateCashFlowData(balance: DashboardData["balance"]) {
 }
 
 // Generate status data from totals
-function generateStatusData(totals: DashboardData["payables"]["totals"]) {
+function generateStatusData(totals: DashboardData['payables']['totals']) {
   return [
-    { name: "PENDING", value: totals.pending },
-    { name: "OVERDUE", value: totals.overdue },
-    { name: "PARTIAL", value: totals.partial },
+    { name: 'PENDING', value: totals.pending },
+    { name: 'OVERDUE', value: totals.overdue },
+    { name: 'PARTIAL', value: totals.partial },
   ];
 }
 
@@ -77,7 +80,7 @@ function DashboardSkeleton() {
         Dashboard
       </Typography>
       <Grid container spacing={3}>
-        {[1, 2, 3, 4].map((i) => (
+        {[1, 2, 3, 4].map(i => (
           <Grid item xs={12} sm={6} md={3} key={i}>
             <Skeleton
               variant="rectangular"
@@ -113,13 +116,25 @@ function DashboardSkeleton() {
 }
 
 export function DashboardPage() {
+  const navigate = useNavigate();
+
   const { data, isLoading, error } = useQuery<DashboardData>({
-    queryKey: ["dashboard"],
+    queryKey: ['dashboard'],
     queryFn: async () => {
-      const response = await api.get("/dashboard");
+      const response = await api.get('/dashboard');
       return response.data;
     },
   });
+
+  useEffect(() => {
+    if (error) {
+      // Check if it's a 401 error (unauthorized)
+      const axiosError = error as AxiosError;
+      if (axiosError.response?.status === 401) {
+        navigate('/login');
+      }
+    }
+  }, [error, navigate]);
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -128,7 +143,7 @@ export function DashboardPage() {
   if (error || !data) {
     return (
       <AnimatedPage>
-        <Box sx={{ textAlign: "center", py: 8 }}>
+        <Box sx={{ textAlign: 'center', py: 8 }}>
           <Typography color="error" gutterBottom>
             Erro ao carregar dados do dashboard
           </Typography>

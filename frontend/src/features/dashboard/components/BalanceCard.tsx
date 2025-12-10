@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Card,
   CardContent,
@@ -6,12 +6,12 @@ import {
   Box,
   useTheme,
   alpha,
-} from "@mui/material";
-import { motion } from "framer-motion";
+} from '@mui/material';
+import { motion } from 'framer-motion';
 import {
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
-} from "@mui/icons-material";
+} from '@mui/icons-material';
 
 interface BalanceCardProps {
   toReceive: number;
@@ -20,9 +20,9 @@ interface BalanceCardProps {
 }
 
 const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
+  new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
   }).format(value);
 
 export const BalanceCard: React.FC<BalanceCardProps> = ({
@@ -50,7 +50,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                 theme.palette.error.main,
                 0.1
               )} 0%, ${alpha(theme.palette.error.light, 0.05)} 100%)`,
-          border: "1px solid",
+          border: '1px solid',
           borderColor: isPositive
             ? alpha(theme.palette.success.main, 0.2)
             : alpha(theme.palette.error.main, 0.2),
@@ -59,9 +59,9 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
         <CardContent>
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
           >
             <Box>
@@ -77,7 +77,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                   variant="h3"
                   fontWeight="bold"
                   sx={{
-                    color: isPositive ? "success.main" : "error.main",
+                    color: isPositive ? 'success.main' : 'error.main',
                   }}
                 >
                   {formatCurrency(net)}
@@ -91,11 +91,11 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
             <Box
               sx={{
                 p: 2,
-                borderRadius: "50%",
+                borderRadius: '50%',
                 bgcolor: isPositive
                   ? alpha(theme.palette.success.main, 0.1)
                   : alpha(theme.palette.error.main, 0.1),
-                color: isPositive ? "success.main" : "error.main",
+                color: isPositive ? 'success.main' : 'error.main',
               }}
             >
               {isPositive ? (
@@ -109,12 +109,12 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
           {/* Mini indicators */}
           <Box
             sx={{
-              display: "flex",
+              display: 'flex',
               gap: 3,
               mt: 3,
               pt: 2,
-              borderTop: "1px solid",
-              borderColor: "divider",
+              borderTop: '1px solid',
+              borderColor: 'divider',
             }}
           >
             <Box>

@@ -2,11 +2,11 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-} from "@nestjs/common";
-import { AccountStatus, Prisma } from "@prisma/client";
-import { PrismaService } from "../../infrastructure/database/prisma.service";
-import { CreatePaymentDto, QuickPaymentDto } from "./dto/payment.dto";
-import { MoneyUtils } from "../../shared/utils/money.utils";
+} from '@nestjs/common';
+import { AccountStatus, Prisma } from '@prisma/client';
+import { PrismaService } from '../../infrastructure/database/prisma.service';
+import { CreatePaymentDto, QuickPaymentDto } from './dto/payment.dto';
+import { MoneyUtils } from '../../shared/utils/money.utils';
 
 type Allocation = {
   payableId?: string;
@@ -19,33 +19,47 @@ export class PaymentsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(organizationId: string) {
-    const payments = await this.prisma.payment.findMany({
-      where: { organizationId },
-      include: {
-        allocations: {
-          include: {
-            payable: {
-              select: {
-                id: true,
-                description: true,
-                vendor: { select: { name: true } },
+    const [data, total] = await Promise.all([
+      this.prisma.payment.findMany({
+        where: { organizationId },
+        include: {
+          allocations: {
+            include: {
+              payable: {
+                select: {
+                  id: true,
+                  description: true,
+                  vendor: { select: { name: true } },
+                },
               },
-            },
-            receivable: {
-              select: {
-                id: true,
-                description: true,
-                customer: { select: { name: true } },
+              receivable: {
+                select: {
+                  id: true,
+                  description: true,
+                  customer: { select: { name: true } },
+                },
               },
             },
           },
         },
-      },
-      orderBy: { paymentDate: "desc" },
-    });
+        orderBy: { paymentDate: 'desc' },
+      }),
+      this.prisma.payment.count({ where: { organizationId } }),
+    ]);
 
     // Transform Decimal fields to numbers
-    return MoneyUtils.transformMoneyFieldsArray(payments, ["amount"]);
+    const transformedData = MoneyUtils.transformMoneyFieldsArray(data, [
+      'amount',
+    ]);
+
+    // Map paymentMethod to method for frontend compatibility
+    const mappedData = transformedData.map(payment => ({
+      ...payment,
+      method: payment.paymentMethod,
+      paymentMethod: undefined, // Remove the original field
+    }));
+
+    return { data: mappedData, total };
   }
 
   async findOne(id: string, organizationId: string) {
@@ -76,23 +90,23 @@ export class PaymentsService {
     });
 
     if (!payment) {
-      throw new NotFoundException("Pagamento não encontrado");
+      throw new NotFoundException('Pagamento não encontrado');
     }
 
     // Transform Decimal fields to numbers
     const transformedPayment = MoneyUtils.transformMoneyFields(payment, [
-      "amount",
+      'amount',
     ]);
 
     // Transform amounts in allocations
     const transformedAllocations = transformedPayment.allocations.map(
-      (allocation) => ({
+      allocation => ({
         ...allocation,
         payable: allocation.payable
-          ? MoneyUtils.transformMoneyFields(allocation.payable, ["amount"])
+          ? MoneyUtils.transformMoneyFields(allocation.payable, ['amount'])
           : allocation.payable,
         receivable: allocation.receivable
-          ? MoneyUtils.transformMoneyFields(allocation.receivable, ["amount"])
+          ? MoneyUtils.transformMoneyFields(allocation.receivable, ['amount'])
           : allocation.receivable,
       })
     );
@@ -114,7 +128,7 @@ export class PaymentsService {
       await this.validateAllocationAccounts(organizationId, allocations);
 
       // Create payment with allocations in a transaction
-      return await this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async tx => {
         const payment = await tx.payment.create({
           data: {
             organizationId,
@@ -123,7 +137,7 @@ export class PaymentsService {
             paymentMethod: paymentData.paymentMethod,
             notes: paymentData.notes,
             allocations: {
-              create: allocations.map((a) => ({
+              create: allocations.map(a => ({
                 payableId: a.payableId,
                 receivableId: a.receivableId,
                 amount: MoneyUtils.toDecimal(a.amount),
@@ -159,12 +173,12 @@ export class PaymentsService {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         throw new BadRequestException(
-          "Erro ao processar o pagamento: dados inválidos"
+          'Erro ao processar o pagamento: dados inválidos'
         );
       }
       if (error instanceof Prisma.PrismaClientValidationError) {
         throw new BadRequestException(
-          "Erro de validação nos dados do pagamento"
+          'Erro de validação nos dados do pagamento'
         );
       }
       if (
@@ -173,7 +187,7 @@ export class PaymentsService {
       ) {
         throw error; // Re-throw validation errors
       }
-      throw new BadRequestException("Erro interno ao processar o pagamento");
+      throw new BadRequestException('Erro interno ao processar o pagamento');
     }
   }
 
@@ -186,7 +200,7 @@ export class PaymentsService {
       notes: dto.notes,
       allocations: [
         {
-          ...(dto.type === "payable"
+          ...(dto.type === 'payable'
             ? { payableId: dto.accountId }
             : { receivableId: dto.accountId }),
           amount: dto.amount,
@@ -201,7 +215,7 @@ export class PaymentsService {
     const payment = await this.findOne(id, organizationId);
 
     // Reverse allocations in a transaction
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async tx => {
       for (const allocation of payment.allocations) {
         if (allocation.payableId) {
           const payable = await tx.payable.findUnique({
@@ -335,14 +349,14 @@ export class PaymentsService {
 
   private validateAllocations(allocations: Allocation[], totalAmount: number) {
     if (!allocations || allocations.length === 0) {
-      throw new BadRequestException("Pelo menos uma alocação é necessária");
+      throw new BadRequestException('Pelo menos uma alocação é necessária');
     }
 
     // Calculate total allocation
     const totalAllocation = allocations.reduce((sum, a) => sum + a.amount, 0);
     if (Math.abs(totalAllocation - totalAmount) > 0.01) {
       throw new BadRequestException(
-        "A soma das alocações deve ser igual ao valor do pagamento"
+        'A soma das alocações deve ser igual ao valor do pagamento'
       );
     }
   }
@@ -354,12 +368,12 @@ export class PaymentsService {
     for (const allocation of allocations) {
       if (!allocation.payableId && !allocation.receivableId) {
         throw new BadRequestException(
-          "Cada alocação deve ter uma conta a pagar ou a receber"
+          'Cada alocação deve ter uma conta a pagar ou a receber'
         );
       }
       if (allocation.payableId && allocation.receivableId) {
         throw new BadRequestException(
-          "Cada alocação deve ter apenas uma conta"
+          'Cada alocação deve ter apenas uma conta'
         );
       }
 
@@ -398,7 +412,7 @@ export class PaymentsService {
       payable.status === AccountStatus.CANCELLED
     ) {
       throw new BadRequestException(
-        `Conta a pagar já está ${payable.status === AccountStatus.PAID ? "paga" : "cancelada"}`
+        `Conta a pagar já está ${payable.status === AccountStatus.PAID ? 'paga' : 'cancelada'}`
       );
     }
 
@@ -428,7 +442,7 @@ export class PaymentsService {
       receivable.status === AccountStatus.CANCELLED
     ) {
       throw new BadRequestException(
-        `Conta a receber já está ${receivable.status === AccountStatus.PAID ? "recebida" : "cancelada"}`
+        `Conta a receber já está ${receivable.status === AccountStatus.PAID ? 'recebida' : 'cancelada'}`
       );
     }
 
@@ -446,7 +460,10 @@ export class PaymentsService {
     payableId: string,
     allocationAmount: number
   ) {
-    const payable = await tx.payable.findUnique({ where: { id: payableId } });
+    const payable = await tx.payable.findUnique({
+      where: { id: payableId },
+      include: { allocations: true },
+    });
     if (!payable) {
       throw new NotFoundException(`Conta a pagar ${payableId} não encontrada`);
     }
@@ -454,11 +471,30 @@ export class PaymentsService {
     const newPaidAmount = Number(payable.paidAmount) + allocationAmount;
     const totalAmount = Number(payable.amount);
 
+    // Validation: Ensure paid amount doesn't exceed total
+    if (newPaidAmount > totalAmount + 0.01) {
+      throw new BadRequestException(
+        `Valor pago (R$ ${newPaidAmount.toFixed(2)}) não pode exceder o valor total (R$ ${totalAmount.toFixed(2)})`
+      );
+    }
+
     let newStatus: AccountStatus;
     if (newPaidAmount >= totalAmount - 0.01) {
       newStatus = AccountStatus.PAID;
-    } else {
+      // Additional validation: Ensure there are allocations when marking as PAID
+      if (payable.allocations.length === 0 && newPaidAmount > 0) {
+        throw new BadRequestException(
+          'Não é possível marcar conta como paga sem registro de pagamento'
+        );
+      }
+    } else if (newPaidAmount > 0) {
       newStatus = AccountStatus.PARTIAL;
+    } else {
+      // Check if overdue when resetting to zero
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      newStatus =
+        payable.dueDate < today ? AccountStatus.OVERDUE : AccountStatus.PENDING;
     }
 
     await tx.payable.update({
@@ -477,6 +513,7 @@ export class PaymentsService {
   ) {
     const receivable = await tx.receivable.findUnique({
       where: { id: receivableId },
+      include: { allocations: true },
     });
     if (!receivable) {
       throw new NotFoundException(
@@ -487,11 +524,32 @@ export class PaymentsService {
     const newPaidAmount = Number(receivable.paidAmount) + allocationAmount;
     const totalAmount = Number(receivable.amount);
 
+    // Validation: Ensure paid amount doesn't exceed total
+    if (newPaidAmount > totalAmount + 0.01) {
+      throw new BadRequestException(
+        `Valor recebido (R$ ${newPaidAmount.toFixed(2)}) não pode exceder o valor total (R$ ${totalAmount.toFixed(2)})`
+      );
+    }
+
     let newStatus: AccountStatus;
     if (newPaidAmount >= totalAmount - 0.01) {
       newStatus = AccountStatus.PAID;
-    } else {
+      // Additional validation: Ensure there are allocations when marking as PAID
+      if (receivable.allocations.length === 0 && newPaidAmount > 0) {
+        throw new BadRequestException(
+          'Não é possível marcar conta como recebida sem registro de recebimento'
+        );
+      }
+    } else if (newPaidAmount > 0) {
       newStatus = AccountStatus.PARTIAL;
+    } else {
+      // Check if overdue when resetting to zero
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      newStatus =
+        receivable.dueDate < today
+          ? AccountStatus.OVERDUE
+          : AccountStatus.PENDING;
     }
 
     await tx.receivable.update({

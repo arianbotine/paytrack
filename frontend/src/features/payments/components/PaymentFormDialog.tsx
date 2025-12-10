@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect } from 'react';
 import {
   Box,
   Button,
@@ -22,28 +22,28 @@ import {
   Typography,
   useMediaQuery,
   useTheme,
-} from "@mui/material";
+} from '@mui/material';
 import {
   AccountBalance as PayableIcon,
   RequestQuote as ReceivableIcon,
-} from "@mui/icons-material";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { motion, AnimatePresence } from "framer-motion";
+} from '@mui/icons-material';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { motion, AnimatePresence } from 'framer-motion';
 import type {
   PaymentFormData,
   PaymentType,
   Payable,
   Receivable,
-} from "../types";
+} from '../types';
 import {
   paymentSchema,
   getDefaultFormValues,
   formatCurrency,
   PAYMENT_METHODS,
-} from "../types";
+} from '../types';
 
 interface PaymentFormDialogProps {
   open: boolean;
@@ -71,7 +71,7 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
   onClose,
 }) => {
   const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
+  const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
 
   const {
     control,
@@ -85,14 +85,12 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
     defaultValues: getDefaultFormValues(),
   });
 
-  const selectedPayableId = watch("payableId");
-  const selectedReceivableId = watch("receivableId");
+  const selectedPayableId = watch('payableId');
+  const selectedReceivableId = watch('receivableId');
 
-  const selectedPayable = pendingPayables.find(
-    (p) => p.id === selectedPayableId
-  );
+  const selectedPayable = pendingPayables.find(p => p.id === selectedPayableId);
   const selectedReceivable = pendingReceivables.find(
-    (r) => r.id === selectedReceivableId
+    r => r.id === selectedReceivableId
   );
 
   useEffect(() => {
@@ -103,10 +101,10 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
           payableId: preSelectedPayableId,
         });
         const payable = pendingPayables.find(
-          (p) => p.id === preSelectedPayableId
+          p => p.id === preSelectedPayableId
         );
         if (payable) {
-          setValue("amount", payable.amount - payable.paidAmount);
+          setValue('amount', payable.amount - payable.paidAmount);
         }
       } else if (preSelectedReceivableId) {
         reset({
@@ -114,10 +112,10 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
           receivableId: preSelectedReceivableId,
         });
         const receivable = pendingReceivables.find(
-          (r) => r.id === preSelectedReceivableId
+          r => r.id === preSelectedReceivableId
         );
         if (receivable) {
-          setValue("amount", receivable.amount - receivable.receivedAmount);
+          setValue('amount', receivable.amount - receivable.receivedAmount);
         }
       } else {
         reset(getDefaultFormValues());
@@ -144,9 +142,9 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
   ) => {
     if (value) {
       onPaymentTypeChange(value);
-      setValue("payableId", "");
-      setValue("receivableId", "");
-      setValue("amount", 0);
+      setValue('payableId', '');
+      setValue('receivableId', '');
+      setValue('amount', 0);
     }
   };
 
@@ -192,7 +190,7 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
 
               <Grid container spacing={2}>
                 <Grid item xs={12}>
-                  {paymentType === "PAYABLE" ? (
+                  {paymentType === 'PAYABLE' ? (
                     <Controller
                       name="payableId"
                       control={control}
@@ -202,30 +200,30 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                           <Select
                             {...field}
                             label="Conta a Pagar"
-                            onChange={(e) => {
+                            onChange={e => {
                               field.onChange(e);
                               const payable = pendingPayables.find(
-                                (p) => p.id === e.target.value
+                                p => p.id === e.target.value
                               );
                               if (payable) {
                                 setValue(
-                                  "amount",
+                                  'amount',
                                   payable.amount - payable.paidAmount
                                 );
                               }
                             }}
                           >
-                            {pendingPayables.map((payable) => (
+                            {pendingPayables.map(payable => (
                               <MenuItem key={payable.id} value={payable.id}>
                                 <Box
                                   sx={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    width: "100%",
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    width: '100%',
                                   }}
                                 >
                                   <span>
-                                    {payable.description} -{" "}
+                                    {payable.description} -{' '}
                                     {payable.vendor.name}
                                   </span>
                                   <Typography
@@ -234,7 +232,7 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                                   >
                                     {formatCurrency(
                                       payable.amount - payable.paidAmount
-                                    )}{" "}
+                                    )}{' '}
                                     pendente
                                   </Typography>
                                 </Box>
@@ -259,33 +257,33 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                           <Select
                             {...field}
                             label="Conta a Receber"
-                            onChange={(e) => {
+                            onChange={e => {
                               field.onChange(e);
                               const receivable = pendingReceivables.find(
-                                (r) => r.id === e.target.value
+                                r => r.id === e.target.value
                               );
                               if (receivable) {
                                 setValue(
-                                  "amount",
+                                  'amount',
                                   receivable.amount - receivable.receivedAmount
                                 );
                               }
                             }}
                           >
-                            {pendingReceivables.map((receivable) => (
+                            {pendingReceivables.map(receivable => (
                               <MenuItem
                                 key={receivable.id}
                                 value={receivable.id}
                               >
                                 <Box
                                   sx={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    width: "100%",
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    width: '100%',
                                   }}
                                 >
                                   <span>
-                                    {receivable.description} -{" "}
+                                    {receivable.description} -{' '}
                                     {receivable.customer.name}
                                   </span>
                                   <Typography
@@ -295,7 +293,7 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                                     {formatCurrency(
                                       receivable.amount -
                                         receivable.receivedAmount
-                                    )}{" "}
+                                    )}{' '}
                                     pendente
                                   </Typography>
                                 </Box>
@@ -335,8 +333,8 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                           </Grid>
                           <Grid item xs={6}>
                             <Typography variant="body2" color="text.secondary">
-                              Já{" "}
-                              {paymentType === "PAYABLE" ? "Pago" : "Recebido"}
+                              Já{' '}
+                              {paymentType === 'PAYABLE' ? 'Pago' : 'Recebido'}
                             </Typography>
                             <Typography>
                               {formatCurrency(
@@ -372,7 +370,7 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                                     selectedReceivable?.dueDate ||
                                     new Date().toISOString()
                                 ),
-                                "dd/MM/yyyy",
+                                'dd/MM/yyyy',
                                 { locale: ptBR }
                               )}
                             </Typography>
@@ -431,7 +429,7 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                       <FormControl fullWidth error={!!errors.method}>
                         <InputLabel>Método de Pagamento</InputLabel>
                         <Select {...field} label="Método de Pagamento">
-                          {PAYMENT_METHODS.map((method) => (
+                          {PAYMENT_METHODS.map(method => (
                             <MenuItem key={method.value} value={method.value}>
                               {method.label}
                             </MenuItem>
@@ -475,9 +473,9 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
 
               {(selectedPayable || selectedReceivable) && (
                 <Alert severity="info" sx={{ mt: 2 }}>
-                  {paymentType === "PAYABLE"
-                    ? "Após confirmar, a conta a pagar será atualizada automaticamente."
-                    : "Após confirmar, a conta a receber será atualizada automaticamente."}
+                  {paymentType === 'PAYABLE'
+                    ? 'Após confirmar, a conta a pagar será atualizada automaticamente.'
+                    : 'Após confirmar, a conta a receber será atualizada automaticamente.'}
                 </Alert>
               )}
             </DialogContent>
@@ -487,11 +485,11 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                 type="submit"
                 variant="contained"
                 disabled={isSubmitting}
-                color={paymentType === "PAYABLE" ? "error" : "success"}
+                color={paymentType === 'PAYABLE' ? 'error' : 'success'}
               >
-                {paymentType === "PAYABLE"
-                  ? "Registrar Pagamento"
-                  : "Registrar Recebimento"}
+                {paymentType === 'PAYABLE'
+                  ? 'Registrar Pagamento'
+                  : 'Registrar Recebimento'}
               </Button>
             </DialogActions>
           </form>

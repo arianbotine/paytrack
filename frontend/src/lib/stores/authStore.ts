@@ -1,5 +1,5 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 interface User {
   id: string;
@@ -22,7 +22,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    set => ({
       user: null,
       accessToken: null,
       refreshToken: null,
@@ -51,8 +51,8 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: "paytrack-auth",
-      partialize: (state) => ({
+      name: 'paytrack-auth',
+      partialize: state => ({
         user: state.user,
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,

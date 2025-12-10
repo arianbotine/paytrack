@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Box,
   Button,
@@ -24,26 +24,26 @@ import {
   Typography,
   ToggleButton,
   ToggleButtonGroup,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   AccountBalance as PayableIcon,
   RequestQuote as ReceivableIcon,
-} from "@mui/icons-material";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { api } from "../../../lib/api";
-import { PageHeader } from "../../../shared/components/PageHeader";
-import { ConfirmDialog } from "../../../shared/components/ConfirmDialog";
-import { useUIStore } from "../../../lib/stores/uiStore";
+} from '@mui/icons-material';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { api } from '../../../lib/api';
+import { PageHeader } from '../../../shared/components/PageHeader';
+import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { useUIStore } from '../../../lib/stores/uiStore';
 
 const categorySchema = z.object({
-  name: z.string().min(1, "Nome é obrigatório").max(100),
+  name: z.string().min(1, 'Nome é obrigatório').max(100),
   description: z.string().max(500).optional(),
-  type: z.enum(["PAYABLE", "RECEIVABLE"]),
+  type: z.enum(['PAYABLE', 'RECEIVABLE']),
   color: z.string().optional(),
 });
 
@@ -53,7 +53,7 @@ interface Category {
   id: string;
   name: string;
   description?: string;
-  type: "PAYABLE" | "RECEIVABLE";
+  type: 'PAYABLE' | 'RECEIVABLE';
   color?: string;
   createdAt: string;
   _count?: {
@@ -63,16 +63,16 @@ interface Category {
 }
 
 const COLORS = [
-  "#1976d2",
-  "#388e3c",
-  "#f57c00",
-  "#d32f2f",
-  "#7b1fa2",
-  "#0097a7",
-  "#455a64",
-  "#5d4037",
-  "#c2185b",
-  "#512da8",
+  '#1976d2',
+  '#388e3c',
+  '#f57c00',
+  '#d32f2f',
+  '#7b1fa2',
+  '#0097a7',
+  '#455a64',
+  '#5d4037',
+  '#c2185b',
+  '#512da8',
 ];
 
 export const CategoriesPage: React.FC = () => {
@@ -84,8 +84,8 @@ export const CategoriesPage: React.FC = () => {
     null
   );
   const [typeFilter, setTypeFilter] = useState<
-    "ALL" | "PAYABLE" | "RECEIVABLE"
-  >("ALL");
+    'ALL' | 'PAYABLE' | 'RECEIVABLE'
+  >('ALL');
 
   const {
     control,
@@ -95,31 +95,31 @@ export const CategoriesPage: React.FC = () => {
   } = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
     defaultValues: {
-      name: "",
-      description: "",
-      type: "PAYABLE",
+      name: '',
+      description: '',
+      type: 'PAYABLE',
       color: COLORS[0],
     },
   });
 
   const { data: categories = [], isLoading } = useQuery({
-    queryKey: ["categories", typeFilter],
+    queryKey: ['categories', typeFilter],
     queryFn: async () => {
-      const params = typeFilter !== "ALL" ? { type: typeFilter } : {};
-      const response = await api.get("/categories", { params });
+      const params = typeFilter !== 'ALL' ? { type: typeFilter } : {};
+      const response = await api.get('/categories', { params });
       return response.data;
     },
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: CategoryFormData) => api.post("/categories", data),
+    mutationFn: (data: CategoryFormData) => api.post('/categories', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-      showNotification("Categoria criada com sucesso!", "success");
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      showNotification('Categoria criada com sucesso!', 'success');
       handleCloseDialog();
     },
     onError: () => {
-      showNotification("Erro ao criar categoria", "error");
+      showNotification('Erro ao criar categoria', 'error');
     },
   });
 
@@ -127,25 +127,25 @@ export const CategoriesPage: React.FC = () => {
     mutationFn: ({ id, data }: { id: string; data: CategoryFormData }) =>
       api.patch(`/categories/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-      showNotification("Categoria atualizada com sucesso!", "success");
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      showNotification('Categoria atualizada com sucesso!', 'success');
       handleCloseDialog();
     },
     onError: () => {
-      showNotification("Erro ao atualizar categoria", "error");
+      showNotification('Erro ao atualizar categoria', 'error');
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/categories/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-      showNotification("Categoria excluída com sucesso!", "success");
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      showNotification('Categoria excluída com sucesso!', 'success');
       setDeleteDialogOpen(false);
       setSelectedCategory(null);
     },
     onError: () => {
-      showNotification("Erro ao excluir categoria", "error");
+      showNotification('Erro ao excluir categoria', 'error');
     },
   });
 
@@ -154,16 +154,16 @@ export const CategoriesPage: React.FC = () => {
       setSelectedCategory(category);
       reset({
         name: category.name,
-        description: category.description || "",
+        description: category.description || '',
         type: category.type,
         color: category.color || COLORS[0],
       });
     } else {
       setSelectedCategory(null);
       reset({
-        name: "",
-        description: "",
-        type: "PAYABLE",
+        name: '',
+        description: '',
+        type: 'PAYABLE',
         color: COLORS[0],
       });
     }
@@ -195,8 +195,8 @@ export const CategoriesPage: React.FC = () => {
     }
   };
 
-  const getTypeChip = (type: "PAYABLE" | "RECEIVABLE") => {
-    if (type === "PAYABLE") {
+  const getTypeChip = (type: 'PAYABLE' | 'RECEIVABLE') => {
+    if (type === 'PAYABLE') {
       return (
         <Chip
           icon={<PayableIcon />}
@@ -223,7 +223,7 @@ export const CategoriesPage: React.FC = () => {
       <PageHeader
         title="Categorias"
         subtitle="Organize suas contas por categorias"
-        action={{ label: "Nova Categoria", onClick: () => handleOpenDialog() }}
+        action={{ label: 'Nova Categoria', onClick: () => handleOpenDialog() }}
       />
 
       <Box sx={{ mb: 3 }}>
@@ -272,7 +272,7 @@ export const CategoriesPage: React.FC = () => {
                       sx={{
                         width: 24,
                         height: 24,
-                        borderRadius: "50%",
+                        borderRadius: '50%',
                         backgroundColor: category.color || COLORS[0],
                       }}
                     />
@@ -282,17 +282,17 @@ export const CategoriesPage: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
-                      {category.description || "-"}
+                      {category.description || '-'}
                     </Typography>
                   </TableCell>
                   <TableCell>{getTypeChip(category.type)}</TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">
                       {category._count
-                        ? category.type === "PAYABLE"
+                        ? category.type === 'PAYABLE'
                           ? `${category._count.payables} contas`
                           : `${category._count.receivables} contas`
-                        : "-"}
+                        : '-'}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
@@ -330,11 +330,11 @@ export const CategoriesPage: React.FC = () => {
       >
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogTitle>
-            {selectedCategory ? "Editar Categoria" : "Nova Categoria"}
+            {selectedCategory ? 'Editar Categoria' : 'Nova Categoria'}
           </DialogTitle>
           <DialogContent>
             <Box
-              sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}
+              sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}
             >
               <Controller
                 name="name"
@@ -392,25 +392,25 @@ export const CategoriesPage: React.FC = () => {
                     >
                       Cor
                     </Typography>
-                    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                      {COLORS.map((color) => (
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      {COLORS.map(color => (
                         <Box
                           key={color}
                           onClick={() => field.onChange(color)}
                           sx={{
                             width: 32,
                             height: 32,
-                            borderRadius: "50%",
+                            borderRadius: '50%',
                             backgroundColor: color,
-                            cursor: "pointer",
+                            cursor: 'pointer',
                             border:
                               field.value === color
-                                ? "3px solid #000"
-                                : "3px solid transparent",
-                            "&:hover": {
-                              transform: "scale(1.1)",
+                                ? '3px solid #000'
+                                : '3px solid transparent',
+                            '&:hover': {
+                              transform: 'scale(1.1)',
                             },
-                            transition: "all 0.2s",
+                            transition: 'all 0.2s',
                           }}
                         />
                       ))}
@@ -427,7 +427,7 @@ export const CategoriesPage: React.FC = () => {
               variant="contained"
               disabled={createMutation.isPending || updateMutation.isPending}
             >
-              {selectedCategory ? "Salvar" : "Criar"}
+              {selectedCategory ? 'Salvar' : 'Criar'}
             </Button>
           </DialogActions>
         </form>

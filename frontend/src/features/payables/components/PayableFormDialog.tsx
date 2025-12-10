@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect } from 'react';
 import {
   Box,
   Button,
@@ -19,13 +19,13 @@ import {
   FormHelperText,
   useMediaQuery,
   useTheme,
-} from "@mui/material";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { format, parseISO } from "date-fns";
-import { motion, AnimatePresence } from "framer-motion";
-import type { Payable, PayableFormData, Vendor, Category, Tag } from "../types";
-import { payableSchema, getDefaultFormValues, formatCurrency } from "../types";
+} from '@mui/material';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { format, parseISO } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
+import type { Payable, PayableFormData, Vendor, Category, Tag } from '../types';
+import { payableSchema, getDefaultFormValues, formatCurrency } from '../types';
 
 interface PayableFormDialogProps {
   open: boolean;
@@ -49,7 +49,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
   onClose,
 }) => {
   const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
+  const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const isEditing = !!payable;
 
   const {
@@ -68,12 +68,12 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
         reset({
           description: payable.description,
           amount: payable.amount,
-          dueDate: format(parseISO(payable.dueDate), "yyyy-MM-dd"),
+          dueDate: format(parseISO(payable.dueDate), 'yyyy-MM-dd'),
           vendorId: payable.vendor.id,
-          categoryId: payable.category?.id || "",
-          tagIds: payable.tags.map((t) => t.tag.id),
-          notes: payable.notes || "",
-          invoiceNumber: payable.invoiceNumber || "",
+          categoryId: payable.category?.id || '',
+          tagIds: payable.tags.map(t => t.tag.id),
+          notes: payable.notes || '',
+          invoiceNumber: payable.invoiceNumber || '',
         });
       } else {
         reset(getDefaultFormValues());
@@ -107,7 +107,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
         >
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogTitle>
-              {isEditing ? "Editar Conta a Pagar" : "Nova Conta a Pagar"}
+              {isEditing ? 'Editar Conta a Pagar' : 'Nova Conta a Pagar'}
             </DialogTitle>
             <DialogContent>
               <Grid container spacing={2} sx={{ mt: 0.5 }}>
@@ -136,7 +136,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                       <FormControl fullWidth error={!!errors.vendorId}>
                         <InputLabel>Fornecedor</InputLabel>
                         <Select {...field} label="Fornecedor">
-                          {vendors.map((vendor) => (
+                          {vendors.map(vendor => (
                             <MenuItem key={vendor.id} value={vendor.id}>
                               {vendor.name}
                             </MenuItem>
@@ -161,12 +161,12 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                         <InputLabel>Categoria</InputLabel>
                         <Select {...field} label="Categoria">
                           <MenuItem value="">Sem categoria</MenuItem>
-                          {categories.map((category) => (
+                          {categories.map(category => (
                             <MenuItem key={category.id} value={category.id}>
                               <Box
                                 sx={{
-                                  display: "flex",
-                                  alignItems: "center",
+                                  display: 'flex',
+                                  alignItems: 'center',
                                   gap: 1,
                                 }}
                               >
@@ -174,9 +174,9 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                                   sx={{
                                     width: 16,
                                     height: 16,
-                                    borderRadius: "50%",
+                                    borderRadius: '50%',
                                     backgroundColor:
-                                      category.color || "#e0e0e0",
+                                      category.color || '#e0e0e0',
                                   }}
                                 />
                                 {category.name}
@@ -251,14 +251,14 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                       <Autocomplete
                         multiple
                         options={tags}
-                        getOptionLabel={(option) => option.name}
-                        value={tags.filter((tag) =>
+                        getOptionLabel={option => option.name}
+                        value={tags.filter(tag =>
                           field.value?.includes(tag.id)
                         )}
                         onChange={(_, newValue) => {
-                          field.onChange(newValue.map((tag) => tag.id));
+                          field.onChange(newValue.map(tag => tag.id));
                         }}
-                        renderInput={(params) => (
+                        renderInput={params => (
                           <TextField {...params} label="Tags" />
                         )}
                         renderTags={(value, getTagProps) =>
@@ -269,8 +269,8 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                               label={option.name}
                               size="small"
                               sx={{
-                                backgroundColor: option.color || "#e0e0e0",
-                                color: "#fff",
+                                backgroundColor: option.color || '#e0e0e0',
+                                color: '#fff',
                               }}
                             />
                           ))
@@ -299,7 +299,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
 
               {payable && payable.paidAmount > 0 && (
                 <Alert severity="info" sx={{ mt: 2 }}>
-                  Esta conta já possui pagamentos registrados no valor de{" "}
+                  Esta conta já possui pagamentos registrados no valor de{' '}
                   {formatCurrency(payable.paidAmount)}.
                 </Alert>
               )}
@@ -307,7 +307,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
             <DialogActions sx={{ px: 3, pb: 2 }}>
               <Button onClick={handleClose}>Cancelar</Button>
               <Button type="submit" variant="contained" disabled={isSubmitting}>
-                {isEditing ? "Salvar" : "Criar"}
+                {isEditing ? 'Salvar' : 'Criar'}
               </Button>
             </DialogActions>
           </form>

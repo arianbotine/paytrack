@@ -1,5 +1,5 @@
-import React from "react";
-import { Box, Card, CardContent, Typography, useTheme } from "@mui/material";
+import React from 'react';
+import { Box, Card, CardContent, Typography, useTheme } from '@mui/material';
 import {
   AreaChart,
   Area,
@@ -9,8 +9,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-} from "recharts";
-import { motion } from "framer-motion";
+} from 'recharts';
+import { motion } from 'framer-motion';
 
 interface CashFlowData {
   month: string;
@@ -25,10 +25,10 @@ interface CashFlowChartProps {
 }
 
 const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    notation: "compact",
+  new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    notation: 'compact',
     maximumFractionDigits: 1,
   }).format(value);
 
@@ -37,12 +37,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return (
       <Box
         sx={{
-          bgcolor: "background.paper",
+          bgcolor: 'background.paper',
           p: 1.5,
           borderRadius: 1,
           boxShadow: 2,
-          border: "1px solid",
-          borderColor: "divider",
+          border: '1px solid',
+          borderColor: 'divider',
         }}
       >
         <Typography variant="subtitle2" fontWeight="bold">
@@ -64,13 +64,13 @@ export const CashFlowChart: React.FC<CashFlowChartProps> = ({
   isLoading,
 }) => {
   const theme = useTheme();
-  const isDarkMode = theme.palette.mode === "dark";
+  const isDarkMode = theme.palette.mode === 'dark';
 
   const colors = {
     receivables: theme.palette.success.main,
     payables: theme.palette.error.main,
     balance: theme.palette.primary.main,
-    grid: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+    grid: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
     text: theme.palette.text.secondary,
   };
 
@@ -93,9 +93,9 @@ export const CashFlowChart: React.FC<CashFlowChartProps> = ({
             <Box
               sx={{
                 height: 300,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               <Typography color="text.secondary">Carregando...</Typography>
@@ -164,7 +164,7 @@ export const CashFlowChart: React.FC<CashFlowChartProps> = ({
                 <Tooltip content={<CustomTooltip />} />
                 <Legend
                   wrapperStyle={{ paddingTop: 16 }}
-                  formatter={(value) => (
+                  formatter={value => (
                     <span style={{ color: colors.text }}>{value}</span>
                   )}
                 />

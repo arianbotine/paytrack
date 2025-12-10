@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { PrismaService } from "../../infrastructure/database/prisma.service";
-import { CreateVendorDto, UpdateVendorDto } from "./dto/vendor.dto";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../infrastructure/database/prisma.service';
+import { CreateVendorDto, UpdateVendorDto } from './dto/vendor.dto';
 
 @Injectable()
 export class VendorsService {
@@ -12,7 +12,7 @@ export class VendorsService {
         organizationId,
         ...(includeInactive ? {} : { isActive: true }),
       },
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
     });
   }
 
@@ -22,7 +22,7 @@ export class VendorsService {
     });
 
     if (!vendor) {
-      throw new NotFoundException("Credor não encontrado");
+      throw new NotFoundException('Credor não encontrado');
     }
 
     return vendor;

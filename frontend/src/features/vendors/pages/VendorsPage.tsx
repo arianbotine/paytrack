@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Card,
@@ -21,18 +21,18 @@ import {
   Tooltip,
   Alert,
   CircularProgress,
-} from "@mui/material";
-import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { api } from "@/lib/api";
-import { PageHeader, ConfirmDialog } from "@/shared/components";
+} from '@mui/material';
+import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { api } from '@/lib/api';
+import { PageHeader, ConfirmDialog } from '@/shared/components';
 
 const vendorSchema = z.object({
-  name: z.string().min(1, "Nome é obrigatório"),
+  name: z.string().min(1, 'Nome é obrigatório'),
   document: z.string().optional(),
-  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
   phone: z.string().optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
@@ -58,9 +58,9 @@ export function VendorsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: vendors, isLoading } = useQuery<Vendor[]>({
-    queryKey: ["vendors"],
+    queryKey: ['vendors'],
     queryFn: async () => {
-      const response = await api.get("/vendors?includeInactive=true");
+      const response = await api.get('/vendors?includeInactive=true');
       return response.data;
     },
   });
@@ -75,9 +75,9 @@ export function VendorsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: VendorFormData) => api.post("/vendors", data),
+    mutationFn: (data: VendorFormData) => api.post('/vendors', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vendors"] });
+      queryClient.invalidateQueries({ queryKey: ['vendors'] });
       handleCloseForm();
     },
   });
@@ -86,7 +86,7 @@ export function VendorsPage() {
     mutationFn: (data: VendorFormData) =>
       api.patch(`/vendors/${editingVendor?.id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vendors"] });
+      queryClient.invalidateQueries({ queryKey: ['vendors'] });
       handleCloseForm();
     },
   });
@@ -94,7 +94,7 @@ export function VendorsPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/vendors/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vendors"] });
+      queryClient.invalidateQueries({ queryKey: ['vendors'] });
       setDeleteId(null);
     },
   });
@@ -106,12 +106,12 @@ export function VendorsPage() {
     } else {
       setEditingVendor(null);
       reset({
-        name: "",
-        document: "",
-        email: "",
-        phone: "",
-        address: "",
-        notes: "",
+        name: '',
+        document: '',
+        email: '',
+        phone: '',
+        address: '',
+        notes: '',
       });
     }
     setOpenForm(true);
@@ -144,7 +144,7 @@ export function VendorsPage() {
       <PageHeader
         title="Credores"
         subtitle="Gerencie os credores para vincular às contas a pagar"
-        action={{ label: "Novo Credor", onClick: () => handleOpenForm() }}
+        action={{ label: 'Novo Credor', onClick: () => handleOpenForm() }}
       />
 
       <Card>
@@ -168,16 +168,16 @@ export function VendorsPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {vendors?.map((vendor) => (
+              {vendors?.map(vendor => (
                 <TableRow key={vendor.id} hover>
                   <TableCell>{vendor.name}</TableCell>
-                  <TableCell>{vendor.document || "-"}</TableCell>
-                  <TableCell>{vendor.email || "-"}</TableCell>
-                  <TableCell>{vendor.phone || "-"}</TableCell>
+                  <TableCell>{vendor.document || '-'}</TableCell>
+                  <TableCell>{vendor.email || '-'}</TableCell>
+                  <TableCell>{vendor.phone || '-'}</TableCell>
                   <TableCell align="center">
                     <Chip
-                      label={vendor.isActive ? "Ativo" : "Inativo"}
-                      color={vendor.isActive ? "success" : "default"}
+                      label={vendor.isActive ? 'Ativo' : 'Inativo'}
+                      color={vendor.isActive ? 'success' : 'default'}
                       size="small"
                     />
                   </TableCell>
@@ -211,38 +211,38 @@ export function VendorsPage() {
       <Dialog open={openForm} onClose={handleCloseForm} maxWidth="sm" fullWidth>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogTitle>
-            {editingVendor ? "Editar Credor" : "Novo Credor"}
+            {editingVendor ? 'Editar Credor' : 'Novo Credor'}
           </DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
               <TextField
                 label="Nome"
                 fullWidth
-                {...register("name")}
+                {...register('name')}
                 error={!!errors.name}
                 helperText={errors.name?.message}
               />
               <TextField
                 label="Documento (CPF/CNPJ)"
                 fullWidth
-                {...register("document")}
+                {...register('document')}
               />
               <TextField
                 label="Email"
                 fullWidth
                 type="email"
-                {...register("email")}
+                {...register('email')}
                 error={!!errors.email}
                 helperText={errors.email?.message}
               />
-              <TextField label="Telefone" fullWidth {...register("phone")} />
-              <TextField label="Endereço" fullWidth {...register("address")} />
+              <TextField label="Telefone" fullWidth {...register('phone')} />
+              <TextField label="Endereço" fullWidth {...register('address')} />
               <TextField
                 label="Observações"
                 fullWidth
                 multiline
                 rows={3}
-                {...register("notes")}
+                {...register('notes')}
               />
             </Stack>
           </DialogContent>
@@ -253,7 +253,7 @@ export function VendorsPage() {
               variant="contained"
               disabled={createMutation.isPending || updateMutation.isPending}
             >
-              {editingVendor ? "Salvar" : "Criar"}
+              {editingVendor ? 'Salvar' : 'Criar'}
             </Button>
           </DialogActions>
         </form>

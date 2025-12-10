@@ -1,64 +1,64 @@
-import { lazy, Suspense } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuthStore } from "./lib/stores/authStore";
-import { MainLayout } from "./shared/components/Layout/MainLayout";
-import { GlobalNotification } from "./shared/components/GlobalNotification";
-import { LoadingOverlay } from "./shared/components";
+import { lazy, Suspense } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './lib/stores/authStore';
+import { MainLayout } from './shared/components/Layout/MainLayout';
+import { GlobalNotification } from './shared/components/GlobalNotification';
+import { LoadingOverlay } from './shared/components';
 
 // Lazy load pages for code splitting
 const LoginPage = lazy(() =>
-  import("./features/auth/pages/LoginPage").then((m) => ({
+  import('./features/auth/pages/LoginPage').then(m => ({
     default: m.LoginPage,
   }))
 );
 const DashboardPage = lazy(() =>
-  import("./features/dashboard/pages/DashboardPage").then((m) => ({
+  import('./features/dashboard/pages/DashboardPage').then(m => ({
     default: m.DashboardPage,
   }))
 );
 const CustomersPage = lazy(() =>
-  import("./features/customers/pages/CustomersPage").then((m) => ({
+  import('./features/customers/pages/CustomersPage').then(m => ({
     default: m.CustomersPage,
   }))
 );
 const VendorsPage = lazy(() =>
-  import("./features/vendors/pages/VendorsPage").then((m) => ({
+  import('./features/vendors/pages/VendorsPage').then(m => ({
     default: m.VendorsPage,
   }))
 );
 const CategoriesPage = lazy(() =>
-  import("./features/categories/pages/CategoriesPage").then((m) => ({
+  import('./features/categories/pages/CategoriesPage').then(m => ({
     default: m.CategoriesPage,
   }))
 );
 const TagsPage = lazy(() =>
-  import("./features/tags/pages/TagsPage").then((m) => ({
+  import('./features/tags/pages/TagsPage').then(m => ({
     default: m.TagsPage,
   }))
 );
 const PayablesPage = lazy(() =>
-  import("./features/payables/pages/PayablesPage").then((m) => ({
+  import('./features/payables/pages/PayablesPage').then(m => ({
     default: m.PayablesPage,
   }))
 );
 const ReceivablesPage = lazy(() =>
-  import("./features/receivables/pages/ReceivablesPage").then((m) => ({
+  import('./features/receivables/pages/ReceivablesPage').then(m => ({
     default: m.ReceivablesPage,
   }))
 );
 const PaymentsPage = lazy(() =>
-  import("./features/payments/pages/PaymentsPage").then((m) => ({
+  import('./features/payments/pages/PaymentsPage').then(m => ({
     default: m.PaymentsPage,
   }))
 );
 const UsersPage = lazy(() =>
-  import("./features/users/pages/UsersPage").then((m) => ({
+  import('./features/users/pages/UsersPage').then(m => ({
     default: m.UsersPage,
   }))
 );
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 }
 

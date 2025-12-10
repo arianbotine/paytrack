@@ -1,6 +1,6 @@
-import React from "react";
-import { Box, Card, CardContent, Typography, alpha } from "@mui/material";
-import { motion } from "framer-motion";
+import React from 'react';
+import { Box, Card, CardContent, Typography, alpha } from '@mui/material';
+import { motion } from 'framer-motion';
 
 interface SummaryCardProps {
   title: string;
@@ -15,9 +15,9 @@ interface SummaryCardProps {
 }
 
 const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
+  new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
   }).format(value);
 
 export const SummaryCard: React.FC<SummaryCardProps> = ({
@@ -37,11 +37,11 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
     >
       <Card
         sx={{
-          position: "relative",
-          overflow: "hidden",
-          "&::before": {
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
             content: '""',
-            position: "absolute",
+            position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
@@ -53,9 +53,9 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
         <CardContent>
           <Box
             sx={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
             }}
           >
             <Box>
@@ -76,15 +76,15 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
                 </Typography>
               )}
               {trend && (
-                <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
                   <Typography
                     variant="caption"
                     sx={{
-                      color: trend.isPositive ? "success.main" : "error.main",
+                      color: trend.isPositive ? 'success.main' : 'error.main',
                       fontWeight: 500,
                     }}
                   >
-                    {trend.isPositive ? "+" : "-"}
+                    {trend.isPositive ? '+' : '-'}
                     {Math.abs(trend.value)}%
                   </Typography>
                   <Typography
@@ -103,9 +103,9 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
                 borderRadius: 2,
                 bgcolor: alpha(color, 0.12),
                 color: color,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               {icon}
