@@ -60,7 +60,7 @@ model Organization {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  users       User[]
+  users       UserOrganization[]
   customers   Customer[]
   vendors     Vendor[]
   categories  Category[]
@@ -74,22 +74,39 @@ model Organization {
 }
 
 model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  name          String
+  isSystemAdmin Boolean  @default(false) @map("is_system_admin")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organizations UserOrganization[]
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+model UserOrganization {
   id             String   @id @default(uuid())
+  userId         String   @map("user_id")
   organizationId String   @map("organization_id")
-  email          String
-  password       String
-  name           String
   role           UserRole @default(VIEWER)
-  isActive       Boolean  @default(true)
+  isActive       Boolean  @default(true) @map("is_active")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   // Relations
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  auditLogs    AuditLog[]
 
-  @@unique([organizationId, email])
-  @@map("users")
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+  @@map("user_organizations")
 }
 
 model Customer {

@@ -54,6 +54,26 @@ export function LoginPage() {
       const response = await api.post('/auth/login', data);
       const { accessToken, refreshToken, user } = response.data;
       setAuth(user, accessToken, refreshToken);
+
+      // System admin without org goes to admin dashboard
+      if (user.isSystemAdmin && !user.currentOrganization) {
+        navigate('/admin');
+        return;
+      }
+
+      // User with current org goes to dashboard
+      if (user.currentOrganization) {
+        navigate('/dashboard');
+        return;
+      }
+
+      // User with multiple orgs but none selected goes to selector
+      if (user.availableOrganizations.length > 1) {
+        navigate('/select-organization');
+        return;
+      }
+
+      // Should not reach here (backend auto-selects single org)
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao fazer login');
@@ -151,8 +171,19 @@ export function LoginPage() {
           </form>
 
           <Box sx={{ mt: 3, textAlign: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              Demo: admin@paytrack.com / admin123
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+            >
+              Admin: admin@paytrack.com / admin123
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+            >
+              Owner: owner@empresademo.com.br / owner123
             </Typography>
           </Box>
         </CardContent>

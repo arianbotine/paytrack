@@ -35,6 +35,7 @@ import {
   ChevronLeft as ChevronLeftIcon,
   DarkMode as DarkModeIcon,
   LightMode as LightModeIcon,
+  AdminPanelSettings as AdminIcon,
 } from '@mui/icons-material';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useUIStore } from '@/lib/stores/uiStore';
@@ -90,6 +91,11 @@ export function MainLayout() {
     navigate('/login');
   };
 
+  const handleAdminPanel = () => {
+    handleCloseMenu();
+    navigate('/admin');
+  };
+
   const handleNavigation = (path: string) => {
     navigate(path);
     if (isMobile) {
@@ -99,7 +105,7 @@ export function MainLayout() {
 
   const filteredMenuItems = menuItems.filter(item => {
     if ('roles' in item && item.roles) {
-      return item.roles.includes(user?.role || '');
+      return item.roles.includes(user?.currentOrganization?.role || '');
     }
     return true;
   });
@@ -164,7 +170,7 @@ export function MainLayout() {
       <Divider />
       <Box sx={{ p: 2 }}>
         <Typography variant="caption" color="text.secondary">
-          {user?.organizationName}
+          {user?.currentOrganization?.name || 'Sem organização'}
         </Typography>
       </Box>
     </Box>
@@ -235,6 +241,17 @@ export function MainLayout() {
               </Typography>
             </Box>
             <Divider />
+            {user?.isSystemAdmin && (
+              <>
+                <MenuItem onClick={handleAdminPanel}>
+                  <ListItemIcon>
+                    <AdminIcon fontSize="small" />
+                  </ListItemIcon>
+                  Painel Admin
+                </MenuItem>
+                <Divider />
+              </>
+            )}
             <MenuItem onClick={handleLogout}>
               <ListItemIcon>
                 <LogoutIcon fontSize="small" />

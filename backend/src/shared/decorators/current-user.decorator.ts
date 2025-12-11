@@ -1,11 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-
-export interface JwtPayload {
-  sub: string;
-  email: string;
-  organizationId: string;
-  role: string;
-}
+import { JwtPayload } from '../../modules/auth/dto/auth.dto';
 
 export const CurrentUser = createParamDecorator(
   (data: keyof JwtPayload | undefined, ctx: ExecutionContext) => {

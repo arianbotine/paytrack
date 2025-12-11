@@ -1,4 +1,10 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  MinLength,
+  IsUUID,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class LoginDto {
@@ -12,6 +18,13 @@ export class LoginDto {
   @IsNotEmpty({ message: 'Senha é obrigatória' })
   @MinLength(6, { message: 'Senha deve ter no mínimo 6 caracteres' })
   password!: string;
+}
+
+export class SelectOrganizationDto {
+  @ApiProperty({ example: 'uuid' })
+  @IsUUID('4', { message: 'Organization ID inválido' })
+  @IsNotEmpty({ message: 'Organization ID é obrigatório' })
+  organizationId!: string;
 }
 
 export class RefreshTokenDto {
@@ -33,8 +46,24 @@ export class AuthResponseDto {
     id: string;
     email: string;
     name: string;
-    role: string;
-    organizationId: string;
-    organizationName: string;
+    isSystemAdmin: boolean;
+    currentOrganization?: {
+      id: string;
+      name: string;
+      role: string;
+    };
+    availableOrganizations: Array<{
+      id: string;
+      name: string;
+      role: string;
+    }>;
   };
+}
+
+export interface JwtPayload {
+  sub: string;
+  email: string;
+  organizationId?: string;
+  role?: string;
+  isSystemAdmin: boolean;
 }

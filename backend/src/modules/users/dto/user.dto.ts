@@ -56,6 +56,30 @@ export class UpdateUserDto {
   isActive?: boolean;
 }
 
+export class UpdateProfileDto {
+  @ApiPropertyOptional({ example: 'joao@empresa.com' })
+  @IsEmail({}, { message: 'Email inválido' })
+  @IsOptional()
+  email?: string;
+
+  @ApiPropertyOptional({ example: 'novasenha123' })
+  @IsString()
+  @MinLength(6, { message: 'Senha deve ter no mínimo 6 caracteres' })
+  @IsOptional()
+  password?: string;
+
+  @ApiPropertyOptional({ example: 'João Silva' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+}
+
+export class AssociateUserDto {
+  @ApiProperty({ enum: UserRole, example: UserRole.ACCOUNTANT })
+  @IsEnum(UserRole)
+  role!: UserRole;
+}
+
 export class UserResponseDto {
   id!: string;
   email!: string;

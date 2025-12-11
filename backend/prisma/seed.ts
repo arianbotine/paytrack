@@ -12,6 +12,21 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding database...');
 
+  // Create system admin user (no organization)
+  const hashedAdminPassword = await bcrypt.hash('admin123', 10);
+  const systemAdmin = await prisma.user.upsert({
+    where: { email: 'admin@paytrack.com' },
+    update: {},
+    create: {
+      email: 'admin@paytrack.com',
+      password: hashedAdminPassword,
+      name: 'System Administrator',
+      isSystemAdmin: true,
+    },
+  });
+
+  console.log('✅ System Admin user created:', systemAdmin.email);
+
   // Create default organization
   const organization = await prisma.organization.upsert({
     where: { document: '12345678000199' },
@@ -27,26 +42,36 @@ async function main() {
 
   console.log('✅ Organization created:', organization.name);
 
-  // Create admin user
-  const hashedPassword = await bcrypt.hash('admin123', 10);
-  const adminUser = await prisma.user.upsert({
+  // Create demo organization user (OWNER)
+  const hashedOwnerPassword = await bcrypt.hash('owner123', 10);
+  const ownerUser = await prisma.user.upsert({
+    where: { email: 'owner@empresademo.com.br' },
+    update: {},
+    create: {
+      email: 'owner@empresademo.com.br',
+      password: hashedOwnerPassword,
+      name: 'Proprietário Demo',
+      isSystemAdmin: false,
+    },
+  });
+
+  // Associate owner with organization
+  await prisma.userOrganization.upsert({
     where: {
-      organizationId_email: {
+      userId_organizationId: {
+        userId: ownerUser.id,
         organizationId: organization.id,
-        email: 'admin@paytrack.com',
       },
     },
     update: {},
     create: {
+      userId: ownerUser.id,
       organizationId: organization.id,
-      email: 'admin@paytrack.com',
-      password: hashedPassword,
-      name: 'Administrador',
       role: UserRole.OWNER,
     },
   });
 
-  console.log('✅ Admin user created:', adminUser.email);
+  console.log('✅ Demo Owner user created and associated:', ownerUser.email);
 
   // Create categories for payables
   const payableCategoriesData = [
@@ -420,8 +445,12 @@ async function main() {
 
   console.log('\n🎉 Seed completed successfully!');
   console.log('\n📋 Login credentials:');
-  console.log('   Email: admin@paytrack.com');
-  console.log('   Password: admin123');
+  console.log('   System Admin:');
+  console.log('     Email: admin@paytrack.com');
+  console.log('     Password: admin123');
+  console.log('\n   Demo Organization Owner:');
+  console.log('     Email: owner@empresademo.com.br');
+  console.log('     Password: owner123');
 }
 
 (async () => {

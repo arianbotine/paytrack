@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './lib/stores/authStore';
 import { MainLayout } from './shared/components/Layout/MainLayout';
+import { AdminLayout } from './shared/components/Layout/AdminLayout';
 import { GlobalNotification } from './shared/components/GlobalNotification';
 import { LoadingOverlay } from './shared/components';
 
@@ -11,9 +12,29 @@ const LoginPage = lazy(() =>
     default: m.LoginPage,
   }))
 );
+const SelectOrganizationPage = lazy(() =>
+  import('./features/auth/pages/SelectOrganizationPage').then(m => ({
+    default: m.SelectOrganizationPage,
+  }))
+);
 const DashboardPage = lazy(() =>
   import('./features/dashboard/pages/DashboardPage').then(m => ({
     default: m.DashboardPage,
+  }))
+);
+const AdminDashboardPage = lazy(() =>
+  import('./features/admin/pages/AdminDashboardPage').then(m => ({
+    default: m.AdminDashboardPage,
+  }))
+);
+const AdminOrganizationsPage = lazy(() =>
+  import('./features/admin/pages/AdminOrganizationsPage').then(m => ({
+    default: m.AdminOrganizationsPage,
+  }))
+);
+const AdminUsersPage = lazy(() =>
+  import('./features/admin/pages/AdminUsersPage').then(m => ({
+    default: m.AdminUsersPage,
   }))
 );
 const CustomersPage = lazy(() =>
@@ -62,6 +83,20 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuthStore();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (!user?.isSystemAdmin) {
+    return <Navigate to="/dashboard" />;
+  }
+  
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <>
@@ -69,6 +104,22 @@ function App() {
       <Suspense fallback={<LoadingOverlay open />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/select-organization"
+            element={<SelectOrganizationPage />}
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminLayout />
+              </AdminRoute>
+            }
+          >
+            <Route index element={<AdminDashboardPage />} />
+            <Route path="organizations" element={<AdminOrganizationsPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+          </Route>
           <Route
             path="/"
             element={

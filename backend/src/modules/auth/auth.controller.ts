@@ -13,7 +13,12 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { LoginDto, RefreshTokenDto, AuthResponseDto } from './dto/auth.dto';
+import {
+  LoginDto,
+  RefreshTokenDto,
+  AuthResponseDto,
+  SelectOrganizationDto,
+} from './dto/auth.dto';
 import { Public, CurrentUser } from '../../shared/decorators';
 
 @ApiTags('Autenticação')
@@ -33,6 +38,23 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
   async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.login(loginDto);
+  }
+
+  @Post('select-organization')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Selecionar organização ativa' })
+  @ApiResponse({
+    status: 200,
+    description: 'Organização selecionada com sucesso',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Organização não disponível' })
+  async selectOrganization(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: SelectOrganizationDto
+  ): Promise<AuthResponseDto> {
+    return this.authService.selectOrganization(userId, dto);
   }
 
   @Public()

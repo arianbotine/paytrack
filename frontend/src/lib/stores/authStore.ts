@@ -1,13 +1,19 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+interface Organization {
+  id: string;
+  name: string;
+  role: string;
+}
+
 interface User {
   id: string;
   email: string;
   name: string;
-  role: string;
-  organizationId: string;
-  organizationName: string;
+  isSystemAdmin: boolean;
+  currentOrganization?: Organization;
+  availableOrganizations: Organization[];
 }
 
 interface AuthState {

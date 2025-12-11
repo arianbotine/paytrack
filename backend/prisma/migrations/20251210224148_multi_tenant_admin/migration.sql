@@ -31,16 +31,28 @@ CREATE TABLE "organizations" (
 -- CreateTable
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
-    "organization_id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "role" "UserRole" NOT NULL DEFAULT 'VIEWER',
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "is_system_admin" BOOLEAN NOT NULL DEFAULT false,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "user_organizations" (
+    "id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "organization_id" TEXT NOT NULL,
+    "role" "UserRole" NOT NULL DEFAULT 'VIEWER',
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "user_organizations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -204,7 +216,16 @@ CREATE TABLE "audit_logs" (
 CREATE UNIQUE INDEX "organizations_document_key" ON "organizations"("document");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "users_organization_id_email_key" ON "users"("organization_id", "email");
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
+CREATE INDEX "user_organizations_user_id_idx" ON "user_organizations"("user_id");
+
+-- CreateIndex
+CREATE INDEX "user_organizations_organization_id_idx" ON "user_organizations"("organization_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "user_organizations_user_id_organization_id_key" ON "user_organizations"("user_id", "organization_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "categories_organization_id_name_type_key" ON "categories"("organization_id", "name", "type");
@@ -219,7 +240,10 @@ CREATE INDEX "audit_logs_organization_id_entity_entity_id_idx" ON "audit_logs"("
 CREATE INDEX "audit_logs_created_at_idx" ON "audit_logs"("created_at");
 
 -- AddForeignKey
-ALTER TABLE "users" ADD CONSTRAINT "users_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_organizations" ADD CONSTRAINT "user_organizations_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_organizations" ADD CONSTRAINT "user_organizations_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "customers" ADD CONSTRAINT "customers_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "organizations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
