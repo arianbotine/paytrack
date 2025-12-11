@@ -16,6 +16,9 @@ import {
   Avatar,
   Menu,
   MenuItem,
+  Select,
+  FormControl,
+  Chip,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -26,6 +29,7 @@ import {
   Home as HomeIcon,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../../lib/stores/authStore';
+import { api } from '../../../lib/api';
 
 const drawerWidth = 240;
 
@@ -42,9 +46,10 @@ const adminMenuItems = [
 export function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const { user, logout, setAuth } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [switchingOrg, setSwitchingOrg] = useState(false);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -65,7 +70,30 @@ export function AdminLayout() {
   };
 
   const handleBackToApp = () => {
-    navigate('/dashboard');
+    if (user?.currentOrganization) {
+      navigate('/dashboard');
+    } else {
+      navigate('/select-organization');
+    }
+  };
+
+  const handleOrganizationChange = async (organizationId: string) => {
+    setSwitchingOrg(true);
+    try {
+      const response = await api.post('/auth/select-organization', {
+        organizationId,
+      });
+      setAuth(
+        response.data.user,
+        response.data.accessToken,
+        response.data.refreshToken
+      );
+      // Stay on admin panel after switching
+    } catch (error) {
+      console.error('Erro ao trocar organização:', error);
+    } finally {
+      setSwitchingOrg(false);
+    }
   };
 
   const drawer = (
@@ -126,7 +154,59 @@ export function AdminLayout() {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Painel Administrativo
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {user?.availableOrganizations &&
+              user.availableOrganizations.length > 0 && (
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <Select
+                    value={user.currentOrganization?.id || ''}
+                    onChange={e => handleOrganizationChange(e.target.value)}
+                    disabled={switchingOrg}
+                    sx={{
+                      bgcolor: 'error.dark',
+                      color: 'white',
+                      '& .MuiSelect-icon': { color: 'white' },
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(255,255,255,0.3)',
+                      },
+                    }}
+                    displayEmpty
+                    renderValue={selected => {
+                      if (!selected) {
+                        return <em>Selecione uma organização</em>;
+                      }
+                      const org = user.availableOrganizations.find(
+                        o => o.id === selected
+                      );
+                      return (
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <BusinessIcon fontSize="small" />
+                          <Typography variant="body2">{org?.name}</Typography>
+                        </Box>
+                      );
+                    }}
+                  >
+                    {user.availableOrganizations.map(org => (
+                      <MenuItem key={org.id} value={org.id}>
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <BusinessIcon fontSize="small" />
+                          <Typography>{org.name}</Typography>
+                          <Chip
+                            label={org.role}
+                            size="small"
+                            color="primary"
+                            sx={{ ml: 1 }}
+                          />
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
             <Typography variant="body2">{user?.name}</Typography>
             <IconButton onClick={handleMenuOpen} size="small">
               <Avatar

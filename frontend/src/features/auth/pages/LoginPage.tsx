@@ -55,21 +55,22 @@ export function LoginPage() {
       const { accessToken, refreshToken, user } = response.data;
       setAuth(user, accessToken, refreshToken);
 
-      // System admin without org goes to admin dashboard
-      if (user.isSystemAdmin && !user.currentOrganization) {
-        navigate('/admin');
-        return;
-      }
-
       // User with current org goes to dashboard
       if (user.currentOrganization) {
         navigate('/dashboard');
         return;
       }
 
-      // User with multiple orgs but none selected goes to selector
-      if (user.availableOrganizations.length > 1) {
+      // User with available orgs but none selected goes to selector
+      // (including sysadmin who needs to choose an org)
+      if (user.availableOrganizations.length > 0) {
         navigate('/select-organization');
+        return;
+      }
+
+      // System admin without any orgs goes to admin dashboard
+      if (user.isSystemAdmin) {
+        navigate('/admin');
         return;
       }
 

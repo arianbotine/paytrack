@@ -39,26 +39,6 @@ status:
 	fi
 
 # ===========================================
-# Logs
-# ===========================================
-
-## Mostra todos os logs em tempo real
-logs:
-	@./view-logs.sh
-
-## Mostra logs do backend
-logs-backend:
-	@tail -f logs/backend.log
-
-## Mostra logs do frontend
-logs-frontend:
-	@tail -f logs/frontend.log
-
-## Mostra logs do banco de dados
-logs-db:
-	@tail -f logs/db.log
-
-# ===========================================
 # Banco de Dados
 # ===========================================
 
@@ -68,7 +48,7 @@ db-shell:
 
 ## Executa migrations do Prisma
 migrate:
-	@cd backend && npx prisma migrate dev
+	@cd backend && npx prisma migrate dev --skip-seed
 
 ## Executa migrations em produção
 migrate-deploy:

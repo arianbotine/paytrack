@@ -304,3 +304,16 @@ ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_organization_id_fkey" FOREIG
 
 -- AddForeignKey
 ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- Create system admin user
+INSERT INTO "users" ("id", "email", "password", "name", "is_system_admin", "is_active", "created_at", "updated_at")
+VALUES (
+  'system-admin-uuid',
+  'admin@paytrack.com',
+  '$2b$10$Hqb1kYgQTeSWRgM0q79muuZIQWL3Ju1LYRIGJ55.pR.hmDw33mwLK',
+  'System Administrator',
+  true,
+  true,
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP
+);

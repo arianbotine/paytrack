@@ -12,8 +12,9 @@ import {
   Chip,
   CircularProgress,
   Alert,
+  Button,
 } from '@mui/material';
-import { Business } from '@mui/icons-material';
+import { Business, AdminPanelSettings } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/stores/authStore';
 
@@ -46,6 +47,8 @@ export function SelectOrganizationPage() {
     return null;
   }
 
+  const organizations = user.availableOrganizations || [];
+
   return (
     <Box
       sx={{
@@ -74,8 +77,29 @@ export function SelectOrganizationPage() {
             </Alert>
           )}
 
+          {organizations.length === 0 && !user.isSystemAdmin && (
+            <Alert severity="warning" sx={{ mb: 3 }}>
+              Você não possui acesso a nenhuma organização. Entre em contato com
+              o administrador.
+            </Alert>
+          )}
+
+          {organizations.length === 0 && user.isSystemAdmin && (
+            <Alert severity="info" sx={{ mb: 3 }}>
+              Nenhuma organização cadastrada no sistema. Acesse o painel admin
+              para criar uma organização.
+            </Alert>
+          )}
+
+          {organizations.length > 0 && user.isSystemAdmin && (
+            <Alert severity="info" sx={{ mb: 3 }}>
+              Como administrador do sistema, você pode acessar o painel admin
+              sem selecionar uma organização.
+            </Alert>
+          )}
+
           <List>
-            {user.availableOrganizations.map(org => (
+            {organizations.map(org => (
               <ListItem key={org.id} disablePadding sx={{ mb: 1 }}>
                 <ListItemButton
                   onClick={() => handleSelectOrganization(org.id)}
@@ -113,6 +137,19 @@ export function SelectOrganizationPage() {
           {loading && (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
               <CircularProgress />
+            </Box>
+          )}
+
+          {user.isSystemAdmin && (
+            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+              <Button
+                variant="outlined"
+                startIcon={<AdminPanelSettings />}
+                onClick={() => navigate('/admin')}
+                fullWidth
+              >
+                Ir para Painel Admin
+              </Button>
             </Box>
           )}
         </CardContent>
