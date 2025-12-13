@@ -92,11 +92,11 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
           <TableRow>
             <TableCell>Descrição</TableCell>
             <TableCell>Cliente</TableCell>
-            <TableCell>Categoria</TableCell>
+            <TableCell sx={{ display: { xs: "none", tablet: "table-cell" } }}>Categoria</TableCell>
             <TableCell align="right">Valor</TableCell>
             <TableCell>Vencimento</TableCell>
             <TableCell>Status</TableCell>
-            <TableCell align="right">Recebido</TableCell>
+            <TableCell align="right" sx={{ display: { xs: "none", tablet: "table-cell" } }}>Recebido</TableCell>
             <TableCell align="right">Ações</TableCell>
           </TableRow>
         </TableHead>
@@ -162,7 +162,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                     </Box>
                   </TableCell>
                   <TableCell>{receivable.customer.name}</TableCell>
-                  <TableCell>
+                  <TableCell sx={{ display: { xs: "none", tablet: "table-cell" } }}>
                     {receivable.category && (
                       <Chip
                         label={receivable.category.name}
@@ -191,7 +191,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                   <TableCell>
                     <StatusChip status={receivable.status} />
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ display: { xs: "none", tablet: "table-cell" } }}>
                     <Typography
                       color={
                         receivable.receivedAmount > 0

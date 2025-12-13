@@ -40,6 +40,7 @@ import { useAuthStore } from "@/lib/stores/authStore";
 import { useUIStore } from "@/lib/stores/uiStore";
 
 const drawerWidth = 260;
+const miniWidth = 64;
 
 const menuItems = [
   { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
@@ -65,6 +66,7 @@ export function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isTablet = useMediaQuery(theme.breakpoints.only("tablet"));
 
   const { user, logout } = useAuthStore();
   const {
@@ -123,7 +125,7 @@ export function MainLayout() {
         >
           PayTrack
         </Typography>
-        {!isMobile && (
+        {!isMobile && !isTablet && (
           <IconButton onClick={toggleSidebar} size="small">
             <ChevronLeftIcon />
           </IconButton>
@@ -155,7 +157,7 @@ export function MainLayout() {
                 }}
               >
                 <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
+                <ListItemText primary={item.text} sx={{ display: isTablet ? "none" : "block" }} />
               </ListItemButton>
             </ListItem>
           )
@@ -175,8 +177,8 @@ export function MainLayout() {
       <AppBar
         position="fixed"
         sx={{
-          width: { md: sidebarOpen ? `calc(100% - ${drawerWidth}px)` : "100%" },
-          ml: { md: sidebarOpen ? `${drawerWidth}px` : 0 },
+          width: { tablet: sidebarOpen ? `calc(100% - ${miniWidth}px)` : "100%", md: sidebarOpen ? `calc(100% - ${drawerWidth}px)` : "100%" },
+          ml: { tablet: sidebarOpen ? `${miniWidth}px` : 0, md: sidebarOpen ? `${drawerWidth}px` : 0 },
           transition: theme.transitions.create(["margin", "width"], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
@@ -248,8 +250,8 @@ export function MainLayout() {
       <Box
         component="nav"
         sx={{
-          width: { md: sidebarOpen ? drawerWidth : 0 },
-          flexShrink: { md: 0 },
+          width: { tablet: sidebarOpen ? miniWidth : 0, md: sidebarOpen ? drawerWidth : 0 },
+          flexShrink: { tablet: 0, md: 0 },
         }}
       >
         {/* Mobile drawer */}
@@ -274,10 +276,10 @@ export function MainLayout() {
           variant="persistent"
           open={sidebarOpen}
           sx={{
-            display: { xs: "none", md: "block" },
+            display: { xs: "none", tablet: "block", md: "block" },
             "& .MuiDrawer-paper": {
               boxSizing: "border-box",
-              width: drawerWidth,
+              width: isTablet ? miniWidth : drawerWidth,
               borderRight: 1,
               borderColor: "divider",
             },
@@ -292,7 +294,7 @@ export function MainLayout() {
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { md: sidebarOpen ? `calc(100% - ${drawerWidth}px)` : "100%" },
+          width: { tablet: sidebarOpen ? `calc(100% - ${miniWidth}px)` : "100%", md: sidebarOpen ? `calc(100% - ${drawerWidth}px)` : "100%" },
           transition: theme.transitions.create(["margin", "width"], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,

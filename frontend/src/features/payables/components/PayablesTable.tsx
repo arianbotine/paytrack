@@ -92,11 +92,11 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
           <TableRow>
             <TableCell>Descrição</TableCell>
             <TableCell>Fornecedor</TableCell>
-            <TableCell>Categoria</TableCell>
+            <TableCell sx={{ display: { xs: "none", tablet: "table-cell" } }}>Categoria</TableCell>
             <TableCell align="right">Valor</TableCell>
             <TableCell>Vencimento</TableCell>
             <TableCell>Status</TableCell>
-            <TableCell align="right">Pago</TableCell>
+            <TableCell align="right" sx={{ display: { xs: "none", tablet: "table-cell" } }}>Pago</TableCell>
             <TableCell align="right">Ações</TableCell>
           </TableRow>
         </TableHead>
@@ -162,7 +162,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                     </Box>
                   </TableCell>
                   <TableCell>{payable.vendor.name}</TableCell>
-                  <TableCell>
+                  <TableCell sx={{ display: { xs: "none", tablet: "table-cell" } }}>
                     {payable.category && (
                       <Chip
                         label={payable.category.name}
@@ -201,7 +201,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                       {formatCurrency(payable.paidAmount)}
                     </Typography>
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ display: { xs: "none", tablet: "table-cell" } }}>
                     <Box
                       sx={{
                         display: "flex",
