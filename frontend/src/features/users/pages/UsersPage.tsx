@@ -36,13 +36,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { format, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { api } from '../../../lib/api';
 import { PageHeader } from '../../../shared/components/PageHeader';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { useUIStore } from '../../../lib/stores/uiStore';
 import { useAuthStore } from '../../../lib/stores/authStore';
+import { formatLocalDate } from '../../../shared/utils/dateUtils';
 
 const userSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').max(100),
@@ -204,8 +203,13 @@ export const UsersPage: React.FC = () => {
     if (selectedUser) {
       updateMutation.mutate({ id: selectedUser.id, data });
     } else {
-      const { isActive, ...createData } = data;
-      createMutation.mutate(createData as CreateUserData);
+      const createData: CreateUserData = {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        role: data.role,
+      };
+      createMutation.mutate(createData);
     }
   };
 
@@ -260,6 +264,99 @@ export const UsersPage: React.FC = () => {
     return false;
   };
 
+  const renderTableBody = () => {
+    if (isLoading) {
+      return (
+        <TableRow>
+          <TableCell colSpan={7} align="center">
+            Carregando...
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    if (users.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={7} align="center">
+            Nenhum usuário encontrado
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    return users.map((user: User) => (
+      <TableRow key={user.id} hover>
+        <TableCell>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <PersonIcon color="action" />
+            <Box>
+              <Typography fontWeight="medium">{user.name}</Typography>
+              {user.id === currentUser?.id && (
+                <Typography variant="caption" color="primary">
+                  (você)
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        </TableCell>
+        <TableCell>{user.email}</TableCell>
+        <TableCell>{getRoleChip(user.role)}</TableCell>
+        <TableCell>
+          <Chip
+            label={user.isActive ? 'Ativo' : 'Inativo'}
+            color={user.isActive ? 'success' : 'default'}
+            size="small"
+            variant="outlined"
+          />
+        </TableCell>
+        <TableCell>
+          {user.lastLogin
+            ? new Date(user.lastLogin).toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : 'Nunca acessou'}
+        </TableCell>
+        <TableCell>{formatLocalDate(user.createdAt)}</TableCell>
+        <TableCell align="right">
+          <Tooltip
+            title={canEditUser(user) ? 'Editar' : 'Sem permissão para editar'}
+          >
+            <span>
+              <IconButton
+                size="small"
+                onClick={() => handleOpenDialog(user)}
+                disabled={!canEditUser(user)}
+              >
+                <EditIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip
+            title={
+              canDeleteUser(user) ? 'Excluir' : 'Sem permissão para excluir'
+            }
+          >
+            <span>
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => handleDelete(user)}
+                disabled={!canDeleteUser(user)}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </TableCell>
+      </TableRow>
+    ));
+  };
+
   if (!canManageUsers) {
     return (
       <Box>
@@ -295,100 +392,7 @@ export const UsersPage: React.FC = () => {
               <TableCell align="right">Ações</TableCell>
             </TableRow>
           </TableHead>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  Carregando...
-                </TableCell>
-              </TableRow>
-            ) : users.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  Nenhum usuário encontrado
-                </TableCell>
-              </TableRow>
-            ) : (
-              users.map((user: User) => (
-                <TableRow key={user.id} hover>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <PersonIcon color="action" />
-                      <Box>
-                        <Typography fontWeight="medium">{user.name}</Typography>
-                        {user.id === currentUser?.id && (
-                          <Typography variant="caption" color="primary">
-                            (você)
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{getRoleChip(user.role)}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={user.isActive ? 'Ativo' : 'Inativo'}
-                      color={user.isActive ? 'success' : 'default'}
-                      size="small"
-                      variant="outlined"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {user.lastLogin
-                      ? format(
-                          parseISO(user.lastLogin),
-                          "dd/MM/yyyy 'às' HH:mm",
-                          { locale: ptBR }
-                        )
-                      : 'Nunca acessou'}
-                  </TableCell>
-                  <TableCell>
-                    {format(parseISO(user.createdAt), 'dd/MM/yyyy', {
-                      locale: ptBR,
-                    })}
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip
-                      title={
-                        canEditUser(user)
-                          ? 'Editar'
-                          : 'Sem permissão para editar'
-                      }
-                    >
-                      <span>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenDialog(user)}
-                          disabled={!canEditUser(user)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-                    <Tooltip
-                      title={
-                        canDeleteUser(user)
-                          ? 'Excluir'
-                          : 'Sem permissão para excluir'
-                      }
-                    >
-                      <span>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDelete(user)}
-                          disabled={!canDeleteUser(user)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
+          <TableBody>{renderTableBody()}</TableBody>
         </Table>
       </TableContainer>
 

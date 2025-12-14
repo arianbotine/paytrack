@@ -82,6 +82,8 @@ export const statusOptions = [
 // Utility Functions
 // ============================================================
 
+import { getTodayLocalInput } from '../../shared/utils/dateUtils';
+
 export const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -92,7 +94,7 @@ export const formatCurrency = (value: number): string => {
 export const getDefaultFormValues = (): PayableFormData => ({
   description: '',
   amount: 0,
-  dueDate: new Date().toISOString().split('T')[0],
+  dueDate: getTodayLocalInput(),
   vendorId: '',
   categoryId: '',
   tagIds: [],

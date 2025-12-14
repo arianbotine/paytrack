@@ -18,8 +18,8 @@ import {
   Warning as WarningIcon,
   Schedule as ScheduleIcon,
 } from '@mui/icons-material';
-import { format } from 'date-fns';
 import { motion } from 'framer-motion';
+import { formatLocalDate } from '../../../shared/utils/dateUtils';
 
 interface Account {
   id: string;
@@ -152,10 +152,7 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                       </TableCell>
                       <TableCell align="center">
                         <Chip
-                          label={format(
-                            new Date(account.dueDate),
-                            'dd/MM/yyyy'
-                          )}
+                          label={formatLocalDate(account.dueDate)}
                           size="small"
                           color={alertColor}
                           variant="outlined"

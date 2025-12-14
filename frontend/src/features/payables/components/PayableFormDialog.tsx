@@ -22,10 +22,10 @@ import {
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format, parseISO } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Payable, PayableFormData, Vendor, Category, Tag } from '../types';
 import { payableSchema, getDefaultFormValues, formatCurrency } from '../types';
+import { toLocalDateInput } from '../../../shared/utils/dateUtils';
 
 interface PayableFormDialogProps {
   open: boolean;
@@ -68,7 +68,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
         reset({
           description: payable.description,
           amount: payable.amount,
-          dueDate: format(parseISO(payable.dueDate), 'yyyy-MM-dd'),
+          dueDate: toLocalDateInput(payable.dueDate), // Converte UTC para local
           vendorId: payable.vendor.id,
           categoryId: payable.category?.id || '',
           tagIds: payable.tags.map(t => t.tag.id),

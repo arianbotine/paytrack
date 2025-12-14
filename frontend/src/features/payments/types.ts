@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getTodayLocalInput } from '../../shared/utils/dateUtils';
 
 // ============================================================
 // Types & Interfaces
@@ -111,7 +112,7 @@ export const getMethodLabel = (method: string): string => {
 
 export const getDefaultFormValues = (): PaymentFormData => ({
   amount: 0,
-  paymentDate: new Date().toISOString().split('T')[0],
+  paymentDate: getTodayLocalInput(),
   method: 'PIX',
   reference: '',
   notes: '',

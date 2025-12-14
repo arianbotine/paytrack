@@ -22,7 +22,6 @@ import {
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format, parseISO } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import type {
   Receivable,
@@ -36,6 +35,7 @@ import {
   getDefaultFormValues,
   formatCurrency,
 } from '../types';
+import { toLocalDateInput } from '../../../shared/utils/dateUtils';
 
 interface ReceivableFormDialogProps {
   open: boolean;
@@ -78,7 +78,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
         reset({
           description: receivable.description,
           amount: receivable.amount,
-          dueDate: format(parseISO(receivable.dueDate), 'yyyy-MM-dd'),
+          dueDate: toLocalDateInput(receivable.dueDate), // Converte UTC para local
           customerId: receivable.customer.id,
           categoryId: receivable.category?.id || '',
           tagIds: receivable.tags.map(t => t.tag.id),

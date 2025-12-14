@@ -29,9 +29,8 @@ import {
 } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatLocalDate } from '../../../shared/utils/dateUtils';
 import type {
   PaymentFormData,
   PaymentType,
@@ -364,14 +363,10 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                               Vencimento
                             </Typography>
                             <Typography>
-                              {format(
-                                parseISO(
-                                  selectedPayable?.dueDate ||
-                                    selectedReceivable?.dueDate ||
-                                    new Date().toISOString()
-                                ),
-                                'dd/MM/yyyy',
-                                { locale: ptBR }
+                              {formatLocalDate(
+                                selectedPayable?.dueDate ||
+                                  selectedReceivable?.dueDate ||
+                                  new Date().toISOString()
                               )}
                             </Typography>
                           </Grid>

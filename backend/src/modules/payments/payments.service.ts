@@ -195,6 +195,8 @@ export class PaymentsService {
         data: {
           organizationId,
           amount: MoneyUtils.toDecimal(paymentData.amount),
+          // Backend sempre trabalha com UTC - sem conversões de timezone
+          // O frontend já enviou a data em UTC
           paymentDate: new Date(paymentData.paymentDate),
           paymentMethod: paymentData.paymentMethod,
           notes: paymentData.notes,

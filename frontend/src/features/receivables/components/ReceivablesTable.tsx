@@ -21,11 +21,11 @@ import {
   Warning as WarningIcon,
   Error as ErrorIcon,
 } from '@mui/icons-material';
-import { format, parseISO, differenceInDays, isAfter } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { differenceInDays, isAfter } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StatusChip } from '../../../shared/components/StatusChip';
 import { TableSkeleton, EmptyState } from '../../../shared/components';
+import { parseUTCDate, formatLocalDate } from '../../../shared/utils/dateUtils';
 import type { Receivable } from '../types';
 import { formatCurrency } from '../types';
 
@@ -46,7 +46,7 @@ const getDueDateAlert = (dueDate: string, status: string) => {
   if (status === 'PAID' || status === 'CANCELLED') return null;
 
   const today = new Date();
-  const due = parseISO(dueDate);
+  const due = parseUTCDate(dueDate); // Converte UTC para local
   const daysUntilDue = differenceInDays(due, today);
 
   if (status === 'OVERDUE' || isAfter(today, due)) {
@@ -191,9 +191,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {format(parseISO(receivable.dueDate), 'dd/MM/yyyy', {
-                        locale: ptBR,
-                      })}
+                      {formatLocalDate(receivable.dueDate)}
                       {getDueDateAlert(receivable.dueDate, receivable.status)}
                     </Box>
                   </TableCell>

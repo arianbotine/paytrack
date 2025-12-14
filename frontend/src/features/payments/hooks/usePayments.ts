@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../lib/api';
 import { useUIStore } from '../../../lib/stores/uiStore';
+import { toUTC } from '../../../shared/utils/dateUtils';
 import type {
   PaymentFormData,
   PaymentsResponse,
@@ -78,7 +79,7 @@ export const useCreatePayment = (onSuccess?: () => void) => {
     mutationFn: (data: PaymentFormData) => {
       const payload = {
         amount: data.amount,
-        paymentDate: data.paymentDate,
+        paymentDate: toUTC(data.paymentDate), // Converte data local para UTC
         paymentMethod: data.method,
         notes: data.notes || undefined,
         allocations: [

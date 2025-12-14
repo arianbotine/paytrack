@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../lib/api';
 import { useUIStore } from '../../../lib/stores/uiStore';
+import { toUTC } from '../../../shared/utils/dateUtils';
 import type {
   PayableFormData,
   PayablesResponse,
@@ -167,6 +168,7 @@ export const usePayableOperations = (callbacks?: {
   const submitPayable = (data: PayableFormData, payableId?: string) => {
     const payload = {
       ...data,
+      dueDate: toUTC(data.dueDate), // Converte data local para UTC antes de enviar
       categoryId: data.categoryId || undefined,
       tagIds: data.tagIds?.length ? data.tagIds : undefined,
     };
