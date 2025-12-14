@@ -27,7 +27,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   isLoading = false,
-}: ConfirmDialogProps) {
+}: Readonly<ConfirmDialogProps>) {
   return (
     <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
       <DialogTitle>{title}</DialogTitle>

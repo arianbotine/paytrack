@@ -6,13 +6,16 @@ interface TableSkeletonProps {
   columns?: number;
 }
 
-export function TableSkeleton({ rows = 5, columns = 6 }: TableSkeletonProps) {
+export function TableSkeleton({
+  rows = 5,
+  columns = 6,
+}: Readonly<TableSkeletonProps>) {
   return (
     <>
-      {Array.from({ length: rows }).map((_, rowIndex) => (
-        <TableRow key={`row-${rowIndex}`}>
-          {Array.from({ length: columns }).map((_, colIndex) => (
-            <TableCell key={`cell-${rowIndex}-${colIndex}`}>
+      {Array.from({ length: rows }, (_, rowIndex) => (
+        <TableRow key={`table-row-${rowIndex}`}>
+          {Array.from({ length: columns }, (_, colIndex) => (
+            <TableCell key={`table-cell-${rowIndex}-${colIndex}`}>
               <Skeleton
                 variant="text"
                 width="100%"
@@ -32,12 +35,12 @@ interface CardSkeletonProps {
   count?: number;
 }
 
-export function CardSkeleton({ count = 4 }: CardSkeletonProps) {
+export function CardSkeleton({ count = 4 }: Readonly<CardSkeletonProps>) {
   return (
     <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-      {Array.from({ length: count }).map((_, i) => (
+      {Array.from({ length: count }, (_, i) => (
         <motion.div
-          key={i}
+          key={`card-skeleton-${i}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
@@ -80,8 +83,8 @@ export function CardSkeleton({ count = 4 }: CardSkeletonProps) {
 export function FormSkeleton() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      {Array.from({ length: 4 }).map((_, i) => (
-        <Box key={i}>
+      {Array.from({ length: 4 }, (_, i) => (
+        <Box key={`form-field-${i}`}>
           <Skeleton
             variant="text"
             width={100}

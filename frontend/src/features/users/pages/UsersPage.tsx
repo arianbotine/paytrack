@@ -24,6 +24,8 @@ import {
   Typography,
   Grid,
   Alert,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -51,9 +53,12 @@ const userSchema = z.object({
     .optional()
     .or(z.literal('')),
   role: z.enum(['OWNER', 'ADMIN', 'ACCOUNTANT', 'VIEWER']),
+  isActive: z.boolean(),
 });
 
 type UserFormData = z.infer<typeof userSchema>;
+
+type CreateUserData = Omit<UserFormData, 'isActive'>;
 
 interface User {
   id: string;
@@ -81,7 +86,8 @@ export const UsersPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const canManageUsers =
-    currentUser?.role === 'OWNER' || currentUser?.role === 'ADMIN';
+    currentUser?.currentOrganization?.role === 'OWNER' ||
+    currentUser?.currentOrganization?.role === 'ADMIN';
 
   const {
     control,
@@ -95,6 +101,7 @@ export const UsersPage: React.FC = () => {
       email: '',
       password: '',
       role: 'VIEWER',
+      isActive: true,
     },
   });
 
@@ -107,7 +114,7 @@ export const UsersPage: React.FC = () => {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: UserFormData) => api.post('/users', data),
+    mutationFn: (data: CreateUserData) => api.post('/users', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       showNotification('Usuário criado com sucesso!', 'success');
@@ -172,6 +179,7 @@ export const UsersPage: React.FC = () => {
         email: user.email,
         password: '',
         role: user.role,
+        isActive: user.isActive,
       });
     } else {
       setSelectedUser(null);
@@ -180,6 +188,7 @@ export const UsersPage: React.FC = () => {
         email: '',
         password: '',
         role: 'VIEWER',
+        isActive: true,
       });
     }
     setDialogOpen(true);
@@ -195,7 +204,8 @@ export const UsersPage: React.FC = () => {
     if (selectedUser) {
       updateMutation.mutate({ id: selectedUser.id, data });
     } else {
-      createMutation.mutate(data);
+      const { isActive, ...createData } = data;
+      createMutation.mutate(createData as CreateUserData);
     }
   };
 
@@ -225,9 +235,13 @@ export const UsersPage: React.FC = () => {
     // Can't edit yourself
     if (user.id === currentUser?.id) return false;
     // OWNER can edit anyone
-    if (currentUser?.role === 'OWNER') return true;
+    if (currentUser?.currentOrganization?.role === 'OWNER') return true;
     // ADMIN can edit non-OWNER users
-    if (currentUser?.role === 'ADMIN' && user.role !== 'OWNER') return true;
+    if (
+      currentUser?.currentOrganization?.role === 'ADMIN' &&
+      user.role !== 'OWNER'
+    )
+      return true;
     return false;
   };
 
@@ -235,10 +249,10 @@ export const UsersPage: React.FC = () => {
     // Can't delete yourself
     if (user.id === currentUser?.id) return false;
     // OWNER can delete anyone
-    if (currentUser?.role === 'OWNER') return true;
+    if (currentUser?.currentOrganization?.role === 'OWNER') return true;
     // ADMIN can delete non-OWNER and non-ADMIN users
     if (
-      currentUser?.role === 'ADMIN' &&
+      currentUser?.currentOrganization?.role === 'ADMIN' &&
       user.role !== 'OWNER' &&
       user.role !== 'ADMIN'
     )
@@ -457,7 +471,7 @@ export const UsersPage: React.FC = () => {
                           // Only OWNER can assign OWNER role
                           if (
                             role.value === 'OWNER' &&
-                            currentUser?.role !== 'OWNER'
+                            currentUser?.currentOrganization?.role !== 'OWNER'
                           ) {
                             return false;
                           }
@@ -481,6 +495,19 @@ export const UsersPage: React.FC = () => {
                         ))}
                       </Select>
                     </FormControl>
+                  )}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Controller
+                  name="isActive"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControlLabel
+                      control={<Switch {...field} checked={field.value} />}
+                      label="Usuário ativo"
+                    />
                   )}
                 />
               </Grid>

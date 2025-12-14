@@ -7,12 +7,7 @@ import {
   CardContent,
   CardActionArea,
 } from '@mui/material';
-import {
-  Business,
-  People,
-  AdminPanelSettings,
-  Link as LinkIcon,
-} from '@mui/icons-material';
+import { Business, People, AdminPanelSettings } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
 export function AdminDashboardPage() {
@@ -33,13 +28,6 @@ export function AdminDashboardPage() {
       path: '/admin/users',
       color: 'secondary.main',
     },
-    {
-      title: 'Associações',
-      description: 'Associar usuários a organizações',
-      icon: <LinkIcon sx={{ fontSize: 48 }} />,
-      path: '/admin/associations',
-      color: 'success.main',
-    },
   ];
 
   return (
@@ -54,13 +42,13 @@ export function AdminDashboardPage() {
           </Typography>
         </Box>
         <Typography variant="body1" color="text.secondary">
-          Gerencie organizações, usuários e suas associações
+          Gerencie organizações e usuários
         </Typography>
       </Box>
 
       <Grid container spacing={3}>
         {adminSections.map(section => (
-          <Grid item xs={12} sm={6} md={4} key={section.path}>
+          <Grid item xs={12} sm={6} md={6} key={section.path}>
             <Card>
               <CardActionArea onClick={() => navigate(section.path)}>
                 <CardContent sx={{ textAlign: 'center', py: 4 }}>

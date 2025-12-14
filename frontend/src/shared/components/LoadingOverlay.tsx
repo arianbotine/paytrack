@@ -12,7 +12,10 @@ interface LoadingOverlayProps {
   message?: string;
 }
 
-export function LoadingOverlay({ open, message }: LoadingOverlayProps) {
+export function LoadingOverlay({
+  open,
+  message,
+}: Readonly<LoadingOverlayProps>) {
   return (
     <AnimatePresence>
       {open && (
@@ -57,7 +60,10 @@ interface InlineLoadingProps {
   message?: string;
 }
 
-export function InlineLoading({ size = 24, message }: InlineLoadingProps) {
+export function InlineLoading({
+  size = 24,
+  message,
+}: Readonly<InlineLoadingProps>) {
   return (
     <Box
       sx={{

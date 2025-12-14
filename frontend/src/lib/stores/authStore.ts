@@ -23,6 +23,11 @@ interface AuthState {
   isAuthenticated: boolean;
   setAuth: (user: User, accessToken: string, refreshToken: string) => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
+  switchOrganization: (
+    user: User,
+    accessToken: string,
+    refreshToken: string
+  ) => void;
   logout: () => void;
 }
 
@@ -45,6 +50,14 @@ export const useAuthStore = create<AuthState>()(
 
       setTokens: (accessToken, refreshToken) => {
         set({ accessToken, refreshToken });
+      },
+
+      switchOrganization: (user, accessToken, refreshToken) => {
+        set({
+          user,
+          accessToken,
+          refreshToken,
+        });
       },
 
       logout: () => {

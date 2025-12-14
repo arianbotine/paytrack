@@ -14,13 +14,24 @@ import {
   Alert,
   Button,
 } from '@mui/material';
-import { Business, AdminPanelSettings } from '@mui/icons-material';
+import { Business, AdminPanelSettings, Logout } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/stores/authStore';
 
+const getRoleChipColor = (role: string) => {
+  switch (role) {
+    case 'OWNER':
+      return 'primary';
+    case 'ADMIN':
+      return 'secondary';
+    default:
+      return 'default';
+  }
+};
+
 export function SelectOrganizationPage() {
   const navigate = useNavigate();
-  const { user, setAuth } = useAuthStore();
+  const { user, setAuth, logout } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -40,6 +51,11 @@ export function SelectOrganizationPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   if (!user) {
@@ -121,13 +137,7 @@ export function SelectOrganizationPage() {
                   <Chip
                     label={org.role}
                     size="small"
-                    color={
-                      org.role === 'OWNER'
-                        ? 'primary'
-                        : org.role === 'ADMIN'
-                          ? 'secondary'
-                          : 'default'
-                    }
+                    color={getRoleChipColor(org.role)}
                   />
                 </ListItemButton>
               </ListItem>
@@ -152,6 +162,18 @@ export function SelectOrganizationPage() {
               </Button>
             </Box>
           )}
+
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+            <Button
+              variant="text"
+              color="secondary"
+              startIcon={<Logout />}
+              onClick={handleLogout}
+              fullWidth
+            >
+              Sair do Sistema
+            </Button>
+          </Box>
         </CardContent>
       </Card>
     </Box>

@@ -7,7 +7,7 @@ interface ThemeWrapperProps {
   children: ReactNode;
 }
 
-export function ThemeWrapper({ children }: ThemeWrapperProps) {
+export function ThemeWrapper({ children }: Readonly<ThemeWrapperProps>) {
   const { themeMode } = useUIStore();
 
   const theme = useMemo(() => getTheme(themeMode), [themeMode]);

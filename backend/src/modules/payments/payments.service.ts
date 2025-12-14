@@ -5,7 +5,11 @@ import {
 } from '@nestjs/common';
 import { AccountStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
-import { CreatePaymentDto, QuickPaymentDto } from './dto/payment.dto';
+import {
+  CreatePaymentDto,
+  QuickPaymentDto,
+  QuickPaymentAllocationDto,
+} from './dto/payment.dto';
 import { MoneyUtils } from '../../shared/utils/money.utils';
 
 type Allocation = {
@@ -121,55 +125,25 @@ export class PaymentsService {
     try {
       const { allocations, ...paymentData } = createDto;
 
+      // Convert allocations to proper type
+      const typedAllocations: Allocation[] = allocations.map(a => ({
+        payableId: a.payableId,
+        receivableId: a.receivableId,
+        amount: MoneyUtils.toDecimal(a.amount),
+      }));
+
       // Validate allocations
-      this.validateAllocations(allocations, createDto.amount);
+      this.validateAllocations(typedAllocations, createDto.amount);
 
       // Validate each allocation
-      await this.validateAllocationAccounts(organizationId, allocations);
+      await this.validateAllocationAccounts(organizationId, typedAllocations);
 
       // Create payment with allocations in a transaction
-      return await this.prisma.$transaction(async tx => {
-        const payment = await tx.payment.create({
-          data: {
-            organizationId,
-            amount: MoneyUtils.toDecimal(paymentData.amount),
-            paymentDate: new Date(paymentData.paymentDate),
-            paymentMethod: paymentData.paymentMethod,
-            notes: paymentData.notes,
-            allocations: {
-              create: allocations.map(a => ({
-                payableId: a.payableId,
-                receivableId: a.receivableId,
-                amount: MoneyUtils.toDecimal(a.amount),
-              })),
-            },
-          },
-          include: {
-            allocations: true,
-          },
-        });
-
-        // Update account balances
-        for (const allocation of allocations) {
-          if (allocation.payableId) {
-            await this.updatePayableBalance(
-              tx,
-              allocation.payableId,
-              allocation.amount
-            );
-          }
-
-          if (allocation.receivableId) {
-            await this.updateReceivableBalance(
-              tx,
-              allocation.receivableId,
-              allocation.amount
-            );
-          }
-        }
-
-        return payment;
-      });
+      return await this.createPaymentWithAllocations(
+        organizationId,
+        paymentData,
+        allocations
+      );
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         throw new BadRequestException(
@@ -211,83 +185,81 @@ export class PaymentsService {
     return this.create(organizationId, createDto);
   }
 
-  async remove(id: string, organizationId: string) {
-    const payment = await this.findOne(id, organizationId);
-
-    // Reverse allocations in a transaction
+  private async createPaymentWithAllocations(
+    organizationId: string,
+    paymentData: Omit<CreatePaymentDto, 'allocations'>,
+    allocations: QuickPaymentAllocationDto[]
+  ) {
     return this.prisma.$transaction(async tx => {
-      for (const allocation of payment.allocations) {
+      const payment = await tx.payment.create({
+        data: {
+          organizationId,
+          amount: MoneyUtils.toDecimal(paymentData.amount),
+          paymentDate: new Date(paymentData.paymentDate),
+          paymentMethod: paymentData.paymentMethod,
+          notes: paymentData.notes,
+          allocations: {
+            create: allocations.map(a => ({
+              payableId: a.payableId,
+              receivableId: a.receivableId,
+              amount: MoneyUtils.toDecimal(a.amount),
+            })),
+          },
+        },
+        include: {
+          allocations: true,
+        },
+      });
+
+      // Update account balances
+      for (const allocation of allocations) {
         if (allocation.payableId) {
-          const payable = await tx.payable.findUnique({
-            where: { id: allocation.payableId },
-          });
-          const newPaidAmount = Math.max(
-            0,
-            Number(payable!.paidAmount) - Number(allocation.amount)
+          await this.updatePayableBalance(
+            tx,
+            allocation.payableId,
+            allocation.amount
           );
-
-          let newStatus: AccountStatus;
-          if (newPaidAmount === 0) {
-            // Check if overdue
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            newStatus =
-              payable!.dueDate < today
-                ? AccountStatus.OVERDUE
-                : AccountStatus.PENDING;
-          } else {
-            newStatus = AccountStatus.PARTIAL;
-          }
-
-          await tx.payable.update({
-            where: { id: allocation.payableId },
-            data: {
-              paidAmount: MoneyUtils.toDecimal(newPaidAmount),
-              status: newStatus,
-            },
-          });
         }
 
         if (allocation.receivableId) {
-          const receivable = await tx.receivable.findUnique({
-            where: { id: allocation.receivableId },
-          });
-          const newPaidAmount = Math.max(
-            0,
-            Number(receivable!.paidAmount) - Number(allocation.amount)
+          await this.updateReceivableBalance(
+            tx,
+            allocation.receivableId,
+            allocation.amount
           );
-
-          let newStatus: AccountStatus;
-          if (newPaidAmount === 0) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            newStatus =
-              receivable!.dueDate < today
-                ? AccountStatus.OVERDUE
-                : AccountStatus.PENDING;
-          } else {
-            newStatus = AccountStatus.PARTIAL;
-          }
-
-          await tx.receivable.update({
-            where: { id: allocation.receivableId },
-            data: {
-              paidAmount: MoneyUtils.toDecimal(newPaidAmount),
-              status: newStatus,
-            },
-          });
         }
       }
-
-      await tx.payment.delete({ where: { id } });
 
       return payment;
     });
   }
 
-  private async updatePayableOnRemove(
+  async remove(id: string, organizationId: string) {
+    const payment = await this.findOne(id, organizationId);
+
+    // Reverse allocations in a transaction
+    return this.reversePaymentAllocations(payment, id);
+  }
+
+  private async reversePaymentAllocations(payment: any, paymentId: string) {
+    return this.prisma.$transaction(async tx => {
+      for (const allocation of payment.allocations) {
+        if (allocation.payableId) {
+          await this.reversePayableAllocation(tx, allocation);
+        }
+
+        if (allocation.receivableId) {
+          await this.reverseReceivableAllocation(tx, allocation);
+        }
+      }
+
+      await tx.payment.delete({ where: { id: paymentId } });
+    });
+  }
+
+  private async reversePayableAllocation(
     tx: Prisma.TransactionClient,
-    allocation: Allocation
+    allocation: any
   ) {
     const payable = await tx.payable.findUnique({
       where: { id: allocation.payableId },
@@ -296,8 +268,10 @@ export class PaymentsService {
       0,
       Number(payable!.paidAmount) - Number(allocation.amount)
     );
+
     let newStatus: AccountStatus;
     if (newPaidAmount === 0) {
+      // Check if overdue
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       newStatus =
@@ -307,6 +281,7 @@ export class PaymentsService {
     } else {
       newStatus = AccountStatus.PARTIAL;
     }
+
     await tx.payable.update({
       where: { id: allocation.payableId },
       data: {
@@ -316,9 +291,9 @@ export class PaymentsService {
     });
   }
 
-  private async updateReceivableOnRemove(
+  private async reverseReceivableAllocation(
     tx: Prisma.TransactionClient,
-    allocation: Allocation
+    allocation: any
   ) {
     const receivable = await tx.receivable.findUnique({
       where: { id: allocation.receivableId },
@@ -327,6 +302,7 @@ export class PaymentsService {
       0,
       Number(receivable!.paidAmount) - Number(allocation.amount)
     );
+
     let newStatus: AccountStatus;
     if (newPaidAmount === 0) {
       const today = new Date();
@@ -338,6 +314,7 @@ export class PaymentsService {
     } else {
       newStatus = AccountStatus.PARTIAL;
     }
+
     await tx.receivable.update({
       where: { id: allocation.receivableId },
       data: {
@@ -353,7 +330,10 @@ export class PaymentsService {
     }
 
     // Calculate total allocation
-    const totalAllocation = allocations.reduce((sum, a) => sum + a.amount, 0);
+    const totalAllocation = allocations.reduce(
+      (sum, a) => sum + Number(a.amount),
+      0
+    );
     if (Math.abs(totalAllocation - totalAmount) > 0.01) {
       throw new BadRequestException(
         'A soma das alocações deve ser igual ao valor do pagamento'
@@ -382,7 +362,7 @@ export class PaymentsService {
         await this.validatePayableAccount(
           organizationId,
           allocation.payableId,
-          allocation.amount
+          Number(allocation.amount)
         );
       }
 
@@ -390,7 +370,7 @@ export class PaymentsService {
         await this.validateReceivableAccount(
           organizationId,
           allocation.receivableId,
-          allocation.amount
+          Number(allocation.amount)
         );
       }
     }

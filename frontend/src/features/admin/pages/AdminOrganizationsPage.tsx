@@ -23,7 +23,25 @@ import {
 } from '@mui/material';
 import { Add, Edit, Visibility } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { api } from '@/lib/api';
+
+const getDialogTitle = (viewingOrg: boolean, editingOrg: boolean) => {
+  if (viewingOrg) return 'Visualizar Organização';
+  if (editingOrg) return 'Editar Organização';
+  return 'Nova Organização';
+};
+
+const organizationSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório'),
+  document: z.string().optional(),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+});
+
+type OrganizationFormData = z.infer<typeof organizationSchema>;
 
 interface Organization {
   id: string;
@@ -31,6 +49,7 @@ interface Organization {
   document?: string;
   email?: string;
   phone?: string;
+  address?: string;
   isActive: boolean;
   _count?: {
     users: number;
@@ -42,9 +61,18 @@ interface Organization {
 export function AdminOrganizationsPage() {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
+  const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
+  const [viewingOrg, setViewingOrg] = useState<Organization | null>(null);
   const [error, setError] = useState('');
 
-  const { register, handleSubmit, reset } = useForm();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<OrganizationFormData>({
+    resolver: zodResolver(organizationSchema),
+  });
 
   const { data: organizations, isLoading } = useQuery({
     queryKey: ['admin-organizations'],
@@ -55,13 +83,12 @@ export function AdminOrganizationsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: OrganizationFormData) => {
       return api.post('/admin/organizations', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-organizations'] });
-      setOpenDialog(false);
-      reset();
+      handleCloseDialog();
       setError('');
     },
     onError: (err: any) => {
@@ -69,8 +96,72 @@ export function AdminOrganizationsPage() {
     },
   });
 
-  const onSubmit = (data: any) => {
-    createMutation.mutate(data);
+  const updateMutation = useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: OrganizationFormData;
+    }) => {
+      return api.patch(`/admin/organizations/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-organizations'] });
+      handleCloseDialog();
+      setError('');
+    },
+    onError: (err: any) => {
+      setError(err.response?.data?.message || 'Erro ao atualizar organização');
+    },
+  });
+
+  const handleOpenCreateDialog = () => {
+    setEditingOrg(null);
+    setViewingOrg(null);
+    reset({
+      name: '',
+      document: '',
+      email: '',
+      phone: '',
+      address: '',
+    });
+    setOpenDialog(true);
+  };
+
+  const handleOpenEditDialog = (org: Organization) => {
+    setEditingOrg(org);
+    setViewingOrg(null);
+    reset({
+      name: org.name,
+      document: org.document || '',
+      email: org.email || '',
+      phone: org.phone || '',
+      address: org.address || '',
+    });
+    setOpenDialog(true);
+  };
+
+  const handleOpenViewDialog = (org: Organization) => {
+    setViewingOrg(org);
+    setEditingOrg(null);
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setEditingOrg(null);
+    setViewingOrg(null);
+    reset();
+    setError('');
+  };
+
+  const onSubmit = (data: OrganizationFormData) => {
+    if (editingOrg) {
+      updateMutation.mutate({ id: editingOrg.id, data });
+    } else {
+      createMutation.mutate(data);
+    }
   };
 
   return (
@@ -89,7 +180,7 @@ export function AdminOrganizationsPage() {
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={() => setOpenDialog(true)}
+          onClick={handleOpenCreateDialog}
         >
           Nova Organização
         </Button>
@@ -130,10 +221,18 @@ export function AdminOrganizationsPage() {
                     />
                   </TableCell>
                   <TableCell align="right">
-                    <IconButton size="small">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleOpenViewDialog(org)}
+                      title="Visualizar"
+                    >
                       <Visibility />
                     </IconButton>
-                    <IconButton size="small">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleOpenEditDialog(org)}
+                      title="Editar"
+                    >
                       <Edit />
                     </IconButton>
                   </TableCell>
@@ -144,15 +243,17 @@ export function AdminOrganizationsPage() {
         </TableContainer>
       </Card>
 
-      {/* Create Dialog */}
+      {/* Organization Dialog */}
       <Dialog
         open={openDialog}
-        onClose={() => setOpenDialog(false)}
+        onClose={handleCloseDialog}
         maxWidth="sm"
         fullWidth
       >
         <form onSubmit={handleSubmit(onSubmit)}>
-          <DialogTitle>Nova Organização</DialogTitle>
+          <DialogTitle>
+            {getDialogTitle(!!viewingOrg, !!editingOrg)}
+          </DialogTitle>
           <DialogContent>
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
@@ -164,12 +265,18 @@ export function AdminOrganizationsPage() {
               label="Nome"
               margin="normal"
               required
+              disabled={!!viewingOrg}
+              error={!!errors.name}
+              helperText={errors.name?.message}
               {...register('name')}
             />
             <TextField
               fullWidth
               label="CNPJ"
               margin="normal"
+              disabled={!!viewingOrg}
+              error={!!errors.document}
+              helperText={errors.document?.message}
               {...register('document')}
             />
             <TextField
@@ -177,12 +284,18 @@ export function AdminOrganizationsPage() {
               label="Email"
               type="email"
               margin="normal"
+              disabled={!!viewingOrg}
+              error={!!errors.email}
+              helperText={errors.email?.message}
               {...register('email')}
             />
             <TextField
               fullWidth
               label="Telefone"
               margin="normal"
+              disabled={!!viewingOrg}
+              error={!!errors.phone}
+              helperText={errors.phone?.message}
               {...register('phone')}
             />
             <TextField
@@ -191,18 +304,39 @@ export function AdminOrganizationsPage() {
               margin="normal"
               multiline
               rows={2}
+              disabled={!!viewingOrg}
+              error={!!errors.address}
+              helperText={errors.address?.message}
               {...register('address')}
             />
+            {viewingOrg && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Estatísticas:
+                </Typography>
+                <Typography variant="body2">
+                  • Usuários: {viewingOrg._count?.users || 0}
+                </Typography>
+                <Typography variant="body2">
+                  • Contas a Pagar: {viewingOrg._count?.payables || 0}
+                </Typography>
+                <Typography variant="body2">
+                  • Contas a Receber: {viewingOrg._count?.receivables || 0}
+                </Typography>
+              </Box>
+            )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={createMutation.isPending}
-            >
-              Criar
-            </Button>
+            <Button onClick={handleCloseDialog}>Fechar</Button>
+            {!viewingOrg && (
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                {editingOrg ? 'Salvar' : 'Criar'}
+              </Button>
+            )}
           </DialogActions>
         </form>
       </Dialog>

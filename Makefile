@@ -87,7 +87,7 @@ install: install-backend install-frontend
 # ===========================================
 
 ## Remove containers e volumes do banco
-clean:
+clean: down
 	@docker compose down -v --remove-orphans 2>/dev/null || true
 	@rm -f logs/*.pid
 	@echo "Limpeza concluída!"

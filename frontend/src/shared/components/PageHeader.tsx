@@ -12,7 +12,11 @@ interface PageHeaderProps {
   action?: PageHeaderAction;
 }
 
-export function PageHeader({ title, subtitle, action }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  subtitle,
+  action,
+}: Readonly<PageHeaderProps>) {
   return (
     <Box
       sx={{

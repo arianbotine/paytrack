@@ -41,7 +41,7 @@ export function EmptyState({
   actionLabel,
   onAction,
   icon,
-}: EmptyStateProps) {
+}: Readonly<EmptyStateProps>) {
   const iconToRender = icon || variantIcons[variant];
   const iconColor = variantColors[variant];
 

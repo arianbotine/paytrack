@@ -66,12 +66,12 @@ export class AuthService {
       uo => uo.organization.isActive
     );
 
-    // Block non-admin users without organizations
-    if (activeOrgs.length === 0 && !user.isSystemAdmin) {
-      throw new UnauthorizedException(
-        'Usuário sem organização ativa. Aguarde associação por um administrador.'
-      );
-    }
+    // Allow login even for users without organizations (they will be redirected to select-organization)
+    // if (activeOrgs.length === 0 && !user.isSystemAdmin) {
+    //   throw new UnauthorizedException(
+    //     'Usuário sem organização ativa. Aguarde associação por um administrador.'
+    //   );
+    // }
 
     // System admin can access all organizations
     let availableOrganizations;

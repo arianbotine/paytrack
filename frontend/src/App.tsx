@@ -78,12 +78,12 @@ const UsersPage = lazy(() =>
   }))
 );
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
+function PrivateRoute({ children }: Readonly<{ children: React.ReactNode }>) {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 }
 
-function AdminRoute({ children }: { children: React.ReactNode }) {
+function AdminRoute({ children }: Readonly<{ children: React.ReactNode }>) {
   const { isAuthenticated, user } = useAuthStore();
 
   if (!isAuthenticated) {

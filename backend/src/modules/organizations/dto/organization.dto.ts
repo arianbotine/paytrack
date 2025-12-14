@@ -1,4 +1,5 @@
 import { IsString, IsOptional, IsEmail } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateOrganizationDto {
@@ -9,6 +10,7 @@ export class CreateOrganizationDto {
   @ApiPropertyOptional({ example: '12345678000199' })
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => value?.trim() || undefined)
   document?: string;
 
   @ApiPropertyOptional({ example: 'contato@empresa.com' })

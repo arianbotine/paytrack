@@ -27,7 +27,7 @@ export function StatusChip({
   status,
   type = 'payable',
   ...props
-}: StatusChipProps) {
+}: Readonly<StatusChipProps>) {
   const config = statusConfig[status] || {
     label: status,
     labelReceivable: status,

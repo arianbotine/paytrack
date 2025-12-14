@@ -19,6 +19,7 @@ import {
   Tooltip,
   useMediaQuery,
   useTheme,
+  Button,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -36,9 +37,11 @@ import {
   DarkMode as DarkModeIcon,
   LightMode as LightModeIcon,
   AdminPanelSettings as AdminIcon,
+  Business as BusinessIcon,
 } from '@mui/icons-material';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useUIStore } from '@/lib/stores/uiStore';
+import { OrganizationSwitcher } from '../OrganizationSwitcher';
 
 const drawerWidth = 260;
 
@@ -47,12 +50,12 @@ const menuItems = [
   { text: 'Contas a Pagar', icon: <PayablesIcon />, path: '/payables' },
   { text: 'Contas a Receber', icon: <ReceivablesIcon />, path: '/receivables' },
   { text: 'Pagamentos', icon: <PaymentsIcon />, path: '/payments' },
-  { divider: true },
+  { divider: true, key: 'divider-1' },
   { text: 'Clientes', icon: <CustomersIcon />, path: '/customers' },
   { text: 'Credores', icon: <VendorsIcon />, path: '/vendors' },
   { text: 'Categorias', icon: <CategoriesIcon />, path: '/categories' },
   { text: 'Tags', icon: <TagsIcon />, path: '/tags' },
-  { divider: true },
+  { divider: true, key: 'divider-2' },
   {
     text: 'Usuários',
     icon: <UsersIcon />,
@@ -77,6 +80,7 @@ export function MainLayout() {
   } = useUIStore();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [orgSwitcherOpen, setOrgSwitcherOpen] = useState(false);
 
   const handleProfileMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -94,6 +98,15 @@ export function MainLayout() {
   const handleAdminPanel = () => {
     handleCloseMenu();
     navigate('/admin');
+  };
+
+  const handleOrganizationSwitcher = () => {
+    handleCloseMenu();
+    setOrgSwitcherOpen(true);
+  };
+
+  const handleCloseOrgSwitcher = () => {
+    setOrgSwitcherOpen(false);
   };
 
   const handleNavigation = (path: string) => {
@@ -139,7 +152,7 @@ export function MainLayout() {
       <List sx={{ flex: 1, pt: 1 }}>
         {filteredMenuItems.map((item, index) =>
           'divider' in item ? (
-            <Divider key={index} sx={{ my: 1 }} />
+            <Divider key={item.key || `divider-${index}`} sx={{ my: 1 }} />
           ) : (
             <ListItem key={item.text} disablePadding sx={{ px: 1 }}>
               <ListItemButton
@@ -169,9 +182,32 @@ export function MainLayout() {
       </List>
       <Divider />
       <Box sx={{ p: 2 }}>
-        <Typography variant="caption" color="text.secondary">
-          {user?.currentOrganization?.name || 'Sem organização'}
-        </Typography>
+        <Button
+          fullWidth
+          variant="outlined"
+          size="small"
+          startIcon={<BusinessIcon />}
+          onClick={handleOrganizationSwitcher}
+          disabled={(user?.availableOrganizations?.length || 0) <= 1}
+          sx={{
+            justifyContent: 'flex-start',
+            textTransform: 'none',
+            borderColor: 'divider',
+            color: 'text.secondary',
+            '&:hover': {
+              borderColor: 'primary.main',
+              color: 'primary.main',
+            },
+          }}
+        >
+          <Typography
+            variant="caption"
+            noWrap
+            sx={{ flex: 1, textAlign: 'left' }}
+          >
+            {user?.currentOrganization?.name || 'Sem organização'}
+          </Typography>
+        </Button>
       </Box>
     </Box>
   );
@@ -241,6 +277,17 @@ export function MainLayout() {
               </Typography>
             </Box>
             <Divider />
+            {(user?.availableOrganizations?.length || 0) > 1 && (
+              <>
+                <MenuItem onClick={handleOrganizationSwitcher}>
+                  <ListItemIcon>
+                    <BusinessIcon fontSize="small" />
+                  </ListItemIcon>
+                  Trocar Organização
+                </MenuItem>
+                <Divider />
+              </>
+            )}
             {user?.isSystemAdmin && (
               <>
                 <MenuItem onClick={handleAdminPanel}>
@@ -321,6 +368,10 @@ export function MainLayout() {
       >
         <Outlet />
       </Box>
+
+      {orgSwitcherOpen && (
+        <OrganizationSwitcher onClose={handleCloseOrgSwitcher} />
+      )}
     </Box>
   );
 }

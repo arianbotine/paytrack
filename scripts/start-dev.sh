@@ -52,39 +52,39 @@ timestamp() {
 
 check_dependencies() {
     log_info "Verificando dependências..."
-    
+
     # Verificar Node.js
     if ! command -v node &> /dev/null; then
         log_error "Node.js não encontrado. Instale Node.js >= 18"
         exit 1
     fi
-    
+
     NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
     if [ "$NODE_VERSION" -lt 18 ]; then
         log_error "Node.js versão $NODE_VERSION encontrada. Requerido >= 18"
         exit 1
     fi
     log_success "Node.js $(node -v) ✓"
-    
+
     # Verificar npm
     if ! command -v npm &> /dev/null; then
         log_error "npm não encontrado"
         exit 1
     fi
     log_success "npm $(npm -v) ✓"
-    
+
     # Verificar Docker
     if ! command -v docker &> /dev/null; then
         log_error "Docker não encontrado. Instale Docker Desktop ou Docker Engine"
         exit 1
     fi
-    
+
     if ! docker info &> /dev/null; then
         log_error "Docker daemon não está rodando. Inicie o Docker"
         exit 1
     fi
     log_success "Docker $(docker --version | cut -d' ' -f3 | tr -d ',') ✓"
-    
+
     # Verificar Docker Compose
     if ! docker compose version &> /dev/null; then
         log_error "Docker Compose não encontrado"
@@ -99,7 +99,7 @@ check_dependencies() {
 
 load_env() {
     log_info "Carregando variáveis de ambiente..."
-    
+
     # Arquivo .env na raiz
     if [ -f "$ROOT_DIR/.env" ]; then
         set -a
@@ -110,7 +110,7 @@ load_env() {
         log_warning "Arquivo .env não encontrado. Usando valores padrão."
         log_info "Execute: cp .env.example .env"
     fi
-    
+
     # Valores padrão (fallbacks)
     export DB_USER="${DB_USER:-paytrack}"
     export DB_PASSWORD="${DB_PASSWORD:-paytrack123}"
@@ -134,11 +134,11 @@ load_env() {
 prepare_logs_dir() {
     log_info "Preparando diretório de logs..."
     mkdir -p "$LOGS_DIR"
-    
+
     # Limpar logs antigos para evitar acumulação
     log_info "Limpando logs antigos..."
     rm -f "$LOGS_DIR"/*.log "$LOGS_DIR"/*.pid
-    
+
     log_success "Diretório de logs: $LOGS_DIR"
 }
 
@@ -148,7 +148,7 @@ prepare_logs_dir() {
 
 check_running_services() {
     local has_running=false
-    
+
     if [ -f "$LOGS_DIR/backend.pid" ]; then
         if kill -0 $(cat "$LOGS_DIR/backend.pid") 2>/dev/null; then
             log_warning "Backend já está rodando (PID: $(cat "$LOGS_DIR/backend.pid"))"
@@ -157,7 +157,7 @@ check_running_services() {
             rm -f "$LOGS_DIR/backend.pid"
         fi
     fi
-    
+
     if [ -f "$LOGS_DIR/frontend.pid" ]; then
         if kill -0 $(cat "$LOGS_DIR/frontend.pid") 2>/dev/null; then
             log_warning "Frontend já está rodando (PID: $(cat "$LOGS_DIR/frontend.pid"))"
@@ -166,7 +166,7 @@ check_running_services() {
     else
         rm -f "$LOGS_DIR/frontend.pid"
     fi
-    
+
     if [ "$has_running" = true ]; then
         log_error "Serviços já estão rodando. Execute 'make down' primeiro."
         exit 1
@@ -179,33 +179,33 @@ check_running_services() {
 
 start_database() {
     log_info "Iniciando banco de dados PostgreSQL..."
-    
+
     cd "$ROOT_DIR"
     docker compose up -d db
-    
+
     log_info "Aguardando banco de dados ficar pronto..."
-    
+
     # Aguardar healthcheck
     local max_attempts=30
     local attempt=1
-    
+
     while [ $attempt -le $max_attempts ]; do
         if docker compose exec -T db pg_isready -U "$DB_USER" &> /dev/null; then
             log_success "Banco de dados pronto! ✓"
-            
+
             # Salvar logs do banco
             docker compose logs -f db 2>&1 | while read line; do
                 echo "[$(timestamp)] $line"
             done >> "$LOGS_DIR/db.log" &
-            
+
             return 0
         fi
-        
+
         echo -ne "\r${YELLOW}[WAIT]${NC} Tentativa $attempt/$max_attempts..."
         sleep 1
         ((attempt++))
     done
-    
+
     echo ""
     log_error "Timeout aguardando banco de dados"
     exit 1
@@ -217,55 +217,55 @@ start_database() {
 
 start_backend() {
     log_info "Iniciando backend NestJS..."
-    
+
     cd "$ROOT_DIR/backend"
-    
+
     # Verificar se node_modules existe
     if [ ! -d "node_modules" ]; then
         log_warning "node_modules não encontrado. Executando npm install..."
         npm install
     fi
-    
+
     # Gerar Prisma Client se necessário
     if [ ! -d "node_modules/.prisma" ]; then
         log_info "Gerando Prisma Client..."
         npx prisma generate
     fi
-    
+
     # Iniciar backend com logs
     (
-        npm run start:dev 2>&1 | while IFS= read -r line; do
+        stdbuf -oL -eL npm run start:dev 2>&1 | while IFS= read -r line; do
             echo "[$(timestamp)] $line"
         done >> "$LOGS_DIR/backend.log"
     ) &
-    
+
     local backend_pid=$!
     echo $backend_pid > "$LOGS_DIR/backend.pid"
-    
+
     log_info "Backend iniciado (PID: $backend_pid)"
-    
+
     # Aguardar backend ficar pronto
     log_info "Aguardando backend ficar pronto..."
     local max_attempts=60
     local attempt=1
-    
+
     while [ $attempt -le $max_attempts ]; do
         if curl -s "http://localhost:$API_PORT/api" > /dev/null 2>&1; then
             log_success "Backend pronto! ✓"
             return 0
         fi
-        
+
         # Verificar se processo ainda está rodando
         if ! kill -0 $backend_pid 2>/dev/null; then
             log_error "Backend falhou ao iniciar. Verifique os logs: $LOGS_DIR/backend.log"
             exit 1
         fi
-        
+
         echo -ne "\r${YELLOW}[WAIT]${NC} Tentativa $attempt/$max_attempts..."
         sleep 2
         ((attempt++))
     done
-    
+
     echo ""
     log_warning "Backend pode ainda estar iniciando. Verifique os logs."
 }
@@ -276,49 +276,49 @@ start_backend() {
 
 start_frontend() {
     log_info "Iniciando frontend Vite/React..."
-    
+
     cd "$ROOT_DIR/frontend"
-    
+
     # Verificar se node_modules existe
     if [ ! -d "node_modules" ]; then
         log_warning "node_modules não encontrado. Executando npm install..."
         npm install
     fi
-    
+
     # Iniciar frontend com logs
     (
-        npm run dev 2>&1 | while IFS= read -r line; do
+        stdbuf -oL -eL npm run dev 2>&1 | while IFS= read -r line; do
             echo "[$(timestamp)] $line"
         done >> "$LOGS_DIR/frontend.log"
     ) &
-    
+
     local frontend_pid=$!
     echo $frontend_pid > "$LOGS_DIR/frontend.pid"
-    
+
     log_info "Frontend iniciado (PID: $frontend_pid)"
-    
+
     # Aguardar frontend ficar pronto
     log_info "Aguardando frontend ficar pronto..."
     local max_attempts=30
     local attempt=1
-    
+
     while [ $attempt -le $max_attempts ]; do
         if curl -s "http://localhost:$WEB_PORT" > /dev/null 2>&1; then
             log_success "Frontend pronto! ✓"
             return 0
         fi
-        
+
         # Verificar se processo ainda está rodando
         if ! kill -0 $frontend_pid 2>/dev/null; then
             log_error "Frontend falhou ao iniciar. Verifique os logs: $LOGS_DIR/frontend.log"
             exit 1
         fi
-        
+
         echo -ne "\r${YELLOW}[WAIT]${NC} Tentativa $attempt/$max_attempts..."
         sleep 1
         ((attempt++))
     done
-    
+
     echo ""
     log_warning "Frontend pode ainda estar iniciando. Verifique os logs."
 }
@@ -362,7 +362,7 @@ main() {
     echo -e "${BLUE}║     PayTrack - Iniciando Ambiente     ║${NC}"
     echo -e "${BLUE}╚═══════════════════════════════════════╝${NC}"
     echo ""
-    
+
     check_dependencies
     load_env
     prepare_logs_dir
