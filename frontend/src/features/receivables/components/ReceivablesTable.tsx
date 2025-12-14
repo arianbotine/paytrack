@@ -211,36 +211,42 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                       }}
                     >
                       <Tooltip title="Registrar Recebimento">
-                        <IconButton
-                          size="small"
-                          color="success"
-                          disabled={
-                            receivable.status === "PAID" ||
-                            receivable.status === "CANCELLED"
-                          }
-                          onClick={() => onPayment(receivable)}
-                        >
-                          <PaymentIcon />
-                        </IconButton>
+                        <span>
+                          <IconButton
+                            size="small"
+                            color="success"
+                            disabled={
+                              receivable.status === "PAID" ||
+                              receivable.status === "CANCELLED"
+                            }
+                            onClick={() => onPayment(receivable)}
+                          >
+                            <PaymentIcon />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                       <Tooltip title="Editar">
-                        <IconButton
-                          size="small"
-                          onClick={() => onEdit(receivable)}
-                          disabled={receivable.status === "PAID"}
-                        >
-                          <EditIcon />
-                        </IconButton>
+                        <span>
+                          <IconButton
+                            size="small"
+                            onClick={() => onEdit(receivable)}
+                            disabled={receivable.status === "PAID"}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                       <Tooltip title="Excluir">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => onDelete(receivable)}
-                          disabled={receivable.receivedAmount > 0}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
+                        <span>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => onDelete(receivable)}
+                            disabled={receivable.receivedAmount > 0}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                     </Box>
                   </TableCell>

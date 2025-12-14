@@ -210,36 +210,42 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                       }}
                     >
                       <Tooltip title="Registrar Pagamento">
-                        <IconButton
-                          size="small"
-                          color="success"
-                          disabled={
-                            payable.status === "PAID" ||
-                            payable.status === "CANCELLED"
-                          }
-                          onClick={() => onPayment(payable)}
-                        >
-                          <PaymentIcon />
-                        </IconButton>
+                        <span>
+                          <IconButton
+                            size="small"
+                            color="success"
+                            disabled={
+                              payable.status === "PAID" ||
+                              payable.status === "CANCELLED"
+                            }
+                            onClick={() => onPayment(payable)}
+                          >
+                            <PaymentIcon />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                       <Tooltip title="Editar">
-                        <IconButton
-                          size="small"
-                          onClick={() => onEdit(payable)}
-                          disabled={payable.status === "PAID"}
-                        >
-                          <EditIcon />
-                        </IconButton>
+                        <span>
+                          <IconButton
+                            size="small"
+                            onClick={() => onEdit(payable)}
+                            disabled={payable.status === "PAID"}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                       <Tooltip title="Excluir">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => onDelete(payable)}
-                          disabled={payable.paidAmount > 0}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
+                        <span>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => onDelete(payable)}
+                            disabled={payable.paidAmount > 0}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </span>
                       </Tooltip>
                     </Box>
                   </TableCell>

@@ -11,68 +11,40 @@ import {
   PayableFilterDto,
 } from "./dto/payable.dto";
 import { MoneyUtils } from "../../shared/utils/money.utils";
-import { parseDateUTC } from "../../shared/utils/date.utils";
+import { parseDateUTC, isValidDate } from "../../shared/utils/date.utils";
+import { mapInvoiceToDocument } from "../../shared/utils/account.utils";
+import { BaseAccountService } from "../shared/base-account.service";
 
 @Injectable()
-export class PayablesService {
-  constructor(private readonly prisma: PrismaService) {}
+export class PayablesService extends BaseAccountService {
+  constructor(protected readonly prisma: PrismaService) {
+    super(prisma);
+  }
+
+  protected getModel() {
+    return this.prisma.payable;
+  }
+
+  protected getEntityName() {
+    return 'conta a pagar';
+  }
+
+  protected getIncludeOptions() {
+    return {
+      vendor: { select: { id: true, name: true } },
+      category: { select: { id: true, name: true, color: true } },
+      tags: {
+        include: {
+          tag: { select: { id: true, name: true, color: true } },
+        },
+      },
+    };
+  }
 
   async findAll(organizationId: string, filters?: PayableFilterDto) {
-    const where: Prisma.PayableWhereInput = {
-      organizationId,
+    return this.findAllBase(organizationId, filters, {
       ...(filters?.vendorId && { vendorId: filters.vendorId }),
-      ...(filters?.categoryId && { categoryId: filters.categoryId }),
-      ...(filters?.status &&
-        filters.status.length > 0 && { status: { in: filters.status } }),
-      ...(filters?.dueDateFrom || filters?.dueDateTo
-        ? {
-            dueDate: {
-              ...(filters?.dueDateFrom && {
-                gte: parseDateUTC(filters.dueDateFrom),
-              }),
-              ...(filters?.dueDateTo && { lte: parseDateUTC(filters.dueDateTo) }),
-            },
-          }
-        : {}),
-    };
-
-    const [data, total] = await Promise.all([
-      this.prisma.payable.findMany({
-        where,
-        include: {
-          vendor: {
-            select: { id: true, name: true },
-          },
-          category: {
-            select: { id: true, name: true, color: true },
-          },
-          tags: {
-            include: {
-              tag: { select: { id: true, name: true, color: true } },
-            },
-          },
-        },
-        orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
-        skip: filters?.skip,
-        take: filters?.take,
-      }),
-      this.prisma.payable.count({ where }),
-    ]);
-
-    // Transform Decimal fields to numbers for JSON serialization
-    const transformedData = MoneyUtils.transformMoneyFieldsArray(data, [
-      "amount",
-      "paidAmount",
-    ]);
-
-    // Map documentNumber to invoiceNumber for frontend compatibility
-    const mappedData = transformedData.map((item) => ({
-      ...item,
-      invoiceNumber: item.documentNumber,
-      documentNumber: undefined,
-    }));
-
-    return { data: mappedData, total };
+    });
   }
 
   async findOne(id: string, organizationId: string) {
@@ -114,40 +86,22 @@ export class PayablesService {
   }
 
   async create(organizationId: string, createDto: CreatePayableDto) {
-    const { tagIds, ...data } = createDto;
+    // Validation
+    if (createDto.amount <= 0) {
+      throw new BadRequestException("O valor deve ser maior que zero");
+    }
+    if (!isValidDate(createDto.dueDate)) {
+      throw new BadRequestException("Data de vencimento inválida");
+    }
 
-    const payable = await this.prisma.payable.create({
-      data: {
-        organizationId,
-        vendorId: data.vendorId,
-        categoryId: data.categoryId,
-        description: data.description,
-        amount: MoneyUtils.toDecimal(data.amount),
-        dueDate: parseDateUTC(data.dueDate),
-        paymentMethod: data.paymentMethod,
-        notes: data.notes,
-        documentNumber: data.invoiceNumber,
-        ...(tagIds && tagIds.length > 0
-          ? {
-              tags: {
-                create: tagIds.map((tagId) => ({ tagId })),
-              },
-            }
-          : {}),
-      },
-      include: {
-        vendor: { select: { id: true, name: true } },
-        category: { select: { id: true, name: true, color: true } },
-        tags: {
-          include: {
-            tag: { select: { id: true, name: true, color: true } },
-          },
-        },
-      },
-    });
+    const result = await this.createBase(organizationId, createDto);
 
-    // Transform Decimal fields to numbers for JSON serialization
-    return MoneyUtils.transformMoneyFields(payable, ["amount", "paidAmount"]);
+    // Map documentNumber to invoiceNumber for frontend compatibility
+    return {
+      ...result,
+      invoiceNumber: result.documentNumber,
+      documentNumber: undefined,
+    };
   }
 
   async update(
@@ -155,99 +109,34 @@ export class PayablesService {
     organizationId: string,
     updateDto: UpdatePayableDto,
   ) {
-    const payable = await this.findOne(id, organizationId);
-
-    if (payable.status === AccountStatus.PAID) {
-      throw new BadRequestException("Não é possível editar uma conta já paga");
+    // Validation
+    if (updateDto.amount !== undefined && updateDto.amount <= 0) {
+      throw new BadRequestException("O valor deve ser maior que zero");
+    }
+    if (updateDto.dueDate !== undefined && !isValidDate(updateDto.dueDate)) {
+      throw new BadRequestException("Data de vencimento inválida");
     }
 
-    const { tagIds, ...data } = updateDto;
+    const result = await this.updateBase(id, organizationId, updateDto, this.prisma.payableTag);
 
-    // Handle tags update
-    if (tagIds !== undefined) {
-      await this.prisma.payableTag.deleteMany({ where: { payableId: id } });
-
-      if (tagIds.length > 0) {
-        await this.prisma.payableTag.createMany({
-          data: tagIds.map((tagId) => ({ payableId: id, tagId })),
-        });
-      }
-    }
-
-    // Map invoiceNumber to documentNumber
-    const updateData = { ...data } as any;
-    if (updateData.invoiceNumber !== undefined) {
-      updateData.documentNumber = updateData.invoiceNumber;
-      delete updateData.invoiceNumber;
-    }
-
-    // Transform Decimal fields to numbers for JSON serialization
-    const updated = await this.prisma.payable.update({
-      where: { id },
-      data: {
-        ...updateData,
-        ...(updateData.amount && { amount: MoneyUtils.toDecimal(updateData.amount) }),
-        ...(updateData.dueDate && { dueDate: parseDateUTC(updateData.dueDate) }),
-      },
-      include: {
-        vendor: { select: { id: true, name: true } },
-        category: { select: { id: true, name: true, color: true } },
-        tags: {
-          include: {
-            tag: { select: { id: true, name: true, color: true } },
-          },
-        },
-      },
-    });
-
-    return MoneyUtils.transformMoneyFields(updated, ["amount", "paidAmount"]);
+    // Map documentNumber to invoiceNumber for frontend compatibility
+    return {
+      ...result,
+      invoiceNumber: result.documentNumber,
+      documentNumber: undefined,
+    };
   }
 
   async remove(id: string, organizationId: string) {
-    const payable = await this.findOne(id, organizationId);
-
-    if (
-      payable.status === AccountStatus.PAID ||
-      payable.status === AccountStatus.PARTIAL
-    ) {
-      throw new BadRequestException(
-        "Não é possível excluir uma conta com pagamentos realizados",
-      );
-    }
-
-    await this.prisma.payable.delete({ where: { id } });
-    return payable;
+    return this.removeBase(id, organizationId);
   }
 
   async cancel(id: string, organizationId: string) {
-    const payable = await this.findOne(id, organizationId);
-
-    if (payable.status === AccountStatus.PAID) {
-      throw new BadRequestException(
-        "Não é possível cancelar uma conta já paga",
-      );
-    }
-
-    return this.prisma.payable.update({
-      where: { id },
-      data: { status: AccountStatus.CANCELLED },
-    });
+    return this.cancelBase(id, organizationId);
   }
 
   // Update overdue status - called by cron job
   async updateOverdueStatus(organizationId?: string) {
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-
-    const where: Prisma.PayableWhereInput = {
-      dueDate: { lt: today },
-      status: { in: [AccountStatus.PENDING, AccountStatus.PARTIAL] },
-      ...(organizationId && { organizationId }),
-    };
-
-    return this.prisma.payable.updateMany({
-      where,
-      data: { status: AccountStatus.OVERDUE },
-    });
+    return this.updateOverdueStatusBase(organizationId);
   }
 }
