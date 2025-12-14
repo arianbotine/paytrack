@@ -7,11 +7,12 @@ import { AccountStatus, Prisma } from "@prisma/client";
 import { PrismaService } from "../../infrastructure/database/prisma.service";
 import { CreatePaymentDto, QuickPaymentDto } from "./dto/payment.dto";
 import { MoneyUtils } from "../../shared/utils/money.utils";
+import { parseDateUTC } from "../../shared/utils/date.utils";
 
 type Allocation = {
   payableId?: string;
   receivableId?: string;
-  amount: Prisma.Decimal;
+  amount: number;
 };
 
 @Injectable()
@@ -114,12 +115,12 @@ export class PaymentsService {
       await this.validateAllocationAccounts(organizationId, allocations);
 
       // Create payment with allocations in a transaction
-      return await this.prisma.$transaction(async (tx) => {
+      const result = await this.prisma.$transaction(async (tx) => {
         const payment = await tx.payment.create({
           data: {
             organizationId,
             amount: MoneyUtils.toDecimal(paymentData.amount),
-            paymentDate: new Date(paymentData.paymentDate),
+            paymentDate: parseDateUTC(paymentData.paymentDate),
             paymentMethod: paymentData.paymentMethod,
             notes: paymentData.notes,
             allocations: {
@@ -156,6 +157,26 @@ export class PaymentsService {
 
         return payment;
       });
+
+      // Transform Decimal fields to numbers
+      const transformed = MoneyUtils.transformMoneyFields(result, ["amount"]);
+      return {
+        ...transformed,
+        allocations: result.allocations.map((a) => ({
+          ...a,
+          amount: Number(a.amount),
+        })),
+      };
+
+      // Transform Decimal fields to numbers
+      const transformedPayment = MoneyUtils.transformMoneyFields(result, ["amount"]);
+      return {
+        ...transformedPayment,
+        allocations: result.allocations.map((a) => ({
+          ...a,
+          amount: Number(a.amount),
+        })),
+      };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         throw new BadRequestException(
@@ -216,7 +237,7 @@ export class PaymentsService {
           if (newPaidAmount === 0) {
             // Check if overdue
             const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            today.setUTCHours(0, 0, 0, 0);
             newStatus =
               payable!.dueDate < today
                 ? AccountStatus.OVERDUE
@@ -246,7 +267,7 @@ export class PaymentsService {
           let newStatus: AccountStatus;
           if (newPaidAmount === 0) {
             const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            today.setUTCHours(0, 0, 0, 0);
             newStatus =
               receivable!.dueDate < today
                 ? AccountStatus.OVERDUE
@@ -268,68 +289,6 @@ export class PaymentsService {
       await tx.payment.delete({ where: { id } });
 
       return payment;
-    });
-  }
-
-  private async updatePayableOnRemove(
-    tx: Prisma.TransactionClient,
-    allocation: Allocation
-  ) {
-    const payable = await tx.payable.findUnique({
-      where: { id: allocation.payableId },
-    });
-    const newPaidAmount = Math.max(
-      0,
-      Number(payable!.paidAmount) - Number(allocation.amount)
-    );
-    let newStatus: AccountStatus;
-    if (newPaidAmount === 0) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      newStatus =
-        payable!.dueDate < today
-          ? AccountStatus.OVERDUE
-          : AccountStatus.PENDING;
-    } else {
-      newStatus = AccountStatus.PARTIAL;
-    }
-    await tx.payable.update({
-      where: { id: allocation.payableId },
-      data: {
-        paidAmount: MoneyUtils.toDecimal(newPaidAmount),
-        status: newStatus,
-      },
-    });
-  }
-
-  private async updateReceivableOnRemove(
-    tx: Prisma.TransactionClient,
-    allocation: Allocation
-  ) {
-    const receivable = await tx.receivable.findUnique({
-      where: { id: allocation.receivableId },
-    });
-    const newPaidAmount = Math.max(
-      0,
-      Number(receivable!.paidAmount) - Number(allocation.amount)
-    );
-    let newStatus: AccountStatus;
-    if (newPaidAmount === 0) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      newStatus =
-        receivable!.dueDate < today
-          ? AccountStatus.OVERDUE
-          : AccountStatus.PENDING;
-    } else {
-      newStatus = AccountStatus.PARTIAL;
-    }
-    await tx.receivable.update({
-      where: { id: allocation.receivableId },
-      data: {
-        paidAmount: MoneyUtils.toDecimal(newPaidAmount),
-        status: newStatus,
-      },
     });
   }
 

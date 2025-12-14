@@ -166,7 +166,15 @@ make studio
 - **Multi-tenant**: Suporte a múltiplas organizações
 - **Desenvolvimento**: Backend e Frontend rodam localmente, apenas DB em Docker
 
-## 📝 Funcionalidades
+## � Convenções de API
+
+- Base URL: `/api` prefix
+- Swagger docs: `/api/docs`
+- Todos os valores monetários usam `Decimal(15,2)` no Prisma, `number` nos DTOs
+- **Datas**: Strings ISO em DTOs, convertidas para `Date` nos serviços. O backend sempre trata datas como UTC e não realiza conversões de fuso horário. O frontend lida com conversões de fuso horário local para exibição e entrada de dados, enviando datas em UTC para o backend.
+- Erros em português (Brasil)
+
+## �📝 Funcionalidades
 
 - ✅ Autenticação JWT com roles (OWNER, ADMIN, ACCOUNTANT, VIEWER)
 - ✅ Gestão de organizações (multi-tenant)

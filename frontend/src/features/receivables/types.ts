@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getTodayLocalDateString } from "../../shared/utils/date.utils";
 
 // ============================================================
 // Types & Interfaces
@@ -92,7 +93,7 @@ export const formatCurrency = (value: number): string => {
 export const getDefaultFormValues = (): ReceivableFormData => ({
   description: "",
   amount: 0,
-  dueDate: new Date().toISOString().split("T")[0],
+  dueDate: getTodayLocalDateString(),
   customerId: "",
   categoryId: "",
   tagIds: [],

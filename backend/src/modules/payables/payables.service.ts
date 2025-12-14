@@ -11,6 +11,7 @@ import {
   PayableFilterDto,
 } from "./dto/payable.dto";
 import { MoneyUtils } from "../../shared/utils/money.utils";
+import { parseDateUTC } from "../../shared/utils/date.utils";
 
 @Injectable()
 export class PayablesService {
@@ -27,9 +28,9 @@ export class PayablesService {
         ? {
             dueDate: {
               ...(filters?.dueDateFrom && {
-                gte: new Date(filters.dueDateFrom),
+                gte: parseDateUTC(filters.dueDateFrom),
               }),
-              ...(filters?.dueDateTo && { lte: new Date(filters.dueDateTo) }),
+              ...(filters?.dueDateTo && { lte: parseDateUTC(filters.dueDateTo) }),
             },
           }
         : {}),
@@ -64,7 +65,14 @@ export class PayablesService {
       "paidAmount",
     ]);
 
-    return { data: transformedData, total };
+    // Map documentNumber to invoiceNumber for frontend compatibility
+    const mappedData = transformedData.map((item) => ({
+      ...item,
+      invoiceNumber: item.documentNumber,
+      documentNumber: undefined,
+    }));
+
+    return { data: mappedData, total };
   }
 
   async findOne(id: string, organizationId: string) {
@@ -95,7 +103,14 @@ export class PayablesService {
     }
 
     // Transform Decimal fields to numbers for JSON serialization
-    return MoneyUtils.transformMoneyFields(payable, ["amount", "paidAmount"]);
+    const transformed = MoneyUtils.transformMoneyFields(payable, ["amount", "paidAmount"]);
+
+    // Map documentNumber to invoiceNumber for frontend compatibility
+    return {
+      ...transformed,
+      invoiceNumber: transformed.documentNumber,
+      documentNumber: undefined,
+    };
   }
 
   async create(organizationId: string, createDto: CreatePayableDto) {
@@ -108,10 +123,10 @@ export class PayablesService {
         categoryId: data.categoryId,
         description: data.description,
         amount: MoneyUtils.toDecimal(data.amount),
-        dueDate: new Date(data.dueDate),
+        dueDate: parseDateUTC(data.dueDate),
         paymentMethod: data.paymentMethod,
         notes: data.notes,
-        documentNumber: data.documentNumber,
+        documentNumber: data.invoiceNumber,
         ...(tagIds && tagIds.length > 0
           ? {
               tags: {
@@ -131,7 +146,8 @@ export class PayablesService {
       },
     });
 
-    return payable;
+    // Transform Decimal fields to numbers for JSON serialization
+    return MoneyUtils.transformMoneyFields(payable, ["amount", "paidAmount"]);
   }
 
   async update(
@@ -158,12 +174,20 @@ export class PayablesService {
       }
     }
 
-    return this.prisma.payable.update({
+    // Map invoiceNumber to documentNumber
+    const updateData = { ...data } as any;
+    if (updateData.invoiceNumber !== undefined) {
+      updateData.documentNumber = updateData.invoiceNumber;
+      delete updateData.invoiceNumber;
+    }
+
+    // Transform Decimal fields to numbers for JSON serialization
+    const updated = await this.prisma.payable.update({
       where: { id },
       data: {
-        ...data,
-        ...(data.amount && { amount: MoneyUtils.toDecimal(data.amount) }),
-        ...(data.dueDate && { dueDate: new Date(data.dueDate) }),
+        ...updateData,
+        ...(updateData.amount && { amount: MoneyUtils.toDecimal(updateData.amount) }),
+        ...(updateData.dueDate && { dueDate: parseDateUTC(updateData.dueDate) }),
       },
       include: {
         vendor: { select: { id: true, name: true } },
@@ -175,6 +199,8 @@ export class PayablesService {
         },
       },
     });
+
+    return MoneyUtils.transformMoneyFields(updated, ["amount", "paidAmount"]);
   }
 
   async remove(id: string, organizationId: string) {
@@ -211,7 +237,7 @@ export class PayablesService {
   // Update overdue status - called by cron job
   async updateOverdueStatus(organizationId?: string) {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
 
     const where: Prisma.PayableWhereInput = {
       dueDate: { lt: today },

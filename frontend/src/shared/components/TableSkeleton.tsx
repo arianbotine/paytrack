@@ -1,4 +1,4 @@
-import { Box, Skeleton } from "@mui/material";
+import { Box, Skeleton, TableRow, TableCell } from "@mui/material";
 import { motion } from "framer-motion";
 
 interface TableSkeletonProps {
@@ -8,65 +8,32 @@ interface TableSkeletonProps {
 
 export function TableSkeleton({ rows = 5, columns = 6 }: TableSkeletonProps) {
   return (
-    <Box sx={{ width: "100%", overflow: "hidden" }}>
-      {/* Header skeleton */}
-      <Box
-        sx={{
-          display: "flex",
-          gap: 2,
-          p: 2,
-          borderBottom: 1,
-          borderColor: "divider",
-          bgcolor: "background.default",
-        }}
-      >
-        {Array.from({ length: columns }).map((_, i) => (
-          <Skeleton
-            key={`header-${i}`}
-            variant="text"
-            width={i === 0 ? "20%" : `${Math.floor(80 / (columns - 1))}%`}
-            height={24}
-            sx={{ borderRadius: 1 }}
-          />
-        ))}
-      </Box>
-
+    <>
       {/* Row skeletons */}
       {Array.from({ length: rows }).map((_, rowIndex) => (
-        <motion.div
+        <TableRow
           key={`row-${rowIndex}`}
+          component={motion.tr}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: rowIndex * 0.05 }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              gap: 2,
-              p: 2,
-              borderBottom: 1,
-              borderColor: "divider",
-              "&:last-child": {
-                borderBottom: 0,
-              },
-            }}
-          >
-            {Array.from({ length: columns }).map((_, colIndex) => (
+          {Array.from({ length: columns }).map((_, colIndex) => (
+            <TableCell key={`cell-${rowIndex}-${colIndex}`}>
               <Skeleton
-                key={`cell-${rowIndex}-${colIndex}`}
                 variant="text"
                 width={
-                  colIndex === 0 ? "20%" : `${Math.floor(80 / (columns - 1))}%`
+                  colIndex === 0 ? "80%" : `${Math.floor(60 / (columns - 1))}%`
                 }
                 height={20}
                 sx={{ borderRadius: 1 }}
                 animation="wave"
               />
-            ))}
-          </Box>
-        </motion.div>
+            </TableCell>
+          ))}
+        </TableRow>
       ))}
-    </Box>
+    </>
   );
 }
 

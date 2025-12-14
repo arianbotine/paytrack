@@ -11,6 +11,7 @@ import {
   ReceivableFilterDto,
 } from "./dto/receivable.dto";
 import { MoneyUtils } from "../../shared/utils/money.utils";
+import { parseDateUTC } from "../../shared/utils/date.utils";
 
 @Injectable()
 export class ReceivablesService {
@@ -27,9 +28,9 @@ export class ReceivablesService {
         ? {
             dueDate: {
               ...(filters?.dueDateFrom && {
-                gte: new Date(filters.dueDateFrom),
+                gte: parseDateUTC(filters.dueDateFrom),
               }),
-              ...(filters?.dueDateTo && { lte: new Date(filters.dueDateTo) }),
+              ...(filters?.dueDateTo && { lte: parseDateUTC(filters.dueDateTo) }),
             },
           }
         : {}),
@@ -64,7 +65,14 @@ export class ReceivablesService {
       "paidAmount",
     ]);
 
-    return { data: transformedData, total };
+    // Map documentNumber to invoiceNumber for frontend compatibility
+    const mappedData = transformedData.map((item) => ({
+      ...item,
+      invoiceNumber: item.documentNumber,
+      documentNumber: undefined,
+    }));
+
+    return { data: mappedData, total };
   }
 
   async findOne(id: string, organizationId: string) {
@@ -95,10 +103,17 @@ export class ReceivablesService {
     }
 
     // Transform Decimal fields to numbers for JSON serialization
-    return MoneyUtils.transformMoneyFields(receivable, [
+    const transformed = MoneyUtils.transformMoneyFields(receivable, [
       "amount",
       "paidAmount",
     ]);
+
+    // Map documentNumber to invoiceNumber for frontend compatibility
+    return {
+      ...transformed,
+      invoiceNumber: transformed.documentNumber,
+      documentNumber: undefined,
+    };
   }
 
   async create(organizationId: string, createDto: CreateReceivableDto) {
@@ -111,10 +126,10 @@ export class ReceivablesService {
         categoryId: data.categoryId,
         description: data.description,
         amount: MoneyUtils.toDecimal(data.amount),
-        dueDate: new Date(data.dueDate),
+        dueDate: parseDateUTC(data.dueDate),
         paymentMethod: data.paymentMethod,
         notes: data.notes,
-        documentNumber: data.documentNumber,
+        documentNumber: data.invoiceNumber,
         ...(tagIds && tagIds.length > 0
           ? {
               tags: {
@@ -134,7 +149,8 @@ export class ReceivablesService {
       },
     });
 
-    return receivable;
+    // Transform Decimal fields to numbers for JSON serialization
+    return MoneyUtils.transformMoneyFields(receivable, ["amount", "paidAmount"]);
   }
 
   async update(
@@ -165,12 +181,19 @@ export class ReceivablesService {
       }
     }
 
-    return this.prisma.receivable.update({
+    // Map invoiceNumber to documentNumber
+    const updateData = { ...data } as any;
+    if (updateData.invoiceNumber !== undefined) {
+      updateData.documentNumber = updateData.invoiceNumber;
+      delete updateData.invoiceNumber;
+    }
+
+    const updated = await this.prisma.receivable.update({
       where: { id },
       data: {
-        ...data,
-        ...(data.amount && { amount: MoneyUtils.toDecimal(data.amount) }),
-        ...(data.dueDate && { dueDate: new Date(data.dueDate) }),
+        ...updateData,
+        ...(updateData.amount && { amount: MoneyUtils.toDecimal(updateData.amount) }),
+        ...(updateData.dueDate && { dueDate: parseDateUTC(updateData.dueDate) }),
       },
       include: {
         customer: { select: { id: true, name: true } },
@@ -182,6 +205,9 @@ export class ReceivablesService {
         },
       },
     });
+
+    // Transform Decimal fields to numbers for JSON serialization
+    return MoneyUtils.transformMoneyFields(updated, ["amount", "paidAmount"]);
   }
 
   async remove(id: string, organizationId: string) {
@@ -218,7 +244,7 @@ export class ReceivablesService {
   // Update overdue status - called by cron job
   async updateOverdueStatus(organizationId?: string) {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
 
     const where: Prisma.ReceivableWhereInput = {
       dueDate: { lt: today },
