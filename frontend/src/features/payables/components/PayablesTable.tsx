@@ -92,18 +92,24 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
           <TableRow>
             <TableCell>Descrição</TableCell>
             <TableCell>Fornecedor</TableCell>
-            <TableCell>Categoria</TableCell>
+            <TableCell sx={{ display: { xs: 'none', tablet: 'table-cell' } }}>
+              Categoria
+            </TableCell>
             <TableCell align="right">Valor</TableCell>
             <TableCell>Vencimento</TableCell>
             <TableCell>Status</TableCell>
-            <TableCell align="right">Pago</TableCell>
+            <TableCell
+              align="right"
+              sx={{ display: { xs: 'none', tablet: 'table-cell' } }}
+            >
+              Pago
+            </TableCell>
             <TableCell align="right">Ações</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {isLoading ? (
-            <TableSkeleton columns={8} rows={rowsPerPage} />
-          ) : payables.length === 0 ? (
+          {isLoading && <TableSkeleton columns={8} rows={rowsPerPage} />}
+          {!isLoading && payables.length === 0 && (
             <TableRow>
               <TableCell colSpan={8}>
                 <EmptyState
@@ -113,7 +119,8 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                 />
               </TableCell>
             </TableRow>
-          ) : (
+          )}
+          {!isLoading && payables.length > 0 && (
             <AnimatePresence mode="popLayout">
               {payables.map((payable, index) => (
                 <MotionTableRow
@@ -162,7 +169,9 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                     </Box>
                   </TableCell>
                   <TableCell>{payable.vendor.name}</TableCell>
-                  <TableCell>
+                  <TableCell
+                    sx={{ display: { xs: 'none', tablet: 'table-cell' } }}
+                  >
                     {payable.category && (
                       <Chip
                         label={payable.category.name}
@@ -201,7 +210,10 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                       {formatCurrency(payable.paidAmount)}
                     </Typography>
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell
+                    align="right"
+                    sx={{ display: { xs: 'none', tablet: 'table-cell' } }}
+                  >
                     <Box
                       sx={{
                         display: 'flex',
@@ -262,12 +274,13 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
         onPageChange={(_, newPage) => onPageChange(newPage)}
         rowsPerPage={rowsPerPage}
         onRowsPerPageChange={e => {
-          onRowsPerPageChange(parseInt(e.target.value, 10));
+          onRowsPerPageChange(Number.parseInt(e.target.value, 10));
         }}
         labelRowsPerPage="Linhas por página"
-        labelDisplayedRows={({ from, to, count }) =>
-          `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`
-        }
+        labelDisplayedRows={({ from, to, count }) => {
+          const total = count === -1 ? `mais de ${to}` : count;
+          return `${from}-${to} de ${total}`;
+        }}
       />
     </TableContainer>
   );

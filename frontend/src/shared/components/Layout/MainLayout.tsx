@@ -44,6 +44,7 @@ import { useUIStore } from '@/lib/stores/uiStore';
 import { OrganizationSwitcher } from '../OrganizationSwitcher';
 
 const drawerWidth = 260;
+const miniWidth = 64;
 
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
@@ -69,6 +70,7 @@ export function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg'));
 
   const { user, logout } = useAuthStore();
   const {
@@ -142,7 +144,7 @@ export function MainLayout() {
         >
           PayTrack
         </Typography>
-        {!isMobile && (
+        {!isMobile && !isTablet && (
           <IconButton onClick={toggleSidebar} size="small">
             <ChevronLeftIcon />
           </IconButton>
@@ -174,7 +176,10 @@ export function MainLayout() {
                 }}
               >
                 <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
+                <ListItemText
+                  primary={item.text}
+                  sx={{ display: isTablet ? 'none' : 'block' }}
+                />
               </ListItemButton>
             </ListItem>
           )
@@ -312,8 +317,11 @@ export function MainLayout() {
       <Box
         component="nav"
         sx={{
-          width: { md: sidebarOpen ? drawerWidth : 0 },
-          flexShrink: { md: 0 },
+          width: {
+            tablet: sidebarOpen ? miniWidth : 0,
+            md: sidebarOpen ? drawerWidth : 0,
+          },
+          flexShrink: { tablet: 0, md: 0 },
         }}
       >
         {/* Mobile drawer */}

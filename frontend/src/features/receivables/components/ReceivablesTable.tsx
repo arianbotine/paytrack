@@ -92,18 +92,24 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
           <TableRow>
             <TableCell>Descrição</TableCell>
             <TableCell>Cliente</TableCell>
-            <TableCell>Categoria</TableCell>
+            <TableCell sx={{ display: { xs: 'none', tablet: 'table-cell' } }}>
+              Categoria
+            </TableCell>
             <TableCell align="right">Valor</TableCell>
             <TableCell>Vencimento</TableCell>
             <TableCell>Status</TableCell>
-            <TableCell align="right">Recebido</TableCell>
+            <TableCell
+              align="right"
+              sx={{ display: { xs: 'none', tablet: 'table-cell' } }}
+            >
+              Recebido
+            </TableCell>
             <TableCell align="right">Ações</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {isLoading ? (
-            <TableSkeleton columns={8} rows={rowsPerPage} />
-          ) : receivables.length === 0 ? (
+          {isLoading && <TableSkeleton columns={8} rows={rowsPerPage} />}
+          {!isLoading && receivables.length === 0 && (
             <TableRow>
               <TableCell colSpan={8}>
                 <EmptyState
@@ -113,7 +119,8 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                 />
               </TableCell>
             </TableRow>
-          ) : (
+          )}
+          {!isLoading && receivables.length > 0 && (
             <AnimatePresence mode="popLayout">
               {receivables.map((receivable, index) => (
                 <MotionTableRow
@@ -162,7 +169,9 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                     </Box>
                   </TableCell>
                   <TableCell>{receivable.customer.name}</TableCell>
-                  <TableCell>
+                  <TableCell
+                    sx={{ display: { xs: 'none', tablet: 'table-cell' } }}
+                  >
                     {receivable.category && (
                       <Chip
                         label={receivable.category.name}
@@ -191,7 +200,10 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                   <TableCell>
                     <StatusChip status={receivable.status} />
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell
+                    align="right"
+                    sx={{ display: { xs: 'none', tablet: 'table-cell' } }}
+                  >
                     <Typography
                       color={
                         receivable.receivedAmount > 0
@@ -263,12 +275,13 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
         onPageChange={(_, newPage) => onPageChange(newPage)}
         rowsPerPage={rowsPerPage}
         onRowsPerPageChange={e => {
-          onRowsPerPageChange(parseInt(e.target.value, 10));
+          onRowsPerPageChange(Number.parseInt(e.target.value, 10));
         }}
         labelRowsPerPage="Linhas por página"
-        labelDisplayedRows={({ from, to, count }) =>
-          `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`
-        }
+        labelDisplayedRows={({ from, to, count }) => {
+          const total = count === -1 ? `mais de ${to}` : count;
+          return `${from}-${to} de ${total}`;
+        }}
       />
     </TableContainer>
   );

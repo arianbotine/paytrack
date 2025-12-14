@@ -319,7 +319,7 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                           Detalhes da Conta
                         </Typography>
                         <Grid container spacing={2}>
-                          <Grid item xs={6}>
+                          <Grid item xs={6} tablet={3}>
                             <Typography variant="body2" color="text.secondary">
                               Valor Total
                             </Typography>
@@ -331,7 +331,7 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                               )}
                             </Typography>
                           </Grid>
-                          <Grid item xs={6}>
+                          <Grid item xs={6} tablet={3}>
                             <Typography variant="body2" color="text.secondary">
                               Já{' '}
                               {paymentType === 'PAYABLE' ? 'Pago' : 'Recebido'}
@@ -344,7 +344,7 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                               )}
                             </Typography>
                           </Grid>
-                          <Grid item xs={6}>
+                          <Grid item xs={6} tablet={3}>
                             <Typography variant="body2" color="text.secondary">
                               Pendente
                             </Typography>
@@ -359,7 +359,7 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                               )}
                             </Typography>
                           </Grid>
-                          <Grid item xs={6}>
+                          <Grid item xs={6} tablet={3}>
                             <Typography variant="body2" color="text.secondary">
                               Vencimento
                             </Typography>
@@ -381,7 +381,7 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                   </Grid>
                 )}
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} tablet={4} md={6}>
                   <Controller
                     name="amount"
                     control={control}
@@ -403,7 +403,7 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                   />
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} tablet={4} md={6}>
                   <Controller
                     name="paymentDate"
                     control={control}
@@ -421,7 +421,7 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                   />
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} tablet={4} md={6}>
                   <Controller
                     name="method"
                     control={control}
@@ -440,7 +440,7 @@ export const PaymentFormDialog: React.FC<PaymentFormDialogProps> = ({
                   />
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} tablet={4} md={6}>
                   <Controller
                     name="reference"
                     control={control}

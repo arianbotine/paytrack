@@ -31,29 +31,21 @@ Sistema completo para gestão de contas a pagar e receber com arquitetura multi-
 git clone <repo-url>
 cd paytrack
 
-# 2. Copiar arquivos de ambiente
-make setup-env
-# ou manualmente:
+# 2. Copiar arquivos de ambiente (opcional, o .env.example já tem valores padrão)
 cp .env.example .env
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
 
-# 3. Instalar dependências
-make install
-
-# 4. Configuração inicial (banco de dados + migrations + seed)
-make init
+# 3. Iniciar a aplicação (instala deps, inicia DB, sincroniza schema)
+make up
 ```
 
-### Executar a Aplicação
+### Executar Seeds (Dados de Demonstração)
 
 ```bash
-# Iniciar todos os serviços
-make up
-
-# Parar todos os serviços
-make down
+# Executar seeds com dados de demonstração
+make db-seed
 ```
+
+Credenciais de acesso: admin@paytrack.com / admin123
 
 A aplicação estará disponível em:
 
@@ -117,13 +109,18 @@ Cada linha de log inclui timestamp:
 
 ```bash
 # === Desenvolvimento ===
-make up              # Inicia todos os serviços
-make down            # Para todos os serviços
-make restart         # Reinicia todos os serviços
+make setup           # Instalar dependências (inteligente)
+make setup-force     # Forçar instalação de dependências
+make db-up           # Iniciar PostgreSQL
+make db-sync         # Sincronizar schema e gerar Prisma
+make db-seed         # Executar seeds
+make up              # Iniciar tudo (backend + frontend)
+make down            # Parar tudo
+make restart         # Reiniciar aplicações
 make status          # Mostra status dos serviços
 
 # === Logs ===
-make logs            # Menu interativo de logs
+make logs            # Acompanhar todos os logs
 make logs-backend    # Logs do backend
 make logs-frontend   # Logs do frontend
 make logs-db         # Logs do banco
@@ -131,15 +128,12 @@ make logs-db         # Logs do banco
 # === Banco de Dados ===
 make db-shell        # Shell do PostgreSQL
 make migrate         # Executar migrations
-make seed            # Popular banco com dados
 make studio          # Abrir Prisma Studio
 make generate        # Regenerar Prisma Client
 
-# === Instalação ===
-make install         # Instalar todas as dependências
-make setup-env       # Criar arquivos .env
-make init            # Setup inicial completo
-make clean           # Limpar containers e volumes
+# === Utilitários ===
+make clean           # Limpar logs, node_modules, builds
+make reset           # Resetar banco completamente
 
 # === Ajuda ===
 make help            # Lista todos os comandos
@@ -226,7 +220,15 @@ make studio
 - **Multi-tenant**: Suporte a múltiplas organizações
 - **Desenvolvimento**: Backend e Frontend rodam localmente, apenas DB em Docker
 
-## 📝 Funcionalidades
+## � Convenções de API
+
+- Base URL: `/api` prefix
+- Swagger docs: `/api/docs`
+- Todos os valores monetários usam `Decimal(15,2)` no Prisma, `number` nos DTOs
+- **Datas**: Strings ISO em DTOs, convertidas para `Date` nos serviços. O backend sempre trata datas como UTC e não realiza conversões de fuso horário. O frontend lida com conversões de fuso horário local para exibição e entrada de dados, enviando datas em UTC para o backend.
+- Erros em português (Brasil)
+
+## �📝 Funcionalidades
 
 - ✅ Autenticação JWT com roles (OWNER, ADMIN, ACCOUNTANT, VIEWER)
 - ✅ Gestão de organizações (multi-tenant)

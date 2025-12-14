@@ -48,7 +48,7 @@ export class CreateReceivableDto {
   @ApiPropertyOptional({ example: 'PED-12345' })
   @IsString()
   @IsOptional()
-  documentNumber?: string;
+  invoiceNumber?: string;
 
   @ApiPropertyOptional({
     type: [String],
@@ -101,7 +101,7 @@ export class UpdateReceivableDto {
   @ApiPropertyOptional({ example: 'PED-12345' })
   @IsString()
   @IsOptional()
-  documentNumber?: string;
+  invoiceNumber?: string;
 
   @ApiPropertyOptional({
     type: [String],

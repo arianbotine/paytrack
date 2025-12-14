@@ -15,7 +15,7 @@ import { MoneyUtils } from '../../shared/utils/money.utils';
 type Allocation = {
   payableId?: string;
   receivableId?: string;
-  amount: Prisma.Decimal;
+  amount: number;
 };
 
 @Injectable()
@@ -125,11 +125,11 @@ export class PaymentsService {
     try {
       const { allocations, ...paymentData } = createDto;
 
-      // Convert allocations to proper type
+      // Convert allocations amount to number for validation
       const typedAllocations: Allocation[] = allocations.map(a => ({
         payableId: a.payableId,
         receivableId: a.receivableId,
-        amount: MoneyUtils.toDecimal(a.amount),
+        amount: Number(a.amount),
       }));
 
       // Validate allocations

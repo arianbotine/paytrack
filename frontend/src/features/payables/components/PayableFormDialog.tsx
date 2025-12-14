@@ -128,7 +128,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                   />
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} tablet={4} md={6}>
                   <Controller
                     name="vendorId"
                     control={control}
@@ -152,7 +152,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                   />
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} tablet={4} md={6}>
                   <Controller
                     name="categoryId"
                     control={control}
@@ -189,7 +189,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                   />
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} tablet={4} md={6}>
                   <Controller
                     name="amount"
                     control={control}
@@ -211,7 +211,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                   />
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} tablet={4} md={6}>
                   <Controller
                     name="dueDate"
                     control={control}
@@ -229,7 +229,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                   />
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} tablet={4} md={6}>
                   <Controller
                     name="invoiceNumber"
                     control={control}
@@ -243,7 +243,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                   />
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} tablet={4} md={6}>
                   <Controller
                     name="tagIds"
                     control={control}

@@ -1,143 +1,202 @@
-.PHONY: up down logs logs-backend logs-frontend logs-db status restart \
-        db-shell migrate migrate-deploy seed studio generate \
-        install install-backend install-frontend clean init help
+# Makefile para administração de desenvolvimento do projeto PayTrack
+# Sistema de contas a pagar e receber - NestJS + React + PostgreSQL
 
-# ===========================================
-# Desenvolvimento
-# ===========================================
+SHELL := /bin/bash
 
-## Inicia todos os serviços (db, backend, frontend)
-up:
-	@./scripts/start-dev.sh
+.PHONY: help setup setup-force db-up db-sync db-seed up down restart clean reset studio logs
 
-## Para todos os serviços
+# Variáveis
+DOCKER_COMPOSE := docker compose
+BACKEND_DIR := backend
+FRONTEND_DIR := frontend
+LOGS_DIR := logs
+DB_CONTAINER := db
+DB_USER := paytrack
+DB_NAME := paytrack
+BACKEND_PORT := 3000
+FRONTEND_PORT := 5173
+PRISMA_STUDIO_PORT := 5555
+
+# Comando padrão
+help:
+	@echo "Comandos disponíveis:"
+	@echo "  setup       - Instalar dependências do backend e frontend (inteligente)"
+	@echo "  setup-force - Forçar instalação de dependências (remove e reinstala)"
+	@echo "  db-up       - Iniciar container PostgreSQL e aguardar saúde"
+	@echo "  db-sync     - Sincronizar schema do banco e gerar cliente Prisma"
+	@echo "  db-seed     - Executar seeds do banco de dados"
+	@echo "  up          - Iniciar backend e frontend em modo desenvolvimento"
+	@echo "  down        - Parar aplicações e banco de dados"
+	@echo "  restart     - Reiniciar aplicações (down + up)"
+	@echo "  clean       - Limpar logs, node_modules e builds"
+	@echo "  reset       - Resetar banco de dados completamente"
+	@echo "  studio      - Abrir Prisma Studio"
+	@echo "  logs        - Acompanhar logs de todos os serviços"
+	@echo "  logs-backend - Acompanhar logs do backend"
+	@echo "  logs-frontend - Acompanhar logs do frontend"
+	@echo "  logs-db     - Acompanhar logs do banco"
+	@echo "  status      - Mostrar status dos serviços"
+	@echo "  db-shell    - Acessar shell do PostgreSQL"
+	@echo "  migrate     - Executar migrations do Prisma"
+	@echo "  generate    - Regenerar Prisma Client"
+
+# Instalar dependências
+setup:
+	@if [ ! -d "$(BACKEND_DIR)/node_modules" ]; then \
+		echo "Instalando dependências do backend..."; \
+		cd $(BACKEND_DIR) && npm install; \
+	else \
+		echo "Dependências do backend já instaladas."; \
+	fi
+	@if [ ! -d "$(FRONTEND_DIR)/node_modules" ]; then \
+		echo "Instalando dependências do frontend..."; \
+		cd $(FRONTEND_DIR) && npm install; \
+	else \
+		echo "Dependências do frontend já instaladas."; \
+	fi
+	@echo "Setup concluído."
+
+# Forçar instalação de dependências
+setup-force:
+	@echo "Forçando instalação de dependências do backend..."
+	@cd $(BACKEND_DIR) && rm -rf node_modules package-lock.json && npm install
+	@echo "Forçando instalação de dependências do frontend..."
+	@cd $(FRONTEND_DIR) && rm -rf node_modules package-lock.json && npm install
+	@echo "Setup forçado concluído."
+
+# Iniciar PostgreSQL
+db-up:
+	@echo "Iniciando PostgreSQL..."
+	@$(DOCKER_COMPOSE) up -d $(DB_CONTAINER)
+	@echo "Aguardando PostgreSQL ficar saudável..."
+	@sleep 3
+	@timeout 30 sh -c 'until nc -z localhost 5433 >/dev/null 2>&1; do sleep 0.5; done' || (echo "Erro: PostgreSQL não ficou saudável em 33s"; exit 1)
+	@echo "PostgreSQL pronto."
+
+# Sincronizar banco e gerar Prisma
+db-sync:
+	@if [ ! -f .env ]; then cp .env.example .env; fi
+	@echo "Sincronizando schema do banco..."
+	@set -a && . .env && set +a && cd $(BACKEND_DIR) && npx prisma db push --accept-data-loss
+	@echo "Gerando cliente Prisma..."
+	@set -a && . .env && set +a && cd $(BACKEND_DIR) && npx prisma generate
+	@echo "Sincronização concluída."
+
+# Executar seeds
+db-seed:
+	@if [ ! -f .env ]; then cp .env.example .env; fi
+	@echo "Executando seeds do banco..."
+	@set -a && . .env && set +a && cd $(BACKEND_DIR) && npx prisma db seed
+	@echo "Seeds executadas."
+
+# Iniciar aplicações
+up: setup db-up db-sync
+	@if [ ! -f .env ]; then cp .env.example .env; fi
+	@cp .env $(BACKEND_DIR)/.env
+	@set -a && . .env && set +a
+	@mkdir -p $(LOGS_DIR)
+	@echo "Iniciando backend..."
+	@cd $(BACKEND_DIR) && (npm run start:dev > ../$(LOGS_DIR)/backend.log 2>&1 & echo $$! > ../$(LOGS_DIR)/.pids.backend)
+	@echo "Backend iniciado (PID: $$(cat $(LOGS_DIR)/.pids.backend))"
+	@echo "Iniciando frontend..."
+	@cd $(FRONTEND_DIR) && (npm run dev > ../$(LOGS_DIR)/frontend.log 2>&1 & echo $$! > ../$(LOGS_DIR)/.pids.frontend)
+	@echo "Frontend iniciado (PID: $$(cat $(LOGS_DIR)/.pids.frontend))"
+	@echo "Aplicações iniciadas. Use 'make logs' para acompanhar logs."
+	@echo ""
+	@echo "🌐 Links de acesso:"
+	@echo "  📡 API Backend:    http://localhost:$(BACKEND_PORT)"
+	@echo "  🖥️  Frontend:       http://localhost:$(FRONTEND_PORT)"
+	@echo "  🗄️  Prisma Studio:  http://localhost:$(PRISMA_STUDIO_PORT)"
+
+# Parar aplicações e banco
 down:
-	@./scripts/stop-dev.sh
+	@echo "Parando aplicações..."
+	@-if [ -f $(LOGS_DIR)/.pids.backend ]; then kill $$(cat $(LOGS_DIR)/.pids.backend) 2>/dev/null || true; rm -f $(LOGS_DIR)/.pids.backend; fi
+	@-if [ -f $(LOGS_DIR)/.pids.frontend ]; then kill $$(cat $(LOGS_DIR)/.pids.frontend) 2>/dev/null || true; rm -f $(LOGS_DIR)/.pids.frontend; fi
+	@-pkill -9 -f "nest start" || true
+	@-pkill -9 -f "vite" || true
+	@sleep 2
+	@-lsof -ti:$(BACKEND_PORT) | xargs kill -9 2>/dev/null || true
+	@-lsof -ti:$(FRONTEND_PORT) | xargs kill -9 2>/dev/null || true
+	@echo "Parando PostgreSQL..."
+	@$(DOCKER_COMPOSE) down
+	@echo "Limpando logs antigos..."
+	@rm -f $(LOGS_DIR)/*.log
+	@echo "Tudo parado e limpo."
 
-## Reinicia todos os serviços
+# Reiniciar aplicações
 restart: down up
 
-## Mostra status dos serviços
+# Limpar arquivos temporários
+clean:
+	@echo "Limpando logs..."
+	@rm -rf $(LOGS_DIR)/*.log
+	@echo "Limpando arquivos PID..."
+	@rm -f $(LOGS_DIR)/.pids.*
+	@echo "Limpando node_modules..."
+	@rm -rf $(BACKEND_DIR)/node_modules $(FRONTEND_DIR)/node_modules
+	@echo "Limpando builds..."
+	@rm -rf $(BACKEND_DIR)/dist $(FRONTEND_DIR)/dist
+	@echo "Limpeza concluída."
+
+# Resetar banco completamente
+reset:
+	@echo "Resetando banco de dados..."
+	@$(DOCKER_COMPOSE) down -v
+	@echo "Banco resetado."
+
+# Abrir Prisma Studio
+studio:
+	@if [ ! -f .env ]; then cp .env.example .env; fi
+	@echo "Abrindo Prisma Studio em http://localhost:$(PRISMA_STUDIO_PORT)"
+	@set -a && . .env && set +a && cd $(BACKEND_DIR) && npx prisma studio
+
+# Acompanhar logs
+logs:
+	@echo "Acompanhando logs (Ctrl+C para sair)..."
+	@tail -f $(LOGS_DIR)/backend.log $(LOGS_DIR)/frontend.log &
+	@$(DOCKER_COMPOSE) logs -f $(DB_CONTAINER) &
+	@wait
+
+# Logs individuais
+logs-backend:
+	@tail -f $(LOGS_DIR)/backend.log
+
+logs-frontend:
+	@tail -f $(LOGS_DIR)/frontend.log
+
+logs-db:
+	@$(DOCKER_COMPOSE) logs -f $(DB_CONTAINER)
+
+# Status dos serviços
 status:
 	@echo "=== Status dos Serviços ==="
 	@echo ""
 	@echo "Database (Docker):"
-	@docker compose ps db 2>/dev/null || echo "  Não está rodando"
+	@$(DOCKER_COMPOSE) ps $(DB_CONTAINER) 2>/dev/null || echo "  Não está rodando"
 	@echo ""
 	@echo "Backend:"
-	@if [ -f logs/backend.pid ] && kill -0 $$(cat logs/backend.pid) 2>/dev/null; then \
-		echo "  Rodando (PID: $$(cat logs/backend.pid))"; \
+	@if [ -f $(LOGS_DIR)/.pids.backend ] && kill -0 $$(cat $(LOGS_DIR)/.pids.backend) 2>/dev/null; then \
+		echo "  Rodando (PID: $$(cat $(LOGS_DIR)/.pids.backend))"; \
 	else \
 		echo "  Não está rodando"; \
 	fi
 	@echo ""
 	@echo "Frontend:"
-	@if [ -f logs/frontend.pid ] && kill -0 $$(cat logs/frontend.pid) 2>/dev/null; then \
-		echo "  Rodando (PID: $$(cat logs/frontend.pid))"; \
+	@if [ -f $(LOGS_DIR)/.pids.frontend ] && kill -0 $$(cat $(LOGS_DIR)/.pids.frontend) 2>/dev/null; then \
+		echo "  Rodando (PID: $$(cat $(LOGS_DIR)/.pids.frontend))"; \
 	else \
 		echo "  Não está rodando"; \
 	fi
 
-# ===========================================
-# Banco de Dados
-# ===========================================
-
-## Acessa o shell do PostgreSQL
+# Banco de dados
 db-shell:
-	@docker compose exec db psql -U $${DB_USER:-paytrack} -d $${DB_NAME:-paytrack}
+	@$(DOCKER_COMPOSE) exec $(DB_CONTAINER) psql -U $(DB_USER) -d $(DB_NAME)
 
-## Executa migrations do Prisma
 migrate:
-	@cd backend && npx prisma migrate dev --skip-seed
+	@if [ ! -f .env ]; then cp .env.example .env; fi
+	@set -a && . .env && set +a && cd $(BACKEND_DIR) && npx prisma migrate dev
 
-## Executa migrations em produção
-migrate-deploy:
-	@cd backend && npx prisma migrate deploy
-
-## Executa seed do banco de dados
-seed:
-	@cd backend && npx prisma db seed
-
-## Abre Prisma Studio
-studio:
-	@cd backend && npx prisma studio
-
-## Regenera Prisma Client
 generate:
-	@cd backend && npx prisma generate
-
-# ===========================================
-# Instalação
-# ===========================================
-
-## Instala dependências do backend
-install-backend:
-	@cd backend && npm install
-
-## Instala dependências do frontend
-install-frontend:
-	@cd frontend && npm install
-
-## Instala todas as dependências
-install: install-backend install-frontend
-	@echo "Dependências instaladas com sucesso!"
-
-# ===========================================
-# Utilitários
-# ===========================================
-
-## Remove containers e volumes do banco
-clean: down
-	@docker compose down -v --remove-orphans 2>/dev/null || true
-	@rm -f logs/*.pid
-	@echo "Limpeza concluída!"
-
-## Configuração inicial do projeto
-init: clean install
-	@echo "Iniciando banco de dados..."
-	@docker compose up -d db
-	@echo "Aguardando banco ficar pronto..."
-	@sleep 5
-	@cd backend && npx prisma migrate dev
-	@cd backend && npx prisma db seed
-	@docker compose stop db
-	@echo ""
-	@echo "PayTrack configurado com sucesso!"
-	@echo "Execute 'make up' para iniciar o ambiente."
-
-## Copia arquivos .env de exemplo
-setup-env:
-	@cp -n .env.example .env 2>/dev/null || true
-	@cp -n backend/.env.example backend/.env 2>/dev/null || true
-	@cp -n frontend/.env.example frontend/.env 2>/dev/null || true
-	@echo "Arquivos .env criados (se não existiam)"
-
-## Mostra ajuda
-help:
-	@echo "PayTrack - Comandos Disponíveis"
-	@echo "================================"
-	@echo ""
-	@echo "Desenvolvimento:"
-	@echo "  make up              - Inicia todos os serviços"
-	@echo "  make down            - Para todos os serviços"
-	@echo "  make restart         - Reinicia todos os serviços"
-	@echo "  make status          - Mostra status dos serviços"
-	@echo ""
-	@echo "Logs:"
-	@echo "  make logs            - Ver todos os logs"
-	@echo "  make logs-backend    - Ver logs do backend"
-	@echo "  make logs-frontend   - Ver logs do frontend"
-	@echo "  make logs-db         - Ver logs do banco"
-	@echo ""
-	@echo "Banco de Dados:"
-	@echo "  make db-shell        - Shell do PostgreSQL"
-	@echo "  make migrate         - Executar migrations"
-	@echo "  make seed            - Popular banco com dados"
-	@echo "  make studio          - Abrir Prisma Studio"
-	@echo "  make generate        - Regenerar Prisma Client"
-	@echo ""
-	@echo "Instalação:"
-	@echo "  make install         - Instalar dependências"
-	@echo "  make setup-env       - Criar arquivos .env"
-	@echo "  make init            - Setup inicial completo"
-	@echo "  make clean           - Limpar containers/volumes"
+	@if [ ! -f .env ]; then cp .env.example .env; fi
+	@set -a && . .env && set +a && cd $(BACKEND_DIR) && npx prisma generate

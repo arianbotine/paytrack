@@ -1,164 +1,72 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
-import { AccountStatus, Prisma } from '@prisma/client';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import {
   CreateReceivableDto,
   UpdateReceivableDto,
   ReceivableFilterDto,
 } from './dto/receivable.dto';
-import { MoneyUtils } from '../../shared/utils/money.utils';
+import { BaseAccountService } from '../shared/base-account.service';
 
 @Injectable()
-export class ReceivablesService {
-  constructor(private readonly prisma: PrismaService) {}
+export class ReceivablesService extends BaseAccountService {
+  constructor(protected readonly prisma: PrismaService) {
+    super(prisma);
+  }
+
+  protected getModel() {
+    return this.prisma.receivable;
+  }
+
+  protected getEntityName() {
+    return 'conta a receber';
+  }
+
+  protected getIncludeOptions() {
+    return {
+      customer: { select: { id: true, name: true } },
+      category: { select: { id: true, name: true, color: true } },
+      tags: {
+        include: {
+          tag: { select: { id: true, name: true, color: true } },
+        },
+      },
+    };
+  }
 
   async findAll(organizationId: string, filters?: ReceivableFilterDto) {
-    const where: Prisma.ReceivableWhereInput = {
-      organizationId,
+    const result = await this.findAllBase(organizationId, filters, {
       ...(filters?.customerId && { customerId: filters.customerId }),
-      ...(filters?.categoryId && { categoryId: filters.categoryId }),
-      ...(filters?.status &&
-        filters.status.length > 0 && { status: { in: filters.status } }),
-      ...(filters?.dueDateFrom || filters?.dueDateTo
-        ? {
-            dueDate: {
-              ...(filters?.dueDateFrom && {
-                gte: new Date(filters.dueDateFrom),
-              }),
-              ...(filters?.dueDateTo && { lte: new Date(filters.dueDateTo) }),
-            },
-          }
-        : {}),
-    };
-
-    const [data, total] = await Promise.all([
-      this.prisma.receivable.findMany({
-        where,
-        include: {
-          customer: {
-            select: { id: true, name: true },
-          },
-          category: {
-            select: { id: true, name: true, color: true },
-          },
-          tags: {
-            include: {
-              tag: { select: { id: true, name: true, color: true } },
-            },
-          },
-        },
-        orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
-        skip: filters?.skip,
-        take: filters?.take,
-      }),
-      this.prisma.receivable.count({ where }),
-    ]);
-
-    // Transform Decimal fields to numbers for JSON serialization
-    const transformedData = MoneyUtils.transformMoneyFieldsArray(data, [
-      'amount',
-      'paidAmount',
-    ]);
+    });
 
     // Map paidAmount to receivedAmount for frontend compatibility
-    const mappedData = transformedData.map(receivable => ({
+    const mappedData = result.data.map((receivable: any) => ({
       ...receivable,
       receivedAmount: receivable.paidAmount,
-      paidAmount: undefined, // Remove the original field
+      paidAmount: undefined,
     }));
 
-    return { data: mappedData, total };
+    return { data: mappedData, total: result.total };
   }
 
   async findOne(id: string, organizationId: string) {
-    const receivable = await this.prisma.receivable.findFirst({
-      where: { id, organizationId },
-      include: {
-        customer: {
-          select: { id: true, name: true },
-        },
-        category: {
-          select: { id: true, name: true, color: true },
-        },
-        tags: {
-          include: {
-            tag: { select: { id: true, name: true, color: true } },
-          },
-        },
-        allocations: {
-          include: {
-            payment: true,
-          },
-        },
-      },
-    });
-
-    if (!receivable) {
-      throw new NotFoundException('Conta a receber não encontrada');
-    }
-
-    // Transform Decimal fields to numbers for JSON serialization
-    const transformed = MoneyUtils.transformMoneyFields(receivable, [
-      'amount',
-      'paidAmount',
-    ]);
+    const receivable = await this.findOneBase(id, organizationId);
 
     // Map paidAmount to receivedAmount for frontend compatibility
     return {
-      ...transformed,
-      receivedAmount: transformed.paidAmount,
-      paidAmount: undefined, // Remove the original field
+      ...receivable,
+      receivedAmount: receivable.paidAmount,
+      paidAmount: undefined,
     };
   }
 
   async create(organizationId: string, createDto: CreateReceivableDto) {
-    const { tagIds, ...data } = createDto;
-
-    const receivable = await this.prisma.receivable.create({
-      data: {
-        organizationId,
-        customerId: data.customerId,
-        categoryId: data.categoryId,
-        description: data.description,
-        amount: MoneyUtils.toDecimal(data.amount),
-        dueDate: new Date(data.dueDate),
-        paymentMethod: data.paymentMethod,
-        notes: data.notes,
-        documentNumber: data.documentNumber,
-        ...(tagIds && tagIds.length > 0
-          ? {
-              tags: {
-                create: tagIds.map(tagId => ({ tagId })),
-              },
-            }
-          : {}),
-      },
-      include: {
-        customer: { select: { id: true, name: true } },
-        category: { select: { id: true, name: true, color: true } },
-        tags: {
-          include: {
-            tag: { select: { id: true, name: true, color: true } },
-          },
-        },
-      },
-    });
-
-    // Transform Decimal fields to numbers for JSON serialization
-    const transformed = MoneyUtils.transformMoneyFields(receivable, [
-      'amount',
-      'paidAmount',
-    ]);
+    const result = await this.createBase(organizationId, createDto);
 
     // Map paidAmount to receivedAmount for frontend compatibility
     return {
-      ...transformed,
-      receivedAmount: transformed.paidAmount,
-      paidAmount: undefined, // Remove the original field
+      ...result,
+      receivedAmount: result.paidAmount,
+      paidAmount: undefined,
     };
   }
 
@@ -167,106 +75,31 @@ export class ReceivablesService {
     organizationId: string,
     updateDto: UpdateReceivableDto
   ) {
-    const receivable = await this.findOne(id, organizationId);
-
-    if (receivable.status === AccountStatus.PAID) {
-      throw new BadRequestException(
-        'Não é possível editar uma conta já recebida'
-      );
-    }
-
-    const { tagIds, ...data } = updateDto;
-
-    // Handle tags update
-    if (tagIds !== undefined) {
-      await this.prisma.receivableTag.deleteMany({
-        where: { receivableId: id },
-      });
-
-      if (tagIds.length > 0) {
-        await this.prisma.receivableTag.createMany({
-          data: tagIds.map(tagId => ({ receivableId: id, tagId })),
-        });
-      }
-    }
-
-    const updatedReceivable = await this.prisma.receivable.update({
-      where: { id },
-      data: {
-        ...data,
-        ...(data.amount && { amount: MoneyUtils.toDecimal(data.amount) }),
-        ...(data.dueDate && { dueDate: new Date(data.dueDate) }),
-      },
-      include: {
-        customer: { select: { id: true, name: true } },
-        category: { select: { id: true, name: true, color: true } },
-        tags: {
-          include: {
-            tag: { select: { id: true, name: true, color: true } },
-          },
-        },
-      },
-    });
-
-    // Transform Decimal fields to numbers for JSON serialization
-    const transformed = MoneyUtils.transformMoneyFields(updatedReceivable, [
-      'amount',
-      'paidAmount',
-    ]);
+    const result = await this.updateBase(
+      id,
+      organizationId,
+      updateDto,
+      this.prisma.receivableTag
+    );
 
     // Map paidAmount to receivedAmount for frontend compatibility
     return {
-      ...transformed,
-      receivedAmount: transformed.paidAmount,
-      paidAmount: undefined, // Remove the original field
+      ...result,
+      receivedAmount: result.paidAmount,
+      paidAmount: undefined,
     };
   }
 
   async remove(id: string, organizationId: string) {
-    const receivable = await this.findOne(id, organizationId);
-
-    if (
-      receivable.status === AccountStatus.PAID ||
-      receivable.status === AccountStatus.PARTIAL
-    ) {
-      throw new BadRequestException(
-        'Não é possível excluir uma conta com recebimentos realizados'
-      );
-    }
-
-    await this.prisma.receivable.delete({ where: { id } });
-    return receivable;
+    return this.removeBase(id, organizationId);
   }
 
   async cancel(id: string, organizationId: string) {
-    const receivable = await this.findOne(id, organizationId);
-
-    if (receivable.status === AccountStatus.PAID) {
-      throw new BadRequestException(
-        'Não é possível cancelar uma conta já recebida'
-      );
-    }
-
-    return this.prisma.receivable.update({
-      where: { id },
-      data: { status: AccountStatus.CANCELLED },
-    });
+    return this.cancelBase(id, organizationId);
   }
 
   // Update overdue status - called by cron job
   async updateOverdueStatus(organizationId?: string) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const where: Prisma.ReceivableWhereInput = {
-      dueDate: { lt: today },
-      status: { in: [AccountStatus.PENDING, AccountStatus.PARTIAL] },
-      ...(organizationId && { organizationId }),
-    };
-
-    return this.prisma.receivable.updateMany({
-      where,
-      data: { status: AccountStatus.OVERDUE },
-    });
+    return this.updateOverdueStatusBase(organizationId);
   }
 }

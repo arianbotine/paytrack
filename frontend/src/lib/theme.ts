@@ -1,6 +1,12 @@
 import { createTheme, alpha } from '@mui/material/styles';
 import { PaletteMode } from '@mui/material';
 
+declare module '@mui/material/styles' {
+  interface BreakpointOverrides {
+    tablet: true;
+  }
+}
+
 // Modern color palette inspired by Tailwind/Stripe
 const colors = {
   primary: {

@@ -138,7 +138,7 @@ Key entities in `backend/prisma/schema.prisma`:
 - Base URL: `/api` prefix (set in `main.ts`)
 - Swagger docs: `/api/docs`
 - All monetary values use `Decimal(15,2)` in Prisma, `number` in DTOs
-- Dates: ISO strings in DTOs, converted to `Date` in services
+- Dates: ISO strings in DTOs, converted to `Date` in services. Backend always treats dates as UTC without time zone conversions. Frontend handles local time zone for user inputs and displays, sending dates in UTC to backend.
 - Error messages in Portuguese (Brazilian)
 
 ## File Naming

@@ -48,7 +48,7 @@ export class CreatePayableDto {
   @ApiPropertyOptional({ example: 'NF-12345' })
   @IsString()
   @IsOptional()
-  documentNumber?: string;
+  invoiceNumber?: string;
 
   @ApiPropertyOptional({
     type: [String],
@@ -104,7 +104,7 @@ export class UpdatePayableDto {
   @ApiPropertyOptional({ example: 'NF-12345' })
   @IsString()
   @IsOptional()
-  documentNumber?: string;
+  invoiceNumber?: string;
 
   @ApiPropertyOptional({
     type: [String],
