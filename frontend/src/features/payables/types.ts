@@ -84,13 +84,6 @@ export const statusOptions = [
 
 import { getTodayLocalInput } from '../../shared/utils/dateUtils';
 
-export const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
-};
-
 export const getDefaultFormValues = (): PayableFormData => ({
   description: '',
   amount: 0,

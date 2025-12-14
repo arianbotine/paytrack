@@ -1,114 +1,101 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
-import { CategoryType } from '@prisma/client';
+import { Injectable, ConflictException } from '@nestjs/common';
+import { CategoryType, Category } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
+import { BaseEntityService } from '../shared/base-entity.service';
 
 @Injectable()
-export class CategoriesService {
-  constructor(private readonly prisma: PrismaService) {}
+export class CategoriesService extends BaseEntityService<
+  Category,
+  CreateCategoryDto,
+  UpdateCategoryDto
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma, 'Category', prisma.category, 'Categoria');
+  }
 
+  /**
+   * Find all categories, optionally filtered by type
+   */
   async findAll(
     organizationId: string,
-    type?: CategoryType,
-    includeInactive = false
+    includeInactive = false,
+    type?: CategoryType
   ) {
+    const where: any = { organizationId };
+
+    if (type) {
+      where.type = type;
+    }
+
+    if (!includeInactive) {
+      where.isActive = true;
+    }
+
     return this.prisma.category.findMany({
-      where: {
-        organizationId,
-        ...(type ? { type } : {}),
-        ...(includeInactive ? {} : { isActive: true }),
-      },
+      where,
       orderBy: { name: 'asc' },
     });
   }
 
-  async findOne(id: string, organizationId: string) {
-    const category = await this.prisma.category.findFirst({
-      where: { id, organizationId },
-    });
+  /**
+   * Check for unique name+type constraint
+   */
+  protected async checkUniqueConstraints(
+    organizationId: string,
+    dto: Partial<CreateCategoryDto | UpdateCategoryDto>,
+    excludeId?: string
+  ): Promise<void> {
+    if (!dto.name) return;
 
-    if (!category) {
-      throw new NotFoundException('Categoria não encontrada');
+    // For create, we need the type from dto
+    // For update, we need to fetch current category to get type
+    let type: CategoryType;
+
+    if ('type' in dto && dto.type) {
+      type = dto.type;
+    } else if (excludeId) {
+      const current = await this.prisma.category.findUnique({
+        where: { id: excludeId },
+      });
+      if (!current) return;
+      type = current.type;
+    } else {
+      return;
     }
 
-    return category;
-  }
+    const where: any = {
+      organizationId,
+      name: dto.name,
+      type,
+    };
 
-  async create(organizationId: string, createDto: CreateCategoryDto) {
-    // Check if category with same name and type already exists
-    const existing = await this.prisma.category.findFirst({
-      where: {
-        organizationId,
-        name: createDto.name,
-        type: createDto.type,
-      },
-    });
+    if (excludeId) {
+      where.NOT = { id: excludeId };
+    }
+
+    const existing = await this.prisma.category.findFirst({ where });
 
     if (existing) {
       throw new ConflictException('Categoria já existe com este nome');
     }
-
-    return this.prisma.category.create({
-      data: {
-        organizationId,
-        ...createDto,
-      },
-    });
   }
 
-  async update(
-    id: string,
-    organizationId: string,
-    updateDto: UpdateCategoryDto
-  ) {
-    const category = await this.findOne(id, organizationId);
-
-    // Check if name is being changed and if it conflicts
-    if (updateDto.name && updateDto.name !== category.name) {
-      const existing = await this.prisma.category.findFirst({
-        where: {
-          organizationId,
-          name: updateDto.name,
-          type: category.type,
-          NOT: { id },
-        },
-      });
-
-      if (existing) {
-        throw new ConflictException('Categoria já existe com este nome');
-      }
-    }
-
-    return this.prisma.category.update({
-      where: { id },
-      data: updateDto,
-    });
-  }
-
-  async remove(id: string, organizationId: string) {
-    const category = await this.findOne(id, organizationId);
-
-    // Check usage
+  /**
+   * Check if category is in use
+   */
+  protected async checkIfInUse(id: string): Promise<boolean> {
     const usageCount =
-      (await this.prisma.payable.count({
-        where: { categoryId: id },
-      })) +
-      (await this.prisma.receivable.count({
-        where: { categoryId: id },
-      }));
+      (await this.prisma.payable.count({ where: { categoryId: id } })) +
+      (await this.prisma.receivable.count({ where: { categoryId: id } }));
 
-    if (usageCount > 0) {
-      return this.prisma.category.update({
-        where: { id },
-        data: { isActive: false },
-      });
-    }
+    return usageCount > 0;
+  }
 
-    await this.prisma.category.delete({ where: { id } });
-    return category;
+  /**
+   * Categories ordered by name
+   */
+  protected getDefaultOrderBy() {
+    return { name: 'asc' };
   }
 }

@@ -63,10 +63,16 @@ export function AdminLayout() {
     setAnchorEl(null);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     handleMenuClose();
-    logout();
-    navigate('/login');
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    } finally {
+      logout();
+      navigate('/login');
+    }
   };
 
   const handleBackToApp = () => {
@@ -83,11 +89,7 @@ export function AdminLayout() {
       const response = await api.post('/auth/select-organization', {
         organizationId,
       });
-      setAuth(
-        response.data.user,
-        response.data.accessToken,
-        response.data.refreshToken
-      );
+      setAuth(response.data.user);
       // Stay on admin panel after switching
     } catch (error) {
       console.error('Erro ao trocar organização:', error);

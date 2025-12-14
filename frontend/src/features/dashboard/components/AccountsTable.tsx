@@ -20,6 +20,7 @@ import {
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { formatLocalDate } from '../../../shared/utils/dateUtils';
+import { formatCurrency } from '../../../shared/utils/currencyUtils';
 
 interface Account {
   id: string;
@@ -38,12 +39,6 @@ interface AccountsTableProps {
   emptyMessage: string;
   alertColor: 'error' | 'warning';
 }
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
 
 export const AccountsTable: React.FC<AccountsTableProps> = ({
   title,

@@ -31,18 +31,14 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatLocalDate } from '../../../shared/utils/dateUtils';
+import { formatCurrency } from '../../../shared/utils/currencyUtils';
 import type {
   PaymentFormData,
   PaymentType,
   Payable,
   Receivable,
 } from '../types';
-import {
-  paymentSchema,
-  getDefaultFormValues,
-  formatCurrency,
-  PAYMENT_METHODS,
-} from '../types';
+import { paymentSchema, getDefaultFormValues, PAYMENT_METHODS } from '../types';
 
 interface PaymentFormDialogProps {
   open: boolean;

@@ -43,8 +43,8 @@ export function SelectOrganizationPage() {
       const response = await api.post('/auth/select-organization', {
         organizationId,
       });
-      const { accessToken, refreshToken, user: updatedUser } = response.data;
-      setAuth(updatedUser, accessToken, refreshToken);
+      const { user: updatedUser } = response.data;
+      setAuth(updatedUser);
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao selecionar organização');
@@ -53,9 +53,15 @@ export function SelectOrganizationPage() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    } finally {
+      logout();
+      navigate('/login');
+    }
   };
 
   if (!user) {

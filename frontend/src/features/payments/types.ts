@@ -99,13 +99,6 @@ export type PaymentFormData = z.infer<typeof paymentSchema>;
 // Utility Functions
 // ============================================================
 
-export const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
-};
-
 export const getMethodLabel = (method: string): string => {
   return PAYMENT_METHODS.find(m => m.value === method)?.label || method;
 };

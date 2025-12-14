@@ -1,5 +1,5 @@
 import { IsString, IsOptional } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
 export class CreateTagDto {
   @ApiProperty({ example: 'Urgente' })
@@ -12,14 +12,4 @@ export class CreateTagDto {
   color?: string;
 }
 
-export class UpdateTagDto {
-  @ApiPropertyOptional({ example: 'Urgente' })
-  @IsString()
-  @IsOptional()
-  name?: string;
-
-  @ApiPropertyOptional({ example: '#EF4444' })
-  @IsString()
-  @IsOptional()
-  color?: string;
-}
+export class UpdateTagDto extends PartialType(CreateTagDto) {}

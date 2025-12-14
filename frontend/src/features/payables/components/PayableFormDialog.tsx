@@ -24,7 +24,8 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Payable, PayableFormData, Vendor, Category, Tag } from '../types';
-import { payableSchema, getDefaultFormValues, formatCurrency } from '../types';
+import { payableSchema, getDefaultFormValues } from '../types';
+import { formatCurrency } from '../../../shared/utils/currencyUtils';
 import { toLocalDateInput } from '../../../shared/utils/dateUtils';
 
 interface PayableFormDialogProps {

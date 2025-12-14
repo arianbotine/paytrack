@@ -1,72 +1,33 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
+import { BaseEntityService } from '../shared/base-entity.service';
+import { Customer } from '@prisma/client';
 
 @Injectable()
-export class CustomersService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  async findAll(organizationId: string, includeInactive = false) {
-    return this.prisma.customer.findMany({
-      where: {
-        organizationId,
-        ...(includeInactive ? {} : { isActive: true }),
-      },
-      orderBy: { name: 'asc' },
-    });
+export class CustomersService extends BaseEntityService<
+  Customer,
+  CreateCustomerDto,
+  UpdateCustomerDto
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma, 'Customer', prisma.customer, 'Cliente');
   }
 
-  async findOne(id: string, organizationId: string) {
-    const customer = await this.prisma.customer.findFirst({
-      where: { id, organizationId },
-    });
-
-    if (!customer) {
-      throw new NotFoundException('Cliente não encontrado');
-    }
-
-    return customer;
-  }
-
-  async create(organizationId: string, createDto: CreateCustomerDto) {
-    return this.prisma.customer.create({
-      data: {
-        organizationId,
-        ...createDto,
-      },
-    });
-  }
-
-  async update(
-    id: string,
-    organizationId: string,
-    updateDto: UpdateCustomerDto
-  ) {
-    await this.findOne(id, organizationId);
-
-    return this.prisma.customer.update({
-      where: { id },
-      data: updateDto,
-    });
-  }
-
-  async remove(id: string, organizationId: string) {
-    const customer = await this.findOne(id, organizationId);
-
-    // Check if customer has receivables
-    const hasReceivables = await this.prisma.receivable.count({
+  /**
+   * Check if customer has related receivables
+   */
+  protected async checkIfInUse(id: string): Promise<boolean> {
+    const count = await this.prisma.receivable.count({
       where: { customerId: id },
     });
+    return count > 0;
+  }
 
-    if (hasReceivables > 0) {
-      // Soft delete - just deactivate
-      return this.prisma.customer.update({
-        where: { id },
-        data: { isActive: false },
-      });
-    }
-
-    await this.prisma.customer.delete({ where: { id } });
-    return customer;
+  /**
+   * Customers ordered by name
+   */
+  protected getDefaultOrderBy() {
+    return { name: 'asc' };
   }
 }

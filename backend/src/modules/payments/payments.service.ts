@@ -11,6 +11,8 @@ import {
   QuickPaymentAllocationDto,
 } from './dto/payment.dto';
 import { MoneyUtils } from '../../shared/utils/money.utils';
+import { MONEY_COMPARISON_THRESHOLD } from '../../shared/constants';
+import { parseDateUTC } from '../../shared/utils/date.utils';
 
 type Allocation = {
   payableId?: string;
@@ -195,9 +197,7 @@ export class PaymentsService {
         data: {
           organizationId,
           amount: MoneyUtils.toDecimal(paymentData.amount),
-          // Backend sempre trabalha com UTC - sem conversões de timezone
-          // O frontend já enviou a data em UTC
-          paymentDate: new Date(paymentData.paymentDate),
+          paymentDate: parseDateUTC(paymentData.paymentDate),
           paymentMethod: paymentData.paymentMethod,
           notes: paymentData.notes,
           allocations: {
@@ -213,117 +213,238 @@ export class PaymentsService {
         },
       });
 
-      // Update account balances
-      for (const allocation of allocations) {
-        if (allocation.payableId) {
-          await this.updatePayableBalance(
-            tx,
-            allocation.payableId,
-            allocation.amount
-          );
-        }
-
-        if (allocation.receivableId) {
-          await this.updateReceivableBalance(
-            tx,
-            allocation.receivableId,
-            allocation.amount
-          );
-        }
-      }
+      // Update account balances using bulk operations
+      await this.updateAccountBalancesBulk(tx, allocations);
 
       return payment;
     });
   }
 
   async remove(id: string, organizationId: string) {
-    const payment = await this.findOne(id, organizationId);
-
-    // Reverse allocations in a transaction
-    return this.reversePaymentAllocations(payment, id);
-  }
-
-  private async reversePaymentAllocations(payment: any, paymentId: string) {
+    // Move findOne inside transaction to prevent race condition
     return this.prisma.$transaction(async tx => {
-      for (const allocation of payment.allocations) {
-        if (allocation.payableId) {
-          await this.reversePayableAllocation(tx, allocation);
-        }
+      const payment = await tx.payment.findFirst({
+        where: { id, organizationId },
+        include: {
+          allocations: true,
+        },
+      });
 
-        if (allocation.receivableId) {
-          await this.reverseReceivableAllocation(tx, allocation);
-        }
+      if (!payment) {
+        throw new NotFoundException('Pagamento não encontrado');
       }
 
-      await tx.payment.delete({ where: { id: paymentId } });
+      // Reverse allocations using bulk operations
+      await this.reversePaymentAllocationsBulk(tx, payment.allocations);
+
+      await tx.payment.delete({ where: { id } });
+
+      return payment;
     });
   }
 
-  private async reversePayableAllocation(
+  /**
+   * Bulk update account balances for multiple allocations
+   * Optimized to avoid N+1 query problem
+   */
+  private async updateAccountBalancesBulk(
     tx: Prisma.TransactionClient,
-    allocation: any
+    allocations: { payableId?: string; receivableId?: string; amount: number }[]
   ) {
-    const payable = await tx.payable.findUnique({
-      where: { id: allocation.payableId },
-    });
-    const newPaidAmount = Math.max(
-      0,
-      Number(payable!.paidAmount) - Number(allocation.amount)
-    );
+    // Group allocations by payable/receivable
+    const payableIds = allocations
+      .filter(a => a.payableId)
+      .map(a => a.payableId!);
+    const receivableIds = allocations
+      .filter(a => a.receivableId)
+      .map(a => a.receivableId!);
 
-    let newStatus: AccountStatus;
-    if (newPaidAmount === 0) {
-      // Check if overdue
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      newStatus =
-        payable!.dueDate < today
-          ? AccountStatus.OVERDUE
-          : AccountStatus.PENDING;
-    } else {
-      newStatus = AccountStatus.PARTIAL;
+    // Fetch all accounts in bulk
+    const [payables, receivables] = await Promise.all([
+      payableIds.length > 0
+        ? tx.payable.findMany({
+            where: { id: { in: payableIds } },
+            include: { allocations: true },
+          })
+        : [],
+      receivableIds.length > 0
+        ? tx.receivable.findMany({
+            where: { id: { in: receivableIds } },
+            include: { allocations: true },
+          })
+        : [],
+    ]);
+
+    // Update payables
+    for (const allocation of allocations.filter(a => a.payableId)) {
+      const payable = payables.find(p => p.id === allocation.payableId);
+      if (!payable) {
+        throw new NotFoundException(
+          `Conta a pagar ${allocation.payableId} não encontrada`
+        );
+      }
+
+      const newPaidAmount = Number(payable.paidAmount) + allocation.amount;
+      const totalAmount = Number(payable.amount);
+
+      if (newPaidAmount > totalAmount + MONEY_COMPARISON_THRESHOLD) {
+        throw new BadRequestException(
+          `Valor pago (R$ ${newPaidAmount.toFixed(2)}) não pode exceder o valor total (R$ ${totalAmount.toFixed(2)})`
+        );
+      }
+
+      const newStatus = this.calculateAccountStatus(
+        newPaidAmount,
+        totalAmount,
+        payable.dueDate
+      );
+
+      await tx.payable.update({
+        where: { id: allocation.payableId },
+        data: {
+          paidAmount: MoneyUtils.toDecimal(newPaidAmount),
+          status: newStatus,
+        },
+      });
     }
 
-    await tx.payable.update({
-      where: { id: allocation.payableId },
-      data: {
-        paidAmount: MoneyUtils.toDecimal(newPaidAmount),
-        status: newStatus,
-      },
-    });
+    // Update receivables
+    for (const allocation of allocations.filter(a => a.receivableId)) {
+      const receivable = receivables.find(
+        r => r.id === allocation.receivableId
+      );
+      if (!receivable) {
+        throw new NotFoundException(
+          `Conta a receber ${allocation.receivableId} não encontrada`
+        );
+      }
+
+      const newPaidAmount =
+        Number(receivable.receivedAmount) + allocation.amount;
+      const totalAmount = Number(receivable.amount);
+
+      if (newPaidAmount > totalAmount + MONEY_COMPARISON_THRESHOLD) {
+        throw new BadRequestException(
+          `Valor recebido (R$ ${newPaidAmount.toFixed(2)}) não pode exceder o valor total (R$ ${totalAmount.toFixed(2)})`
+        );
+      }
+
+      const newStatus = this.calculateAccountStatus(
+        newPaidAmount,
+        totalAmount,
+        receivable.dueDate
+      );
+
+      await tx.receivable.update({
+        where: { id: allocation.receivableId },
+        data: {
+          paidAmount: MoneyUtils.toDecimal(newPaidAmount),
+          status: newStatus,
+        },
+      });
+    }
   }
 
-  private async reverseReceivableAllocation(
+  /**
+   * Bulk reverse allocations when deleting a payment
+   * Optimized to avoid N+1 query problem
+   */
+  private async reversePaymentAllocationsBulk(
     tx: Prisma.TransactionClient,
-    allocation: any
+    allocations: any[]
   ) {
-    const receivable = await tx.receivable.findUnique({
-      where: { id: allocation.receivableId },
-    });
-    const newPaidAmount = Math.max(
-      0,
-      Number(receivable!.paidAmount) - Number(allocation.amount)
-    );
+    const payableIds = allocations
+      .filter(a => a.payableId)
+      .map(a => a.payableId);
+    const receivableIds = allocations
+      .filter(a => a.receivableId)
+      .map(a => a.receivableId);
 
-    let newStatus: AccountStatus;
-    if (newPaidAmount === 0) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      newStatus =
-        receivable!.dueDate < today
-          ? AccountStatus.OVERDUE
-          : AccountStatus.PENDING;
-    } else {
-      newStatus = AccountStatus.PARTIAL;
+    // Fetch all accounts in bulk
+    const [payables, receivables] = await Promise.all([
+      payableIds.length > 0
+        ? tx.payable.findMany({ where: { id: { in: payableIds } } })
+        : [],
+      receivableIds.length > 0
+        ? tx.receivable.findMany({ where: { id: { in: receivableIds } } })
+        : [],
+    ]);
+
+    // Update payables
+    for (const allocation of allocations.filter(a => a.payableId)) {
+      const payable = payables.find(p => p.id === allocation.payableId);
+      if (!payable) continue;
+
+      const newPaidAmount = Math.max(
+        0,
+        Number(payable.paidAmount) - Number(allocation.amount)
+      );
+
+      const newStatus =
+        newPaidAmount === 0
+          ? this.getDefaultStatus(payable.dueDate)
+          : AccountStatus.PARTIAL;
+
+      await tx.payable.update({
+        where: { id: allocation.payableId },
+        data: {
+          paidAmount: MoneyUtils.toDecimal(newPaidAmount),
+          status: newStatus,
+        },
+      });
     }
 
-    await tx.receivable.update({
-      where: { id: allocation.receivableId },
-      data: {
-        paidAmount: MoneyUtils.toDecimal(newPaidAmount),
-        status: newStatus,
-      },
-    });
+    // Update receivables
+    for (const allocation of allocations.filter(a => a.receivableId)) {
+      const receivable = receivables.find(
+        r => r.id === allocation.receivableId
+      );
+      if (!receivable) continue;
+
+      const newPaidAmount = Math.max(
+        0,
+        Number(receivable.receivedAmount) - Number(allocation.amount)
+      );
+
+      const newStatus =
+        newPaidAmount === 0
+          ? this.getDefaultStatus(receivable.dueDate)
+          : AccountStatus.PARTIAL;
+
+      await tx.receivable.update({
+        where: { id: allocation.receivableId },
+        data: {
+          paidAmount: MoneyUtils.toDecimal(newPaidAmount),
+          status: newStatus,
+        },
+      });
+    }
+  }
+
+  /**
+   * Calculate account status based on paid amount and due date
+   */
+  private calculateAccountStatus(
+    paidAmount: number,
+    totalAmount: number,
+    dueDate: Date
+  ): AccountStatus {
+    if (paidAmount >= totalAmount - MONEY_COMPARISON_THRESHOLD) {
+      return AccountStatus.PAID;
+    } else if (paidAmount > 0) {
+      return AccountStatus.PARTIAL;
+    } else {
+      return this.getDefaultStatus(dueDate);
+    }
+  }
+
+  /**
+   * Get default status (PENDING or OVERDUE) based on due date
+   */
+  private getDefaultStatus(dueDate: Date): AccountStatus {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return dueDate < today ? AccountStatus.OVERDUE : AccountStatus.PENDING;
   }
 
   private validateAllocations(allocations: Allocation[], totalAmount: number) {
@@ -336,7 +457,7 @@ export class PaymentsService {
       (sum, a) => sum + Number(a.amount),
       0
     );
-    if (Math.abs(totalAllocation - totalAmount) > 0.01) {
+    if (Math.abs(totalAllocation - totalAmount) > MONEY_COMPARISON_THRESHOLD) {
       throw new BadRequestException(
         'A soma das alocações deve ser igual ao valor do pagamento'
       );
@@ -387,7 +508,9 @@ export class PaymentsService {
       where: { id: payableId, organizationId },
     });
     if (!payable) {
-      throw new NotFoundException(`Conta a pagar ${payableId} não encontrada`);
+      throw new NotFoundException(
+        `Conta a pagar ${payableId} não encontrada ou não pertence à sua organização`
+      );
     }
     if (
       payable.status === AccountStatus.PAID ||
@@ -399,7 +522,7 @@ export class PaymentsService {
     }
 
     const remainingAmount = Number(payable.amount) - Number(payable.paidAmount);
-    if (allocationAmount > remainingAmount + 0.01) {
+    if (allocationAmount > remainingAmount + MONEY_COMPARISON_THRESHOLD) {
       throw new BadRequestException(
         `Valor da alocação maior que o saldo restante da conta (R$ ${remainingAmount.toFixed(2)})`
       );
@@ -416,7 +539,7 @@ export class PaymentsService {
     });
     if (!receivable) {
       throw new NotFoundException(
-        `Conta a receber ${receivableId} não encontrada`
+        `Conta a receber ${receivableId} não encontrada ou não pertence à sua organização`
       );
     }
     if (
@@ -429,117 +552,11 @@ export class PaymentsService {
     }
 
     const remainingAmount =
-      Number(receivable.amount) - Number(receivable.paidAmount);
-    if (allocationAmount > remainingAmount + 0.01) {
+      Number(receivable.amount) - Number(receivable.receivedAmount);
+    if (allocationAmount > remainingAmount + MONEY_COMPARISON_THRESHOLD) {
       throw new BadRequestException(
         `Valor da alocação maior que o saldo restante da conta (R$ ${remainingAmount.toFixed(2)})`
       );
     }
-  }
-
-  private async updatePayableBalance(
-    tx: Prisma.TransactionClient,
-    payableId: string,
-    allocationAmount: number
-  ) {
-    const payable = await tx.payable.findUnique({
-      where: { id: payableId },
-      include: { allocations: true },
-    });
-    if (!payable) {
-      throw new NotFoundException(`Conta a pagar ${payableId} não encontrada`);
-    }
-
-    const newPaidAmount = Number(payable.paidAmount) + allocationAmount;
-    const totalAmount = Number(payable.amount);
-
-    // Validation: Ensure paid amount doesn't exceed total
-    if (newPaidAmount > totalAmount + 0.01) {
-      throw new BadRequestException(
-        `Valor pago (R$ ${newPaidAmount.toFixed(2)}) não pode exceder o valor total (R$ ${totalAmount.toFixed(2)})`
-      );
-    }
-
-    let newStatus: AccountStatus;
-    if (newPaidAmount >= totalAmount - 0.01) {
-      newStatus = AccountStatus.PAID;
-      // Additional validation: Ensure there are allocations when marking as PAID
-      if (payable.allocations.length === 0 && newPaidAmount > 0) {
-        throw new BadRequestException(
-          'Não é possível marcar conta como paga sem registro de pagamento'
-        );
-      }
-    } else if (newPaidAmount > 0) {
-      newStatus = AccountStatus.PARTIAL;
-    } else {
-      // Check if overdue when resetting to zero
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      newStatus =
-        payable.dueDate < today ? AccountStatus.OVERDUE : AccountStatus.PENDING;
-    }
-
-    await tx.payable.update({
-      where: { id: payableId },
-      data: {
-        paidAmount: MoneyUtils.toDecimal(newPaidAmount),
-        status: newStatus,
-      },
-    });
-  }
-
-  private async updateReceivableBalance(
-    tx: Prisma.TransactionClient,
-    receivableId: string,
-    allocationAmount: number
-  ) {
-    const receivable = await tx.receivable.findUnique({
-      where: { id: receivableId },
-      include: { allocations: true },
-    });
-    if (!receivable) {
-      throw new NotFoundException(
-        `Conta a receber ${receivableId} não encontrada`
-      );
-    }
-
-    const newPaidAmount = Number(receivable.paidAmount) + allocationAmount;
-    const totalAmount = Number(receivable.amount);
-
-    // Validation: Ensure paid amount doesn't exceed total
-    if (newPaidAmount > totalAmount + 0.01) {
-      throw new BadRequestException(
-        `Valor recebido (R$ ${newPaidAmount.toFixed(2)}) não pode exceder o valor total (R$ ${totalAmount.toFixed(2)})`
-      );
-    }
-
-    let newStatus: AccountStatus;
-    if (newPaidAmount >= totalAmount - 0.01) {
-      newStatus = AccountStatus.PAID;
-      // Additional validation: Ensure there are allocations when marking as PAID
-      if (receivable.allocations.length === 0 && newPaidAmount > 0) {
-        throw new BadRequestException(
-          'Não é possível marcar conta como recebida sem registro de recebimento'
-        );
-      }
-    } else if (newPaidAmount > 0) {
-      newStatus = AccountStatus.PARTIAL;
-    } else {
-      // Check if overdue when resetting to zero
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      newStatus =
-        receivable.dueDate < today
-          ? AccountStatus.OVERDUE
-          : AccountStatus.PENDING;
-    }
-
-    await tx.receivable.update({
-      where: { id: receivableId },
-      data: {
-        paidAmount: MoneyUtils.toDecimal(newPaidAmount),
-        status: newStatus,
-      },
-    });
   }
 }

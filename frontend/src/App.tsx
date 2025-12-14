@@ -5,6 +5,7 @@ import { MainLayout } from './shared/components/Layout/MainLayout';
 import { AdminLayout } from './shared/components/Layout/AdminLayout';
 import { GlobalNotification } from './shared/components/GlobalNotification';
 import { LoadingOverlay } from './shared/components';
+import { ErrorBoundary } from './shared/components/ErrorBoundary';
 
 // Lazy load pages for code splitting
 const LoginPage = lazy(() =>
@@ -99,7 +100,7 @@ function AdminRoute({ children }: Readonly<{ children: React.ReactNode }>) {
 
 function App() {
   return (
-    <>
+    <ErrorBoundary>
       <GlobalNotification />
       <Suspense fallback={<LoadingOverlay open />}>
         <Routes>
@@ -141,7 +142,7 @@ function App() {
           </Route>
         </Routes>
       </Suspense>
-    </>
+    </ErrorBoundary>
   );
 }
 

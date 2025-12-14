@@ -22,7 +22,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TableSkeleton, EmptyState } from '../../../shared/components';
 import { formatLocalDate } from '../../../shared/utils/dateUtils';
 import type { Payment } from '../types';
-import { formatCurrency, getMethodLabel } from '../types';
+import { formatCurrency } from '../../../shared/utils/currencyUtils';
+import { getMethodLabel } from '../types';
 
 interface PaymentsTableProps {
   payments: Payment[];

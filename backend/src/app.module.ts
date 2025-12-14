@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { DatabaseModule } from './infrastructure/database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -13,6 +15,7 @@ import { PayablesModule } from './modules/payables/payables.module';
 import { ReceivablesModule } from './modules/receivables/receivables.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { SerializationInterceptor } from './shared/interceptors/serialization.interceptor';
 
 @Module({
   imports: [
@@ -20,6 +23,12 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 60 seconds
+        limit: 100, // 100 requests per minute (global default)
+      },
+    ]),
     DatabaseModule,
     AuthModule,
     UsersModule,
@@ -32,6 +41,16 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     ReceivablesModule,
     PaymentsModule,
     DashboardModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: SerializationInterceptor,
+    },
   ],
 })
 export class AppModule {}

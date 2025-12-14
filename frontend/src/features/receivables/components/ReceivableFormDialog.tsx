@@ -23,6 +23,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatCurrency } from '../../../shared/utils/currencyUtils';
 import type {
   Receivable,
   ReceivableFormData,
@@ -30,11 +31,7 @@ import type {
   Category,
   Tag,
 } from '../types';
-import {
-  receivableSchema,
-  getDefaultFormValues,
-  formatCurrency,
-} from '../types';
+import { receivableSchema, getDefaultFormValues } from '../types';
 import { toLocalDateInput } from '../../../shared/utils/dateUtils';
 
 interface ReceivableFormDialogProps {

@@ -11,6 +11,9 @@ export abstract class BaseAccountService {
   protected abstract getModel(): any; // e.g., this.prisma.payable or receivable
   protected abstract getEntityName(): string; // 'payable' or 'receivable'
   protected abstract getIncludeOptions(): any;
+  protected getMoneyFields(): string[] {
+    return ['amount', 'paidAmount'];
+  }
 
   protected async findAllBase(
     organizationId: string,
@@ -48,10 +51,10 @@ export abstract class BaseAccountService {
       this.getModel().count({ where }),
     ]);
 
-    const transformedData = MoneyUtils.transformMoneyFieldsArray(data, [
-      'amount',
-      'paidAmount',
-    ]);
+    const transformedData = MoneyUtils.transformMoneyFieldsArray(
+      data,
+      this.getMoneyFields()
+    );
 
     const mappedData = transformedData.map((item: any) => ({
       ...item,
@@ -79,10 +82,10 @@ export abstract class BaseAccountService {
       throw new NotFoundException(`${this.getEntityName()} não encontrada`);
     }
 
-    const transformed = MoneyUtils.transformMoneyFields(item, [
-      'amount',
-      'paidAmount',
-    ]);
+    const transformed = MoneyUtils.transformMoneyFields(
+      item,
+      this.getMoneyFields()
+    );
 
     return {
       ...transformed,
@@ -117,7 +120,7 @@ export abstract class BaseAccountService {
       include: this.getIncludeOptions(),
     });
 
-    return MoneyUtils.transformMoneyFields(item, ['amount', 'paidAmount']);
+    return MoneyUtils.transformMoneyFields(item, this.getMoneyFields());
   }
 
   protected async updateBase(
@@ -167,7 +170,7 @@ export abstract class BaseAccountService {
       include: this.getIncludeOptions(),
     });
 
-    return MoneyUtils.transformMoneyFields(updated, ['amount', 'paidAmount']);
+    return MoneyUtils.transformMoneyFields(updated, this.getMoneyFields());
   }
 
   protected async removeBase(id: string, organizationId: string) {

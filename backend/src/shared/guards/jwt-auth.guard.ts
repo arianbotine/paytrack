@@ -9,14 +9,14 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { JwtPayload } from '../decorators/current-user.decorator';
+import { JwtPayload } from '../../modules/auth/dto/auth.dto';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
-    private reflector: Reflector,
-    private jwtService: JwtService,
-    private configService: ConfigService
+    private readonly reflector: Reflector,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -30,7 +30,9 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    const token = this.extractTokenFromHeader(request);
+    const token =
+      this.extractTokenFromHeader(request) ||
+      this.extractTokenFromCookie(request);
 
     if (!token) {
       throw new UnauthorizedException('Token não fornecido');
@@ -42,6 +44,7 @@ export class JwtAuthGuard implements CanActivate {
       });
       request['user'] = payload;
     } catch (error) {
+      console.error('JWT verification failed:', error);
       throw new UnauthorizedException('Token inválido ou expirado');
     }
 
@@ -51,5 +54,9 @@ export class JwtAuthGuard implements CanActivate {
   private extractTokenFromHeader(request: Request): string | undefined {
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
     return type === 'Bearer' ? token : undefined;
+  }
+
+  private extractTokenFromCookie(request: Request): string | undefined {
+    return request.cookies?.['accessToken'];
   }
 }

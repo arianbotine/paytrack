@@ -13,7 +13,8 @@ async function main() {
   console.log('🌱 Seeding database...');
 
   // Create system admin user (no organization)
-  const hashedAdminPassword = await bcrypt.hash('admin123', 10);
+  // Password: Admin@123 (meets strong password requirements)
+  const hashedAdminPassword = await bcrypt.hash('Admin@123', 10);
   const systemAdmin = await prisma.user.upsert({
     where: { email: 'admin@paytrack.com' },
     update: {},
@@ -25,7 +26,11 @@ async function main() {
     },
   });
 
-  console.log('✅ System Admin user created:', systemAdmin.email);
+  console.log(
+    '✅ System Admin user created:',
+    systemAdmin.email,
+    '/ Password: Admin@123'
+  );
 
   // ========================================
   // Create Organizations
@@ -71,7 +76,8 @@ async function main() {
   // ========================================
   // Create Users
   // ========================================
-  const hashedPassword = await bcrypt.hash('senha123', 10);
+  // Password: Senha@123 (meets strong password requirements)
+  const hashedPassword = await bcrypt.hash('Senha@123', 10);
 
   // Empresa Demo users
   const ownerEmpresaDemo = await prisma.user.upsert({

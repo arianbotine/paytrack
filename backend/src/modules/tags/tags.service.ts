@@ -1,78 +1,49 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { CreateTagDto, UpdateTagDto } from './dto/tag.dto';
+import { BaseEntityService } from '../shared/base-entity.service';
+import { Tag } from '@prisma/client';
 
 @Injectable()
-export class TagsService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  async findAll(organizationId: string) {
-    return this.prisma.tag.findMany({
-      where: { organizationId },
-      orderBy: { name: 'asc' },
-    });
+export class TagsService extends BaseEntityService<
+  Tag,
+  CreateTagDto,
+  UpdateTagDto
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma, 'Tag', prisma.tag, 'Tag');
   }
 
-  async findOne(id: string, organizationId: string) {
-    const tag = await this.prisma.tag.findFirst({
-      where: { id, organizationId },
-    });
+  /**
+   * Check for unique name constraint
+   */
+  protected async checkUniqueConstraints(
+    organizationId: string,
+    dto: Partial<CreateTagDto | UpdateTagDto>,
+    excludeId?: string
+  ): Promise<void> {
+    if (!dto.name) return;
 
-    if (!tag) {
-      throw new NotFoundException('Tag não encontrada');
+    const where: any = {
+      organizationId,
+      name: dto.name,
+    };
+
+    if (excludeId) {
+      where.NOT = { id: excludeId };
     }
 
-    return tag;
-  }
-
-  async create(organizationId: string, createDto: CreateTagDto) {
-    const existing = await this.prisma.tag.findFirst({
-      where: { organizationId, name: createDto.name },
-    });
+    const existing = await this.prisma.tag.findFirst({ where });
 
     if (existing) {
       throw new ConflictException('Tag já existe com este nome');
     }
-
-    return this.prisma.tag.create({
-      data: {
-        organizationId,
-        ...createDto,
-      },
-    });
   }
 
-  async update(id: string, organizationId: string, updateDto: UpdateTagDto) {
-    const tag = await this.findOne(id, organizationId);
-
-    if (updateDto.name && updateDto.name !== tag.name) {
-      const existing = await this.prisma.tag.findFirst({
-        where: {
-          organizationId,
-          name: updateDto.name,
-          NOT: { id },
-        },
-      });
-
-      if (existing) {
-        throw new ConflictException('Tag já existe com este nome');
-      }
-    }
-
-    return this.prisma.tag.update({
-      where: { id },
-      data: updateDto,
-    });
-  }
-
-  async remove(id: string, organizationId: string) {
-    const tag = await this.findOne(id, organizationId);
-
-    await this.prisma.tag.delete({ where: { id } });
-    return tag;
+  /**
+   * Tags ordered by name
+   */
+  protected getDefaultOrderBy() {
+    return { name: 'asc' };
   }
 }

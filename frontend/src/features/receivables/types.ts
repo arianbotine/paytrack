@@ -83,13 +83,6 @@ export const statusOptions = [
 // Utility Functions
 // ============================================================
 
-export const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
-};
-
 export const getDefaultFormValues = (): ReceivableFormData => ({
   description: '',
   amount: 0,

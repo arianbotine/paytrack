@@ -33,41 +33,22 @@ export class ReceivablesService extends BaseAccountService {
     };
   }
 
+  protected getMoneyFields(): string[] {
+    return ['amount', 'receivedAmount'];
+  }
+
   async findAll(organizationId: string, filters?: ReceivableFilterDto) {
-    const result = await this.findAllBase(organizationId, filters, {
+    return this.findAllBase(organizationId, filters, {
       ...(filters?.customerId && { customerId: filters.customerId }),
     });
-
-    // Map paidAmount to receivedAmount for frontend compatibility
-    const mappedData = result.data.map((receivable: any) => ({
-      ...receivable,
-      receivedAmount: receivable.paidAmount,
-      paidAmount: undefined,
-    }));
-
-    return { data: mappedData, total: result.total };
   }
 
   async findOne(id: string, organizationId: string) {
-    const receivable = await this.findOneBase(id, organizationId);
-
-    // Map paidAmount to receivedAmount for frontend compatibility
-    return {
-      ...receivable,
-      receivedAmount: receivable.paidAmount,
-      paidAmount: undefined,
-    };
+    return this.findOneBase(id, organizationId);
   }
 
   async create(organizationId: string, createDto: CreateReceivableDto) {
-    const result = await this.createBase(organizationId, createDto);
-
-    // Map paidAmount to receivedAmount for frontend compatibility
-    return {
-      ...result,
-      receivedAmount: result.paidAmount,
-      paidAmount: undefined,
-    };
+    return this.createBase(organizationId, createDto);
   }
 
   async update(
@@ -75,19 +56,12 @@ export class ReceivablesService extends BaseAccountService {
     organizationId: string,
     updateDto: UpdateReceivableDto
   ) {
-    const result = await this.updateBase(
+    return this.updateBase(
       id,
       organizationId,
       updateDto,
       this.prisma.receivableTag
     );
-
-    // Map paidAmount to receivedAmount for frontend compatibility
-    return {
-      ...result,
-      receivedAmount: result.paidAmount,
-      paidAmount: undefined,
-    };
   }
 
   async remove(id: string, organizationId: string) {

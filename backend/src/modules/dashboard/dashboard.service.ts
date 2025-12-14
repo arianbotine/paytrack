@@ -1,14 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { AccountStatus } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { PayablesService } from '../payables/payables.service';
 import { ReceivablesService } from '../receivables/receivables.service';
 
 type GroupedItem = {
   _sum: {
-    amount: import('@prisma/client').Decimal | null;
-    paidAmount: import('@prisma/client').Decimal | null;
+    amount: Decimal | null;
+    paidAmount: Decimal | null;
   };
   _count: number;
   status: AccountStatus;
@@ -16,6 +17,8 @@ type GroupedItem = {
 
 @Injectable()
 export class DashboardService {
+  private readonly logger = new Logger(DashboardService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly payablesService: PayablesService,
@@ -180,14 +183,14 @@ export class DashboardService {
   // Cron job to update overdue status daily at midnight
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async updateOverdueStatus() {
-    console.log('🔄 Running overdue status update...');
+    this.logger.log('Running overdue status update...');
 
     const payablesResult = await this.payablesService.updateOverdueStatus();
     const receivablesResult =
       await this.receivablesService.updateOverdueStatus();
 
-    console.log(
-      `✅ Updated ${payablesResult.count} payables and ${receivablesResult.count} receivables to OVERDUE status`
+    this.logger.log(
+      `Updated ${payablesResult.count} payables and ${receivablesResult.count} receivables to OVERDUE status`
     );
   }
 }

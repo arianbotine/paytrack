@@ -8,7 +8,7 @@ import {
   IsUUID,
   Min,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { PaymentMethod, AccountStatus } from '@prisma/client';
 import { Type, Transform } from 'class-transformer';
 
@@ -60,58 +60,7 @@ export class CreateReceivableDto {
   tagIds?: string[];
 }
 
-export class UpdateReceivableDto {
-  @ApiPropertyOptional({ example: 'uuid-do-cliente' })
-  @IsUUID()
-  @IsOptional()
-  customerId?: string;
-
-  @ApiPropertyOptional({ example: 'uuid-da-categoria' })
-  @IsUUID()
-  @IsOptional()
-  categoryId?: string;
-
-  @ApiPropertyOptional({ example: 'Venda de produtos' })
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @ApiPropertyOptional({ example: 1500 })
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01, { message: 'Valor deve ser maior que zero' })
-  @Type(() => Number)
-  @IsOptional()
-  amount?: number;
-
-  @ApiPropertyOptional({ example: '2025-12-15' })
-  @IsDateString()
-  @IsOptional()
-  dueDate?: string;
-
-  @ApiPropertyOptional({ enum: PaymentMethod, example: PaymentMethod.PIX })
-  @IsEnum(PaymentMethod)
-  @IsOptional()
-  paymentMethod?: PaymentMethod;
-
-  @ApiPropertyOptional({ example: 'Observações' })
-  @IsString()
-  @IsOptional()
-  notes?: string;
-
-  @ApiPropertyOptional({ example: 'PED-12345' })
-  @IsString()
-  @IsOptional()
-  invoiceNumber?: string;
-
-  @ApiPropertyOptional({
-    type: [String],
-    example: ['uuid-tag-1', 'uuid-tag-2'],
-  })
-  @IsArray()
-  @IsUUID('4', { each: true })
-  @IsOptional()
-  tagIds?: string[];
-}
+export class UpdateReceivableDto extends PartialType(CreateReceivableDto) {}
 
 export class ReceivableFilterDto {
   @ApiPropertyOptional({ example: 'uuid-do-cliente' })

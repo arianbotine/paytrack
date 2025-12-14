@@ -42,8 +42,8 @@ export function OrganizationSwitcher({ onClose }: OrganizationSwitcherProps) {
       const response = await api.post('/auth/select-organization', {
         organizationId,
       });
-      const { accessToken, refreshToken, user: updatedUser } = response.data;
-      switchOrganization(updatedUser, accessToken, refreshToken);
+      const { user: updatedUser } = response.data;
+      switchOrganization(updatedUser);
 
       // Clear all cached queries to refresh data for the new organization
       queryClient.clear();

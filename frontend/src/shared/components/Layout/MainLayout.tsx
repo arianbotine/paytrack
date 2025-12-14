@@ -41,6 +41,7 @@ import {
 } from '@mui/icons-material';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useUIStore } from '@/lib/stores/uiStore';
+import { api } from '@/lib/api';
 import { OrganizationSwitcher } from '../OrganizationSwitcher';
 
 const drawerWidth = 260;
@@ -92,9 +93,15 @@ export function MainLayout() {
     setAnchorEl(null);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    } finally {
+      logout();
+      navigate('/login');
+    }
   };
 
   const handleAdminPanel = () => {

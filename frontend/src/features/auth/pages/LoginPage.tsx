@@ -52,8 +52,8 @@ export function LoginPage() {
 
     try {
       const response = await api.post('/auth/login', data);
-      const { accessToken, refreshToken, user } = response.data;
-      setAuth(user, accessToken, refreshToken);
+      const { user } = response.data;
+      setAuth(user);
 
       if (user.currentOrganization) {
         navigate('/dashboard');

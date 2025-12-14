@@ -1,5 +1,10 @@
 import { IsString, IsOptional, IsBoolean, IsEnum } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  PartialType,
+  OmitType,
+} from '@nestjs/swagger';
 import { CategoryType } from '@prisma/client';
 
 export class CreateCategoryDto {
@@ -22,22 +27,10 @@ export class CreateCategoryDto {
   description?: string;
 }
 
-export class UpdateCategoryDto {
-  @ApiPropertyOptional({ example: 'Aluguel' })
-  @IsString()
-  @IsOptional()
-  name?: string;
-
-  @ApiPropertyOptional({ example: '#EF4444' })
-  @IsString()
-  @IsOptional()
-  color?: string;
-
-  @ApiPropertyOptional({ example: 'Despesas com aluguel' })
-  @IsString()
-  @IsOptional()
-  description?: string;
-
+export class UpdateCategoryDto extends OmitType(
+  PartialType(CreateCategoryDto),
+  ['type'] as const
+) {
   @ApiPropertyOptional({ example: true })
   @IsBoolean()
   @IsOptional()

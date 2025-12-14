@@ -1,68 +1,33 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { CreateVendorDto, UpdateVendorDto } from './dto/vendor.dto';
+import { BaseEntityService } from '../shared/base-entity.service';
+import { Vendor } from '@prisma/client';
 
 @Injectable()
-export class VendorsService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  async findAll(organizationId: string, includeInactive = false) {
-    return this.prisma.vendor.findMany({
-      where: {
-        organizationId,
-        ...(includeInactive ? {} : { isActive: true }),
-      },
-      orderBy: { name: 'asc' },
-    });
+export class VendorsService extends BaseEntityService<
+  Vendor,
+  CreateVendorDto,
+  UpdateVendorDto
+> {
+  constructor(prisma: PrismaService) {
+    super(prisma, 'Vendor', prisma.vendor, 'Credor');
   }
 
-  async findOne(id: string, organizationId: string) {
-    const vendor = await this.prisma.vendor.findFirst({
-      where: { id, organizationId },
-    });
-
-    if (!vendor) {
-      throw new NotFoundException('Credor não encontrado');
-    }
-
-    return vendor;
-  }
-
-  async create(organizationId: string, createDto: CreateVendorDto) {
-    return this.prisma.vendor.create({
-      data: {
-        organizationId,
-        ...createDto,
-      },
-    });
-  }
-
-  async update(id: string, organizationId: string, updateDto: UpdateVendorDto) {
-    await this.findOne(id, organizationId);
-
-    return this.prisma.vendor.update({
-      where: { id },
-      data: updateDto,
-    });
-  }
-
-  async remove(id: string, organizationId: string) {
-    const vendor = await this.findOne(id, organizationId);
-
-    // Check if vendor has payables
-    const hasPayables = await this.prisma.payable.count({
+  /**
+   * Check if vendor has related payables
+   */
+  protected async checkIfInUse(id: string): Promise<boolean> {
+    const count = await this.prisma.payable.count({
       where: { vendorId: id },
     });
+    return count > 0;
+  }
 
-    if (hasPayables > 0) {
-      // Soft delete - just deactivate
-      return this.prisma.vendor.update({
-        where: { id },
-        data: { isActive: false },
-      });
-    }
-
-    await this.prisma.vendor.delete({ where: { id } });
-    return vendor;
+  /**
+   * Vendors ordered by name
+   */
+  protected getDefaultOrderBy() {
+    return { name: 'asc' };
   }
 }

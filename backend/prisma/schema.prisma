@@ -106,6 +106,7 @@ model UserOrganization {
   @@unique([userId, organizationId])
   @@index([userId])
   @@index([organizationId])
+  @@index([organizationId, isActive])
   @@map("user_organizations")
 }
 
@@ -209,6 +210,9 @@ model Payable {
   tags         PayableTag[]
   allocations  PaymentAllocation[]
 
+  @@index([organizationId, status, dueDate])
+  @@index([organizationId, dueDate])
+  @@index([vendorId])
   @@map("payables")
 }
 
@@ -219,7 +223,7 @@ model Receivable {
   categoryId     String?       @map("category_id")
   description    String
   amount         Decimal       @db.Decimal(15, 2)
-  paidAmount     Decimal       @default(0) @map("paid_amount") @db.Decimal(15, 2)
+  receivedAmount Decimal       @default(0) @map("received_amount") @db.Decimal(15, 2)
   dueDate        DateTime      @map("due_date") @db.Date
   paymentMethod  PaymentMethod @map("payment_method")
   status         AccountStatus @default(PENDING)
@@ -235,6 +239,9 @@ model Receivable {
   tags         ReceivableTag[]
   allocations  PaymentAllocation[]
 
+  @@index([organizationId, status, dueDate])
+  @@index([organizationId, dueDate])
+  @@index([customerId])
   @@map("receivables")
 }
 
@@ -274,6 +281,7 @@ model Payment {
   organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   allocations  PaymentAllocation[]
 
+  @@index([organizationId, paymentDate])
   @@map("payments")
 }
 

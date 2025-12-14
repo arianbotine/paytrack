@@ -1,7 +1,3 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../../lib/api';
-import { useUIStore } from '../../../lib/stores/uiStore';
-import { toUTC } from '../../../shared/utils/dateUtils';
 import type {
   ReceivableFormData,
   ReceivablesResponse,
@@ -9,9 +5,33 @@ import type {
   Category,
   Tag,
 } from '../types';
+import {
+  useAccounts,
+  useRelatedData,
+  useAccountOperations,
+  type UseAccountsConfig,
+} from '../../../shared/hooks/useAccounts';
 
 // ============================================================
-// Query Keys
+// Configuration
+// ============================================================
+
+const receivablesConfig: UseAccountsConfig = {
+  type: 'receivables',
+  endpoint: '/receivables',
+  queryKeyPrefix: ['receivables'],
+  messages: {
+    createSuccess: 'Conta a receber criada com sucesso!',
+    createError: 'Erro ao criar conta a receber',
+    updateSuccess: 'Conta a receber atualizada com sucesso!',
+    updateError: 'Erro ao atualizar conta a receber',
+    deleteSuccess: 'Conta a receber excluída com sucesso!',
+    deleteError: 'Erro ao excluir conta a receber',
+  },
+};
+
+// ============================================================
+// Query Keys (for external use)
 // ============================================================
 
 export const receivableKeys = {
@@ -33,25 +53,8 @@ interface UseReceivablesParams {
   rowsPerPage: number;
 }
 
-export const useReceivables = ({
-  status,
-  page,
-  rowsPerPage,
-}: UseReceivablesParams) => {
-  return useQuery({
-    queryKey: receivableKeys.list({ status, page, rowsPerPage }),
-    queryFn: async (): Promise<ReceivablesResponse> => {
-      const params: Record<string, string | number> = {
-        skip: page * rowsPerPage,
-        take: rowsPerPage,
-      };
-      if (status && status !== 'ALL') {
-        params.status = status;
-      }
-      const response = await api.get('/receivables', { params });
-      return response.data;
-    },
-  });
+export const useReceivables = (params: UseReceivablesParams) => {
+  return useAccounts<ReceivablesResponse['data'][0]>(receivablesConfig, params);
 };
 
 // ============================================================
@@ -59,96 +62,24 @@ export const useReceivables = ({
 // ============================================================
 
 export const useCustomers = () => {
-  return useQuery({
+  return useRelatedData<Customer>({
     queryKey: ['customers'],
-    queryFn: async (): Promise<Customer[]> => {
-      const response = await api.get('/customers');
-      return response.data;
-    },
-    staleTime: 5 * 60 * 1000,
+    endpoint: '/customers',
   });
 };
 
 export const useReceivableCategories = () => {
-  return useQuery({
+  return useRelatedData<Category>({
     queryKey: ['categories', 'RECEIVABLE'],
-    queryFn: async (): Promise<Category[]> => {
-      const response = await api.get('/categories', {
-        params: { type: 'RECEIVABLE' },
-      });
-      return response.data;
-    },
-    staleTime: 5 * 60 * 1000,
+    endpoint: '/categories',
+    params: { type: 'RECEIVABLE' },
   });
 };
 
 export const useTags = () => {
-  return useQuery({
+  return useRelatedData<Tag>({
     queryKey: ['tags'],
-    queryFn: async (): Promise<Tag[]> => {
-      const response = await api.get('/tags');
-      return response.data;
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-};
-
-// ============================================================
-// Mutations
-// ============================================================
-
-export const useCreateReceivable = (onSuccess?: () => void) => {
-  const queryClient = useQueryClient();
-  const { showNotification } = useUIStore();
-
-  return useMutation({
-    mutationFn: (data: ReceivableFormData) => api.post('/receivables', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: receivableKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      showNotification('Conta a receber criada com sucesso!', 'success');
-      onSuccess?.();
-    },
-    onError: () => {
-      showNotification('Erro ao criar conta a receber', 'error');
-    },
-  });
-};
-
-export const useUpdateReceivable = (onSuccess?: () => void) => {
-  const queryClient = useQueryClient();
-  const { showNotification } = useUIStore();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: ReceivableFormData }) =>
-      api.patch(`/receivables/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: receivableKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      showNotification('Conta a receber atualizada com sucesso!', 'success');
-      onSuccess?.();
-    },
-    onError: () => {
-      showNotification('Erro ao atualizar conta a receber', 'error');
-    },
-  });
-};
-
-export const useDeleteReceivable = (onSuccess?: () => void) => {
-  const queryClient = useQueryClient();
-  const { showNotification } = useUIStore();
-
-  return useMutation({
-    mutationFn: (id: string) => api.delete(`/receivables/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: receivableKeys.all });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      showNotification('Conta a receber excluída com sucesso!', 'success');
-      onSuccess?.();
-    },
-    onError: () => {
-      showNotification('Erro ao excluir conta a receber', 'error');
-    },
+    endpoint: '/tags',
   });
 };
 
@@ -161,34 +92,13 @@ export const useReceivableOperations = (callbacks?: {
   onUpdateSuccess?: () => void;
   onDeleteSuccess?: () => void;
 }) => {
-  const createMutation = useCreateReceivable(callbacks?.onCreateSuccess);
-  const updateMutation = useUpdateReceivable(callbacks?.onUpdateSuccess);
-  const deleteMutation = useDeleteReceivable(callbacks?.onDeleteSuccess);
-
-  const submitReceivable = (
-    data: ReceivableFormData,
-    receivableId?: string
-  ) => {
-    const payload = {
-      ...data,
-      dueDate: toUTC(data.dueDate), // Converte data local para UTC antes de enviar
-      categoryId: data.categoryId || undefined,
-      tagIds: data.tagIds?.length ? data.tagIds : undefined,
-    };
-
-    if (receivableId) {
-      updateMutation.mutate({ id: receivableId, data: payload });
-    } else {
-      createMutation.mutate(payload);
-    }
-  };
+  const operations = useAccountOperations<ReceivableFormData>(
+    receivablesConfig,
+    callbacks
+  );
 
   return {
-    createMutation,
-    updateMutation,
-    deleteMutation,
-    submitReceivable,
-    isSubmitting: createMutation.isPending || updateMutation.isPending,
-    isDeleting: deleteMutation.isPending,
+    ...operations,
+    submitReceivable: operations.submitAccount,
   };
 };
