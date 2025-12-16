@@ -166,23 +166,6 @@ export function LoginPage() {
               {loading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
-
-          <Box sx={{ mt: 3, textAlign: 'center' }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              display="block"
-            >
-              Admin: admin@paytrack.com / admin123
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              display="block"
-            >
-              Owner: owner@empresademo.com.br / owner123
-            </Typography>
-          </Box>
         </CardContent>
       </Card>
     </Box>

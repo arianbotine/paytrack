@@ -9,7 +9,8 @@ import { ReceivablesService } from '../receivables/receivables.service';
 type GroupedItem = {
   _sum: {
     amount: Decimal | null;
-    paidAmount: Decimal | null;
+    paidAmount?: Decimal | null;
+    receivedAmount?: Decimal | null;
   };
   _count: number;
   status: AccountStatus;
@@ -44,7 +45,7 @@ export class DashboardService {
     const receivables = await this.prisma.receivable.groupBy({
       by: ['status'],
       where: { organizationId },
-      _sum: { amount: true, paidAmount: true },
+      _sum: { amount: true, receivedAmount: true },
       _count: true,
     });
 
@@ -152,7 +153,9 @@ export class DashboardService {
 
     for (const group of grouped) {
       const amount = Number(group._sum.amount || 0);
-      const paidAmount = Number(group._sum.paidAmount || 0);
+      const paidAmount = Number(
+        group._sum.paidAmount || group._sum.receivedAmount || 0
+      );
       const remaining = amount - paidAmount;
 
       totals.count += group._count;

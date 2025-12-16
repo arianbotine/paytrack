@@ -12,6 +12,10 @@ export const api = axios.create({
   },
 });
 
+// Flag to prevent multiple concurrent refresh attempts
+let isRefreshing = false;
+let refreshPromise: Promise<any> | null = null;
+
 // Request interceptor - cookies are sent automatically
 api.interceptors.request.use(
   config => config,
@@ -25,15 +29,31 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If refresh is already in progress, wait for it
+        try {
+          await refreshPromise;
+          // Retry original request with new cookie
+          return api(originalRequest);
+        } catch (refreshError) {
+          throw refreshError;
+        }
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
+
+      refreshPromise = api.post('/auth/refresh');
 
       try {
-        // Refresh endpoint will use refreshToken from cookie
-        await api.post('/auth/refresh');
-
+        await refreshPromise;
+        isRefreshing = false;
+        refreshPromise = null;
         // Retry original request with new cookie
         return api(originalRequest);
       } catch (refreshError) {
+        isRefreshing = false;
+        refreshPromise = null;
         useAuthStore.getState().logout();
         globalThis.location.href = '/login';
         throw refreshError;

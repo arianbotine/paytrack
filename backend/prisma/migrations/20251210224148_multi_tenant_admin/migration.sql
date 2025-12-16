@@ -310,7 +310,7 @@ INSERT INTO "users" ("id", "email", "password", "name", "is_system_admin", "is_a
 VALUES (
   'system-admin-uuid',
   'admin@paytrack.com',
-  '$2b$10$Hqb1kYgQTeSWRgM0q79muuZIQWL3Ju1LYRIGJ55.pR.hmDw33mwLK',
+  '$2b$10$0QRX5WNdbhWnHFbtVx6YiOQUnsiEbJbUnv09/XRJa3U40ndPNPtvS',
   'System Administrator',
   true,
   true,

@@ -338,7 +338,7 @@ export class PaymentsService {
       await tx.receivable.update({
         where: { id: allocation.receivableId },
         data: {
-          paidAmount: MoneyUtils.toDecimal(newPaidAmount),
+          receivedAmount: MoneyUtils.toDecimal(newPaidAmount),
           status: newStatus,
         },
       });
@@ -414,7 +414,7 @@ export class PaymentsService {
       await tx.receivable.update({
         where: { id: allocation.receivableId },
         data: {
-          paidAmount: MoneyUtils.toDecimal(newPaidAmount),
+          receivedAmount: MoneyUtils.toDecimal(newPaidAmount),
           status: newStatus,
         },
       });

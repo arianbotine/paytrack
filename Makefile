@@ -37,7 +37,8 @@ help:
 	@echo "  logs-db     - Acompanhar logs do banco"
 	@echo "  status      - Mostrar status dos serviços"
 	@echo "  db-shell    - Acessar shell do PostgreSQL"
-	@echo "  migrate     - Executar migrations do Prisma"
+	@echo "  migrate     - Reset banco + sincronizar schema + executar migrações completas"
+	@echo "  migrate-deploy - Aplicar migrações pendentes (produção)"
 	@echo "  generate    - Regenerar Prisma Client"
 
 # Instalar dependências
@@ -193,9 +194,11 @@ status:
 db-shell:
 	@$(DOCKER_COMPOSE) exec $(DB_CONTAINER) psql -U $(DB_USER) -d $(DB_NAME)
 
-migrate:
+migrate: reset db-up migrate-deploy generate
+
+migrate-deploy:
 	@if [ ! -f .env ]; then cp .env.example .env; fi
-	@set -a && . .env && set +a && cd $(BACKEND_DIR) && npx prisma migrate dev
+	@set -a && . .env && set +a && cd $(BACKEND_DIR) && npx prisma migrate deploy
 
 generate:
 	@if [ ! -f .env ]; then cp .env.example .env; fi

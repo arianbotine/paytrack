@@ -360,11 +360,29 @@ export class AuthService {
       throw new UnauthorizedException('Usuário não encontrado');
     }
 
-    const availableOrganizations = user.organizations.map(uo => ({
-      id: uo.organization.id,
-      name: uo.organization.name,
-      role: uo.role,
-    }));
+    let availableOrganizations: any[] = [];
+
+    if (user.isSystemAdmin) {
+      // System admins: all organizations
+      const allOrganizations = await this.prisma.organization.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      });
+
+      availableOrganizations = allOrganizations.map(org => ({
+        id: org.id,
+        name: org.name,
+        role: 'OWNER', // System admin has full access
+      }));
+    } else {
+      // Regular users: only their associated organizations
+      availableOrganizations = user.organizations.map(uo => ({
+        id: uo.organization.id,
+        name: uo.organization.name,
+        role: uo.role,
+      }));
+    }
 
     return {
       id: user.id,

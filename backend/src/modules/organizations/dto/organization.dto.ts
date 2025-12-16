@@ -1,11 +1,18 @@
-import { IsString, IsOptional, IsEmail } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEmail,
+  IsNotEmpty,
+  ValidateIf,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
 export class CreateOrganizationDto {
   @ApiProperty({ example: 'Empresa ABC' })
   @IsString()
-  name!: string;
+  @IsNotEmpty({ message: 'Nome é obrigatório' })
+  name: string;
 
   @ApiPropertyOptional({ example: '12345678000199' })
   @IsString()
@@ -14,7 +21,8 @@ export class CreateOrganizationDto {
   document?: string;
 
   @ApiPropertyOptional({ example: 'contato@empresa.com' })
-  @IsEmail()
+  @ValidateIf(o => o.email !== undefined && o.email !== null && o.email !== '')
+  @IsEmail({}, { message: 'Email deve ter um formato válido' })
   @IsOptional()
   email?: string;
 

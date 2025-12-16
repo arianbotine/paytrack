@@ -1,4 +1,3 @@
-import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { PrismaErrorHandler } from '../../shared/utils/prisma-error-handler';
 
@@ -68,7 +67,6 @@ export abstract class BaseEntityService<TModel, TCreateDto, TUpdateDto> {
    */
   async create(organizationId: string, createDto: TCreateDto): Promise<TModel> {
     try {
-      // Check for unique constraint violations before creating
       await this.checkUniqueConstraints(organizationId, createDto);
 
       return await this.modelDelegate.create({
@@ -91,10 +89,8 @@ export abstract class BaseEntityService<TModel, TCreateDto, TUpdateDto> {
     updateDto: TUpdateDto
   ): Promise<TModel> {
     try {
-      // Verify entity exists and belongs to organization
       await this.findOne(id, organizationId);
 
-      // Check for unique constraint violations
       await this.checkUniqueConstraints(organizationId, updateDto, id);
 
       return await this.modelDelegate.update({
@@ -113,18 +109,15 @@ export abstract class BaseEntityService<TModel, TCreateDto, TUpdateDto> {
     try {
       const entity = await this.findOne(id, organizationId);
 
-      // Check if entity is in use
       const isInUse = await this.checkIfInUse(id);
 
       if (isInUse && this.hasIsActiveField()) {
-        // Soft delete - deactivate
         return await this.modelDelegate.update({
           where: { id },
           data: { isActive: false },
         });
       }
 
-      // Hard delete
       await this.modelDelegate.delete({ where: { id } });
       return entity;
     } catch (error) {
@@ -133,23 +126,26 @@ export abstract class BaseEntityService<TModel, TCreateDto, TUpdateDto> {
   }
 
   /**
-   * Override this to check if entity is in use (for soft delete logic)
+   * Override this to check if entity is in use (for soft delete logic).
+   * This base implementation returns false - subclasses should override to implement their own logic.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  protected async checkIfInUse(_id: string): Promise<boolean> {
-    return false; // Default: allow hard delete
+  protected async checkIfInUse(id: string): Promise<boolean> {
+    void id;
+    return false;
   }
 
   /**
-   * Override this to check unique constraints before create/update
+   * Override this to check unique constraints before create/update.
+   * This base implementation does nothing - subclasses should implement their own validation logic.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected async checkUniqueConstraints(
-    _organizationId: string,
-    _dto: Partial<TCreateDto | TUpdateDto>,
-    _excludeId?: string
+    organizationId: string,
+    dto: Partial<TCreateDto | TUpdateDto>,
+    excludeId?: string
   ): Promise<void> {
-    // Default: no additional checks
+    void organizationId;
+    void dto;
+    void excludeId;
   }
 
   /**
@@ -163,7 +159,6 @@ export abstract class BaseEntityService<TModel, TCreateDto, TUpdateDto> {
    * Check if model has isActive field
    */
   private hasIsActiveField(): boolean {
-    // Models with isActive: Vendor, Customer, Category, User, Organization
     return ['vendor', 'customer', 'category', 'user', 'organization'].includes(
       this.modelName.toLowerCase()
     );

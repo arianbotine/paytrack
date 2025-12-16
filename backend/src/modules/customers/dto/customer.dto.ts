@@ -1,10 +1,18 @@
-import { IsString, IsEmail, IsOptional, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsBoolean,
+  IsNotEmpty,
+  ValidateIf,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
 export class CreateCustomerDto {
   @ApiProperty({ example: 'João Silva' })
   @IsString()
-  name!: string;
+  @IsNotEmpty({ message: 'Nome é obrigatório' })
+  name: string;
 
   @ApiPropertyOptional({ example: '12345678900' })
   @IsString()
@@ -12,7 +20,8 @@ export class CreateCustomerDto {
   document?: string;
 
   @ApiPropertyOptional({ example: 'joao@email.com' })
-  @IsEmail()
+  @ValidateIf(o => o.email !== undefined && o.email !== null && o.email !== '')
+  @IsEmail({}, { message: 'Email deve ter um formato válido' })
   @IsOptional()
   email?: string;
 

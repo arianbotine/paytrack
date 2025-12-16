@@ -26,6 +26,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 const getDialogTitle = (viewingOrg: boolean, editingOrg: boolean) => {
   if (viewingOrg) return 'Visualizar Organização';
@@ -60,6 +61,7 @@ interface Organization {
 
 export function AdminOrganizationsPage() {
   const queryClient = useQueryClient();
+  const { setAuth } = useAuthStore();
   const [openDialog, setOpenDialog] = useState(false);
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
   const [viewingOrg, setViewingOrg] = useState<Organization | null>(null);
@@ -86,8 +88,18 @@ export function AdminOrganizationsPage() {
     mutationFn: async (data: OrganizationFormData) => {
       return api.post('/admin/organizations', data);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Atualizar lista de organizações no admin
       queryClient.invalidateQueries({ queryKey: ['admin-organizations'] });
+
+      // Buscar informações atualizadas do usuário para atualizar availableOrganizations
+      try {
+        const response = await api.get('/auth/me');
+        setAuth(response.data);
+      } catch (error) {
+        console.error('Erro ao atualizar informações do usuário:', error);
+      }
+
       handleCloseDialog();
       setError('');
     },

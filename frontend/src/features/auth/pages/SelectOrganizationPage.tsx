@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -34,6 +34,27 @@ export function SelectOrganizationPage() {
   const { user, setAuth, logout } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isLoadingOrganizations, setIsLoadingOrganizations] = useState(true);
+
+  // Buscar dados atualizados ao entrar na página
+  useEffect(() => {
+    const refreshUserData = async () => {
+      try {
+        const response = await api.get('/auth/me');
+        setAuth(response.data);
+      } catch (err) {
+        console.error('Erro ao carregar organizações:', err);
+      } finally {
+        setIsLoadingOrganizations(false);
+      }
+    };
+
+    if (user) {
+      refreshUserData();
+    } else {
+      setIsLoadingOrganizations(false);
+    }
+  }, []);
 
   const handleSelectOrganization = async (organizationId: string) => {
     setLoading(true);
@@ -67,6 +88,22 @@ export function SelectOrganizationPage() {
   if (!user) {
     navigate('/login');
     return null;
+  }
+
+  if (isLoadingOrganizations) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'background.default',
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
   const organizations = user.availableOrganizations || [];

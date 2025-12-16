@@ -11,10 +11,10 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Seeding database...');
-
-  // Create system admin user (no organization)
-  // Password: Admin@123 (meets strong password requirements)
-  const hashedAdminPassword = await bcrypt.hash('Admin@123', 10);
+  // ========================================
+  // Create System Admin User
+  // ========================================
+  const hashedAdminPassword = await bcrypt.hash('admin123', 10);
   const systemAdmin = await prisma.user.upsert({
     where: { email: 'admin@paytrack.com' },
     update: {},
@@ -29,7 +29,7 @@ async function main() {
   console.log(
     '✅ System Admin user created:',
     systemAdmin.email,
-    '/ Password: Admin@123'
+    '/ Password: admin123'
   );
 
   // ========================================
@@ -76,8 +76,8 @@ async function main() {
   // ========================================
   // Create Users
   // ========================================
-  // Password: Senha@123 (meets strong password requirements)
-  const hashedPassword = await bcrypt.hash('Senha@123', 10);
+  // Password: senha123 (meets strong password requirements)
+  const hashedPassword = await bcrypt.hash('senha123', 10);
 
   // Empresa Demo users
   const ownerEmpresaDemo = await prisma.user.upsert({
@@ -607,7 +607,7 @@ async function main() {
   await prisma.receivable.update({
     where: { id: paidReceivable.id },
     data: {
-      paidAmount: 4200,
+      receivedAmount: 4200,
       status: AccountStatus.PAID,
     },
   });
@@ -620,24 +620,48 @@ async function main() {
   console.log('\n📦 Seeding Tech Startup Ltda data...');
 
   const techCategories = await Promise.all([
-    prisma.category.create({
-      data: {
+    prisma.category.upsert({
+      where: {
+        organizationId_name_type: {
+          organizationId: orgTechStartup.id,
+          name: 'Infraestrutura',
+          type: CategoryType.PAYABLE,
+        },
+      },
+      update: {},
+      create: {
         organizationId: orgTechStartup.id,
         name: 'Infraestrutura',
         color: '#3B82F6',
         type: CategoryType.PAYABLE,
       },
     }),
-    prisma.category.create({
-      data: {
+    prisma.category.upsert({
+      where: {
+        organizationId_name_type: {
+          organizationId: orgTechStartup.id,
+          name: 'Marketing',
+          type: CategoryType.PAYABLE,
+        },
+      },
+      update: {},
+      create: {
         organizationId: orgTechStartup.id,
         name: 'Marketing',
         color: '#EC4899',
         type: CategoryType.PAYABLE,
       },
     }),
-    prisma.category.create({
-      data: {
+    prisma.category.upsert({
+      where: {
+        organizationId_name_type: {
+          organizationId: orgTechStartup.id,
+          name: 'Assinaturas',
+          type: CategoryType.RECEIVABLE,
+        },
+      },
+      update: {},
+      create: {
         organizationId: orgTechStartup.id,
         name: 'Assinaturas',
         color: '#22C55E',
@@ -735,7 +759,7 @@ async function main() {
         dueDate: new Date(today.getFullYear(), today.getMonth(), 1),
         paymentMethod: PaymentMethod.BANK_TRANSFER,
         status: AccountStatus.PAID,
-        paidAmount: 3500,
+        receivedAmount: 3500,
       },
     }),
   ]);
@@ -748,16 +772,32 @@ async function main() {
   console.log('\n📦 Seeding Consultoria XYZ data...');
 
   const consultoriaCategories = await Promise.all([
-    prisma.category.create({
-      data: {
+    prisma.category.upsert({
+      where: {
+        organizationId_name_type: {
+          organizationId: orgConsultoriaXYZ.id,
+          name: 'Despesas Operacionais',
+          type: CategoryType.PAYABLE,
+        },
+      },
+      update: {},
+      create: {
         organizationId: orgConsultoriaXYZ.id,
         name: 'Despesas Operacionais',
         color: '#F97316',
         type: CategoryType.PAYABLE,
       },
     }),
-    prisma.category.create({
-      data: {
+    prisma.category.upsert({
+      where: {
+        organizationId_name_type: {
+          organizationId: orgConsultoriaXYZ.id,
+          name: 'Projetos de Consultoria',
+          type: CategoryType.RECEIVABLE,
+        },
+      },
+      update: {},
+      create: {
         organizationId: orgConsultoriaXYZ.id,
         name: 'Projetos de Consultoria',
         color: '#10B981',

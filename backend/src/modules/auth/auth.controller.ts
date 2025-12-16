@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Res,
   Req,
+  HttpException,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import {
@@ -75,6 +76,7 @@ export class AuthController {
 
   @Public()
   @Post('refresh')
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 refresh attempts per minute
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Renovar tokens' })
   @ApiResponse({
@@ -83,13 +85,20 @@ export class AuthController {
     type: AuthResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Token inválido ou expirado' })
+  @ApiResponse({
+    status: 429,
+    description: 'Muitas tentativas. Tente novamente mais tarde.',
+  })
   async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response
   ) {
     const refreshToken = req.cookies?.['refreshToken'];
     if (!refreshToken) {
-      throw new Error('Refresh token não encontrado');
+      throw new HttpException(
+        'Refresh token não encontrado',
+        HttpStatus.UNAUTHORIZED
+      );
     }
     const result = await this.authService.refreshTokens(refreshToken);
     this.setCookies(res, result.accessToken, result.refreshToken);
