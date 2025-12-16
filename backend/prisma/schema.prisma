@@ -196,7 +196,6 @@ model Payable {
   amount         Decimal       @db.Decimal(15, 2)
   paidAmount     Decimal       @default(0) @map("paid_amount") @db.Decimal(15, 2)
   dueDate        DateTime      @map("due_date") @db.Date
-  paymentMethod  PaymentMethod @map("payment_method")
   status         AccountStatus @default(PENDING)
   notes          String?
   documentNumber String?       @map("document_number") // Invoice number, etc.
@@ -225,7 +224,6 @@ model Receivable {
   amount         Decimal       @db.Decimal(15, 2)
   receivedAmount Decimal       @default(0) @map("received_amount") @db.Decimal(15, 2)
   dueDate        DateTime      @map("due_date") @db.Date
-  paymentMethod  PaymentMethod @map("payment_method")
   status         AccountStatus @default(PENDING)
   notes          String?
   documentNumber String?       @map("document_number") // Invoice number, etc.

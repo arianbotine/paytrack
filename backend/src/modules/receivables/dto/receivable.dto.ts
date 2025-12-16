@@ -36,10 +36,6 @@ export class CreateReceivableDto {
   @IsDateString()
   dueDate!: string;
 
-  @ApiProperty({ enum: PaymentMethod, example: PaymentMethod.PIX })
-  @IsEnum(PaymentMethod)
-  paymentMethod!: PaymentMethod;
-
   @ApiPropertyOptional({ example: 'Observações' })
   @IsString()
   @IsOptional()

@@ -6,49 +6,36 @@
  */
 
 /**
- * Converte uma data local (do input do usuário) para UTC (para enviar ao backend).
- * Exemplo: Se o usuário seleciona 15/12/2025, enviamos "2025-12-15T00:00:00.000Z"
+ * Retorna a data no formato YYYY-MM-DD para enviar ao backend.
+ * O backend interpreta como meio-dia UTC para evitar problemas de fuso horário.
  *
  * @param dateString - String de data no formato 'YYYY-MM-DD' do input HTML
- * @returns String ISO em UTC para enviar ao backend
+ * @returns String no formato 'YYYY-MM-DD' para enviar ao backend
  */
 export function toUTC(dateString: string): string {
-  if (!dateString) return '';
-
-  // Garante que a data seja interpretada como local (sem considerar timezone)
-  // e então converte para UTC
-  const [year, month, day] = dateString.split('-').map(Number);
-  const localDate = new Date(year, month - 1, day);
-
-  return localDate.toISOString();
+  // Simplesmente retorna a data como está - backend faz a interpretação como meio-dia UTC
+  return dateString || '';
 }
 
 /**
- * Converte uma data UTC (recebida do backend) para data local (para exibir ao usuário).
+ * Extrai a parte da data de uma string ISO UTC (recebida do backend).
  * Retorna no formato 'YYYY-MM-DD' para inputs HTML date.
  *
- * @param utcString - String de data em formato ISO UTC (ex: "2025-12-15T00:00:00.000Z")
+ * @param utcString - String de data em formato ISO UTC (ex: "2025-12-15T12:00:00.000Z")
  * @returns String no formato 'YYYY-MM-DD' para input HTML date
  */
 export function toLocalDateInput(utcString: string): string {
   if (!utcString) return '';
 
+  // Interpreta a string ISO como UTC e extrai a data UTC
   const date = new Date(utcString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
 
   return `${year}-${month}-${day}`;
 }
 
-/**
- * Converte uma data UTC (recebida do backend) para formato de exibição local.
- * Retorna no formato 'dd/MM/yyyy' para exibir ao usuário.
- *
- * @param utcString - String de data em formato ISO UTC
- * @param formatOptions - Opções de formatação (opcional)
- * @returns String formatada para exibição (ex: "15/12/2025")
- */
 export function formatLocalDate(
   utcString: string,
   formatOptions?: Intl.DateTimeFormatOptions

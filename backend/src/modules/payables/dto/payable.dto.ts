@@ -36,10 +36,6 @@ export class CreatePayableDto {
   @IsDateString()
   dueDate!: string;
 
-  @ApiProperty({ enum: PaymentMethod, example: PaymentMethod.BANK_TRANSFER })
-  @IsEnum(PaymentMethod)
-  paymentMethod!: PaymentMethod;
-
   @ApiPropertyOptional({ example: 'Observações' })
   @IsString()
   @IsOptional()

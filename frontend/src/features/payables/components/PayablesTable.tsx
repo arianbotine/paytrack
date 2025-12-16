@@ -18,8 +18,8 @@ interface PayablesTableProps {
 
 const payablesConfig: AccountTableConfig = {
   type: 'payable',
-  entityLabel: 'Fornecedor',
-  entityFieldLabel: 'Fornecedor',
+  entityLabel: 'Credor',
+  entityFieldLabel: 'Credor',
   amountFieldLabel: 'Pago',
   emptyTitle: 'Nenhuma conta a pagar',
   emptyDescription: 'Crie sua primeira conta a pagar para começar',

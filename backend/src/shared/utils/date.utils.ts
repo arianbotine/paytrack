@@ -4,9 +4,10 @@
  */
 
 export function parseDateUTC(dateString: string): Date {
-  // For date-only strings (yyyy-MM-dd), create UTC date at midnight
+  // For date-only strings (yyyy-MM-dd), create UTC date at noon
+  // This prevents timezone-related date shifts when converting back to local
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-    return new Date(dateString + 'T00:00:00.000Z');
+    return new Date(dateString + 'T12:00:00.000Z');
   }
   // For full ISO strings, ensure UTC interpretation
   return new Date(dateString);

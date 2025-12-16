@@ -120,8 +120,10 @@ export const useCreateAccount = (
       showNotification(config.messages.createSuccess, 'success');
       onSuccess?.();
     },
-    onError: () => {
-      showNotification(config.messages.createError, 'error');
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message || config.messages.createError;
+      showNotification(message, 'error');
     },
   });
 };
@@ -143,8 +145,10 @@ export const useUpdateAccount = (
       showNotification(config.messages.updateSuccess, 'success');
       onSuccess?.();
     },
-    onError: () => {
-      showNotification(config.messages.updateError, 'error');
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message || config.messages.updateError;
+      showNotification(message, 'error');
     },
   });
 };
@@ -165,8 +169,10 @@ export const useDeleteAccount = (
       showNotification(config.messages.deleteSuccess, 'success');
       onSuccess?.();
     },
-    onError: () => {
-      showNotification(config.messages.deleteError, 'error');
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message || config.messages.deleteError;
+      showNotification(message, 'error');
     },
   });
 };

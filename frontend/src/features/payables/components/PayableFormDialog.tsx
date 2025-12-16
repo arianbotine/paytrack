@@ -135,8 +135,8 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                     control={control}
                     render={({ field }) => (
                       <FormControl fullWidth error={!!errors.vendorId}>
-                        <InputLabel>Fornecedor</InputLabel>
-                        <Select {...field} label="Fornecedor">
+                        <InputLabel>Credor</InputLabel>
+                        <Select {...field} label="Credor">
                           {vendors.map(vendor => (
                             <MenuItem key={vendor.id} value={vendor.id}>
                               {vendor.name}
@@ -225,20 +225,6 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                         InputLabelProps={{ shrink: true }}
                         error={!!errors.dueDate}
                         helperText={errors.dueDate?.message}
-                      />
-                    )}
-                  />
-                </Grid>
-
-                <Grid item xs={12} tablet={4} md={6}>
-                  <Controller
-                    name="invoiceNumber"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Número da Nota Fiscal"
-                        fullWidth
                       />
                     )}
                   />
