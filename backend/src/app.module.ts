@@ -15,6 +15,7 @@ import { PayablesModule } from './modules/payables/payables.module';
 import { ReceivablesModule } from './modules/receivables/receivables.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { HealthModule } from './modules/health/health.module';
 import { SerializationInterceptor } from './shared/interceptors/serialization.interceptor';
 
 @Module({
@@ -41,6 +42,7 @@ import { SerializationInterceptor } from './shared/interceptors/serialization.in
     ReceivablesModule,
     PaymentsModule,
     DashboardModule,
+    HealthModule,
   ],
   providers: [
     {

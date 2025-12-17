@@ -126,7 +126,6 @@ CREATE TABLE "payables" (
     "amount" DECIMAL(15,2) NOT NULL,
     "paid_amount" DECIMAL(15,2) NOT NULL DEFAULT 0,
     "due_date" DATE NOT NULL,
-    "payment_method" "PaymentMethod" NOT NULL,
     "status" "AccountStatus" NOT NULL DEFAULT 'PENDING',
     "notes" TEXT,
     "document_number" TEXT,
@@ -144,9 +143,8 @@ CREATE TABLE "receivables" (
     "category_id" TEXT,
     "description" TEXT NOT NULL,
     "amount" DECIMAL(15,2) NOT NULL,
-    "paid_amount" DECIMAL(15,2) NOT NULL DEFAULT 0,
+    "received_amount" DECIMAL(15,2) NOT NULL DEFAULT 0,
     "due_date" DATE NOT NULL,
-    "payment_method" "PaymentMethod" NOT NULL,
     "status" "AccountStatus" NOT NULL DEFAULT 'PENDING',
     "notes" TEXT,
     "document_number" TEXT,
@@ -225,6 +223,9 @@ CREATE INDEX "user_organizations_user_id_idx" ON "user_organizations"("user_id")
 CREATE INDEX "user_organizations_organization_id_idx" ON "user_organizations"("organization_id");
 
 -- CreateIndex
+CREATE INDEX "user_organizations_organization_id_is_active_idx" ON "user_organizations"("organization_id", "is_active");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "user_organizations_user_id_organization_id_key" ON "user_organizations"("user_id", "organization_id");
 
 -- CreateIndex
@@ -232,6 +233,27 @@ CREATE UNIQUE INDEX "categories_organization_id_name_type_key" ON "categories"("
 
 -- CreateIndex
 CREATE UNIQUE INDEX "tags_organization_id_name_key" ON "tags"("organization_id", "name");
+
+-- CreateIndex
+CREATE INDEX "payables_organization_id_due_date_idx" ON "payables"("organization_id", "due_date");
+
+-- CreateIndex
+CREATE INDEX "payables_organization_id_status_due_date_idx" ON "payables"("organization_id", "status", "due_date");
+
+-- CreateIndex
+CREATE INDEX "payables_vendor_id_idx" ON "payables"("vendor_id");
+
+-- CreateIndex
+CREATE INDEX "receivables_customer_id_idx" ON "receivables"("customer_id");
+
+-- CreateIndex
+CREATE INDEX "receivables_organization_id_due_date_idx" ON "receivables"("organization_id", "due_date");
+
+-- CreateIndex
+CREATE INDEX "receivables_organization_id_status_due_date_idx" ON "receivables"("organization_id", "status", "due_date");
+
+-- CreateIndex
+CREATE INDEX "payments_organization_id_payment_date_idx" ON "payments"("organization_id", "payment_date");
 
 -- CreateIndex
 CREATE INDEX "audit_logs_organization_id_entity_entity_id_idx" ON "audit_logs"("organization_id", "entity", "entity_id");

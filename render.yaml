@@ -1,0 +1,75 @@
+# ==============================================================================
+# Render Blueprint - PayTrack Backend (NestJS + Prisma)
+# https://render.com/docs/blueprint-spec
+# ==============================================================================
+#
+# Para usar este blueprint:
+# 1. Acesse https://dashboard.render.com/blueprints
+# 2. Clique em "New Blueprint Instance"
+# 3. Conecte o repositório GitHub
+# 4. Configure as variáveis de ambiente quando solicitado
+#
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # Backend API - PayTrack (NestJS)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: paytrack-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    region: oregon # Região mais próxima do Neon (sa-east-1)
+    plan: starter # Plano para produção
+
+    # Health Check
+    healthCheckPath: /api/health
+
+    # Variáveis de ambiente
+    envVars:
+      # Porta (Render define automaticamente)
+      - key: PORT
+        value: 3000
+
+      # Ambiente de execução
+      - key: NODE_ENV
+        value: production
+
+      # URL do frontend para CORS (Vercel)
+      # IMPORTANTE: Atualize com a URL real do frontend em produção
+      - key: FRONTEND_URL
+        value: https://paytrack.vercel.app
+
+      # JWT Configuration
+      # IMPORTANTE: Gere uma chave segura de 256 bits para produção
+      # Exemplo: openssl rand -base64 32
+      - key: JWT_SECRET
+        sync: false # Não sincronizar - configurar manualmente
+
+      - key: JWT_EXPIRES_IN
+        value: 7d
+
+      # Conexão com banco de dados (Neon PostgreSQL)
+      # IMPORTANTE: Configure este valor manualmente no dashboard do Render
+      # para não expor credenciais no repositório
+      - key: DATABASE_URL
+        sync: false # Não sincronizar - configurar manualmente
+
+      # Conexão direta com banco (Neon - sem pooler)
+      # IMPORTANTE: Para migrações, use a URL direta do Neon (sem -pooler)
+      # Exemplo: postgresql://user:pass@host/database?sslmode=require
+      # Isso evita problemas de lock com o pooler durante migrações
+      - key: DIRECT_DATABASE_URL
+        sync: false # Não sincronizar - configurar manualmente
+
+
+      # IMPORTANTE: Sobre Migrações do Prisma
+      # As migrações são executadas MANUALMENTE pelo usuário antes do deploy
+      # Para aplicar novas migrações:
+      # 1. Crie migração localmente: npx prisma migrate dev --name nome_da_migracao
+      # 2. Aplique localmente: npx prisma migrate dev
+      # 3. Faça commit e push das mudanças
+      # 4. Execute manualmente no banco de produção: npx prisma migrate deploy
+      #
+      # Seed não é executado em produção
