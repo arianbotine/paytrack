@@ -32,6 +32,20 @@ export interface PaymentAllocation {
   receivable?: Receivable;
 }
 
+export interface PaymentDetails {
+  id: string;
+  amount: number;
+  paymentDate: string;
+  method: string;
+  notes?: string;
+}
+
+export interface PaymentHistoryItem {
+  id: string;
+  amount: number;
+  payment: PaymentDetails;
+}
+
 export interface Payment {
   id: string;
   amount: number;

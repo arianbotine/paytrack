@@ -14,6 +14,7 @@ interface ReceivablesTableProps {
   onEdit: (receivable: Receivable) => void;
   onDelete: (receivable: Receivable) => void;
   onPayment: (receivable: Receivable) => void;
+  onViewPayments?: (receivable: Receivable) => void;
 }
 
 const receivablesConfig: AccountTableConfig = {
@@ -36,6 +37,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
   onEdit,
   onDelete,
   onPayment,
+  onViewPayments,
 }) => {
   return (
     <AccountsTable
@@ -50,6 +52,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
       onEdit={onEdit}
       onDelete={onDelete}
       onPayment={onPayment}
+      onViewPayments={onViewPayments}
     />
   );
 };

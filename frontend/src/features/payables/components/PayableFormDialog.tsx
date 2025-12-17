@@ -25,8 +25,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Payable, PayableFormData, Vendor, Category, Tag } from '../types';
 import { payableSchema, getDefaultFormValues } from '../types';
-import { formatCurrency } from '../../../shared/utils/currencyUtils';
 import { toLocalDateInput } from '../../../shared/utils/dateUtils';
+import { formatCurrency } from '../../../shared/utils/currencyUtils';
 
 interface PayableFormDialogProps {
   open: boolean;
@@ -286,8 +286,10 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
 
               {payable && payable.paidAmount > 0 && (
                 <Alert severity="info" sx={{ mt: 2 }}>
-                  Esta conta já possui pagamentos registrados no valor de{' '}
-                  {formatCurrency(payable.paidAmount)}.
+                  Esta conta possui pagamentos registrados no valor de{' '}
+                  {formatCurrency(payable.paidAmount)}. Para visualizar o
+                  histórico completo, use o botão "Ver Pagamentos" na lista de
+                  contas.
                 </Alert>
               )}
             </DialogContent>

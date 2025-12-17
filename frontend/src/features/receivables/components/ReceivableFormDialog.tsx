@@ -15,15 +15,14 @@ import {
   Grid,
   Autocomplete,
   InputAdornment,
-  Alert,
   FormHelperText,
   useMediaQuery,
   useTheme,
+  Alert,
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
-import { formatCurrency } from '../../../shared/utils/currencyUtils';
 import type {
   Receivable,
   ReceivableFormData,
@@ -33,6 +32,7 @@ import type {
 } from '../types';
 import { receivableSchema, getDefaultFormValues } from '../types';
 import { toLocalDateInput } from '../../../shared/utils/dateUtils';
+import { formatCurrency } from '../../../shared/utils/currencyUtils';
 
 interface ReceivableFormDialogProps {
   open: boolean;
@@ -43,6 +43,7 @@ interface ReceivableFormDialogProps {
   isSubmitting: boolean;
   onSubmit: (data: ReceivableFormData) => void;
   onClose: () => void;
+  onAddPayment?: () => void;
 }
 
 export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
@@ -306,8 +307,10 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
 
               {receivable && receivable.receivedAmount > 0 && (
                 <Alert severity="info" sx={{ mt: 2 }}>
-                  Esta conta já possui recebimentos registrados no valor de{' '}
-                  {formatCurrency(receivable.receivedAmount)}.
+                  Esta conta possui recebimentos registrados no valor de{' '}
+                  {formatCurrency(receivable.receivedAmount)}. Para visualizar o
+                  histórico completo, use o botão "Ver Pagamentos" na lista de
+                  contas.
                 </Alert>
               )}
             </DialogContent>

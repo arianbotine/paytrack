@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatedPage } from '../../../shared/components';
 import { PageHeader } from '../../../shared/components/PageHeader';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { PaymentHistoryDialog } from '../../../shared/components/PaymentHistoryDialog';
 import {
   PayablesTable,
   PayableFormDialog,
@@ -16,6 +17,7 @@ import {
   useTags,
   usePayableOperations,
 } from '../hooks/usePayables';
+import { usePayablePayments } from '../../payments/hooks/usePayments';
 import type { Payable, PayableFormData } from '../types';
 
 export const PayablesPage: React.FC = () => {
@@ -24,6 +26,8 @@ export const PayablesPage: React.FC = () => {
   // State
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [paymentHistoryDialogOpen, setPaymentHistoryDialogOpen] =
+    useState(false);
   const [selectedPayable, setSelectedPayable] = useState<Payable | null>(null);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [page, setPage] = useState(0);
@@ -40,6 +44,12 @@ export const PayablesPage: React.FC = () => {
   const { data: categories = [] } = useCategories();
   const { data: tags = [] } = useTags();
 
+  // Payment history query - only fetch when dialog is open
+  const { data: payments = [], isLoading: isLoadingPayments } =
+    usePayablePayments(
+      paymentHistoryDialogOpen ? selectedPayable?.id : undefined
+    );
+
   // Mutations
   const handleCloseDialog = useCallback(() => {
     setDialogOpen(false);
@@ -49,6 +59,11 @@ export const PayablesPage: React.FC = () => {
   const handleCloseDeleteDialog = useCallback(() => {
     setDeleteDialogOpen(false);
     setSelectedPayable(null);
+  }, []);
+
+  const handleClosePaymentHistoryDialog = useCallback(() => {
+    setPaymentHistoryDialogOpen(false);
+    // Don't clear selectedPayable here to keep the data loaded
   }, []);
 
   const { submitPayable, deleteMutation, isSubmitting, isDeleting } =
@@ -75,6 +90,18 @@ export const PayablesPage: React.FC = () => {
     },
     [navigate]
   );
+
+  const handleAddPayment = useCallback(() => {
+    if (selectedPayable) {
+      setPaymentHistoryDialogOpen(false);
+      navigate(`/payments?payableId=${selectedPayable.id}`);
+    }
+  }, [navigate, selectedPayable]);
+
+  const handleViewPayments = useCallback((payable: Payable) => {
+    setSelectedPayable(payable);
+    setPaymentHistoryDialogOpen(true);
+  }, []);
 
   const handleStatusChange = useCallback((status: string) => {
     setStatusFilter(status);
@@ -137,6 +164,7 @@ export const PayablesPage: React.FC = () => {
           onEdit={handleOpenDialog}
           onDelete={handleDelete}
           onPayment={handlePayment}
+          onViewPayments={handleViewPayments}
         />
 
         <PayableFormDialog
@@ -158,6 +186,28 @@ export const PayablesPage: React.FC = () => {
           onConfirm={confirmDelete}
           onCancel={handleCloseDeleteDialog}
           isLoading={isDeleting}
+        />
+
+        <PaymentHistoryDialog
+          open={paymentHistoryDialogOpen}
+          onClose={handleClosePaymentHistoryDialog}
+          accountType="payable"
+          accountData={
+            selectedPayable
+              ? {
+                  id: selectedPayable.id,
+                  description: selectedPayable.description,
+                  amount: selectedPayable.amount,
+                  paidAmount: selectedPayable.paidAmount,
+                  dueDate: selectedPayable.dueDate,
+                  entityName: selectedPayable.vendor.name,
+                  status: selectedPayable.status,
+                }
+              : null
+          }
+          payments={payments}
+          isLoading={isLoadingPayments}
+          onAddPayment={handleAddPayment}
         />
       </Box>
     </AnimatedPage>

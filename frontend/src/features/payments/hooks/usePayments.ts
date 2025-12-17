@@ -7,6 +7,7 @@ import type {
   PaymentsResponse,
   Payable,
   Receivable,
+  PaymentHistoryItem,
 } from '../types';
 
 // ============================================================
@@ -64,6 +65,34 @@ export const usePendingReceivables = () => {
       });
       return response.data.data || response.data;
     },
+  });
+};
+
+// ============================================================
+// Payment History Queries
+// ============================================================
+
+export const usePayablePayments = (payableId: string | undefined) => {
+  return useQuery({
+    queryKey: ['payables', payableId, 'payments'],
+    queryFn: async (): Promise<PaymentHistoryItem[]> => {
+      if (!payableId) return [];
+      const response = await api.get(`/payables/${payableId}/payments`);
+      return response.data;
+    },
+    enabled: !!payableId,
+  });
+};
+
+export const useReceivablePayments = (receivableId: string | undefined) => {
+  return useQuery({
+    queryKey: ['receivables', receivableId, 'payments'],
+    queryFn: async (): Promise<PaymentHistoryItem[]> => {
+      if (!receivableId) return [];
+      const response = await api.get(`/receivables/${receivableId}/payments`);
+      return response.data;
+    },
+    enabled: !!receivableId,
   });
 };
 

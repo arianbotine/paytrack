@@ -82,4 +82,13 @@ export class ReceivablesController {
   ) {
     return this.receivablesService.cancel(id, organizationId);
   }
+
+  @Get(':id/payments')
+  @ApiOperation({ summary: 'Obter histórico de pagamentos da conta a receber' })
+  async getPayments(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string
+  ) {
+    return this.receivablesService.getPayments(id, organizationId);
+  }
 }

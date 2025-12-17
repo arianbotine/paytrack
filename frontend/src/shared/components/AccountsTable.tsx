@@ -19,6 +19,7 @@ import {
   Payment as PaymentIcon,
   Warning as WarningIcon,
   Error as ErrorIcon,
+  History as HistoryIcon,
 } from '@mui/icons-material';
 import { differenceInDays, isAfter } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -47,6 +48,7 @@ interface AccountsTableProps<T extends AccountItem> {
   readonly onEdit: (account: T) => void;
   readonly onDelete: (account: T) => void;
   readonly onPayment: (account: T) => void;
+  readonly onViewPayments?: (account: T) => void;
 }
 
 const getDueDateAlert = (dueDate: string, status: string) => {
@@ -89,6 +91,7 @@ export function AccountsTable<T extends AccountItem>({
   onEdit,
   onDelete,
   onPayment,
+  onViewPayments,
 }: AccountsTableProps<T>) {
   const getEntityName = (account: T): string => {
     if (config.type === 'payable') {
@@ -256,13 +259,27 @@ export function AccountsTable<T extends AccountItem>({
                           <EditIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
+                      {onViewPayments && getPaidAmount(account) > 0 && (
+                        <Tooltip title="Ver pagamentos">
+                          <IconButton
+                            size="small"
+                            color="info"
+                            onClick={() => onViewPayments(account)}
+                          >
+                            <HistoryIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       <Tooltip title="Registrar pagamento">
                         <span>
                           <IconButton
                             size="small"
                             color="success"
                             onClick={() => onPayment(account)}
-                            disabled={getPaidAmount(account) > 0}
+                            disabled={
+                              account.status === 'PAID' ||
+                              account.status === 'CANCELLED'
+                            }
                           >
                             <PaymentIcon fontSize="small" />
                           </IconButton>

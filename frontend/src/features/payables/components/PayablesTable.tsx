@@ -14,6 +14,7 @@ interface PayablesTableProps {
   onEdit: (payable: Payable) => void;
   onDelete: (payable: Payable) => void;
   onPayment: (payable: Payable) => void;
+  onViewPayments?: (payable: Payable) => void;
 }
 
 const payablesConfig: AccountTableConfig = {
@@ -36,6 +37,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
   onEdit,
   onDelete,
   onPayment,
+  onViewPayments,
 }) => {
   return (
     <AccountsTable
@@ -50,6 +52,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
       onEdit={onEdit}
       onDelete={onDelete}
       onPayment={onPayment}
+      onViewPayments={onViewPayments}
     />
   );
 };

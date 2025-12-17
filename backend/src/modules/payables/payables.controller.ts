@@ -82,4 +82,13 @@ export class PayablesController {
   ) {
     return this.payablesService.cancel(id, organizationId);
   }
+
+  @Get(':id/payments')
+  @ApiOperation({ summary: 'Obter histórico de pagamentos da conta a pagar' })
+  async getPayments(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string
+  ) {
+    return this.payablesService.getPayments(id, organizationId);
+  }
 }

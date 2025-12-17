@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatedPage } from '../../../shared/components';
 import { PageHeader } from '../../../shared/components/PageHeader';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
+import { PaymentHistoryDialog } from '../../../shared/components/PaymentHistoryDialog';
 import {
   ReceivablesTable,
   ReceivableFormDialog,
@@ -16,6 +17,7 @@ import {
   useTags,
   useReceivableOperations,
 } from '../hooks/useReceivables';
+import { useReceivablePayments } from '../../payments/hooks/usePayments';
 import type { Receivable, ReceivableFormData } from '../types';
 
 export const ReceivablesPage: React.FC = () => {
@@ -24,6 +26,8 @@ export const ReceivablesPage: React.FC = () => {
   // State
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [paymentHistoryDialogOpen, setPaymentHistoryDialogOpen] =
+    useState(false);
   const [selectedReceivable, setSelectedReceivable] =
     useState<Receivable | null>(null);
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -41,6 +45,12 @@ export const ReceivablesPage: React.FC = () => {
   const { data: categories = [] } = useReceivableCategories();
   const { data: tags = [] } = useTags();
 
+  // Payment history - only fetch when dialog is open
+  const { data: payments = [], isLoading: isLoadingPayments } =
+    useReceivablePayments(
+      paymentHistoryDialogOpen ? selectedReceivable?.id : undefined
+    );
+
   // Mutations
   const handleCloseDialog = useCallback(() => {
     setDialogOpen(false);
@@ -49,6 +59,16 @@ export const ReceivablesPage: React.FC = () => {
 
   const handleCloseDeleteDialog = useCallback(() => {
     setDeleteDialogOpen(false);
+    setSelectedReceivable(null);
+  }, []);
+
+  const handleViewPayments = useCallback((receivable: Receivable) => {
+    setSelectedReceivable(receivable);
+    setPaymentHistoryDialogOpen(true);
+  }, []);
+
+  const handleClosePaymentHistoryDialog = useCallback(() => {
+    setPaymentHistoryDialogOpen(false);
     setSelectedReceivable(null);
   }, []);
 
@@ -76,6 +96,12 @@ export const ReceivablesPage: React.FC = () => {
     },
     [navigate]
   );
+
+  const handleAddPayment = useCallback(() => {
+    if (selectedReceivable) {
+      navigate(`/payments?receivableId=${selectedReceivable.id}`);
+    }
+  }, [navigate, selectedReceivable]);
 
   const handleStatusChange = useCallback((status: string) => {
     setStatusFilter(status);
@@ -138,6 +164,7 @@ export const ReceivablesPage: React.FC = () => {
           onEdit={handleOpenDialog}
           onDelete={handleDelete}
           onPayment={handlePayment}
+          onViewPayments={handleViewPayments}
         />
 
         <ReceivableFormDialog
@@ -149,6 +176,7 @@ export const ReceivablesPage: React.FC = () => {
           isSubmitting={isSubmitting}
           onSubmit={handleSubmit}
           onClose={handleCloseDialog}
+          onAddPayment={handleAddPayment}
         />
 
         <ConfirmDialog
@@ -159,6 +187,28 @@ export const ReceivablesPage: React.FC = () => {
           onConfirm={confirmDelete}
           onCancel={handleCloseDeleteDialog}
           isLoading={isDeleting}
+        />
+
+        <PaymentHistoryDialog
+          open={paymentHistoryDialogOpen}
+          onClose={handleClosePaymentHistoryDialog}
+          accountType="receivable"
+          accountData={
+            selectedReceivable
+              ? {
+                  id: selectedReceivable.id,
+                  description: selectedReceivable.description,
+                  amount: selectedReceivable.amount,
+                  paidAmount: selectedReceivable.receivedAmount,
+                  dueDate: selectedReceivable.dueDate,
+                  entityName: selectedReceivable.customer.name,
+                  status: selectedReceivable.status,
+                }
+              : null
+          }
+          payments={payments}
+          isLoading={isLoadingPayments}
+          onAddPayment={handleAddPayment}
         />
       </Box>
     </AnimatedPage>

@@ -72,6 +72,44 @@ export class ReceivablesService extends BaseAccountService {
     return this.cancelBase(id, organizationId);
   }
 
+  async getPayments(id: string, organizationId: string) {
+    // Verify the receivable exists and belongs to the organization
+    await this.findOne(id, organizationId);
+
+    const allocations = await this.prisma.paymentAllocation.findMany({
+      where: {
+        receivableId: id,
+        payment: { organizationId },
+      },
+      include: {
+        payment: {
+          select: {
+            id: true,
+            amount: true,
+            paymentDate: true,
+            paymentMethod: true,
+            notes: true,
+          },
+        },
+      },
+      orderBy: {
+        payment: { paymentDate: 'desc' },
+      },
+    });
+
+    // Transform and map for frontend
+    return allocations.map(allocation => ({
+      id: allocation.id,
+      amount: Number(allocation.amount),
+      payment: {
+        ...allocation.payment,
+        amount: Number(allocation.payment.amount),
+        method: allocation.payment.paymentMethod,
+        paymentMethod: undefined,
+      },
+    }));
+  }
+
   // Update overdue status - called by cron job
   async updateOverdueStatus(organizationId?: string) {
     return this.updateOverdueStatusBase(organizationId);
