@@ -41,6 +41,10 @@ services:
       - key: FRONTEND_URL
         value: https://paytrack.vercel.app
 
+      # CORS Origins - Lista de origens permitidas separadas por vírgula
+      - key: CORS_ORIGINS
+        value: https://paytrack-five.vercel.app/,http://localhost:5173,http://localhost:3000
+
       # JWT Configuration
       # IMPORTANTE: Gere uma chave segura de 256 bits para produção
       # Exemplo: openssl rand -base64 32

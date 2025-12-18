@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -45,6 +45,24 @@ export function LoginPage() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
+
+  // Verificar se o servidor está respondendo ao carregar a página
+  useEffect(() => {
+    const checkServerStatus = async () => {
+      try {
+        // Faz uma requisição simples para verificar se o servidor está respondendo
+        // Isso vai ativar o ServerWakeupDialog se o servidor estiver frio
+        await api.get('/health', {
+          headers: { 'X-Silent-Request': 'true' },
+        });
+      } catch {
+        // Ignora erros - o ServerWakeupDialog será ativado automaticamente
+        // se o servidor estiver frio
+      }
+    };
+
+    checkServerStatus();
+  }, []);
 
   const onSubmit = async (data: LoginFormData) => {
     setLoading(true);
