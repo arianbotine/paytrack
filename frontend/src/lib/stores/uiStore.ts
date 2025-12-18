@@ -12,12 +12,17 @@ interface UIState {
   sidebarOpen: boolean;
   themeMode: PaletteMode;
   notification: Notification;
+  serverWaking: boolean;
+  retryAttempt: number;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
   toggleThemeMode: () => void;
   setThemeMode: (mode: PaletteMode) => void;
   showNotification: (message: string, type: Notification['type']) => void;
   hideNotification: () => void;
+  setServerWaking: (waking: boolean) => void;
+  incrementRetryAttempt: () => void;
+  resetRetryAttempt: () => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -30,6 +35,8 @@ export const useUIStore = create<UIState>()(
         type: 'info',
         open: false,
       },
+      serverWaking: false,
+      retryAttempt: 0,
 
       toggleSidebar: () => set(state => ({ sidebarOpen: !state.sidebarOpen })),
 
@@ -58,6 +65,17 @@ export const useUIStore = create<UIState>()(
             open: false,
           },
         })),
+
+      setServerWaking: waking =>
+        set(state => ({
+          serverWaking: waking,
+          retryAttempt: waking ? state.retryAttempt : 0,
+        })),
+
+      incrementRetryAttempt: () =>
+        set(state => ({ retryAttempt: state.retryAttempt + 1 })),
+
+      resetRetryAttempt: () => set({ retryAttempt: 0 }),
     }),
     {
       name: 'paytrack-ui',

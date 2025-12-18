@@ -8,3 +8,4 @@ export * from './EmptyState';
 export * from './TableSkeleton';
 export * from './ErrorBoundary';
 export * from './LoadingOverlay';
+export * from './ServerWakeupDialog';

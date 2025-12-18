@@ -1,11 +1,13 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './lib/stores/authStore';
+import { useServerKeepAlive } from './lib/hooks/useServerKeepAlive';
 import { MainLayout } from './shared/components/Layout/MainLayout';
 import { AdminLayout } from './shared/components/Layout/AdminLayout';
 import { GlobalNotification } from './shared/components/GlobalNotification';
 import { LoadingOverlay } from './shared/components';
 import { ErrorBoundary } from './shared/components/ErrorBoundary';
+import { ServerWakeupDialog } from './shared/components/ServerWakeupDialog';
 
 // Lazy load pages for code splitting
 const LoginPage = lazy(() =>
@@ -99,9 +101,13 @@ function AdminRoute({ children }: Readonly<{ children: React.ReactNode }>) {
 }
 
 function App() {
+  // Hook global para manter servidor ativo (ping a cada 5 minutos)
+  useServerKeepAlive();
+
   return (
     <ErrorBoundary>
       <GlobalNotification />
+      <ServerWakeupDialog />
       <Suspense fallback={<LoadingOverlay open />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />

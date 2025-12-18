@@ -16,6 +16,76 @@ export const api = axios.create({
 let isRefreshing = false;
 let refreshPromise: Promise<any> | null = null;
 
+// Server wakeup retry configuration
+const MAX_WAKEUP_RETRIES = 15; // Up to ~75 seconds of retries
+const WAKEUP_RETRY_DELAY = 5000; // 5 seconds between retries
+let wakeupRetryCount = 0;
+let wakeupRetryTimeout: number | null = null;
+
+// Function to check if error indicates cold server
+const isColdServerError = (error: any): boolean => {
+  // Network errors (server not responding)
+  if (!error.response && error.code === 'ERR_NETWORK') {
+    return true;
+  }
+
+  // 502 Bad Gateway, 503 Service Unavailable, 504 Gateway Timeout
+  const status = error.response?.status;
+  return status === 502 || status === 503 || status === 504;
+};
+
+// Function to retry request with exponential backoff
+const retryWithWakeup = async (originalRequest: any): Promise<any> => {
+  const uiStore = useUIStore.getState();
+
+  if (wakeupRetryCount === 0) {
+    // First retry - show wakeup dialog
+    uiStore.setServerWaking(true);
+  }
+
+  wakeupRetryCount++;
+  uiStore.incrementRetryAttempt();
+
+  if (wakeupRetryCount >= MAX_WAKEUP_RETRIES) {
+    // Max retries reached
+    wakeupRetryCount = 0;
+    uiStore.setServerWaking(false);
+    uiStore.showNotification(
+      'O servidor está demorando mais que o esperado. Por favor, tente novamente em alguns instantes.',
+      'error'
+    );
+    throw new Error('Server wakeup timeout');
+  }
+
+  // Wait before retrying
+  await new Promise(resolve => {
+    wakeupRetryTimeout = setTimeout(resolve, WAKEUP_RETRY_DELAY);
+  });
+
+  try {
+    const response = await api(originalRequest);
+    // Success! Reset everything
+    wakeupRetryCount = 0;
+    uiStore.setServerWaking(false);
+    uiStore.resetRetryAttempt();
+    if (wakeupRetryTimeout) {
+      clearTimeout(wakeupRetryTimeout);
+      wakeupRetryTimeout = null;
+    }
+    return response;
+  } catch (retryError: any) {
+    if (isColdServerError(retryError)) {
+      // Server still waking up, retry again
+      return retryWithWakeup(originalRequest);
+    }
+    // Different error, stop retrying
+    wakeupRetryCount = 0;
+    uiStore.setServerWaking(false);
+    uiStore.resetRetryAttempt();
+    throw retryError;
+  }
+};
+
 // Request interceptor - cookies are sent automatically
 api.interceptors.request.use(
   config => config,
@@ -28,6 +98,12 @@ api.interceptors.response.use(
   async error => {
     const originalRequest = error.config;
 
+    // Check for cold server (needs wakeup)
+    if (isColdServerError(error) && !originalRequest._wakeupRetry) {
+      originalRequest._wakeupRetry = true;
+      return retryWithWakeup(originalRequest);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         // If refresh is already in progress, wait for it
@@ -35,8 +111,9 @@ api.interceptors.response.use(
           await refreshPromise;
           // Retry original request with new cookie
           return api(originalRequest);
-        } catch (refreshError) {
-          throw refreshError;
+        } catch {
+          // Refresh failed, error will be handled below
+          throw error;
         }
       }
 
@@ -65,8 +142,14 @@ api.interceptors.response.use(
     const message =
       error.response?.data?.message || 'Erro ao processar requisição';
 
-    // Skip notification for authentication errors (handled by redirect)
-    if (status !== 401) {
+    // Skip notification for:
+    // - Authentication errors (handled by redirect)
+    // - Cold server errors (handled by wakeup dialog)
+    // - Silent requests (like keep-alive healthcheck)
+    const isSilentRequest =
+      error.config?.headers?.['X-Silent-Request'] === 'true';
+
+    if (status !== 401 && !isColdServerError(error) && !isSilentRequest) {
       const errorMessage = Array.isArray(message) ? message[0] : message;
       useUIStore.getState().showNotification(errorMessage, 'error');
     }

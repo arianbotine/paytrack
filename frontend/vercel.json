@@ -9,6 +9,6 @@
     }
   ],
   "env": {
-    "VITE_API_URL": "https://loren-backend.onrender.com/api"
+    "VITE_API_URL": "https://paytrack-fhcf.onrender.com/api"
   }
 }
