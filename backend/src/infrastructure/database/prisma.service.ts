@@ -16,24 +16,26 @@ export class PrismaService
   constructor() {
     // Configurar connection pool para ambientes com recursos limitados
     const connectionLimit = Number.parseInt(
-      process.env.DATABASE_CONNECTION_LIMIT || '10',
+      process.env.DATABASE_CONNECTION_LIMIT || '5',
       10
     );
     const poolTimeout = Number.parseInt(
-      process.env.DATABASE_POOL_TIMEOUT || '20',
+      process.env.DATABASE_POOL_TIMEOUT || '60',
       10
     );
 
-    // Adicionar parâmetros de connection pool na URL
+    // Adicionar parâmetros de connection pool e keepalive na URL
     const databaseUrl = process.env.DATABASE_URL;
-    const urlWithPool = databaseUrl?.includes('?')
-      ? `${databaseUrl}&connection_limit=${connectionLimit}&pool_timeout=${poolTimeout}`
-      : `${databaseUrl}?connection_limit=${connectionLimit}&pool_timeout=${poolTimeout}`;
+    const keepaliveParams = '&keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5';
+    const poolParams = `&connection_limit=${connectionLimit}&pool_timeout=${poolTimeout}`;
+    const urlWithParams = databaseUrl?.includes('?')
+      ? `${databaseUrl}${keepaliveParams}${poolParams}`
+      : `${databaseUrl}?${keepaliveParams.slice(1)}${poolParams}`;
 
     super({
       datasources: {
         db: {
-          url: urlWithPool,
+          url: urlWithParams,
         },
       },
       log:
@@ -43,7 +45,7 @@ export class PrismaService
     });
 
     this.logger.log(
-      `🔌 Connection pool configurado: limit=${connectionLimit}, timeout=${poolTimeout}s`
+      `🔌 Connection pool configurado: limit=${connectionLimit}, timeout=${poolTimeout}s, keepalive=enabled`
     );
   }
 

@@ -13,6 +13,9 @@ async function bootstrap() {
     logger: ['error', 'warn'],
   });
 
+  // Enable graceful shutdown hooks for Prisma
+  app.enableShutdownHooks();
+
   // Body size limits (before other middleware)
   app.use(json({ limit: '1mb' }));
   app.use(urlencoded({ extended: true, limit: '1mb' }));
