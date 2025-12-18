@@ -26,7 +26,8 @@ export class PrismaService
 
     // Adicionar parâmetros de connection pool e keepalive na URL
     const databaseUrl = process.env.DATABASE_URL;
-    const keepaliveParams = '&keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5';
+    const keepaliveParams =
+      '&keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5';
     const poolParams = `&connection_limit=${connectionLimit}&pool_timeout=${poolTimeout}`;
     const urlWithParams = databaseUrl?.includes('?')
       ? `${databaseUrl}${keepaliveParams}${poolParams}`

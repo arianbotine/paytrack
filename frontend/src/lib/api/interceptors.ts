@@ -65,8 +65,16 @@ export function setupRefreshInterceptor(instance: AxiosInstance) {
           }
         }
 
-        // Inicia refresh
+        // Inicia refresh (verificar se já não foi tentado muitas vezes)
+        const retryCount = (originalRequest._retryCount || 0) + 1;
+        if (retryCount > 2) {
+          useAuthStore.getState().logout();
+          globalThis.location.href = '/login';
+          throw error;
+        }
+        
         originalRequest._retry = true;
+        originalRequest._retryCount = retryCount;
         isRefreshing = true;
         refreshPromise = instance.post('/auth/refresh');
 

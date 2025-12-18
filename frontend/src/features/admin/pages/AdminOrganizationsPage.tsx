@@ -82,6 +82,8 @@ export function AdminOrganizationsPage() {
       const response = await api.get('/admin/organizations');
       return response.data as Organization[];
     },
+    retry: 1,
+    retryDelay: 1000,
   });
 
   const createMutation = useMutation({

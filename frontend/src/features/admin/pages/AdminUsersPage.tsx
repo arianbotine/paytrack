@@ -67,6 +67,8 @@ export function AdminUsersPage() {
       const response = await api.get('/admin/users');
       return response.data as User[];
     },
+    retry: 1,
+    retryDelay: 1000,
   });
 
   const { data: organizations } = useQuery({
@@ -75,6 +77,8 @@ export function AdminUsersPage() {
       const response = await api.get('/admin/organizations');
       return response.data as Organization[];
     },
+    retry: 1,
+    retryDelay: 1000,
   });
 
   const createMutation = useMutation({
