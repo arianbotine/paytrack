@@ -29,45 +29,18 @@ async function bootstrap() {
   // Global performance interceptor
   app.useGlobalInterceptors(new PerformanceInterceptor());
 
-  // Enable CORS with environment variables
-  const allowedOrigins = process.env.CORS_ORIGINS
-    ? process.env.CORS_ORIGINS.split(',').map(origin =>
-        origin.trim().replace(/\/$/, '')
-      )
-    : ['http://localhost:5173', 'http://localhost:3000'];
+  const isProduction = process.env.NODE_ENV === 'production';
+  const frontendUrl = process.env.CORS_ORIGINS;
 
-  logInfo('CORS configured', 'Bootstrap', { allowedOrigins });
-
-  app.enableCors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, Postman, curl)
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      // Remove trailing slash from origin for comparison
-      const normalizedOrigin = origin.replace(/\/$/, '');
-
-      if (allowedOrigins.includes(normalizedOrigin)) {
-        callback(null, true);
-      } else {
-        logInfo('CORS blocked', 'Bootstrap', { origin, allowedOrigins });
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'Cookie',
-      'idempotency-key',
-      'X-Silent-Request',
-    ],
-    exposedHeaders: ['Set-Cookie'],
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-  });
+  if (isProduction && frontendUrl) {
+    app.enableCors({
+      origin: frontendUrl,
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      credentials: true,
+    });
+  } else {
+    app.enableCors();
+  }
 
   // Global validation pipe
   app.useGlobalPipes(
