@@ -72,7 +72,7 @@ export function setupRefreshInterceptor(instance: AxiosInstance) {
           globalThis.location.href = '/login';
           throw error;
         }
-        
+
         originalRequest._retry = true;
         originalRequest._retryCount = retryCount;
         isRefreshing = true;
