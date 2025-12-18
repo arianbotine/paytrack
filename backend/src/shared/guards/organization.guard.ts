@@ -20,6 +20,13 @@ export class OrganizationGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest();
+
+    // Allow OPTIONS requests for CORS preflight
+    if (request.method === 'OPTIONS') {
+      return true;
+    }
+
     // Endpoints públicos não precisam de validação de organização
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
@@ -40,7 +47,6 @@ export class OrganizationGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
     const user = request.user as JwtPayload;
 
     // System admins podem acessar sem organizationId
