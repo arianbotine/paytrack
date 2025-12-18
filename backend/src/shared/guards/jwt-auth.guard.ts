@@ -35,6 +35,18 @@ export class JwtAuthGuard implements CanActivate {
       this.extractTokenFromCookie(request);
 
     if (!token) {
+      const hasCookies = !!request.cookies && Object.keys(request.cookies).length > 0;
+      const hasAuthHeader = !!request.headers.authorization;
+      const origin = request.headers.origin || 'no-origin';
+      
+      console.warn('⚠️  Auth failed:', {
+        path: request.path,
+        origin,
+        hasCookies,
+        cookieKeys: hasCookies ? Object.keys(request.cookies) : [],
+        hasAuthHeader,
+      });
+      
       throw new UnauthorizedException('Token não fornecido');
     }
 

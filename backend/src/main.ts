@@ -39,11 +39,13 @@ async function bootstrap() {
     allowedHeaders: [
       'Content-Type',
       'Authorization',
+      'Cookie',
       'idempotency-key',
       'X-Silent-Request',
     ],
     exposedHeaders: ['Set-Cookie'],
-    maxAge: 3600, // Cache preflight por 1 hora
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   // Global validation pipe
