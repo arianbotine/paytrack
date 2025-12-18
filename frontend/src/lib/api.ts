@@ -130,8 +130,9 @@ api.interceptors.response.use(
       const requestUrl = originalRequest.url || '';
 
       // Don't auto-logout for auth-related requests (login, refresh)
-      const isAuthRequest = requestUrl.includes('/auth/login') ||
-                           requestUrl.includes('/auth/refresh');
+      const isAuthRequest =
+        requestUrl.includes('/auth/login') ||
+        requestUrl.includes('/auth/refresh');
 
       if (isAuthRequest) {
         // For auth requests, just throw the error without logout
