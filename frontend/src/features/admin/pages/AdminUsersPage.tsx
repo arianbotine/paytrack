@@ -22,7 +22,7 @@ import {
   MenuItem,
 } from '@mui/material';
 import { Add, Link as LinkIcon } from '@mui/icons-material';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { api } from '@/lib/api';
@@ -79,6 +79,7 @@ export function AdminUsersPage() {
     handleSubmit: handleSubmitCreate,
     reset: resetCreate,
     watch: watchCreate,
+    control: controlCreate,
     formState: { errors: createErrors },
   } = useForm<CreateUserFormData>({
     resolver: zodResolver(createUserSchema),
@@ -248,7 +249,11 @@ export function AdminUsersPage() {
       {/* Create User Dialog */}
       <Dialog
         open={openCreateDialog}
-        onClose={() => setOpenCreateDialog(false)}
+        onClose={() => {
+          setOpenCreateDialog(false);
+          resetCreate();
+          setError('');
+        }}
         maxWidth="sm"
         fullWidth
       >
@@ -279,26 +284,38 @@ export function AdminUsersPage() {
               helperText={createErrors.email?.message}
               {...registerCreate('email')}
             />
-            <TextField
-              fullWidth
-              label="Senha"
-              type="password"
-              margin="normal"
-              required
-              error={!!createErrors.password}
-              helperText={createErrors.password?.message}
-              {...registerCreate('password')}
+            <Controller
+              name="password"
+              control={controlCreate}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  label="Senha"
+                  type="password"
+                  margin="normal"
+                  required
+                  error={!!createErrors.password}
+                  helperText={createErrors.password?.message}
+                />
+              )}
             />
             {passwordValue && passwordValue.length > 0 && (
-              <TextField
-                fullWidth
-                label="Confirmar Senha"
-                type="password"
-                margin="normal"
-                required
-                error={!!createErrors.confirmPassword}
-                helperText={createErrors.confirmPassword?.message}
-                {...registerCreate('confirmPassword')}
+              <Controller
+                name="confirmPassword"
+                control={controlCreate}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Confirmar Senha"
+                    type="password"
+                    margin="normal"
+                    required
+                    error={!!createErrors.confirmPassword}
+                    helperText={createErrors.confirmPassword?.message}
+                  />
+                )}
               />
             )}
           </DialogContent>
