@@ -103,19 +103,6 @@ function AdminRoute({ children }: Readonly<{ children: React.ReactNode }>) {
 function App() {
   const { isAuthenticated } = useAuthStore();
 
-  // Verificar autenticação ao carregar a aplicação
-  useEffect(() => {
-    if (isAuthenticated) {
-      // Verificar se existem cookies de autenticação
-      const hasAuthCookies = document.cookie.includes('accessToken');
-
-      if (!hasAuthCookies) {
-        // Se está autenticado no store mas não tem cookies, fazer logout
-        useAuthStore.getState().logout();
-      }
-    }
-  }, [isAuthenticated]);
-
   // Hook global para manter servidor ativo (ping a cada 5 minutos)
   useServerKeepAlive();
 

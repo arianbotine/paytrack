@@ -127,6 +127,16 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       const isAuthenticated = useAuthStore.getState().isAuthenticated;
+      const requestUrl = originalRequest.url || '';
+
+      // Don't auto-logout for auth-related requests (login, refresh)
+      const isAuthRequest = requestUrl.includes('/auth/login') ||
+                           requestUrl.includes('/auth/refresh');
+
+      if (isAuthRequest) {
+        // For auth requests, just throw the error without logout
+        throw error;
+      }
 
       // Check if we have any auth cookies
       const hasAuthCookies = document.cookie.includes('accessToken');
