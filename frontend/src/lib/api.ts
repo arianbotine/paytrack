@@ -87,9 +87,15 @@ const retryWithWakeup = async (originalRequest: any): Promise<any> => {
   }
 };
 
-// Request interceptor - cookies are sent automatically
+// Request interceptor - add Bearer token if available
 api.interceptors.request.use(
   config => {
+    // Add Authorization header with access token from store
+    const accessToken = useAuthStore.getState().accessToken;
+    if (accessToken && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+
     // Adicionar idempotency-key para requests POST, PUT, PATCH
     if (['post', 'put', 'patch'].includes(config.method?.toLowerCase() || '')) {
       // Verificar se já existe (setado manualmente)
@@ -139,11 +145,11 @@ api.interceptors.response.use(
         throw error;
       }
 
-      // Check if we have any auth cookies
-      const hasAuthCookies = document.cookie.includes('accessToken');
+      // Check if we have any auth cookies or access token
+      const hasAccessToken = !!useAuthStore.getState().accessToken;
 
-      // If user is not authenticated in store or no auth cookies, immediately logout
-      if (!isAuthenticated || !hasAuthCookies) {
+      // If user is not authenticated in store or no access token, immediately logout
+      if (!isAuthenticated || !hasAccessToken) {
         useAuthStore.getState().logout();
         globalThis.location.href = '/login';
         throw error;
@@ -170,10 +176,17 @@ api.interceptors.response.use(
       refreshPromise = api.post('/auth/refresh');
 
       try {
-        await refreshPromise;
+        const response = await refreshPromise;
+        const { accessToken } = response.data;
+
+        // Update access token in store
+        useAuthStore.getState().setAccessToken(accessToken);
+
         isRefreshing = false;
         refreshPromise = null;
-        // Retry original request with new cookie
+
+        // Retry original request with new token
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
         isRefreshing = false;

@@ -41,7 +41,12 @@ export function SelectOrganizationPage() {
     const refreshUserData = async () => {
       try {
         const response = await api.get('/auth/me');
-        setAuth(response.data);
+        // /auth/me retorna apenas dados do usuário, não precisa de accessToken
+        // O accessToken já está no store e continua válido
+        const currentAccessToken = useAuthStore.getState().accessToken;
+        if (currentAccessToken) {
+          setAuth(response.data, currentAccessToken);
+        }
       } catch (err) {
         console.error('Erro ao carregar organizações:', err);
       } finally {
@@ -64,8 +69,8 @@ export function SelectOrganizationPage() {
       const response = await api.post('/auth/select-organization', {
         organizationId,
       });
-      const { user: updatedUser } = response.data;
-      setAuth(updatedUser);
+      const { user: updatedUser, accessToken } = response.data;
+      setAuth(updatedUser, accessToken);
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao selecionar organização');

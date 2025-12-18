@@ -50,8 +50,10 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response
   ) {
     const result = await this.authService.login(loginDto);
-    this.setCookies(res, result.accessToken, result.refreshToken);
-    return { user: result.user };
+    // Define apenas refreshToken como httpOnly cookie
+    this.setRefreshTokenCookie(res, result.refreshToken);
+    // Retorna accessToken no body para localStorage do frontend
+    return { user: result.user, accessToken: result.accessToken };
   }
 
   @Post('select-organization')
@@ -70,8 +72,8 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response
   ) {
     const result = await this.authService.selectOrganization(userId, dto);
-    this.setCookies(res, result.accessToken, result.refreshToken);
-    return { user: result.user };
+    this.setRefreshTokenCookie(res, result.refreshToken);
+    return { user: result.user, accessToken: result.accessToken };
   }
 
   @Public()
@@ -101,8 +103,8 @@ export class AuthController {
       );
     }
     const result = await this.authService.refreshTokens(refreshToken);
-    this.setCookies(res, result.accessToken, result.refreshToken);
-    return { user: result.user };
+    this.setRefreshTokenCookie(res, result.refreshToken);
+    return { user: result.user, accessToken: result.accessToken };
   }
 
   @Post('logout')
@@ -118,12 +120,11 @@ export class AuthController {
       path: '/',
     };
 
-    res.clearCookie('accessToken', cookieOptions);
     res.clearCookie('refreshToken', cookieOptions);
     return { message: 'Logout realizado com sucesso' };
   }
 
-  private setCookies(res: Response, accessToken: string, refreshToken: string) {
+  private setRefreshTokenCookie(res: Response, refreshToken: string) {
     const isProduction = process.env.NODE_ENV === 'production';
 
     const cookieOptions = {
@@ -131,20 +132,15 @@ export class AuthController {
       secure: isProduction,
       sameSite: isProduction ? ('none' as const) : ('lax' as const),
       path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     };
 
-    res.cookie('accessToken', accessToken, {
-      ...cookieOptions,
-      maxAge: 15 * 60 * 1000, // 15 minutes
-    });
-
-    res.cookie('refreshToken', refreshToken, {
-      ...cookieOptions,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    res.cookie('refreshToken', refreshToken, cookieOptions);
 
     if (isProduction) {
-      console.log('🍪 Cookies set with SameSite=None; Secure; Path=/');
+      console.log(
+        '🍪 RefreshToken cookie set with SameSite=None; Secure; Path=/'
+      );
     }
   }
 

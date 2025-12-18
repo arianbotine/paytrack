@@ -18,9 +18,11 @@ interface User {
 
 interface AuthState {
   user: User | null;
+  accessToken: string | null;
   isAuthenticated: boolean;
-  setAuth: (user: User) => void;
-  switchOrganization: (user: User) => void;
+  setAuth: (user: User, accessToken: string) => void;
+  setAccessToken: (accessToken: string) => void;
+  switchOrganization: (user: User, accessToken: string) => void;
   logout: () => void;
 }
 
@@ -28,24 +30,32 @@ export const useAuthStore = create<AuthState>()(
   persist(
     set => ({
       user: null,
+      accessToken: null,
       isAuthenticated: false,
 
-      setAuth: user => {
+      setAuth: (user, accessToken) => {
         set({
           user,
+          accessToken,
           isAuthenticated: true,
         });
       },
 
-      switchOrganization: user => {
+      setAccessToken: accessToken => {
+        set({ accessToken });
+      },
+
+      switchOrganization: (user, accessToken) => {
         set({
           user,
+          accessToken,
         });
       },
 
       logout: () => {
         set({
           user: null,
+          accessToken: null,
           isAuthenticated: false,
         });
       },
@@ -54,6 +64,7 @@ export const useAuthStore = create<AuthState>()(
       name: 'paytrack-auth',
       partialize: state => ({
         user: state.user,
+        accessToken: state.accessToken,
         isAuthenticated: state.isAuthenticated,
       }),
     }

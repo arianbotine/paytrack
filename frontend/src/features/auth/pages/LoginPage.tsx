@@ -70,8 +70,8 @@ export function LoginPage() {
 
     try {
       const response = await api.post('/auth/login', data);
-      const { user } = response.data;
-      setAuth(user);
+      const { user, accessToken } = response.data;
+      setAuth(user, accessToken);
 
       if (user.currentOrganization) {
         navigate('/dashboard');
