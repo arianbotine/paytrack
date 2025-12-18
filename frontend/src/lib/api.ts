@@ -126,6 +126,19 @@ api.interceptors.response.use(
     }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      const isAuthenticated = useAuthStore.getState().isAuthenticated;
+
+      // Check if we have any auth cookies
+      const hasAuthCookies = document.cookie.includes('accessToken');
+
+      // If user is not authenticated in store or no auth cookies, immediately logout
+      if (!isAuthenticated || !hasAuthCookies) {
+        useAuthStore.getState().logout();
+        globalThis.location.href = '/login';
+        throw error;
+      }
+
+      // If user appears authenticated but token expired, try refresh
       if (isRefreshing) {
         // If refresh is already in progress, wait for it
         try {
@@ -133,7 +146,9 @@ api.interceptors.response.use(
           // Retry original request with new cookie
           return api(originalRequest);
         } catch {
-          // Refresh failed, error will be handled below
+          // Refresh failed, logout
+          useAuthStore.getState().logout();
+          globalThis.location.href = '/login';
           throw error;
         }
       }
