@@ -89,7 +89,8 @@ export function AdminLayout() {
       const response = await api.post('/auth/select-organization', {
         organizationId,
       });
-      setAuth(response.data.user);
+      const { user, accessToken } = response.data;
+      setAuth(user, accessToken);
       // Stay on admin panel after switching
     } catch (error) {
       console.error('Erro ao trocar organização:', error);

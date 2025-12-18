@@ -95,7 +95,10 @@ export function AdminOrganizationsPage() {
       // Buscar informações atualizadas do usuário para atualizar availableOrganizations
       try {
         const response = await api.get('/auth/me');
-        setAuth(response.data);
+        const currentAccessToken = useAuthStore.getState().accessToken;
+        if (currentAccessToken) {
+          setAuth(response.data, currentAccessToken);
+        }
       } catch (error) {
         console.error('Erro ao atualizar informações do usuário:', error);
       }
