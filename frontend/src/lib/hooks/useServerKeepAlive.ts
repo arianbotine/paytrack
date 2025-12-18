@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useAuthStore } from '../stores/authStore';
+import { useAuthStore, isAuthenticated } from '../stores/authStore';
 import api from '../api';
 
 const KEEP_ALIVE_INTERVAL = 5 * 60 * 1000; // 5 minutos em milliseconds
@@ -15,7 +15,7 @@ const KEEP_ALIVE_INTERVAL = 5 * 60 * 1000; // 5 minutos em milliseconds
  * - Funciona em background sem interferir na UX
  */
 export function useServerKeepAlive() {
-  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const authenticated = useAuthStore(isAuthenticated);
   const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export function useServerKeepAlive() {
       }
     };
 
-    if (isAuthenticated) {
+    if (authenticated) {
       // Fazer ping imediatamente após login
       pingServer();
 
@@ -60,5 +60,5 @@ export function useServerKeepAlive() {
         intervalRef.current = null;
       }
     };
-  }, [isAuthenticated]);
+  }, [authenticated]);
 }
