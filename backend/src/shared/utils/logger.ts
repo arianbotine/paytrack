@@ -32,12 +32,12 @@ export const logger = winston.createLogger({
   level: isProduction ? 'info' : 'debug',
   format: logFormat,
   transports: [
-    // Console transport
+    // Console transport (always enabled)
     new winston.transports.Console({
       format: isProduction ? logFormat : consoleFormat,
     }),
-    // File transport for errors (production only)
-    ...(isProduction
+    // File transport for errors (development only - production uses container logs)
+    ...(!isProduction
       ? [
           new winston.transports.File({
             filename: 'logs/error.log',
