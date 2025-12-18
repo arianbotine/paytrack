@@ -141,6 +141,16 @@ Key entities in `backend/prisma/schema.prisma`:
 - Dates: ISO strings in DTOs, converted to `Date` in services. Backend always treats dates as UTC without time zone conversions. Frontend handles local time zone for user inputs and displays, sending dates in UTC to backend.
 - Error messages in Portuguese (Brazilian)
 
+## Commit Conventions
+
+- **Language**: Always write commit messages in Portuguese (Brazilian)
+- **Format**: Use conventional commits format (`feat:`, `fix:`, `docs:`, etc.)
+- **Description**: Be descriptive and explain what was changed and why
+- **Examples**:
+  - `feat: adicionar funcionalidade de keep-alive do servidor`
+  - `fix: corrigir configuração de CORS para produção`
+  - `docs: atualizar documentação do sistema de wakeup`
+
 ## File Naming
 
 - Backend: kebab-case (`payables.service.ts`)

@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto, QuickPaymentDto } from './dto/payment.dto';
 import { CurrentUser, Roles } from '../../shared/decorators';
+import { Idempotent } from '../../shared/decorators/idempotent.decorator';
 import { UserRole } from '@prisma/client';
 
 @ApiTags('Pagamentos')
@@ -27,6 +28,7 @@ export class PaymentsController {
   }
 
   @Post()
+  @Idempotent()
   @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Criar novo pagamento com alocações' })
   async create(
@@ -37,6 +39,7 @@ export class PaymentsController {
   }
 
   @Post('quick')
+  @Idempotent()
   @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Baixa rápida de uma conta' })
   async quickPayment(

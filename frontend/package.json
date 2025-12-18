@@ -29,6 +29,7 @@
     "react-router-dom": "^6.26.1",
     "recharts": "^2.15.4",
     "sonner": "^1.7.4",
+    "uuid": "^13.0.0",
     "zod": "^3.23.8",
     "zustand": "^4.5.5"
   },
@@ -36,6 +37,7 @@
     "@eslint/js": "^9.9.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "eslint": "^9.9.0",
     "eslint-config-prettier": "^10.1.8",

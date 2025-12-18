@@ -1,5 +1,10 @@
+import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { PrismaErrorHandler } from '../../shared/utils/prisma-error-handler';
+
+// Constantes de paginação
+const MAX_PAGE_SIZE = 100;
+const DEFAULT_PAGE_SIZE = 10;
 
 /**
  * Base service with common CRUD operations
@@ -130,7 +135,6 @@ export abstract class BaseEntityService<TModel, TCreateDto, TUpdateDto> {
    * This base implementation returns false - subclasses should override to implement their own logic.
    */
   protected async checkIfInUse(id: string): Promise<boolean> {
-    void id;
     return false;
   }
 
@@ -143,9 +147,7 @@ export abstract class BaseEntityService<TModel, TCreateDto, TUpdateDto> {
     dto: Partial<TCreateDto | TUpdateDto>,
     excludeId?: string
   ): Promise<void> {
-    void organizationId;
-    void dto;
-    void excludeId;
+    // Implementation should be provided by subclasses
   }
 
   /**

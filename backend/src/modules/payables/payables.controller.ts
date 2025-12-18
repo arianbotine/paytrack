@@ -16,6 +16,7 @@ import {
   PayableFilterDto,
 } from './dto/payable.dto';
 import { CurrentUser, Roles } from '../../shared/decorators';
+import { Idempotent } from '../../shared/decorators/idempotent.decorator';
 import { UserRole } from '@prisma/client';
 
 @ApiTags('Contas a Pagar')
@@ -43,6 +44,7 @@ export class PayablesController {
   }
 
   @Post()
+  @Idempotent()
   @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Criar nova conta a pagar' })
   async create(

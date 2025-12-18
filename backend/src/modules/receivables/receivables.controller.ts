@@ -16,6 +16,7 @@ import {
   ReceivableFilterDto,
 } from './dto/receivable.dto';
 import { CurrentUser, Roles } from '../../shared/decorators';
+import { Idempotent } from '../../shared/decorators/idempotent.decorator';
 import { UserRole } from '@prisma/client';
 
 @ApiTags('Contas a Receber')
@@ -43,6 +44,7 @@ export class ReceivablesController {
   }
 
   @Post()
+  @Idempotent()
   @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
   @ApiOperation({ summary: 'Criar nova conta a receber' })
   async create(

@@ -5,6 +5,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { PayablesService } from '../payables/payables.service';
 import { ReceivablesService } from '../receivables/receivables.service';
+import { CacheService } from '../../shared/services/cache.service';
 
 type GroupedItem = {
   _sum: {
@@ -23,89 +24,129 @@ export class DashboardService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly payablesService: PayablesService,
-    private readonly receivablesService: ReceivablesService
+    private readonly receivablesService: ReceivablesService,
+    private readonly cacheService: CacheService
   ) {}
 
   async getSummary(organizationId: string) {
+    const cacheKey = `dashboard:summary:${organizationId}`;
+    const cacheTTL = Number.parseInt(
+      process.env.CACHE_TTL_DASHBOARD || '300',
+      10
+    ); // 5 minutos padrão
+
+    // Tenta buscar do cache primeiro
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        this.logger.debug(
+          `Gerando dashboard para organizationId: ${organizationId}`
+        );
+        return this.generateSummary(organizationId);
+      },
+      cacheTTL
+    );
+  }
+
+  /**
+   * Invalida o cache do dashboard para uma organização
+   */
+  invalidateDashboardCache(organizationId: string) {
+    const cacheKey = `dashboard:summary:${organizationId}`;
+    this.cacheService.del(cacheKey);
+    this.logger.debug(`Cache invalidado: ${cacheKey}`);
+  }
+
+  private async generateSummary(organizationId: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const in7Days = new Date(today);
     in7Days.setDate(in7Days.getDate() + 7);
 
-    // Payables summary
-    const payables = await this.prisma.payable.groupBy({
-      by: ['status'],
-      where: { organizationId },
-      _sum: { amount: true, paidAmount: true },
-      _count: true,
-    });
+    // Paralelizar todas as queries para melhor performance
+    const [
+      payables,
+      receivables,
+      overduePayables,
+      overdueReceivables,
+      upcomingPayables,
+      upcomingReceivables,
+    ] = await Promise.all([
+      // Payables summary
+      this.prisma.payable.groupBy({
+        by: ['status'],
+        where: { organizationId },
+        _sum: { amount: true, paidAmount: true },
+        _count: true,
+      }),
 
-    // Receivables summary
-    const receivables = await this.prisma.receivable.groupBy({
-      by: ['status'],
-      where: { organizationId },
-      _sum: { amount: true, receivedAmount: true },
-      _count: true,
-    });
+      // Receivables summary
+      this.prisma.receivable.groupBy({
+        by: ['status'],
+        where: { organizationId },
+        _sum: { amount: true, receivedAmount: true },
+        _count: true,
+      }),
 
-    // Overdue payables
-    const overduePayables = await this.prisma.payable.findMany({
-      where: {
-        organizationId,
-        status: AccountStatus.OVERDUE,
-      },
-      include: {
-        vendor: { select: { name: true } },
-        category: { select: { name: true, color: true } },
-      },
-      orderBy: { dueDate: 'asc' },
-      take: 10,
-    });
+      // Overdue payables
+      this.prisma.payable.findMany({
+        where: {
+          organizationId,
+          status: AccountStatus.OVERDUE,
+        },
+        include: {
+          vendor: { select: { name: true } },
+          category: { select: { name: true, color: true } },
+        },
+        orderBy: { dueDate: 'asc' },
+        take: 10,
+      }),
 
-    // Overdue receivables
-    const overdueReceivables = await this.prisma.receivable.findMany({
-      where: {
-        organizationId,
-        status: AccountStatus.OVERDUE,
-      },
-      include: {
-        customer: { select: { name: true } },
-        category: { select: { name: true, color: true } },
-      },
-      orderBy: { dueDate: 'asc' },
-      take: 10,
-    });
+      // Overdue receivables
+      this.prisma.receivable.findMany({
+        where: {
+          organizationId,
+          status: AccountStatus.OVERDUE,
+        },
+        include: {
+          customer: { select: { name: true } },
+          category: { select: { name: true, color: true } },
+        },
+        orderBy: { dueDate: 'asc' },
+        take: 10,
+      }),
 
-    // Upcoming payables (next 7 days)
-    const upcomingPayables = await this.prisma.payable.findMany({
-      where: {
-        organizationId,
-        status: { in: [AccountStatus.PENDING, AccountStatus.PARTIAL] },
-        dueDate: { gte: today, lte: in7Days },
-      },
-      include: {
-        vendor: { select: { name: true } },
-        category: { select: { name: true, color: true } },
-      },
-      orderBy: { dueDate: 'asc' },
-      take: 10,
-    });
+      // Upcoming payables (next 7 days)
+      this.prisma.payable.findMany({
+        where: {
+          organizationId,
+          status: { in: [AccountStatus.PENDING, AccountStatus.PARTIAL] },
+          dueDate: { gte: today, lte: in7Days },
+        },
+        include: {
+          vendor: { select: { name: true } },
+          category: { select: { name: true, color: true } },
+        },
+        orderBy: { dueDate: 'asc' },
+        take: 10,
+      }),
 
-    // Upcoming receivables (next 7 days)
-    const upcomingReceivables = await this.prisma.receivable.findMany({
-      where: {
-        organizationId,
-        status: { in: [AccountStatus.PENDING, AccountStatus.PARTIAL] },
-        dueDate: { gte: today, lte: in7Days },
-      },
-      include: {
-        customer: { select: { name: true } },
-        category: { select: { name: true, color: true } },
-      },
-      orderBy: { dueDate: 'asc' },
-      take: 10,
-    });
+      // Upcoming receivables (next 7 days)
+      this.prisma.receivable.findMany({
+        where: {
+          organizationId,
+          status: { in: [AccountStatus.PENDING, AccountStatus.PARTIAL] },
+          dueDate: { gte: today, lte: in7Days },
+        },
+        include: {
+          customer: { select: { name: true } },
+          category: { select: { name: true, color: true } },
+        },
+        orderBy: { dueDate: 'asc' },
+        take: 10,
+      }),
+    ]);
 
     // Calculate totals
     const payableTotals = this.calculateTotals(payables);

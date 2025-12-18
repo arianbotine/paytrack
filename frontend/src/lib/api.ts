@@ -1,11 +1,12 @@
 import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
 import { useAuthStore } from './stores/authStore';
 import { useUIStore } from './stores/uiStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export const api = axios.create({
-  baseURL: API_URL,
+  baseURL: `${API_URL}/api`,
   withCredentials: true, // Enable cookies
   headers: {
     'Content-Type': 'application/json',
@@ -88,7 +89,27 @@ const retryWithWakeup = async (originalRequest: any): Promise<any> => {
 
 // Request interceptor - cookies are sent automatically
 api.interceptors.request.use(
-  config => config,
+  config => {
+    // Adicionar idempotency-key para requests POST, PUT, PATCH
+    if (['post', 'put', 'patch'].includes(config.method?.toLowerCase() || '')) {
+      // Verificar se já existe (setado manualmente)
+      let idempotencyKey = (globalThis as any).__IDEMPOTENCY_KEY__;
+
+      // Se não existe, gerar automaticamente
+      if (!idempotencyKey) {
+        idempotencyKey = uuidv4();
+      }
+
+      config.headers['idempotency-key'] = idempotencyKey;
+
+      // Limpar se foi gerado automaticamente (não manual)
+      if (!(globalThis as any).__IDEMPOTENCY_KEY_MANUAL__) {
+        delete (globalThis as any).__IDEMPOTENCY_KEY__;
+      }
+    }
+
+    return config;
+  },
   error => Promise.reject(error)
 );
 

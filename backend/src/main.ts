@@ -2,13 +2,22 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { PerformanceInterceptor } from './shared/interceptors/performance.interceptor';
+import { TimeoutMiddleware } from './shared/middleware/timeout.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ['log', 'error', 'warn', 'debug', 'verbose'],
   });
+
+  // Body size limits (before other middleware)
+  app.use(json({ limit: '1mb' }));
+  app.use(urlencoded({ extended: true, limit: '1mb' }));
+
+  // Timeout middleware
+  app.use(new TimeoutMiddleware().use.bind(new TimeoutMiddleware()));
 
   // Cookie parser middleware
   app.use(cookieParser());
@@ -57,6 +66,7 @@ async function bootstrap() {
   console.log(`📚 Swagger docs: http://localhost:${port}/api/docs`);
 }
 
+// Using promise chain instead of top-level await for compatibility with current TypeScript configuration
 bootstrap().catch(err => {
   console.error('Failed to start application:', err);
   process.exit(1);

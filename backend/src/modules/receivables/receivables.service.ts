@@ -6,11 +6,15 @@ import {
   ReceivableFilterDto,
 } from './dto/receivable.dto';
 import { BaseAccountService } from '../shared/base-account.service';
+import { CacheService } from '../../shared/services/cache.service';
 
 @Injectable()
 export class ReceivablesService extends BaseAccountService {
-  constructor(protected readonly prisma: PrismaService) {
-    super(prisma);
+  constructor(
+    protected readonly prisma: PrismaService,
+    protected readonly cacheService: CacheService
+  ) {
+    super(prisma, cacheService);
   }
 
   protected getModel() {

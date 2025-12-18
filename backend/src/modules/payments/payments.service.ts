@@ -13,6 +13,7 @@ import {
 import { MoneyUtils } from '../../shared/utils/money.utils';
 import { MONEY_COMPARISON_THRESHOLD } from '../../shared/constants';
 import { parseDateUTC } from '../../shared/utils/date.utils';
+import { CacheService } from '../../shared/services/cache.service';
 
 type Allocation = {
   payableId?: string;
@@ -22,7 +23,10 @@ type Allocation = {
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cacheService: CacheService
+  ) {}
 
   async findAll(organizationId: string) {
     const [data, total] = await Promise.all([
@@ -141,11 +145,16 @@ export class PaymentsService {
       await this.validateAllocationAccounts(organizationId, typedAllocations);
 
       // Create payment with allocations in a transaction
-      return await this.createPaymentWithAllocations(
+      const result = await this.createPaymentWithAllocations(
         organizationId,
         paymentData,
         allocations
       );
+
+      // Invalida cache do dashboard
+      this.cacheService.del(`dashboard:summary:${organizationId}`);
+
+      return result;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         throw new BadRequestException(
@@ -222,7 +231,7 @@ export class PaymentsService {
 
   async remove(id: string, organizationId: string) {
     // Move findOne inside transaction to prevent race condition
-    return this.prisma.$transaction(async tx => {
+    const result = await this.prisma.$transaction(async tx => {
       const payment = await tx.payment.findFirst({
         where: { id, organizationId },
         include: {
@@ -241,6 +250,11 @@ export class PaymentsService {
 
       return payment;
     });
+
+    // Invalida cache do dashboard após a transação
+    this.cacheService.del(`dashboard:summary:${organizationId}`);
+
+    return result;
   }
 
   /**

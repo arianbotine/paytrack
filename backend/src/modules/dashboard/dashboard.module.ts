@@ -3,9 +3,10 @@ import { DashboardService } from './dashboard.service';
 import { DashboardController } from './dashboard.controller';
 import { PayablesModule } from '../payables/payables.module';
 import { ReceivablesModule } from '../receivables/receivables.module';
+import { CacheModule } from '../../shared/modules/cache.module';
 
 @Module({
-  imports: [PayablesModule, ReceivablesModule],
+  imports: [CacheModule, PayablesModule, ReceivablesModule],
   controllers: [DashboardController],
   providers: [DashboardService],
   exports: [DashboardService],

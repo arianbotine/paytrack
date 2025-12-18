@@ -17,6 +17,8 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HealthModule } from './modules/health/health.module';
 import { SerializationInterceptor } from './shared/interceptors/serialization.interceptor';
+import { IdempotencyInterceptor } from './shared/interceptors/idempotency.interceptor';
+import { CacheModule } from './shared/modules/cache.module';
 
 @Module({
   imports: [
@@ -30,6 +32,7 @@ import { SerializationInterceptor } from './shared/interceptors/serialization.in
         limit: 100, // 100 requests per minute (global default)
       },
     ]),
+    CacheModule, // Módulo de cache para interceptors globais
     DatabaseModule,
     AuthModule,
     UsersModule,
@@ -52,6 +55,10 @@ import { SerializationInterceptor } from './shared/interceptors/serialization.in
     {
       provide: APP_INTERCEPTOR,
       useClass: SerializationInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: IdempotencyInterceptor,
     },
   ],
 })

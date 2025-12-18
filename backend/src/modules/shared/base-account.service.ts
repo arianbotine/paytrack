@@ -4,9 +4,23 @@ import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { MoneyUtils } from '../../shared/utils/money.utils';
 import { parseDateUTC } from '../../shared/utils/date.utils';
 import { mapInvoiceToDocument } from '../../shared/utils/account.utils';
+import { CacheService } from '../../shared/services/cache.service';
+
+// Constantes de paginação
+const MAX_PAGE_SIZE = 100;
+const DEFAULT_PAGE_SIZE = 10;
 
 export abstract class BaseAccountService {
-  constructor(protected readonly prisma: PrismaService) {}
+  constructor(
+    protected readonly prisma: PrismaService,
+    protected readonly cacheService?: CacheService
+  ) {}
+
+  protected invalidateDashboardCache(organizationId: string) {
+    if (this.cacheService) {
+      this.cacheService.del(`dashboard:summary:${organizationId}`);
+    }
+  }
 
   protected abstract getModel(): any; // e.g., this.prisma.payable or receivable
   protected abstract getEntityName(): string; // 'payable' or 'receivable'
@@ -40,13 +54,19 @@ export abstract class BaseAccountService {
         : {}),
     };
 
+    // Aplicar limites de paginação
+    const take = filters?.take
+      ? Math.min(filters.take, MAX_PAGE_SIZE)
+      : DEFAULT_PAGE_SIZE;
+    const skip = filters?.skip || 0;
+
     const [data, total] = await Promise.all([
       this.getModel().findMany({
         where,
         include: this.getIncludeOptions(),
         orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
-        skip: filters?.skip,
-        take: filters?.take,
+        skip,
+        take,
       }),
       this.getModel().count({ where }),
     ]);
@@ -120,6 +140,9 @@ export abstract class BaseAccountService {
       include: this.getIncludeOptions(),
     });
 
+    // Invalida cache do dashboard
+    this.invalidateDashboardCache(organizationId);
+
     return MoneyUtils.transformMoneyFields(item, this.getMoneyFields());
   }
 
@@ -170,6 +193,9 @@ export abstract class BaseAccountService {
       include: this.getIncludeOptions(),
     });
 
+    // Invalida cache do dashboard
+    this.invalidateDashboardCache(organizationId);
+
     return MoneyUtils.transformMoneyFields(updated, this.getMoneyFields());
   }
 
@@ -186,6 +212,10 @@ export abstract class BaseAccountService {
     }
 
     await this.getModel().delete({ where: { id } });
+
+    // Invalida cache do dashboard
+    this.invalidateDashboardCache(organizationId);
+
     return item;
   }
 
@@ -198,10 +228,15 @@ export abstract class BaseAccountService {
       );
     }
 
-    return this.getModel().update({
+    const updated = await this.getModel().update({
       where: { id },
       data: { status: AccountStatus.CANCELLED },
     });
+
+    // Invalida cache do dashboard
+    this.invalidateDashboardCache(organizationId);
+
+    return updated;
   }
 
   protected async updateOverdueStatusBase(organizationId?: string) {
