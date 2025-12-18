@@ -74,27 +74,7 @@ export class AuthService {
     // }
 
     // System admin can access all organizations
-    let availableOrganizations;
-    if (user.isSystemAdmin) {
-      const allOrganizations = await this.prisma.organization.findMany({
-        where: { isActive: true },
-        select: { id: true, name: true },
-        orderBy: { name: 'asc' },
-      });
-
-      availableOrganizations = allOrganizations.map(org => ({
-        id: org.id,
-        name: org.name,
-        role: 'OWNER', // System admin has full access
-      }));
-    } else {
-      // Regular users: only their associated organizations
-      availableOrganizations = activeOrgs.map(uo => ({
-        id: uo.organization.id,
-        name: uo.organization.name,
-        role: uo.role,
-      }));
-    }
+    const availableOrganizations = await this.getAvailableOrganizations(user);
 
     // Auto-select if user has exactly one organization
     let currentOrganization = undefined;
@@ -177,17 +157,7 @@ export class AuthService {
       }
 
       // Get all organizations for system admin
-      const allOrganizations = await this.prisma.organization.findMany({
-        where: { isActive: true },
-        select: { id: true, name: true },
-        orderBy: { name: 'asc' },
-      });
-
-      const availableOrganizations = allOrganizations.map(org => ({
-        id: org.id,
-        name: org.name,
-        role: 'OWNER', // System admin has full access
-      }));
+      const availableOrganizations = await this.getAvailableOrganizations(user);
 
       const currentOrganization = {
         id: organization.id,
@@ -227,13 +197,7 @@ export class AuthService {
     }
 
     // Build available organizations list
-    const availableOrganizations = user.organizations
-      .filter(uo => uo.organization.isActive)
-      .map(uo => ({
-        id: uo.organization.id,
-        name: uo.organization.name,
-        role: uo.role,
-      }));
+    const availableOrganizations = await this.getAvailableOrganizations(user);
 
     const currentOrganization = {
       id: selectedOrgAssoc.organization.id,
@@ -292,13 +256,7 @@ export class AuthService {
     }
 
     // Build available organizations list
-    const availableOrganizations = user.organizations
-      .filter(uo => uo.organization.isActive)
-      .map(uo => ({
-        id: uo.organization.id,
-        name: uo.organization.name,
-        role: uo.role,
-      }));
+    const availableOrganizations = await this.getAvailableOrganizations(user);
 
     // Restore organization from token (if any)
     let currentOrganization = undefined;
@@ -360,29 +318,7 @@ export class AuthService {
       throw new UnauthorizedException('Usuário não encontrado');
     }
 
-    let availableOrganizations: any[] = [];
-
-    if (user.isSystemAdmin) {
-      // System admins: all organizations
-      const allOrganizations = await this.prisma.organization.findMany({
-        where: { isActive: true },
-        select: { id: true, name: true },
-        orderBy: { name: 'asc' },
-      });
-
-      availableOrganizations = allOrganizations.map(org => ({
-        id: org.id,
-        name: org.name,
-        role: 'OWNER', // System admin has full access
-      }));
-    } else {
-      // Regular users: only their associated organizations
-      availableOrganizations = user.organizations.map(uo => ({
-        id: uo.organization.id,
-        name: uo.organization.name,
-        role: uo.role,
-      }));
-    }
+    const availableOrganizations = await this.getAvailableOrganizations(user);
 
     return {
       id: user.id,
@@ -391,6 +327,29 @@ export class AuthService {
       isSystemAdmin: user.isSystemAdmin,
       availableOrganizations,
     };
+  }
+
+  private async getAvailableOrganizations(user: UserWithOrganizations) {
+    if (user.isSystemAdmin) {
+      const allOrgs = await this.prisma.organization.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      });
+      return allOrgs.map(org => ({
+        id: org.id,
+        name: org.name,
+        role: 'OWNER',
+      }));
+    }
+
+    return user.organizations
+      .filter(uo => uo.organization.isActive)
+      .map(uo => ({
+        id: uo.organization.id,
+        name: uo.organization.name,
+        role: uo.role,
+      }));
   }
 
   private async generateTokens(

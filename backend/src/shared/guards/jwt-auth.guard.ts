@@ -30,24 +30,9 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    const token =
-      this.extractTokenFromHeader(request) ||
-      this.extractTokenFromCookie(request);
+    const token = this.extractTokenFromHeader(request);
 
     if (!token) {
-      const hasCookies =
-        !!request.cookies && Object.keys(request.cookies).length > 0;
-      const hasAuthHeader = !!request.headers.authorization;
-      const origin = request.headers.origin || 'no-origin';
-
-      console.warn('⚠️  Auth failed:', {
-        path: request.path,
-        origin,
-        hasCookies,
-        cookieKeys: hasCookies ? Object.keys(request.cookies) : [],
-        hasAuthHeader,
-      });
-
       throw new UnauthorizedException('Token não fornecido');
     }
 
@@ -56,8 +41,7 @@ export class JwtAuthGuard implements CanActivate {
         secret: this.configService.get<string>('JWT_SECRET'),
       });
       request['user'] = payload;
-    } catch (error) {
-      console.error('JWT verification failed:', error);
+    } catch {
       throw new UnauthorizedException('Token inválido ou expirado');
     }
 
@@ -67,9 +51,5 @@ export class JwtAuthGuard implements CanActivate {
   private extractTokenFromHeader(request: Request): string | undefined {
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
     return type === 'Bearer' ? token : undefined;
-  }
-
-  private extractTokenFromCookie(request: Request): string | undefined {
-    return request.cookies?.['accessToken'];
   }
 }

@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuthStore } from './lib/stores/authStore';
+import { useAuthStore, isAuthenticated } from './lib/stores/authStore';
 import { useServerKeepAlive } from './lib/hooks/useServerKeepAlive';
 import { MainLayout } from './shared/components/Layout/MainLayout';
 import { AdminLayout } from './shared/components/Layout/AdminLayout';
@@ -82,14 +82,15 @@ const UsersPage = lazy(() =>
 );
 
 function PrivateRoute({ children }: Readonly<{ children: React.ReactNode }>) {
-  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+  const authenticated = useAuthStore(isAuthenticated);
+  return authenticated ? <>{children}</> : <Navigate to="/login" />;
 }
 
 function AdminRoute({ children }: Readonly<{ children: React.ReactNode }>) {
-  const { isAuthenticated, user } = useAuthStore();
+  const authenticated = useAuthStore(isAuthenticated);
+  const user = useAuthStore(state => state.user);
 
-  if (!isAuthenticated) {
+  if (!authenticated) {
     return <Navigate to="/login" />;
   }
 

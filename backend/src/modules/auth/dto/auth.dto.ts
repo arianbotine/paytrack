@@ -27,19 +27,9 @@ export class SelectOrganizationDto {
   organizationId!: string;
 }
 
-export class RefreshTokenDto {
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty({ message: 'Refresh token é obrigatório' })
-  refreshToken!: string;
-}
-
 export class AuthResponseDto {
   @ApiProperty()
   accessToken!: string;
-
-  @ApiProperty()
-  refreshToken!: string;
 
   @ApiProperty()
   user!: {

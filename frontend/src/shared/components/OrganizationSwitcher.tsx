@@ -30,7 +30,7 @@ interface OrganizationSwitcherProps {
 export function OrganizationSwitcher({ onClose }: OrganizationSwitcherProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, switchOrganization } = useAuthStore();
+  const { user, setAuth } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -43,7 +43,7 @@ export function OrganizationSwitcher({ onClose }: OrganizationSwitcherProps) {
         organizationId,
       });
       const { user: updatedUser, accessToken } = response.data;
-      switchOrganization(updatedUser, accessToken);
+      setAuth(updatedUser, accessToken);
 
       // Clear all cached queries to refresh data for the new organization
       queryClient.clear();

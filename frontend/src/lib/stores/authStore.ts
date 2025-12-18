@@ -19,10 +19,8 @@ interface User {
 interface AuthState {
   user: User | null;
   accessToken: string | null;
-  isAuthenticated: boolean;
   setAuth: (user: User, accessToken: string) => void;
   setAccessToken: (accessToken: string) => void;
-  switchOrganization: (user: User, accessToken: string) => void;
   logout: () => void;
 }
 
@@ -31,13 +29,11 @@ export const useAuthStore = create<AuthState>()(
     set => ({
       user: null,
       accessToken: null,
-      isAuthenticated: false,
 
       setAuth: (user, accessToken) => {
         set({
           user,
           accessToken,
-          isAuthenticated: true,
         });
       },
 
@@ -45,18 +41,10 @@ export const useAuthStore = create<AuthState>()(
         set({ accessToken });
       },
 
-      switchOrganization: (user, accessToken) => {
-        set({
-          user,
-          accessToken,
-        });
-      },
-
       logout: () => {
         set({
           user: null,
           accessToken: null,
-          isAuthenticated: false,
         });
       },
     }),
@@ -65,8 +53,10 @@ export const useAuthStore = create<AuthState>()(
       partialize: state => ({
         user: state.user,
         accessToken: state.accessToken,
-        isAuthenticated: state.isAuthenticated,
       }),
     }
   )
 );
+
+// Selector para isAuthenticated
+export const isAuthenticated = (state: AuthState) => !!state.accessToken;

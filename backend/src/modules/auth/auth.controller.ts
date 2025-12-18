@@ -23,7 +23,15 @@ import {
   AuthResponseDto,
   SelectOrganizationDto,
 } from './dto/auth.dto';
-import { Public, CurrentUser } from '../../shared/decorators';
+import {
+  Public,
+  CurrentUser,
+  SkipOrganizationCheck,
+} from '../../shared/decorators';
+import {
+  setRefreshTokenCookie,
+  clearRefreshTokenCookie,
+} from '../../shared/utils';
 
 @ApiTags('Autenticação')
 @Controller('auth')
@@ -31,6 +39,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  @SkipOrganizationCheck()
   @Post('login')
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 attempts per minute
   @HttpCode(HttpStatus.OK)
@@ -50,14 +59,13 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response
   ) {
     const result = await this.authService.login(loginDto);
-    // Define apenas refreshToken como httpOnly cookie
-    this.setRefreshTokenCookie(res, result.refreshToken);
-    // Retorna accessToken no body para localStorage do frontend
+    setRefreshTokenCookie(res, result.refreshToken);
     return { user: result.user, accessToken: result.accessToken };
   }
 
   @Post('select-organization')
   @ApiBearerAuth()
+  @SkipOrganizationCheck()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Selecionar organização ativa' })
   @ApiResponse({
@@ -72,11 +80,12 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response
   ) {
     const result = await this.authService.selectOrganization(userId, dto);
-    this.setRefreshTokenCookie(res, result.refreshToken);
+    setRefreshTokenCookie(res, result.refreshToken);
     return { user: result.user, accessToken: result.accessToken };
   }
 
   @Public()
+  @SkipOrganizationCheck()
   @Post('refresh')
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 refresh attempts per minute
   @HttpCode(HttpStatus.OK)
@@ -103,49 +112,23 @@ export class AuthController {
       );
     }
     const result = await this.authService.refreshTokens(refreshToken);
-    this.setRefreshTokenCookie(res, result.refreshToken);
+    setRefreshTokenCookie(res, result.refreshToken);
     return { user: result.user, accessToken: result.accessToken };
   }
 
   @Post('logout')
   @ApiBearerAuth()
+  @SkipOrganizationCheck()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Logout do usuário' })
   async logout(@Res({ passthrough: true }) res: Response) {
-    const isProduction = process.env.NODE_ENV === 'production';
-    const cookieOptions = {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? ('none' as const) : ('lax' as const),
-      path: '/',
-    };
-
-    res.clearCookie('refreshToken', cookieOptions);
+    clearRefreshTokenCookie(res);
     return { message: 'Logout realizado com sucesso' };
-  }
-
-  private setRefreshTokenCookie(res: Response, refreshToken: string) {
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    const cookieOptions = {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? ('none' as const) : ('lax' as const),
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    };
-
-    res.cookie('refreshToken', refreshToken, cookieOptions);
-
-    if (isProduction) {
-      console.log(
-        '🍪 RefreshToken cookie set with SameSite=None; Secure; Path=/'
-      );
-    }
   }
 
   @Get('me')
   @ApiBearerAuth()
+  @SkipOrganizationCheck()
   @ApiOperation({ summary: 'Obter perfil do usuário logado' })
   @ApiResponse({ status: 200, description: 'Perfil do usuário' })
   @ApiResponse({ status: 401, description: 'Não autorizado' })

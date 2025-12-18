@@ -6,10 +6,11 @@ import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { PerformanceInterceptor } from './shared/interceptors/performance.interceptor';
 import { TimeoutMiddleware } from './shared/middleware/timeout.middleware';
+import { logInfo, logError } from './shared/utils';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    logger: ['log', 'error', 'warn', 'debug', 'verbose'],
+    logger: ['error', 'warn'],
   });
 
   // Body size limits (before other middleware)
@@ -30,7 +31,7 @@ async function bootstrap() {
     ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
     : ['http://localhost:5173', 'http://localhost:3000'];
 
-  console.log('🌐 CORS configured with allowed origins:', allowedOrigins);
+  logInfo('CORS configured', 'Bootstrap', { allowedOrigins });
 
   app.enableCors({
     origin: allowedOrigins,
@@ -75,12 +76,11 @@ async function bootstrap() {
 
   const port = process.env.API_PORT || 3000;
   await app.listen(port);
-  console.log(`🚀 PayTrack API running on: http://localhost:${port}`);
-  console.log(`📚 Swagger docs: http://localhost:${port}/api/docs`);
+  logInfo(`PayTrack API running on port ${port}`, 'Bootstrap');
+  logInfo(`Swagger docs available at /api/docs`, 'Bootstrap');
 }
 
-// Using promise chain instead of top-level await for compatibility with current TypeScript configuration
 bootstrap().catch(err => {
-  console.error('Failed to start application:', err);
+  logError('Failed to start application', err, 'Bootstrap');
   process.exit(1);
 });
