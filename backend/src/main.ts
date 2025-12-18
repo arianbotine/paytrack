@@ -31,13 +31,30 @@ async function bootstrap() {
 
   // Enable CORS with environment variables
   const allowedOrigins = process.env.CORS_ORIGINS
-    ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+    ? process.env.CORS_ORIGINS.split(',').map(origin =>
+        origin.trim().replace(/\/$/, '')
+      )
     : ['http://localhost:5173', 'http://localhost:3000'];
 
   logInfo('CORS configured', 'Bootstrap', { allowedOrigins });
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, Postman, curl)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      // Remove trailing slash from origin for comparison
+      const normalizedOrigin = origin.replace(/\/$/, '');
+
+      if (allowedOrigins.includes(normalizedOrigin)) {
+        callback(null, true);
+      } else {
+        logInfo('CORS blocked', 'Bootstrap', { origin, allowedOrigins });
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
