@@ -110,8 +110,17 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Logout do usuário' })
   async logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('accessToken', { httpOnly: true, sameSite: 'strict' });
-    res.clearCookie('refreshToken', { httpOnly: true, sameSite: 'strict' });
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+    });
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+    });
     return { message: 'Logout realizado com sucesso' };
   }
 
@@ -121,14 +130,14 @@ export class AuthController {
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict',
+      sameSite: isProduction ? 'none' : 'lax', // 'none' para cross-domain em produção
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict',
+      sameSite: isProduction ? 'none' : 'lax', // 'none' para cross-domain em produção
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
   }
