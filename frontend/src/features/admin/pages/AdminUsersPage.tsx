@@ -23,6 +23,8 @@ import {
 } from '@mui/material';
 import { Add, Link as LinkIcon } from '@mui/icons-material';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { api } from '@/lib/api';
 
 interface User {
@@ -43,6 +45,28 @@ interface Organization {
   name: string;
 }
 
+const createUserSchema = z
+  .object({
+    name: z.string().min(1, 'Nome é obrigatório').max(100),
+    email: z.string().email('E-mail inválido'),
+    password: z.string().min(1, 'Senha é obrigatória'),
+    confirmPassword: z.string().optional(),
+  })
+  .refine(
+    data => {
+      if (data.password && data.password.length > 0) {
+        return data.password === data.confirmPassword;
+      }
+      return true;
+    },
+    {
+      message: 'As senhas não coincidem',
+      path: ['confirmPassword'],
+    }
+  );
+
+type CreateUserFormData = z.infer<typeof createUserSchema>;
+
 export function AdminUsersPage() {
   const queryClient = useQueryClient();
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
@@ -54,7 +78,13 @@ export function AdminUsersPage() {
     register: registerCreate,
     handleSubmit: handleSubmitCreate,
     reset: resetCreate,
-  } = useForm();
+    watch: watchCreate,
+    formState: { errors: createErrors },
+  } = useForm<CreateUserFormData>({
+    resolver: zodResolver(createUserSchema),
+  });
+
+  const passwordValue = watchCreate('password');
   const {
     register: registerAssociate,
     handleSubmit: handleSubmitAssociate,
@@ -115,8 +145,10 @@ export function AdminUsersPage() {
     },
   });
 
-  const onSubmitCreate = (data: any) => {
-    createMutation.mutate(data);
+  const onSubmitCreate = (data: CreateUserFormData) => {
+    // Remove confirmPassword before sending to API
+    const { confirmPassword, ...userData } = data;
+    createMutation.mutate(userData);
   };
 
   const onSubmitAssociate = (data: any) => {
@@ -233,6 +265,8 @@ export function AdminUsersPage() {
               label="Nome"
               margin="normal"
               required
+              error={!!createErrors.name}
+              helperText={createErrors.name?.message}
               {...registerCreate('name')}
             />
             <TextField
@@ -241,6 +275,8 @@ export function AdminUsersPage() {
               type="email"
               margin="normal"
               required
+              error={!!createErrors.email}
+              helperText={createErrors.email?.message}
               {...registerCreate('email')}
             />
             <TextField
@@ -249,8 +285,22 @@ export function AdminUsersPage() {
               type="password"
               margin="normal"
               required
+              error={!!createErrors.password}
+              helperText={createErrors.password?.message}
               {...registerCreate('password')}
             />
+            {passwordValue && passwordValue.length > 0 && (
+              <TextField
+                fullWidth
+                label="Confirmar Senha"
+                type="password"
+                margin="normal"
+                required
+                error={!!createErrors.confirmPassword}
+                helperText={createErrors.confirmPassword?.message}
+                {...registerCreate('confirmPassword')}
+              />
+            )}
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpenCreateDialog(false)}>Cancelar</Button>

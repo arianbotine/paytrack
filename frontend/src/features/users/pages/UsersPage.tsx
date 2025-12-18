@@ -43,17 +43,32 @@ import { useUIStore } from '../../../lib/stores/uiStore';
 import { useAuthStore } from '../../../lib/stores/authStore';
 import { formatLocalDate } from '../../../shared/utils/dateUtils';
 
-const userSchema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório').max(100),
-  email: z.string().email('E-mail inválido'),
-  password: z
-    .string()
-    .min(6, 'Senha deve ter pelo menos 6 caracteres')
-    .optional()
-    .or(z.literal('')),
-  role: z.enum(['OWNER', 'ADMIN', 'ACCOUNTANT', 'VIEWER']),
-  isActive: z.boolean(),
-});
+const userSchema = z
+  .object({
+    name: z.string().min(1, 'Nome é obrigatório').max(100),
+    email: z.string().email('E-mail inválido'),
+    password: z
+      .string()
+      .min(1, 'Senha é obrigatória')
+      .optional()
+      .or(z.literal('')),
+    confirmPassword: z.string().optional().or(z.literal('')),
+    role: z.enum(['OWNER', 'ADMIN', 'ACCOUNTANT', 'VIEWER']),
+    isActive: z.boolean(),
+  })
+  .refine(
+    data => {
+      // Only validate password confirmation when creating a new user or when password is provided
+      if (data.password && data.password.length > 0) {
+        return data.password === data.confirmPassword;
+      }
+      return true;
+    },
+    {
+      message: 'As senhas não coincidem',
+      path: ['confirmPassword'],
+    }
+  );
 
 type UserFormData = z.infer<typeof userSchema>;
 
@@ -92,6 +107,7 @@ export const UsersPage: React.FC = () => {
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
@@ -99,10 +115,13 @@ export const UsersPage: React.FC = () => {
       name: '',
       email: '',
       password: '',
+      confirmPassword: '',
       role: 'VIEWER',
       isActive: true,
     },
   });
+
+  const passwordValue = watch('password');
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users'],
@@ -177,6 +196,7 @@ export const UsersPage: React.FC = () => {
         name: user.name,
         email: user.email,
         password: '',
+        confirmPassword: '',
         role: user.role,
         isActive: user.isActive,
       });
@@ -186,6 +206,7 @@ export const UsersPage: React.FC = () => {
         name: '',
         email: '',
         password: '',
+        confirmPassword: '',
         role: 'VIEWER',
         isActive: true,
       });
@@ -462,6 +483,29 @@ export const UsersPage: React.FC = () => {
                   )}
                 />
               </Grid>
+
+              {passwordValue && passwordValue.length > 0 && (
+                <Grid item xs={12}>
+                  <Controller
+                    name="confirmPassword"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label={
+                          selectedUser
+                            ? 'Confirmar Nova Senha'
+                            : 'Confirmar Senha'
+                        }
+                        type="password"
+                        fullWidth
+                        error={!!errors.confirmPassword}
+                        helperText={errors.confirmPassword?.message}
+                      />
+                    )}
+                  />
+                </Grid>
+              )}
 
               <Grid item xs={12}>
                 <Controller

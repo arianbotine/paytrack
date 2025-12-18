@@ -33,13 +33,27 @@ async function bootstrap() {
   const frontendUrl = process.env.CORS_ORIGINS;
 
   if (isProduction && frontendUrl) {
+    // Em produção: usa apenas a URL específica do frontend
     app.enableCors({
       origin: frontendUrl,
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
       credentials: true,
     });
   } else {
-    app.enableCors();
+    // Em desenvolvimento: libera CORS completamente
+    app.enableCors({
+      origin: true, // Permite qualquer origem
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      credentials: true,
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'Cookie',
+        'idempotency-key',
+        'X-Silent-Request',
+      ],
+      exposedHeaders: ['Set-Cookie'],
+    });
   }
 
   // Global validation pipe
