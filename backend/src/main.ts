@@ -27,8 +27,10 @@ async function bootstrap() {
 
   // Enable CORS with environment variables
   const allowedOrigins = process.env.CORS_ORIGINS
-    ? process.env.CORS_ORIGINS.split(',')
+    ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
     : ['http://localhost:5173', 'http://localhost:3000'];
+
+  console.log('🌐 CORS configured with allowed origins:', allowedOrigins);
 
   app.enableCors({
     origin: (origin, callback) => {
@@ -38,7 +40,7 @@ async function bootstrap() {
       if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
-        console.warn(`CORS blocked request from origin: ${origin}`);
+        console.warn(`❌ CORS blocked request from origin: ${origin}`);
         callback(new Error('Not allowed by CORS'));
       }
     },
