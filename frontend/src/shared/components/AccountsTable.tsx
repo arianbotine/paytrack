@@ -26,7 +26,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { StatusChip } from './StatusChip';
 import { TableSkeleton } from './TableSkeleton';
 import { EmptyState } from './EmptyState';
-import { parseUTCDate, formatLocalDate } from '../utils/dateUtils';
+import { formatLocalDate } from '../utils/dateUtils';
 import { formatCurrency } from '../utils/currencyUtils';
 import type {
   PayableAccount,
@@ -55,7 +55,7 @@ const getDueDateAlert = (dueDate: string, status: string) => {
   if (status === 'PAID' || status === 'CANCELLED') return null;
 
   const today = new Date();
-  const due = parseUTCDate(dueDate);
+  const due = new Date(dueDate);
   const daysUntilDue = differenceInDays(due, today);
 
   if (status === 'OVERDUE' || isAfter(today, due)) {

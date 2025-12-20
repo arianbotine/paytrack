@@ -9,6 +9,26 @@ export type AccountStatus =
   | 'PARTIAL'
   | 'CANCELLED';
 
+export interface PayableInstallment {
+  id: string;
+  installmentNumber: number;
+  amount: number;
+  paidAmount: number;
+  dueDate: string;
+  status: AccountStatus;
+  description: string;
+}
+
+export interface ReceivableInstallment {
+  id: string;
+  installmentNumber: number;
+  amount: number;
+  receivedAmount: number;
+  dueDate: string;
+  status: AccountStatus;
+  description: string;
+}
+
 export interface BaseAccount {
   id: string;
   description: string;
@@ -16,6 +36,7 @@ export interface BaseAccount {
   dueDate: string;
   status: AccountStatus;
   invoiceNumber?: string;
+  totalInstallments: number;
   category?: {
     id: string;
     name: string;
@@ -36,6 +57,7 @@ export interface PayableAccount extends BaseAccount {
     name: string;
   };
   paidAmount: number;
+  installments: PayableInstallment[];
 }
 
 export interface ReceivableAccount extends BaseAccount {
@@ -44,6 +66,7 @@ export interface ReceivableAccount extends BaseAccount {
     name: string;
   };
   receivedAmount: number;
+  installments: ReceivableInstallment[];
 }
 
 export type AccountType = 'payable' | 'receivable';

@@ -60,15 +60,17 @@ model Organization {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  users       UserOrganization[]
-  customers   Customer[]
-  vendors     Vendor[]
-  categories  Category[]
-  tags        Tag[]
-  payables    Payable[]
-  receivables Receivable[]
-  payments    Payment[]
-  auditLogs   AuditLog[]
+  users                 UserOrganization[]
+  customers             Customer[]
+  vendors               Vendor[]
+  categories            Category[]
+  tags                  Tag[]
+  payables              Payable[]
+  receivables           Receivable[]
+  payableInstallments   PayableInstallment[]
+  receivableInstallments ReceivableInstallment[]
+  payments              Payment[]
+  auditLogs             AuditLog[]
 
   @@map("organizations")
 }
@@ -199,20 +201,49 @@ model Payable {
   status         AccountStatus @default(PENDING)
   notes          String?
   documentNumber String?       @map("document_number") // Invoice number, etc.
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  // Installment metadata
+  totalInstallments Int @default(1) @map("total_installments")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
   organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   vendor       Vendor                @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   category     Category?             @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   tags         PayableTag[]
-  allocations  PaymentAllocation[]
+  installments PayableInstallment[]
 
   @@index([organizationId, status, dueDate])
   @@index([organizationId, dueDate])
   @@index([vendorId])
   @@map("payables")
+}
+
+model PayableInstallment {
+  id                String        @id @default(uuid())
+  payableId         String        @map("payable_id")
+  organizationId    String        @map("organization_id")
+  installmentNumber Int           @map("installment_number")
+  totalInstallments Int           @map("total_installments")
+  amount            Decimal       @db.Decimal(15, 2)
+  paidAmount        Decimal       @default(0) @map("paid_amount") @db.Decimal(15, 2)
+  dueDate           DateTime      @map("due_date") @db.Date
+  status            AccountStatus @default(PENDING)
+  description       String
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  payable      Payable               @relation(fields: [payableId], references: [id], onDelete: Cascade)
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  allocations  PaymentAllocation[]
+
+  @@index([payableId, installmentNumber])
+  @@index([organizationId, status, dueDate])
+  @@index([organizationId, dueDate])
+  @@map("payable_installments")
 }
 
 model Receivable {
@@ -227,20 +258,49 @@ model Receivable {
   status         AccountStatus @default(PENDING)
   notes          String?
   documentNumber String?       @map("document_number") // Invoice number, etc.
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  // Installment metadata
+  totalInstallments Int @default(1) @map("total_installments")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  customer     Customer              @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  category     Category?             @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  organization Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer                @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  category     Category?               @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   tags         ReceivableTag[]
-  allocations  PaymentAllocation[]
+  installments ReceivableInstallment[]
 
   @@index([organizationId, status, dueDate])
   @@index([organizationId, dueDate])
   @@index([customerId])
   @@map("receivables")
+}
+
+model ReceivableInstallment {
+  id                String        @id @default(uuid())
+  receivableId      String        @map("receivable_id")
+  organizationId    String        @map("organization_id")
+  installmentNumber Int           @map("installment_number")
+  totalInstallments Int           @map("total_installments")
+  amount            Decimal       @db.Decimal(15, 2)
+  receivedAmount    Decimal       @default(0) @map("received_amount") @db.Decimal(15, 2)
+  dueDate           DateTime      @map("due_date") @db.Date
+  status            AccountStatus @default(PENDING)
+  description       String
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  receivable   Receivable            @relation(fields: [receivableId], references: [id], onDelete: Cascade)
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  allocations  PaymentAllocation[]
+
+  @@index([receivableId, installmentNumber])
+  @@index([organizationId, status, dueDate])
+  @@index([organizationId, dueDate])
+  @@map("receivable_installments")
 }
 
 model PayableTag {
@@ -269,7 +329,7 @@ model Payment {
   id             String        @id @default(uuid())
   organizationId String        @map("organization_id")
   amount         Decimal       @db.Decimal(15, 2)
-  paymentDate    DateTime      @map("payment_date") @db.Date
+  paymentDate    DateTime      @map("payment_date")
   paymentMethod  PaymentMethod @map("payment_method")
   notes          String?
   createdAt      DateTime      @default(now()) @map("created_at")
@@ -284,16 +344,16 @@ model Payment {
 }
 
 model PaymentAllocation {
-  id           String  @id @default(uuid())
-  paymentId    String  @map("payment_id")
-  payableId    String? @map("payable_id")
-  receivableId String? @map("receivable_id")
-  amount       Decimal @db.Decimal(15, 2)
+  id                     String  @id @default(uuid())
+  paymentId              String  @map("payment_id")
+  payableInstallmentId   String? @map("payable_installment_id")
+  receivableInstallmentId String? @map("receivable_installment_id")
+  amount                 Decimal @db.Decimal(15, 2)
 
   // Relations
-  payment    Payment     @relation(fields: [paymentId], references: [id], onDelete: Cascade)
-  payable    Payable?    @relation(fields: [payableId], references: [id], onDelete: Cascade)
-  receivable Receivable? @relation(fields: [receivableId], references: [id], onDelete: Cascade)
+  payment              Payment                @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  payableInstallment   PayableInstallment?    @relation(fields: [payableInstallmentId], references: [id], onDelete: Cascade)
+  receivableInstallment ReceivableInstallment? @relation(fields: [receivableInstallmentId], references: [id], onDelete: Cascade)
 
   @@map("payment_allocations")
 }

@@ -19,7 +19,7 @@ import {
 } from '../components';
 
 interface DashboardData {
-  payables: {
+  payableInstallments: {
     totals: {
       total: number;
       paid: number;
@@ -31,7 +31,7 @@ interface DashboardData {
     overdue: any[];
     upcoming: any[];
   };
-  receivables: {
+  receivableInstallments: {
     totals: {
       total: number;
       paid: number;
@@ -65,7 +65,9 @@ function generateCashFlowData(balance: DashboardData['balance']) {
 }
 
 // Generate status data from totals
-function generateStatusData(totals: DashboardData['payables']['totals']) {
+function generateStatusData(
+  totals: DashboardData['payableInstallments']['totals']
+) {
   return [
     { name: 'PENDING', value: totals.pending },
     { name: 'OVERDUE', value: totals.overdue },
@@ -156,8 +158,10 @@ export function DashboardPage() {
   }
 
   const cashFlowData = generateCashFlowData(data.balance);
-  const payableStatusData = generateStatusData(data.payables.totals);
-  const receivableStatusData = generateStatusData(data.receivables.totals);
+  const payableStatusData = generateStatusData(data.payableInstallments.totals);
+  const receivableStatusData = generateStatusData(
+    data.receivableInstallments.totals
+  );
 
   return (
     <ErrorBoundary>
@@ -176,7 +180,7 @@ export function DashboardPage() {
               <SummaryCard
                 title="A Receber"
                 value={data.balance.toReceive}
-                subtitle={`${data.receivables.totals.count} contas`}
+                subtitle={`${data.receivableInstallments.totals.count} contas`}
                 color="#16a34a"
                 icon={<TrendingUpIcon />}
               />
@@ -185,7 +189,7 @@ export function DashboardPage() {
               <SummaryCard
                 title="A Pagar"
                 value={data.balance.toPay}
-                subtitle={`${data.payables.totals.count} contas`}
+                subtitle={`${data.payableInstallments.totals.count} contas`}
                 color="#dc2626"
                 icon={<TrendingDownIcon />}
               />
@@ -193,7 +197,7 @@ export function DashboardPage() {
             <Grid item xs={12} sm={6} md={3}>
               <SummaryCard
                 title="Vencido (Receber)"
-                value={data.receivables.totals.overdue}
+                value={data.receivableInstallments.totals.overdue}
                 color="#ea580c"
                 icon={<WarningIcon />}
               />
@@ -201,7 +205,7 @@ export function DashboardPage() {
             <Grid item xs={12} sm={6} md={3}>
               <SummaryCard
                 title="Vencido (Pagar)"
-                value={data.payables.totals.overdue}
+                value={data.payableInstallments.totals.overdue}
                 color="#dc2626"
                 icon={<WarningIcon />}
               />
@@ -237,7 +241,7 @@ export function DashboardPage() {
             <Grid item xs={12} md={6}>
               <AccountsTable
                 title="Recebimentos Vencidos"
-                accounts={data.receivables.overdue}
+                accounts={data.receivableInstallments.overdue}
                 type="receivable"
                 emptyMessage="Nenhum recebimento vencido!"
                 alertColor="error"
@@ -246,7 +250,7 @@ export function DashboardPage() {
             <Grid item xs={12} md={6}>
               <AccountsTable
                 title="Pagamentos Vencidos"
-                accounts={data.payables.overdue}
+                accounts={data.payableInstallments.overdue}
                 type="payable"
                 emptyMessage="Nenhum pagamento vencido!"
                 alertColor="error"
@@ -259,7 +263,7 @@ export function DashboardPage() {
             <Grid item xs={12} md={6}>
               <AccountsTable
                 title="Recebimentos Próximos (7 dias)"
-                accounts={data.receivables.upcoming}
+                accounts={data.receivableInstallments.upcoming}
                 type="receivable"
                 emptyMessage="Nenhum recebimento nos próximos 7 dias"
                 alertColor="warning"
@@ -268,7 +272,7 @@ export function DashboardPage() {
             <Grid item xs={12} md={6}>
               <AccountsTable
                 title="Pagamentos Próximos (7 dias)"
-                accounts={data.payables.upcoming}
+                accounts={data.payableInstallments.upcoming}
                 type="payable"
                 emptyMessage="Nenhum pagamento nos próximos 7 dias"
                 alertColor="warning"

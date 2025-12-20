@@ -13,6 +13,8 @@ import {
   Button,
   Divider,
   Alert,
+  Paper,
+  Tooltip,
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
@@ -20,9 +22,14 @@ import {
   Add as AddIcon,
   CalendarToday as CalendarIcon,
   Notes as NotesIcon,
+  Receipt as ReceiptIcon,
+  TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material';
 import { formatCurrency } from '../utils/currencyUtils';
-import { formatLocalDate } from '../utils/dateUtils';
+import {
+  formatRelativeDatetime,
+  formatLocalDatetime,
+} from '../utils/dateUtils';
 import type { PaymentHistoryItem } from '../../features/payments/types';
 
 interface PaymentHistoryTimelineProps {
@@ -259,39 +266,130 @@ export const PaymentHistoryTimeline = ({
                   const runningBalance = payments
                     .slice(0, index + 1)
                     .reduce((sum, p) => sum + p.amount, 0);
+                  const isLast = index === payments.length - 1;
 
                   return (
                     <Card
                       key={item.id}
-                      variant="outlined"
+                      elevation={0}
                       sx={{
                         position: 'relative',
+                        border: '2px solid',
+                        borderColor: 'divider',
+                        borderRadius: 2,
+                        overflow: 'visible',
+                        transition: 'all 0.3s ease',
                         '&:hover': {
-                          boxShadow: 2,
+                          boxShadow: 4,
                           borderColor: 'primary.main',
+                          transform: 'translateY(-2px)',
                         },
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          left: -20,
+                          top: 24,
+                          width: 12,
+                          height: 12,
+                          borderRadius: '50%',
+                          bgcolor: 'primary.main',
+                          border: '3px solid',
+                          borderColor: 'background.paper',
+                          zIndex: 2,
+                        },
+                        '&::after': !isLast
+                          ? {
+                              content: '""',
+                              position: 'absolute',
+                              left: -14.5,
+                              top: 36,
+                              width: 2,
+                              height: 'calc(100% + 16px)',
+                              bgcolor: 'divider',
+                              zIndex: 1,
+                            }
+                          : {},
                       }}
                     >
-                      <CardContent>
-                        <Stack spacing={2}>
-                          {/* Header */}
+                      <CardContent sx={{ p: 3 }}>
+                        <Stack spacing={2.5}>
+                          {/* Informação de Parcela - Design discreto */}
+                          {item.installment && (
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                              sx={{ mb: 0.5 }}
+                            >
+                              <ReceiptIcon
+                                sx={{
+                                  fontSize: 16,
+                                  color: 'primary.main',
+                                  opacity: 0.7,
+                                }}
+                              />
+                              <Chip
+                                label={
+                                  item.installment.totalInstallments > 1
+                                    ? `${item.installment.installmentNumber}/${item.installment.totalInstallments}`
+                                    : 'Única'
+                                }
+                                size="small"
+                                variant="outlined"
+                                color="primary"
+                                sx={{
+                                  fontWeight: 600,
+                                  fontSize: '0.75rem',
+                                  height: 24,
+                                  borderRadius: 1,
+                                }}
+                              />
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{
+                                  fontStyle: 'italic',
+                                  opacity: 0.8,
+                                }}
+                              >
+                                {item.installment.description}
+                              </Typography>
+                            </Stack>
+                          )}
+
+                          {/* Informações do Pagamento */}
                           <Stack
                             direction="row"
                             justifyContent="space-between"
-                            alignItems="flex-start"
+                            alignItems="center"
+                            sx={{
+                              p: 2,
+                              bgcolor: 'background.default',
+                              borderRadius: 1.5,
+                              border: '1px solid',
+                              borderColor: 'divider',
+                            }}
                           >
-                            <Stack spacing={0.5}>
+                            <Stack spacing={1}>
                               <Stack
                                 direction="row"
-                                alignItems="center"
                                 spacing={1}
+                                alignItems="center"
                               >
                                 <CalendarIcon
-                                  sx={{ fontSize: 16, color: 'text.secondary' }}
+                                  sx={{ fontSize: 18, color: 'primary.main' }}
                                 />
-                                <Typography variant="body2" fontWeight={600}>
-                                  {formatLocalDate(item.payment.paymentDate)}
-                                </Typography>
+                                <Tooltip
+                                  title={formatLocalDatetime(
+                                    item.payment.paymentDate
+                                  )}
+                                >
+                                  <Typography variant="body2" fontWeight={600}>
+                                    {formatRelativeDatetime(
+                                      item.payment.paymentDate
+                                    )}
+                                  </Typography>
+                                </Tooltip>
                               </Stack>
                               <Chip
                                 label={
@@ -309,43 +407,79 @@ export const PaymentHistoryTimeline = ({
 
                             <Stack alignItems="flex-end" spacing={0.5}>
                               <Typography
-                                variant="h6"
+                                variant="h5"
                                 fontWeight={700}
-                                color="primary.main"
+                                color="success.main"
+                                sx={{
+                                  textShadow:
+                                    '0 2px 4px rgba(76, 175, 80, 0.2)',
+                                }}
                               >
                                 {formatCurrency(item.amount)}
                               </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
+                              <Stack
+                                direction="row"
+                                spacing={0.5}
+                                alignItems="center"
                               >
-                                Acumulado: {formatCurrency(runningBalance)}
-                              </Typography>
+                                <TrendingUpIcon
+                                  sx={{ fontSize: 14, color: 'text.secondary' }}
+                                />
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  Acum: {formatCurrency(runningBalance)}
+                                </Typography>
+                              </Stack>
                             </Stack>
                           </Stack>
 
-                          {/* Details */}
+                          {/* Notas Adicionais */}
                           {item.payment.notes && (
-                            <Stack spacing={1} sx={{ pt: 1 }}>
+                            <Paper
+                              elevation={0}
+                              sx={{
+                                p: 2,
+                                bgcolor: 'warning.50',
+                                border: '1px solid',
+                                borderColor: 'warning.200',
+                                borderRadius: 1.5,
+                                borderLeft: '4px solid',
+                                borderLeftColor: 'warning.main',
+                              }}
+                            >
                               <Stack
                                 direction="row"
-                                spacing={1}
+                                spacing={1.5}
                                 alignItems="flex-start"
                               >
                                 <NotesIcon
                                   sx={{
-                                    fontSize: 16,
-                                    color: 'text.secondary',
+                                    fontSize: 20,
+                                    color: 'warning.main',
+                                    mt: 0.25,
                                   }}
                                 />
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  {item.payment.notes}
-                                </Typography>
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography
+                                    variant="caption"
+                                    fontWeight={600}
+                                    color="warning.dark"
+                                    display="block"
+                                  >
+                                    Observações
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{ mt: 0.5 }}
+                                  >
+                                    {item.payment.notes}
+                                  </Typography>
+                                </Box>
                               </Stack>
-                            </Stack>
+                            </Paper>
                           )}
                         </Stack>
                       </CardContent>

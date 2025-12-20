@@ -13,15 +13,21 @@ import { PaymentMethod } from '@prisma/client';
 import { Type } from 'class-transformer';
 
 export class QuickPaymentAllocationDto {
-  @ApiPropertyOptional({ example: 'uuid-da-conta-a-pagar' })
+  @ApiPropertyOptional({
+    example: 'uuid-da-parcela-a-pagar',
+    description: 'ID da parcela de conta a pagar',
+  })
   @IsUUID()
   @IsOptional()
-  payableId?: string;
+  payableInstallmentId?: string;
 
-  @ApiPropertyOptional({ example: 'uuid-da-conta-a-receber' })
+  @ApiPropertyOptional({
+    example: 'uuid-da-parcela-a-receber',
+    description: 'ID da parcela de conta a receber',
+  })
   @IsUUID()
   @IsOptional()
-  receivableId?: string;
+  receivableInstallmentId?: string;
 
   @ApiProperty({ example: 1000 })
   @IsNumber({ maxDecimalPlaces: 2 })
@@ -37,7 +43,7 @@ export class CreatePaymentDto {
   @Type(() => Number)
   amount!: number;
 
-  @ApiProperty({ example: '2025-12-08' })
+  @ApiProperty({ example: '2025-12-08T14:30:00.000Z' })
   @IsDateString()
   paymentDate!: string;
 
@@ -60,9 +66,12 @@ export class QuickPaymentDto {
   @ApiProperty({ example: 'payable', enum: ['payable', 'receivable'] })
   type!: 'payable' | 'receivable';
 
-  @ApiProperty({ example: 'uuid-da-conta' })
+  @ApiProperty({
+    example: 'uuid-da-parcela',
+    description: 'ID da parcela a ser paga/recebida',
+  })
   @IsUUID()
-  accountId!: string;
+  installmentId!: string;
 
   @ApiProperty({ example: 1500 })
   @IsNumber({ maxDecimalPlaces: 2 })
@@ -70,7 +79,7 @@ export class QuickPaymentDto {
   @Type(() => Number)
   amount!: number;
 
-  @ApiProperty({ example: '2025-12-08' })
+  @ApiProperty({ example: '2025-12-08T14:30:00.000Z' })
   @IsDateString()
   paymentDate!: string;
 

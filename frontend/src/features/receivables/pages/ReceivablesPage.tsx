@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { Box, Alert } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
 import { AnimatedPage } from '../../../shared/components';
 import { PageHeader } from '../../../shared/components/PageHeader';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
@@ -17,19 +16,29 @@ import {
   useTags,
   useReceivableOperations,
 } from '../hooks/useReceivables';
-import { useReceivablePayments } from '../../payments/hooks/usePayments';
-import type { Receivable, ReceivableFormData } from '../types';
+import {
+  useReceivablePayments,
+  usePaymentOperations,
+} from '../../payments/hooks/usePayments';
+import { QuickPaymentDialog } from '../../payments/components';
+import type {
+  Receivable,
+  ReceivableFormData,
+  ReceivableInstallment,
+} from '../types';
+import type { PaymentFormData } from '../../payments/types';
 
 export const ReceivablesPage: React.FC = () => {
-  const navigate = useNavigate();
-
   // State
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [paymentHistoryDialogOpen, setPaymentHistoryDialogOpen] =
     useState(false);
+  const [quickPaymentDialogOpen, setQuickPaymentDialogOpen] = useState(false);
   const [selectedReceivable, setSelectedReceivable] =
     useState<Receivable | null>(null);
+  const [selectedInstallment, setSelectedInstallment] =
+    useState<ReceivableInstallment | null>(null);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -62,6 +71,11 @@ export const ReceivablesPage: React.FC = () => {
     setSelectedReceivable(null);
   }, []);
 
+  const handleCloseQuickPaymentDialog = useCallback(() => {
+    setQuickPaymentDialogOpen(false);
+    setSelectedInstallment(null);
+  }, []);
+
   const handleViewPayments = useCallback((receivable: Receivable) => {
     setSelectedReceivable(receivable);
     setPaymentHistoryDialogOpen(true);
@@ -79,6 +93,10 @@ export const ReceivablesPage: React.FC = () => {
       onDeleteSuccess: handleCloseDeleteDialog,
     });
 
+  const { createMutation, isCreating } = usePaymentOperations({
+    onCreateSuccess: handleCloseQuickPaymentDialog,
+  });
+
   // Handlers
   const handleOpenDialog = useCallback((receivable?: Receivable) => {
     setSelectedReceivable(receivable || null);
@@ -91,17 +109,26 @@ export const ReceivablesPage: React.FC = () => {
   }, []);
 
   const handlePayment = useCallback(
-    (receivable: Receivable) => {
-      navigate(`/payments?receivableId=${receivable.id}`);
+    (item: Receivable | ReceivableInstallment) => {
+      if ('installmentNumber' in item) {
+        // It's an installment - open quick payment dialog
+        setSelectedInstallment(item);
+        setQuickPaymentDialogOpen(true);
+      } else if (item.installments && item.installments.length > 0) {
+        // It's a receivable, use the first installment
+        setSelectedInstallment(item.installments[0]);
+        setQuickPaymentDialogOpen(true);
+      }
     },
-    [navigate]
+    []
   );
 
-  const handleAddPayment = useCallback(() => {
-    if (selectedReceivable) {
-      navigate(`/payments?receivableId=${selectedReceivable.id}`);
-    }
-  }, [navigate, selectedReceivable]);
+  const handleQuickPaymentSubmit = useCallback(
+    (data: PaymentFormData) => {
+      createMutation.mutate(data);
+    },
+    [createMutation]
+  );
 
   const handleStatusChange = useCallback((status: string) => {
     setStatusFilter(status);
@@ -176,7 +203,6 @@ export const ReceivablesPage: React.FC = () => {
           isSubmitting={isSubmitting}
           onSubmit={handleSubmit}
           onClose={handleCloseDialog}
-          onAddPayment={handleAddPayment}
         />
 
         <ConfirmDialog
@@ -208,7 +234,15 @@ export const ReceivablesPage: React.FC = () => {
           }
           payments={payments}
           isLoading={isLoadingPayments}
-          onAddPayment={handleAddPayment}
+        />
+
+        <QuickPaymentDialog
+          open={quickPaymentDialogOpen}
+          installment={selectedInstallment}
+          type="RECEIVABLE"
+          isSubmitting={isCreating}
+          onSubmit={handleQuickPaymentSubmit}
+          onClose={handleCloseQuickPaymentDialog}
         />
       </Box>
     </AnimatedPage>

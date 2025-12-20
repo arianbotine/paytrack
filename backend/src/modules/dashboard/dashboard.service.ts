@@ -7,7 +7,7 @@ import { PayablesService } from '../payables/payables.service';
 import { ReceivablesService } from '../receivables/receivables.service';
 import { CacheService } from '../../shared/services/cache.service';
 
-type GroupedItem = {
+type GroupedInstallment = {
   _sum: {
     amount: Decimal | null;
     paidAmount?: Decimal | null;
@@ -33,9 +33,8 @@ export class DashboardService {
     const cacheTTL = Number.parseInt(
       process.env.CACHE_TTL_DASHBOARD || '300',
       10
-    ); // 5 minutos padrão
+    );
 
-    // Tenta buscar do cache primeiro
     return this.cacheService.getOrSet(
       cacheKey,
       async () => {
@@ -48,9 +47,6 @@ export class DashboardService {
     );
   }
 
-  /**
-   * Invalida o cache do dashboard para uma organização
-   */
   invalidateDashboardCache(organizationId: string) {
     const cacheKey = `dashboard:summary:${organizationId}`;
     this.cacheService.del(cacheKey);
@@ -64,104 +60,127 @@ export class DashboardService {
     const in7Days = new Date(today);
     in7Days.setDate(in7Days.getDate() + 7);
 
-    // Paralelizar todas as queries para melhor performance
+    // Queries usando as tabelas de installments separadas
     const [
-      payables,
-      receivables,
-      overduePayables,
-      overdueReceivables,
-      upcomingPayables,
-      upcomingReceivables,
+      payableInstallments,
+      receivableInstallments,
+      overduePayableInstallments,
+      overdueReceivableInstallments,
+      upcomingPayableInstallments,
+      upcomingReceivableInstallments,
     ] = await Promise.all([
-      // Payables summary
-      this.prisma.payable.groupBy({
+      // PayableInstallment summary
+      this.prisma.payableInstallment.groupBy({
         by: ['status'],
         where: { organizationId },
         _sum: { amount: true, paidAmount: true },
         _count: true,
       }),
 
-      // Receivables summary
-      this.prisma.receivable.groupBy({
+      // ReceivableInstallment summary
+      this.prisma.receivableInstallment.groupBy({
         by: ['status'],
         where: { organizationId },
         _sum: { amount: true, receivedAmount: true },
         _count: true,
       }),
 
-      // Overdue payables
-      this.prisma.payable.findMany({
+      // Overdue payable installments
+      this.prisma.payableInstallment.findMany({
         where: {
           organizationId,
           status: AccountStatus.OVERDUE,
         },
         include: {
-          vendor: { select: { name: true } },
-          category: { select: { name: true, color: true } },
+          payable: {
+            select: {
+              id: true,
+              description: true,
+              vendor: { select: { id: true, name: true } },
+              category: { select: { id: true, name: true, color: true } },
+            },
+          },
         },
-        orderBy: { dueDate: 'asc' },
+        orderBy: [{ dueDate: 'asc' }, { installmentNumber: 'asc' }],
         take: 10,
       }),
 
-      // Overdue receivables
-      this.prisma.receivable.findMany({
+      // Overdue receivable installments
+      this.prisma.receivableInstallment.findMany({
         where: {
           organizationId,
           status: AccountStatus.OVERDUE,
         },
         include: {
-          customer: { select: { name: true } },
-          category: { select: { name: true, color: true } },
+          receivable: {
+            select: {
+              id: true,
+              description: true,
+              customer: { select: { id: true, name: true } },
+              category: { select: { id: true, name: true, color: true } },
+            },
+          },
         },
-        orderBy: { dueDate: 'asc' },
+        orderBy: [{ dueDate: 'asc' }, { installmentNumber: 'asc' }],
         take: 10,
       }),
 
-      // Upcoming payables (next 7 days)
-      this.prisma.payable.findMany({
+      // Upcoming payable installments (next 7 days)
+      this.prisma.payableInstallment.findMany({
         where: {
           organizationId,
           status: { in: [AccountStatus.PENDING, AccountStatus.PARTIAL] },
           dueDate: { gte: today, lte: in7Days },
         },
         include: {
-          vendor: { select: { name: true } },
-          category: { select: { name: true, color: true } },
+          payable: {
+            select: {
+              id: true,
+              description: true,
+              vendor: { select: { id: true, name: true } },
+              category: { select: { id: true, name: true, color: true } },
+            },
+          },
         },
-        orderBy: { dueDate: 'asc' },
+        orderBy: [{ dueDate: 'asc' }, { installmentNumber: 'asc' }],
         take: 10,
       }),
 
-      // Upcoming receivables (next 7 days)
-      this.prisma.receivable.findMany({
+      // Upcoming receivable installments (next 7 days)
+      this.prisma.receivableInstallment.findMany({
         where: {
           organizationId,
           status: { in: [AccountStatus.PENDING, AccountStatus.PARTIAL] },
           dueDate: { gte: today, lte: in7Days },
         },
         include: {
-          customer: { select: { name: true } },
-          category: { select: { name: true, color: true } },
+          receivable: {
+            select: {
+              id: true,
+              description: true,
+              customer: { select: { id: true, name: true } },
+              category: { select: { id: true, name: true, color: true } },
+            },
+          },
         },
-        orderBy: { dueDate: 'asc' },
+        orderBy: [{ dueDate: 'asc' }, { installmentNumber: 'asc' }],
         take: 10,
       }),
     ]);
 
-    // Calculate totals
-    const payableTotals = this.calculateTotals(payables);
-    const receivableTotals = this.calculateTotals(receivables);
+    const payableTotals = this.calculateTotals(payableInstallments);
+    const receivableTotals = this.calculateTotals(receivableInstallments);
 
     return {
-      payables: {
+      payableInstallments: {
         totals: payableTotals,
-        overdue: overduePayables,
-        upcoming: upcomingPayables,
+        overdue: overduePayableInstallments,
+        upcoming: upcomingPayableInstallments,
       },
-      receivables: {
+      receivableInstallments: {
         totals: receivableTotals,
-        overdue: overdueReceivables,
-        upcoming: upcomingReceivables,
+        overdue: overdueReceivableInstallments,
+        upcoming: upcomingReceivableInstallments,
       },
       balance: {
         toReceive:
@@ -181,7 +200,7 @@ export class DashboardService {
     };
   }
 
-  private calculateTotals(grouped: GroupedItem[]) {
+  private calculateTotals(grouped: GroupedInstallment[]) {
     const totals = {
       total: 0,
       paid: 0,
@@ -224,17 +243,21 @@ export class DashboardService {
     return totals;
   }
 
-  // Cron job to update overdue status daily at midnight
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async updateOverdueStatus() {
-    this.logger.log('Running overdue status update...');
+    this.logger.log('Iniciando atualização de status de contas vencidas');
 
-    const payablesResult = await this.payablesService.updateOverdueStatus();
-    const receivablesResult =
-      await this.receivablesService.updateOverdueStatus();
+    try {
+      const [payableResult, receivableResult] = await Promise.all([
+        this.payablesService.updateOverdueStatus(),
+        this.receivablesService.updateOverdueStatus(),
+      ]);
 
-    this.logger.log(
-      `Updated ${payablesResult.count} payables and ${receivablesResult.count} receivables to OVERDUE status`
-    );
+      this.logger.log(
+        `Atualização concluída: ${payableResult.count} payable installments e ${receivableResult.count} receivable installments atualizadas`
+      );
+    } catch (error) {
+      this.logger.error('Erro ao atualizar status de contas vencidas', error);
+    }
   }
 }

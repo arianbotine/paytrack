@@ -1,12 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../lib/api';
 import { useUIStore } from '../../../lib/stores/uiStore';
-import { toUTC } from '../../../shared/utils/dateUtils';
+import { toUTCDatetime } from '../../../shared/utils/dateUtils';
 import type {
   PaymentFormData,
   PaymentsResponse,
-  Payable,
-  Receivable,
   PaymentHistoryItem,
 } from '../types';
 
@@ -36,34 +34,6 @@ export const usePayments = ({ page, rowsPerPage }: UsePaymentsParams) => {
     queryFn: async (): Promise<PaymentsResponse> => {
       const response = await api.get('/payments');
       return response.data;
-    },
-  });
-};
-
-// ============================================================
-// Pending Accounts Queries
-// ============================================================
-
-export const usePendingPayables = () => {
-  return useQuery({
-    queryKey: ['payables', 'pending'],
-    queryFn: async (): Promise<Payable[]> => {
-      const response = await api.get('/payables', {
-        params: { status: 'PENDING,PARTIAL,OVERDUE' },
-      });
-      return response.data.data || response.data;
-    },
-  });
-};
-
-export const usePendingReceivables = () => {
-  return useQuery({
-    queryKey: ['receivables', 'pending'],
-    queryFn: async (): Promise<Receivable[]> => {
-      const response = await api.get('/receivables', {
-        params: { status: 'PENDING,PARTIAL,OVERDUE' },
-      });
-      return response.data.data || response.data;
     },
   });
 };
@@ -108,14 +78,18 @@ export const useCreatePayment = (onSuccess?: () => void) => {
     mutationFn: (data: PaymentFormData) => {
       const payload = {
         amount: data.amount,
-        paymentDate: toUTC(data.paymentDate), // Converte data local para UTC
+        paymentDate: toUTCDatetime(data.paymentDate), // Converte data/hora local para UTC
         paymentMethod: data.method,
         notes: data.notes || undefined,
         allocations: [
           {
             amount: data.amount,
-            ...(data.payableId && { payableId: data.payableId }),
-            ...(data.receivableId && { receivableId: data.receivableId }),
+            ...(data.payableInstallmentId && {
+              payableInstallmentId: data.payableInstallmentId,
+            }),
+            ...(data.receivableInstallmentId && {
+              receivableInstallmentId: data.receivableInstallmentId,
+            }),
           },
         ],
       };

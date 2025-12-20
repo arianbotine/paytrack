@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { useUIStore } from '../../lib/stores/uiStore';
-import { toUTC } from '../utils/dateUtils';
 
 // ============================================================
 // Types
@@ -194,13 +193,16 @@ export const useAccountOperations = <T>(
   const deleteMutation = useDeleteAccount(config, callbacks?.onDeleteSuccess);
 
   const submitAccount = (
-    data: T & { dueDate: string | Date },
+    data: T & { dueDate: string | Date; dueDates?: string[] },
     accountId?: string
   ) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { firstDueDate: _firstDueDate, ...payloadData } = data as any;
     const payload = {
-      ...data,
-      dueDate:
-        typeof data.dueDate === 'string' ? toUTC(data.dueDate) : data.dueDate,
+      ...payloadData,
+      // dueDate e dueDates são date-only - enviar como está sem conversão
+      dueDate: data.dueDate,
+      dueDates: (data as any).dueDates,
       categoryId: (data as any).categoryId || undefined,
       tagIds: (data as any).tagIds?.length ? (data as any).tagIds : undefined,
     };

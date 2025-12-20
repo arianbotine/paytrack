@@ -5,21 +5,12 @@ import {
 } from '@nestjs/common';
 import { AccountStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
-import {
-  CreatePaymentDto,
-  QuickPaymentDto,
-  QuickPaymentAllocationDto,
-} from './dto/payment.dto';
+import { CreatePaymentDto, QuickPaymentDto } from './dto/payment.dto';
 import { MoneyUtils } from '../../shared/utils/money.utils';
 import { MONEY_COMPARISON_THRESHOLD } from '../../shared/constants';
-import { parseDateUTC } from '../../shared/utils/date.utils';
+import { parseDatetime } from '../../shared/utils/date.utils';
 import { CacheService } from '../../shared/services/cache.service';
-
-type Allocation = {
-  payableId?: string;
-  receivableId?: string;
-  amount: number;
-};
+import { Decimal } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class PaymentsService {
@@ -35,18 +26,34 @@ export class PaymentsService {
         include: {
           allocations: {
             include: {
-              payable: {
+              payableInstallment: {
                 select: {
                   id: true,
                   description: true,
-                  vendor: { select: { name: true } },
+                  installmentNumber: true,
+                  totalInstallments: true,
+                  payable: {
+                    select: {
+                      id: true,
+                      description: true,
+                      vendor: { select: { name: true } },
+                    },
+                  },
                 },
               },
-              receivable: {
+              receivableInstallment: {
                 select: {
                   id: true,
                   description: true,
-                  customer: { select: { name: true } },
+                  installmentNumber: true,
+                  totalInstallments: true,
+                  receivable: {
+                    select: {
+                      id: true,
+                      description: true,
+                      customer: { select: { name: true } },
+                    },
+                  },
                 },
               },
             },
@@ -57,16 +64,14 @@ export class PaymentsService {
       this.prisma.payment.count({ where: { organizationId } }),
     ]);
 
-    // Transform Decimal fields to numbers
     const transformedData = MoneyUtils.transformMoneyFieldsArray(data, [
       'amount',
     ]);
 
-    // Map paymentMethod to method for frontend compatibility
     const mappedData = transformedData.map(payment => ({
       ...payment,
       method: payment.paymentMethod,
-      paymentMethod: undefined, // Remove the original field
+      paymentMethod: undefined,
     }));
 
     return { data: mappedData, total };
@@ -78,20 +83,36 @@ export class PaymentsService {
       include: {
         allocations: {
           include: {
-            payable: {
+            payableInstallment: {
               select: {
                 id: true,
                 description: true,
+                installmentNumber: true,
+                totalInstallments: true,
                 amount: true,
-                vendor: { select: { name: true } },
+                payable: {
+                  select: {
+                    id: true,
+                    description: true,
+                    vendor: { select: { name: true } },
+                  },
+                },
               },
             },
-            receivable: {
+            receivableInstallment: {
               select: {
                 id: true,
                 description: true,
+                installmentNumber: true,
+                totalInstallments: true,
                 amount: true,
-                customer: { select: { name: true } },
+                receivable: {
+                  select: {
+                    id: true,
+                    description: true,
+                    customer: { select: { name: true } },
+                  },
+                },
               },
             },
           },
@@ -103,21 +124,23 @@ export class PaymentsService {
       throw new NotFoundException('Pagamento não encontrado');
     }
 
-    // Transform Decimal fields to numbers
     const transformedPayment = MoneyUtils.transformMoneyFields(payment, [
       'amount',
     ]);
 
-    // Transform amounts in allocations
     const transformedAllocations = transformedPayment.allocations.map(
       allocation => ({
         ...allocation,
-        payable: allocation.payable
-          ? MoneyUtils.transformMoneyFields(allocation.payable, ['amount'])
-          : allocation.payable,
-        receivable: allocation.receivable
-          ? MoneyUtils.transformMoneyFields(allocation.receivable, ['amount'])
-          : allocation.receivable,
+        payableInstallment: allocation.payableInstallment
+          ? MoneyUtils.transformMoneyFields(allocation.payableInstallment, [
+              'amount',
+            ])
+          : allocation.payableInstallment,
+        receivableInstallment: allocation.receivableInstallment
+          ? MoneyUtils.transformMoneyFields(allocation.receivableInstallment, [
+              'amount',
+            ])
+          : allocation.receivableInstallment,
       })
     );
 
@@ -131,27 +154,73 @@ export class PaymentsService {
     try {
       const { allocations, ...paymentData } = createDto;
 
-      // Convert allocations amount to number for validation
-      const typedAllocations: Allocation[] = allocations.map(a => ({
-        payableId: a.payableId,
-        receivableId: a.receivableId,
-        amount: Number(a.amount),
-      }));
+      // Validar alocações
+      this.validateAllocations(allocations, createDto.amount);
 
-      // Validate allocations
-      this.validateAllocations(typedAllocations, createDto.amount);
+      // Validar cada alocação
+      await this.validateAllocationInstallments(organizationId, allocations);
 
-      // Validate each allocation
-      await this.validateAllocationAccounts(organizationId, typedAllocations);
+      // Criar pagamento com alocações em transação
+      const result = await this.prisma.$transaction(async tx => {
+        const payment = await tx.payment.create({
+          data: {
+            organizationId,
+            amount: MoneyUtils.toDecimal(paymentData.amount),
+            paymentDate: parseDatetime(paymentData.paymentDate),
+            paymentMethod: paymentData.paymentMethod,
+            notes: paymentData.notes,
+            allocations: {
+              create: allocations.map(a => ({
+                payableInstallmentId: a.payableInstallmentId,
+                receivableInstallmentId: a.receivableInstallmentId,
+                amount: MoneyUtils.toDecimal(a.amount),
+              })),
+            },
+          },
+          include: {
+            allocations: {
+              include: {
+                payableInstallment: {
+                  select: {
+                    id: true,
+                    description: true,
+                    installmentNumber: true,
+                    totalInstallments: true,
+                    payable: {
+                      select: {
+                        id: true,
+                        description: true,
+                        vendor: { select: { name: true } },
+                      },
+                    },
+                  },
+                },
+                receivableInstallment: {
+                  select: {
+                    id: true,
+                    description: true,
+                    installmentNumber: true,
+                    totalInstallments: true,
+                    receivable: {
+                      select: {
+                        id: true,
+                        description: true,
+                        customer: { select: { name: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        });
 
-      // Create payment with allocations in a transaction
-      const result = await this.createPaymentWithAllocations(
-        organizationId,
-        paymentData,
-        allocations
-      );
+        // Atualizar saldos das parcelas
+        await this.updateInstallmentBalances(tx, allocations);
 
-      // Invalida cache do dashboard
+        return payment;
+      });
+
       this.cacheService.del(`dashboard:summary:${organizationId}`);
 
       return result;
@@ -170,13 +239,12 @@ export class PaymentsService {
         error instanceof BadRequestException ||
         error instanceof NotFoundException
       ) {
-        throw error; // Re-throw validation errors
+        throw error;
       }
       throw new BadRequestException('Erro interno ao processar o pagamento');
     }
   }
 
-  // Simplified payment for single account
   async quickPayment(organizationId: string, dto: QuickPaymentDto) {
     const createDto: CreatePaymentDto = {
       amount: dto.amount,
@@ -186,8 +254,8 @@ export class PaymentsService {
       allocations: [
         {
           ...(dto.type === 'payable'
-            ? { payableId: dto.accountId }
-            : { receivableId: dto.accountId }),
+            ? { payableInstallmentId: dto.installmentId }
+            : { receivableInstallmentId: dto.installmentId }),
           amount: dto.amount,
         },
       ],
@@ -196,41 +264,7 @@ export class PaymentsService {
     return this.create(organizationId, createDto);
   }
 
-  private async createPaymentWithAllocations(
-    organizationId: string,
-    paymentData: Omit<CreatePaymentDto, 'allocations'>,
-    allocations: QuickPaymentAllocationDto[]
-  ) {
-    return this.prisma.$transaction(async tx => {
-      const payment = await tx.payment.create({
-        data: {
-          organizationId,
-          amount: MoneyUtils.toDecimal(paymentData.amount),
-          paymentDate: parseDateUTC(paymentData.paymentDate),
-          paymentMethod: paymentData.paymentMethod,
-          notes: paymentData.notes,
-          allocations: {
-            create: allocations.map(a => ({
-              payableId: a.payableId,
-              receivableId: a.receivableId,
-              amount: MoneyUtils.toDecimal(a.amount),
-            })),
-          },
-        },
-        include: {
-          allocations: true,
-        },
-      });
-
-      // Update account balances using bulk operations
-      await this.updateAccountBalancesBulk(tx, allocations);
-
-      return payment;
-    });
-  }
-
   async remove(id: string, organizationId: string) {
-    // Move findOne inside transaction to prevent race condition
     const result = await this.prisma.$transaction(async tx => {
       const payment = await tx.payment.findFirst({
         where: { id, organizationId },
@@ -243,202 +277,262 @@ export class PaymentsService {
         throw new NotFoundException('Pagamento não encontrado');
       }
 
-      // Reverse allocations using bulk operations
-      await this.reversePaymentAllocationsBulk(tx, payment.allocations);
+      // Reverter alocações
+      await this.reverseInstallmentBalances(tx, payment.allocations);
 
       await tx.payment.delete({ where: { id } });
 
       return payment;
     });
 
-    // Invalida cache do dashboard após a transação
     this.cacheService.del(`dashboard:summary:${organizationId}`);
 
     return result;
   }
 
-  /**
-   * Bulk update account balances for multiple allocations
-   * Optimized to avoid N+1 query problem
-   */
-  private async updateAccountBalancesBulk(
+  private async updateInstallmentBalances(
     tx: Prisma.TransactionClient,
-    allocations: { payableId?: string; receivableId?: string; amount: number }[]
+    allocations: Array<{
+      payableInstallmentId?: string;
+      receivableInstallmentId?: string;
+      amount: number;
+    }>
   ) {
-    // Group allocations by payable/receivable
-    const payableIds = allocations
-      .filter(a => a.payableId)
-      .map(a => a.payableId!);
-    const receivableIds = allocations
-      .filter(a => a.receivableId)
-      .map(a => a.receivableId!);
+    // Atualizar parcelas de payable
+    for (const allocation of allocations.filter(a => a.payableInstallmentId)) {
+      const installment = await tx.payableInstallment.findUnique({
+        where: { id: allocation.payableInstallmentId },
+      });
 
-    // Fetch all accounts in bulk
-    const [payables, receivables] = await Promise.all([
-      payableIds.length > 0
-        ? tx.payable.findMany({
-            where: { id: { in: payableIds } },
-            include: { allocations: true },
-          })
-        : [],
-      receivableIds.length > 0
-        ? tx.receivable.findMany({
-            where: { id: { in: receivableIds } },
-            include: { allocations: true },
-          })
-        : [],
-    ]);
+      if (!installment) continue;
 
-    // Update payables
-    for (const allocation of allocations.filter(a => a.payableId)) {
-      const payable = payables.find(p => p.id === allocation.payableId);
-      if (!payable) {
-        throw new NotFoundException(
-          `Conta a pagar ${allocation.payableId} não encontrada`
-        );
-      }
+      const newPaidAmount = Number(installment.paidAmount) + allocation.amount;
+      const totalAmount = Number(installment.amount);
 
-      const newPaidAmount = Number(payable.paidAmount) + allocation.amount;
-      const totalAmount = Number(payable.amount);
-
-      if (newPaidAmount > totalAmount + MONEY_COMPARISON_THRESHOLD) {
-        throw new BadRequestException(
-          `Valor pago (R$ ${newPaidAmount.toFixed(2)}) não pode exceder o valor total (R$ ${totalAmount.toFixed(2)})`
-        );
-      }
-
-      const newStatus = this.calculateAccountStatus(
+      const newStatus = this.calculateInstallmentStatus(
         newPaidAmount,
         totalAmount,
-        payable.dueDate
+        installment.dueDate
       );
 
-      await tx.payable.update({
-        where: { id: allocation.payableId },
+      await tx.payableInstallment.update({
+        where: { id: allocation.payableInstallmentId },
         data: {
           paidAmount: MoneyUtils.toDecimal(newPaidAmount),
           status: newStatus,
         },
       });
+
+      // Atualizar status da conta principal
+      await this.updateParentAccountStatus(
+        tx,
+        installment.payableId,
+        'payable'
+      );
     }
 
-    // Update receivables
-    for (const allocation of allocations.filter(a => a.receivableId)) {
-      const receivable = receivables.find(
-        r => r.id === allocation.receivableId
-      );
-      if (!receivable) {
-        throw new NotFoundException(
-          `Conta a receber ${allocation.receivableId} não encontrada`
-        );
-      }
+    // Atualizar parcelas de receivable
+    for (const allocation of allocations.filter(
+      a => a.receivableInstallmentId
+    )) {
+      const installment = await tx.receivableInstallment.findUnique({
+        where: { id: allocation.receivableInstallmentId },
+      });
 
-      const newPaidAmount =
-        Number(receivable.receivedAmount) + allocation.amount;
-      const totalAmount = Number(receivable.amount);
+      if (!installment) continue;
 
-      if (newPaidAmount > totalAmount + MONEY_COMPARISON_THRESHOLD) {
-        throw new BadRequestException(
-          `Valor recebido (R$ ${newPaidAmount.toFixed(2)}) não pode exceder o valor total (R$ ${totalAmount.toFixed(2)})`
-        );
-      }
+      const newReceivedAmount =
+        Number(installment.receivedAmount) + allocation.amount;
+      const totalAmount = Number(installment.amount);
 
-      const newStatus = this.calculateAccountStatus(
-        newPaidAmount,
+      const newStatus = this.calculateInstallmentStatus(
+        newReceivedAmount,
         totalAmount,
-        receivable.dueDate
+        installment.dueDate
       );
 
-      await tx.receivable.update({
-        where: { id: allocation.receivableId },
+      await tx.receivableInstallment.update({
+        where: { id: allocation.receivableInstallmentId },
         data: {
-          receivedAmount: MoneyUtils.toDecimal(newPaidAmount),
+          receivedAmount: MoneyUtils.toDecimal(newReceivedAmount),
           status: newStatus,
         },
       });
+
+      // Atualizar status da conta principal
+      await this.updateParentAccountStatus(
+        tx,
+        installment.receivableId,
+        'receivable'
+      );
     }
   }
 
-  /**
-   * Bulk reverse allocations when deleting a payment
-   * Optimized to avoid N+1 query problem
-   */
-  private async reversePaymentAllocationsBulk(
+  private async reverseInstallmentBalances(
     tx: Prisma.TransactionClient,
     allocations: any[]
   ) {
-    const payableIds = allocations
-      .filter(a => a.payableId)
-      .map(a => a.payableId);
-    const receivableIds = allocations
-      .filter(a => a.receivableId)
-      .map(a => a.receivableId);
+    // Reverter parcelas de payable
+    for (const allocation of allocations.filter(a => a.payableInstallmentId)) {
+      const installment = await tx.payableInstallment.findUnique({
+        where: { id: allocation.payableInstallmentId },
+      });
 
-    // Fetch all accounts in bulk
-    const [payables, receivables] = await Promise.all([
-      payableIds.length > 0
-        ? tx.payable.findMany({ where: { id: { in: payableIds } } })
-        : [],
-      receivableIds.length > 0
-        ? tx.receivable.findMany({ where: { id: { in: receivableIds } } })
-        : [],
-    ]);
-
-    // Update payables
-    for (const allocation of allocations.filter(a => a.payableId)) {
-      const payable = payables.find(p => p.id === allocation.payableId);
-      if (!payable) continue;
+      if (!installment) continue;
 
       const newPaidAmount = Math.max(
         0,
-        Number(payable.paidAmount) - Number(allocation.amount)
+        Number(installment.paidAmount) - Number(allocation.amount)
       );
 
       const newStatus =
         newPaidAmount === 0
-          ? this.getDefaultStatus(payable.dueDate)
+          ? this.getDefaultStatus(installment.dueDate)
           : AccountStatus.PARTIAL;
 
-      await tx.payable.update({
-        where: { id: allocation.payableId },
+      await tx.payableInstallment.update({
+        where: { id: allocation.payableInstallmentId },
         data: {
           paidAmount: MoneyUtils.toDecimal(newPaidAmount),
           status: newStatus,
         },
       });
+
+      // Atualizar status da conta principal
+      await this.updateParentAccountStatus(
+        tx,
+        installment.payableId,
+        'payable'
+      );
     }
 
-    // Update receivables
-    for (const allocation of allocations.filter(a => a.receivableId)) {
-      const receivable = receivables.find(
-        r => r.id === allocation.receivableId
-      );
-      if (!receivable) continue;
+    // Reverter parcelas de receivable
+    for (const allocation of allocations.filter(
+      a => a.receivableInstallmentId
+    )) {
+      const installment = await tx.receivableInstallment.findUnique({
+        where: { id: allocation.receivableInstallmentId },
+      });
 
-      const newPaidAmount = Math.max(
+      if (!installment) continue;
+
+      const newReceivedAmount = Math.max(
         0,
-        Number(receivable.receivedAmount) - Number(allocation.amount)
+        Number(installment.receivedAmount) - Number(allocation.amount)
       );
 
       const newStatus =
-        newPaidAmount === 0
-          ? this.getDefaultStatus(receivable.dueDate)
+        newReceivedAmount === 0
+          ? this.getDefaultStatus(installment.dueDate)
           : AccountStatus.PARTIAL;
 
-      await tx.receivable.update({
-        where: { id: allocation.receivableId },
+      await tx.receivableInstallment.update({
+        where: { id: allocation.receivableInstallmentId },
         data: {
-          receivedAmount: MoneyUtils.toDecimal(newPaidAmount),
+          receivedAmount: MoneyUtils.toDecimal(newReceivedAmount),
+          status: newStatus,
+        },
+      });
+
+      // Atualizar status da conta principal
+      await this.updateParentAccountStatus(
+        tx,
+        installment.receivableId,
+        'receivable'
+      );
+    }
+  }
+
+  /**
+   * Atualiza o status da conta principal baseado no status de todas as suas parcelas
+   */
+  private async updateParentAccountStatus(
+    tx: Prisma.TransactionClient,
+    accountId: string,
+    type: 'payable' | 'receivable'
+  ) {
+    if (type === 'payable') {
+      const installments = await tx.payableInstallment.findMany({
+        where: { payableId: accountId },
+      });
+
+      const allPaid = installments.every(i => i.status === AccountStatus.PAID);
+      const anyPaid = installments.some(
+        i =>
+          i.status === AccountStatus.PAID || i.status === AccountStatus.PARTIAL
+      );
+      const anyCancelled = installments.some(
+        i => i.status === AccountStatus.CANCELLED
+      );
+
+      let newStatus: AccountStatus;
+      if (allPaid && !anyCancelled) {
+        newStatus = AccountStatus.PAID;
+      } else if (anyPaid) {
+        newStatus = AccountStatus.PARTIAL;
+      } else {
+        const account = await tx.payable.findUnique({
+          where: { id: accountId },
+        });
+        newStatus = this.getDefaultStatus(account!.dueDate);
+      }
+
+      // Calcular totais
+      const totalPaid = installments.reduce(
+        (sum, i) => sum.plus(i.paidAmount),
+        new Decimal(0)
+      );
+
+      await tx.payable.update({
+        where: { id: accountId },
+        data: {
+          paidAmount: totalPaid,
+          status: newStatus,
+        },
+      });
+    } else {
+      const installments = await tx.receivableInstallment.findMany({
+        where: { receivableId: accountId },
+      });
+
+      const allPaid = installments.every(i => i.status === AccountStatus.PAID);
+      const anyPaid = installments.some(
+        i =>
+          i.status === AccountStatus.PAID || i.status === AccountStatus.PARTIAL
+      );
+      const anyCancelled = installments.some(
+        i => i.status === AccountStatus.CANCELLED
+      );
+
+      let newStatus: AccountStatus;
+      if (allPaid && !anyCancelled) {
+        newStatus = AccountStatus.PAID;
+      } else if (anyPaid) {
+        newStatus = AccountStatus.PARTIAL;
+      } else {
+        const account = await tx.receivable.findUnique({
+          where: { id: accountId },
+        });
+        newStatus = this.getDefaultStatus(account!.dueDate);
+      }
+
+      // Calcular totais
+      const totalReceived = installments.reduce(
+        (sum, i) => sum.plus(i.receivedAmount),
+        new Decimal(0)
+      );
+
+      await tx.receivable.update({
+        where: { id: accountId },
+        data: {
+          receivedAmount: totalReceived,
           status: newStatus,
         },
       });
     }
   }
 
-  /**
-   * Calculate account status based on paid amount and due date
-   */
-  private calculateAccountStatus(
+  private calculateInstallmentStatus(
     paidAmount: number,
     totalAmount: number,
     dueDate: Date
@@ -452,124 +546,147 @@ export class PaymentsService {
     }
   }
 
-  /**
-   * Get default status (PENDING or OVERDUE) based on due date
-   */
   private getDefaultStatus(dueDate: Date): AccountStatus {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return dueDate < today ? AccountStatus.OVERDUE : AccountStatus.PENDING;
   }
 
-  private validateAllocations(allocations: Allocation[], totalAmount: number) {
+  private validateAllocations(
+    allocations: Array<{
+      payableInstallmentId?: string;
+      receivableInstallmentId?: string;
+      amount: number;
+    }>,
+    totalAmount: number
+  ) {
     if (!allocations || allocations.length === 0) {
       throw new BadRequestException('Pelo menos uma alocação é necessária');
     }
 
-    // Calculate total allocation
     const totalAllocation = allocations.reduce(
       (sum, a) => sum + Number(a.amount),
       0
     );
+
     if (Math.abs(totalAllocation - totalAmount) > MONEY_COMPARISON_THRESHOLD) {
       throw new BadRequestException(
         'A soma das alocações deve ser igual ao valor do pagamento'
       );
     }
+
+    // Cada alocação deve ter exatamente um installment
+    for (const allocation of allocations) {
+      if (
+        !allocation.payableInstallmentId &&
+        !allocation.receivableInstallmentId
+      ) {
+        throw new BadRequestException(
+          'Cada alocação deve ter uma parcela (installment)'
+        );
+      }
+      if (
+        allocation.payableInstallmentId &&
+        allocation.receivableInstallmentId
+      ) {
+        throw new BadRequestException(
+          'Cada alocação deve ter apenas uma parcela'
+        );
+      }
+    }
   }
 
-  private async validateAllocationAccounts(
+  private async validateAllocationInstallments(
     organizationId: string,
-    allocations: Allocation[]
+    allocations: Array<{
+      payableInstallmentId?: string;
+      receivableInstallmentId?: string;
+      amount: number;
+    }>
   ) {
     for (const allocation of allocations) {
-      if (!allocation.payableId && !allocation.receivableId) {
-        throw new BadRequestException(
-          'Cada alocação deve ter uma conta a pagar ou a receber'
-        );
-      }
-      if (allocation.payableId && allocation.receivableId) {
-        throw new BadRequestException(
-          'Cada alocação deve ter apenas uma conta'
-        );
-      }
-
-      // Check account exists and belongs to organization
-      if (allocation.payableId) {
-        await this.validatePayableAccount(
+      if (allocation.payableInstallmentId) {
+        await this.validatePayableInstallment(
           organizationId,
-          allocation.payableId,
+          allocation.payableInstallmentId,
           Number(allocation.amount)
         );
       }
 
-      if (allocation.receivableId) {
-        await this.validateReceivableAccount(
+      if (allocation.receivableInstallmentId) {
+        await this.validateReceivableInstallment(
           organizationId,
-          allocation.receivableId,
+          allocation.receivableInstallmentId,
           Number(allocation.amount)
         );
       }
     }
   }
 
-  private async validatePayableAccount(
+  private async validatePayableInstallment(
     organizationId: string,
-    payableId: string,
+    installmentId: string,
     allocationAmount: number
   ) {
-    const payable = await this.prisma.payable.findFirst({
-      where: { id: payableId, organizationId },
+    const installment = await this.prisma.payableInstallment.findFirst({
+      where: { id: installmentId, organizationId },
     });
-    if (!payable) {
+
+    if (!installment) {
       throw new NotFoundException(
-        `Conta a pagar ${payableId} não encontrada ou não pertence à sua organização`
-      );
-    }
-    if (
-      payable.status === AccountStatus.PAID ||
-      payable.status === AccountStatus.CANCELLED
-    ) {
-      throw new BadRequestException(
-        `Conta a pagar já está ${payable.status === AccountStatus.PAID ? 'paga' : 'cancelada'}`
+        `Parcela de conta a pagar não encontrada ou não pertence à sua organização`
       );
     }
 
-    const remainingAmount = Number(payable.amount) - Number(payable.paidAmount);
-    if (allocationAmount > remainingAmount + MONEY_COMPARISON_THRESHOLD) {
-      throw new BadRequestException(
-        `Valor da alocação maior que o saldo restante da conta (R$ ${remainingAmount.toFixed(2)})`
-      );
-    }
-  }
-
-  private async validateReceivableAccount(
-    organizationId: string,
-    receivableId: string,
-    allocationAmount: number
-  ) {
-    const receivable = await this.prisma.receivable.findFirst({
-      where: { id: receivableId, organizationId },
-    });
-    if (!receivable) {
-      throw new NotFoundException(
-        `Conta a receber ${receivableId} não encontrada ou não pertence à sua organização`
-      );
-    }
     if (
-      receivable.status === AccountStatus.PAID ||
-      receivable.status === AccountStatus.CANCELLED
+      installment.status === AccountStatus.PAID ||
+      installment.status === AccountStatus.CANCELLED
     ) {
       throw new BadRequestException(
-        `Conta a receber já está ${receivable.status === AccountStatus.PAID ? 'recebida' : 'cancelada'}`
+        `Parcela já está ${installment.status === AccountStatus.PAID ? 'paga' : 'cancelada'}`
       );
     }
 
     const remainingAmount =
-      Number(receivable.amount) - Number(receivable.receivedAmount);
+      Number(installment.amount) - Number(installment.paidAmount);
+
     if (allocationAmount > remainingAmount + MONEY_COMPARISON_THRESHOLD) {
       throw new BadRequestException(
-        `Valor da alocação maior que o saldo restante da conta (R$ ${remainingAmount.toFixed(2)})`
+        `Valor da alocação (R$ ${allocationAmount.toFixed(2)}) maior que o saldo restante da parcela (R$ ${remainingAmount.toFixed(2)})`
+      );
+    }
+  }
+
+  private async validateReceivableInstallment(
+    organizationId: string,
+    installmentId: string,
+    allocationAmount: number
+  ) {
+    const installment = await this.prisma.receivableInstallment.findFirst({
+      where: { id: installmentId, organizationId },
+    });
+
+    if (!installment) {
+      throw new NotFoundException(
+        `Parcela de conta a receber não encontrada ou não pertence à sua organização`
+      );
+    }
+
+    if (
+      installment.status === AccountStatus.PAID ||
+      installment.status === AccountStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        `Parcela já está ${installment.status === AccountStatus.PAID ? 'recebida' : 'cancelada'}`
+      );
+    }
+
+    const remainingAmount =
+      Number(installment.amount) - Number(installment.receivedAmount);
+
+    if (allocationAmount > remainingAmount + MONEY_COMPARISON_THRESHOLD) {
+      throw new BadRequestException(
+        `Valor da alocação (R$ ${allocationAmount.toFixed(2)}) maior que o saldo restante da parcela (R$ ${remainingAmount.toFixed(2)})`
       );
     }
   }

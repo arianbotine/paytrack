@@ -7,9 +7,14 @@ import {
   IsArray,
   IsUUID,
   Min,
+  Max,
+  IsInt,
+  ValidateIf,
+  ArrayMinSize,
+  ArrayMaxSize,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { PaymentMethod, AccountStatus } from '@prisma/client';
+import { AccountStatus } from '@prisma/client';
 import { Type, Transform } from 'class-transformer';
 
 export class CreatePayableDto {
@@ -54,6 +59,35 @@ export class CreatePayableDto {
   @IsUUID('4', { each: true })
   @IsOptional()
   tagIds?: string[];
+
+  // Installment fields
+  @ApiPropertyOptional({
+    example: 1,
+    minimum: 1,
+    maximum: 120,
+    default: 1,
+    description:
+      'Quantidade de parcelas (1 = pagamento único, 2-120 = parcelado)',
+  })
+  @IsInt()
+  @Min(1)
+  @Max(120)
+  @IsOptional()
+  @Type(() => Number)
+  installmentCount?: number = 1;
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['2026-01-15', '2026-02-15', '2026-03-15'],
+    description:
+      'Array de datas de vencimento (YYYY-MM-DD) - obrigatório quando installmentCount > 1',
+  })
+  @IsArray()
+  @IsDateString({}, { each: true })
+  @ArrayMinSize(1)
+  @ArrayMaxSize(120)
+  @ValidateIf(o => o.installmentCount && o.installmentCount > 1)
+  dueDates?: string[];
 }
 
 export class UpdatePayableDto extends PartialType(CreatePayableDto) {}

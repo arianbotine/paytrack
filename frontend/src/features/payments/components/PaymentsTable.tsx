@@ -21,10 +21,14 @@ import {
   RequestQuote as ReceivableIcon,
   KeyboardArrowDown as ExpandMoreIcon,
   KeyboardArrowUp as ExpandLessIcon,
+  Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TableSkeleton, EmptyState } from '../../../shared/components';
-import { formatLocalDate } from '../../../shared/utils/dateUtils';
+import {
+  formatRelativeDatetime,
+  formatLocalDatetime,
+} from '../../../shared/utils/dateUtils';
 import type { Payment } from '../types';
 import { formatCurrency } from '../../../shared/utils/currencyUtils';
 import { getMethodLabel } from '../types';
@@ -48,7 +52,7 @@ const PaymentRow = React.forwardRef<
   const [expanded, setExpanded] = useState(false);
   const hasMultipleAllocations = payment.allocations.length > 1;
   const allocation = payment.allocations[0];
-  const isPayable = !!allocation?.payable;
+  const isPayable = !!allocation?.payableInstallment;
 
   return (
     <>
@@ -70,7 +74,9 @@ const PaymentRow = React.forwardRef<
               {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
             </IconButton>
           )}
-          {formatLocalDate(payment.paymentDate)}
+          <Tooltip title={formatLocalDatetime(payment.paymentDate)}>
+            <span>{formatRelativeDatetime(payment.paymentDate)}</span>
+          </Tooltip>
         </TableCell>
         <TableCell>
           {isPayable ? (
@@ -102,14 +108,47 @@ const PaymentRow = React.forwardRef<
           <Box>
             <Typography fontWeight="medium">
               {isPayable
-                ? allocation?.payable?.description
-                : allocation?.receivable?.description}
+                ? allocation?.payableInstallment?.payable?.description
+                : allocation?.receivableInstallment?.receivable?.description}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               {isPayable
-                ? allocation?.payable?.vendor.name
-                : allocation?.receivable?.customer.name}
+                ? allocation?.payableInstallment?.payable?.vendor.name
+                : allocation?.receivableInstallment?.receivable?.customer.name}
             </Typography>
+            {/* Informação da parcela */}
+            {(allocation?.payableInstallment ||
+              allocation?.receivableInstallment) && (
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ mt: 0.5 }}
+                alignItems="center"
+              >
+                <Chip
+                  icon={<ReceiptIcon />}
+                  label={
+                    isPayable
+                      ? `${allocation?.payableInstallment?.installmentNumber}/${allocation?.payableInstallment?.totalInstallments || 1}`
+                      : `${allocation?.receivableInstallment?.installmentNumber}/${allocation?.receivableInstallment?.totalInstallments || 1}`
+                  }
+                  size="small"
+                  variant="filled"
+                  color="primary"
+                  sx={{
+                    height: 22,
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    '& .MuiChip-icon': {
+                      color: 'primary.contrastText',
+                      fontSize: 14,
+                    },
+                  }}
+                />
+              </Stack>
+            )}
           </Box>
         </TableCell>
         <TableCell>{getMethodLabel(payment.method)}</TableCell>
@@ -149,7 +188,7 @@ const PaymentRow = React.forwardRef<
                 </Typography>
                 <Stack spacing={1}>
                   {payment.allocations.map(alloc => {
-                    const allocIsPayable = !!alloc.payable;
+                    const allocIsPayable = !!alloc.payableInstallment;
                     return (
                       <Box
                         key={alloc.id}
@@ -166,14 +205,41 @@ const PaymentRow = React.forwardRef<
                         <Box>
                           <Typography variant="body2" fontWeight={600}>
                             {allocIsPayable
-                              ? alloc.payable?.description
-                              : alloc.receivable?.description}
+                              ? alloc.payableInstallment?.payable?.description
+                              : alloc.receivableInstallment?.receivable
+                                  ?.description}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {allocIsPayable
-                              ? alloc.payable?.vendor.name
-                              : alloc.receivable?.customer.name}
+                              ? alloc.payableInstallment?.payable?.vendor.name
+                              : alloc.receivableInstallment?.receivable
+                                  ?.customer.name}
                           </Typography>
+                          {/* Informação da parcela nas alocações */}
+                          <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
+                            <Chip
+                              icon={<ReceiptIcon />}
+                              label={
+                                allocIsPayable
+                                  ? `${alloc.payableInstallment?.installmentNumber}/${alloc.payableInstallment?.totalInstallments || 1}`
+                                  : `${alloc.receivableInstallment?.installmentNumber}/${alloc.receivableInstallment?.totalInstallments || 1}`
+                              }
+                              size="small"
+                              variant="filled"
+                              color="primary"
+                              sx={{
+                                height: 20,
+                                fontSize: '0.65rem',
+                                fontWeight: 600,
+                                bgcolor: 'primary.main',
+                                color: 'primary.contrastText',
+                                '& .MuiChip-icon': {
+                                  color: 'primary.contrastText',
+                                  fontSize: 12,
+                                },
+                              }}
+                            />
+                          </Stack>
                         </Box>
                         <Typography
                           variant="body2"

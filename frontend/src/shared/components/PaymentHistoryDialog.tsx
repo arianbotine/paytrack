@@ -12,7 +12,7 @@ import {
   useTheme,
   IconButton,
 } from '@mui/material';
-import { Close as CloseIcon, Add as AddIcon } from '@mui/icons-material';
+import { Close as CloseIcon } from '@mui/icons-material';
 import { PaymentHistoryTimeline } from './PaymentHistoryTimeline';
 import { formatCurrency } from '../utils/currencyUtils';
 import type { PaymentHistoryItem } from '../../features/payments/types';
@@ -32,7 +32,6 @@ interface PaymentHistoryDialogProps {
   } | null;
   payments: PaymentHistoryItem[];
   isLoading?: boolean;
-  onAddPayment: () => void;
 }
 
 export const PaymentHistoryDialog = ({
@@ -42,7 +41,6 @@ export const PaymentHistoryDialog = ({
   accountData,
   payments,
   isLoading = false,
-  onAddPayment,
 }: PaymentHistoryDialogProps) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
@@ -169,20 +167,6 @@ export const PaymentHistoryDialog = ({
               </Stack>
             </Stack>
           </Box>
-
-          {/* Quick Action Button */}
-          {!isPaid && (
-            <Button
-              variant="contained"
-              size="large"
-              startIcon={<AddIcon />}
-              onClick={onAddPayment}
-              fullWidth
-            >
-              Registrar{' '}
-              {accountType === 'payable' ? 'Pagamento' : 'Recebimento'}
-            </Button>
-          )}
 
           {/* Payment Timeline */}
           <PaymentHistoryTimeline

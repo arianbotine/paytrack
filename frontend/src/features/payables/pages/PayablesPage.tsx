@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { Box, Alert } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
 import { AnimatedPage } from '../../../shared/components';
 import { PageHeader } from '../../../shared/components/PageHeader';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
@@ -17,18 +16,24 @@ import {
   useTags,
   usePayableOperations,
 } from '../hooks/usePayables';
-import { usePayablePayments } from '../../payments/hooks/usePayments';
-import type { Payable, PayableFormData } from '../types';
+import {
+  usePayablePayments,
+  usePaymentOperations,
+} from '../../payments/hooks/usePayments';
+import { QuickPaymentDialog } from '../../payments/components';
+import type { Payable, PayableFormData, PayableInstallment } from '../types';
+import type { PaymentFormData } from '../../payments/types';
 
 export const PayablesPage: React.FC = () => {
-  const navigate = useNavigate();
-
   // State
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [paymentHistoryDialogOpen, setPaymentHistoryDialogOpen] =
     useState(false);
+  const [quickPaymentDialogOpen, setQuickPaymentDialogOpen] = useState(false);
   const [selectedPayable, setSelectedPayable] = useState<Payable | null>(null);
+  const [selectedInstallment, setSelectedInstallment] =
+    useState<PayableInstallment | null>(null);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -61,6 +66,11 @@ export const PayablesPage: React.FC = () => {
     setSelectedPayable(null);
   }, []);
 
+  const handleCloseQuickPaymentDialog = useCallback(() => {
+    setQuickPaymentDialogOpen(false);
+    setSelectedInstallment(null);
+  }, []);
+
   const handleClosePaymentHistoryDialog = useCallback(() => {
     setPaymentHistoryDialogOpen(false);
     // Don't clear selectedPayable here to keep the data loaded
@@ -73,6 +83,10 @@ export const PayablesPage: React.FC = () => {
       onDeleteSuccess: handleCloseDeleteDialog,
     });
 
+  const { createMutation, isCreating } = usePaymentOperations({
+    onCreateSuccess: handleCloseQuickPaymentDialog,
+  });
+
   // Handlers
   const handleOpenDialog = useCallback((payable?: Payable) => {
     setSelectedPayable(payable || null);
@@ -84,19 +98,24 @@ export const PayablesPage: React.FC = () => {
     setDeleteDialogOpen(true);
   }, []);
 
-  const handlePayment = useCallback(
-    (payable: Payable) => {
-      navigate(`/payments?payableId=${payable.id}`);
-    },
-    [navigate]
-  );
-
-  const handleAddPayment = useCallback(() => {
-    if (selectedPayable) {
-      setPaymentHistoryDialogOpen(false);
-      navigate(`/payments?payableId=${selectedPayable.id}`);
+  const handlePayment = useCallback((item: Payable | PayableInstallment) => {
+    if ('installmentNumber' in item) {
+      // It's an installment - open quick payment dialog
+      setSelectedInstallment(item);
+      setQuickPaymentDialogOpen(true);
+    } else if (item.installments && item.installments.length > 0) {
+      // It's a payable, use the first installment
+      setSelectedInstallment(item.installments[0]);
+      setQuickPaymentDialogOpen(true);
     }
-  }, [navigate, selectedPayable]);
+  }, []);
+
+  const handleQuickPaymentSubmit = useCallback(
+    (data: PaymentFormData) => {
+      createMutation.mutate(data);
+    },
+    [createMutation]
+  );
 
   const handleViewPayments = useCallback((payable: Payable) => {
     setSelectedPayable(payable);
@@ -207,7 +226,15 @@ export const PayablesPage: React.FC = () => {
           }
           payments={payments}
           isLoading={isLoadingPayments}
-          onAddPayment={handleAddPayment}
+        />
+
+        <QuickPaymentDialog
+          open={quickPaymentDialogOpen}
+          installment={selectedInstallment}
+          type="PAYABLE"
+          isSubmitting={isCreating}
+          onSubmit={handleQuickPaymentSubmit}
+          onClose={handleCloseQuickPaymentDialog}
         />
       </Box>
     </AnimatedPage>

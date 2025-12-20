@@ -1,2 +1,2 @@
 export { PaymentsTable } from './PaymentsTable';
-export { PaymentFormDialog } from './PaymentFormDialog';
+export { QuickPaymentDialog } from './QuickPaymentDialog';

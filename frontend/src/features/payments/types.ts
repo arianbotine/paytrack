@@ -1,35 +1,41 @@
 import { z } from 'zod';
-import { getTodayLocalInput } from '../../shared/utils/dateUtils';
+import { getNowLocalDatetimeInput } from '../../shared/utils/dateUtils';
 
 // ============================================================
 // Types & Interfaces
 // ============================================================
 
-export interface Payable {
+export interface PayableInstallment {
   id: string;
   description: string;
+  installmentNumber: number;
+  totalInstallments: number;
   amount: number;
-  paidAmount: number;
-  dueDate: string;
-  status: string;
-  vendor: { name: string };
+  payable: {
+    id: string;
+    description: string;
+    vendor: { name: string };
+  };
 }
 
-export interface Receivable {
+export interface ReceivableInstallment {
   id: string;
   description: string;
+  installmentNumber: number;
+  totalInstallments: number;
   amount: number;
-  receivedAmount: number;
-  dueDate: string;
-  status: string;
-  customer: { name: string };
+  receivable: {
+    id: string;
+    description: string;
+    customer: { name: string };
+  };
 }
 
 export interface PaymentAllocation {
   id: string;
   amount: number;
-  payable?: Payable;
-  receivable?: Receivable;
+  payableInstallment?: PayableInstallment;
+  receivableInstallment?: ReceivableInstallment;
 }
 
 export interface PaymentDetails {
@@ -44,6 +50,11 @@ export interface PaymentHistoryItem {
   id: string;
   amount: number;
   payment: PaymentDetails;
+  installment?: {
+    installmentNumber: number;
+    totalInstallments: number;
+    description: string;
+  };
 }
 
 export interface Payment {
@@ -85,7 +96,7 @@ export const PAYMENT_METHODS = [
 
 export const paymentSchema = z
   .object({
-    amount: z.coerce.number().positive('Valor deve ser positivo'),
+    amount: z.coerce.number().positive('Valor deve ser maior que zero'),
     paymentDate: z.string().min(1, 'Data do pagamento é obrigatória'),
     method: z.enum([
       'CASH',
@@ -99,12 +110,12 @@ export const paymentSchema = z
     ]),
     reference: z.string().optional(),
     notes: z.string().optional(),
-    payableId: z.string().optional(),
-    receivableId: z.string().optional(),
+    payableInstallmentId: z.string().optional(),
+    receivableInstallmentId: z.string().optional(),
   })
-  .refine(data => data.payableId || data.receivableId, {
-    message: 'Selecione uma conta a pagar ou a receber',
-    path: ['payableId'],
+  .refine(data => data.payableInstallmentId || data.receivableInstallmentId, {
+    message: 'Selecione uma parcela a pagar ou a receber',
+    path: ['payableInstallmentId'],
   });
 
 export type PaymentFormData = z.infer<typeof paymentSchema>;
@@ -119,10 +130,10 @@ export const getMethodLabel = (method: string): string => {
 
 export const getDefaultFormValues = (): PaymentFormData => ({
   amount: 0,
-  paymentDate: getTodayLocalInput(),
+  paymentDate: getNowLocalDatetimeInput(),
   method: 'PIX',
   reference: '',
   notes: '',
-  payableId: '',
-  receivableId: '',
+  payableInstallmentId: '',
+  receivableInstallmentId: '',
 });

@@ -1,24 +1,31 @@
 /**
- * Date utilities for backend - all dates are treated as UTC
- * No time zone conversions are performed here
+ * Date utilities for backend
+ * - For date-only fields (dueDate): use parseDateOnly - no timezone conversion
+ * - For datetime fields (paymentDate): use parseDatetime - handles ISO strings with time
  */
 
-export function parseDateUTC(dateString: string): Date {
-  // For date-only strings (yyyy-MM-dd), create UTC date at noon
-  // This prevents timezone-related date shifts when converting back to local
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-    return new Date(dateString + 'T12:00:00.000Z');
-  }
-  // For full ISO strings, ensure UTC interpretation
+/**
+ * Parse date-only string (yyyy-MM-dd) to Date object
+ * Used for fields like dueDate which are @db.Date in Prisma
+ * No timezone conversion - treats date as-is
+ */
+export function parseDateOnly(dateString: string): Date {
+  return new Date(dateString);
+}
+
+/**
+ * Parse datetime string (ISO format) to Date object
+ * Used for fields like paymentDate which are @db.Timestamp in Prisma
+ */
+export function parseDatetime(dateString: string): Date {
   return new Date(dateString);
 }
 
 export function formatDateUTC(date: Date): string {
-  // Return ISO string in UTC
   return date.toISOString();
 }
 
 export function isValidDate(dateString: string): boolean {
-  const date = parseDateUTC(dateString);
-  return !isNaN(date.getTime());
+  const date = new Date(dateString);
+  return !Number.isNaN(date.getTime());
 }

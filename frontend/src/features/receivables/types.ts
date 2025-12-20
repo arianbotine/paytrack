@@ -29,6 +29,22 @@ export type ReceivableStatus =
   | 'OVERDUE'
   | 'CANCELLED';
 
+export interface ReceivableInstallment {
+  id: string;
+  installmentNumber: number;
+  totalInstallments: number;
+  amount: number;
+  receivedAmount: number;
+  dueDate: string;
+  status: ReceivableStatus;
+  description: string;
+  receivable?: {
+    id: string;
+    description: string;
+    customer: { id: string; name: string };
+  };
+}
+
 export interface Receivable {
   id: string;
   description: string;
@@ -38,9 +54,11 @@ export interface Receivable {
   receivedAmount: number;
   invoiceNumber?: string;
   notes?: string;
+  totalInstallments: number;
   customer: Customer;
   category?: Category;
   tags: { tag: Tag }[];
+  installments: ReceivableInstallment[];
   createdAt: string;
 }
 
@@ -53,16 +71,34 @@ export interface ReceivablesResponse {
 // Validation Schema
 // ============================================================
 
-export const receivableSchema = z.object({
-  description: z.string().min(1, 'Descrição é obrigatória').max(255),
-  amount: z.coerce.number().positive('Valor deve ser positivo'),
-  dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
-  customerId: z.string().min(1, 'Cliente é obrigatório'),
-  categoryId: z.string().optional(),
-  tagIds: z.array(z.string()).optional(),
-  notes: z.string().optional(),
-  invoiceNumber: z.string().optional(),
-});
+export const receivableSchema = z
+  .object({
+    description: z.string().min(1, 'Descrição é obrigatória').max(255),
+    amount: z.coerce.number().positive('Valor deve ser positivo'),
+    dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
+    customerId: z.string().min(1, 'Cliente é obrigatório'),
+    categoryId: z.string().optional(),
+    tagIds: z.array(z.string()).optional(),
+    notes: z.string().optional(),
+    invoiceNumber: z.string().optional(),
+    // Campos de parcelas
+    installmentCount: z.coerce.number().int().min(1).max(120).optional(),
+    firstDueDate: z.string().optional(),
+    dueDates: z.array(z.string()).optional(),
+  })
+  .refine(
+    data => {
+      // Se installmentCount > 1, firstDueDate é obrigatório
+      if (data.installmentCount && data.installmentCount > 1) {
+        return !!data.firstDueDate;
+      }
+      return true;
+    },
+    {
+      message: 'Data do primeiro vencimento é obrigatória para parcelamento',
+      path: ['firstDueDate'],
+    }
+  );
 
 export type ReceivableFormData = z.infer<typeof receivableSchema>;
 
@@ -92,4 +128,6 @@ export const getDefaultFormValues = (): ReceivableFormData => ({
   tagIds: [],
   notes: '',
   invoiceNumber: '',
+  installmentCount: 1,
+  firstDueDate: getTodayLocalInput(),
 });

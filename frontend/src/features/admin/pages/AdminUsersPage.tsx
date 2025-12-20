@@ -148,7 +148,8 @@ export function AdminUsersPage() {
 
   const onSubmitCreate = (data: CreateUserFormData) => {
     // Remove confirmPassword before sending to API
-    const { confirmPassword, ...userData } = data;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { confirmPassword: _confirmPassword, ...userData } = data;
     createMutation.mutate(userData);
   };
 

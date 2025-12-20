@@ -28,6 +28,22 @@ export type PayableStatus =
   | 'OVERDUE'
   | 'CANCELLED';
 
+export interface PayableInstallment {
+  id: string;
+  installmentNumber: number;
+  totalInstallments: number;
+  amount: number;
+  paidAmount: number;
+  dueDate: string;
+  status: PayableStatus;
+  description: string;
+  payable?: {
+    id: string;
+    description: string;
+    vendor: { id: string; name: string };
+  };
+}
+
 export interface Payable {
   id: string;
   description: string;
@@ -37,9 +53,11 @@ export interface Payable {
   paidAmount: number;
   invoiceNumber?: string;
   notes?: string;
+  totalInstallments: number;
   vendor: Vendor;
   category?: Category;
   tags: { tag: Tag }[];
+  installments: PayableInstallment[];
   createdAt: string;
 }
 
@@ -52,16 +70,34 @@ export interface PayablesResponse {
 // Validation Schema
 // ============================================================
 
-export const payableSchema = z.object({
-  description: z.string().min(1, 'Descrição é obrigatória').max(255),
-  amount: z.coerce.number().positive('Valor deve ser positivo'),
-  dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
-  vendorId: z.string().min(1, 'Fornecedor é obrigatório'),
-  categoryId: z.string().optional(),
-  tagIds: z.array(z.string()).optional(),
-  notes: z.string().optional(),
-  invoiceNumber: z.string().optional(),
-});
+export const payableSchema = z
+  .object({
+    description: z.string().min(1, 'Descrição é obrigatória').max(255),
+    amount: z.coerce.number().positive('Valor deve ser positivo'),
+    dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
+    vendorId: z.string().min(1, 'Fornecedor é obrigatório'),
+    categoryId: z.string().optional(),
+    tagIds: z.array(z.string()).optional(),
+    notes: z.string().optional(),
+    invoiceNumber: z.string().optional(),
+    // Campos de parcelas
+    installmentCount: z.coerce.number().int().min(1).max(120).optional(),
+    firstDueDate: z.string().optional(),
+    dueDates: z.array(z.string()).optional(),
+  })
+  .refine(
+    data => {
+      // Se installmentCount > 1, firstDueDate é obrigatório
+      if (data.installmentCount && data.installmentCount > 1) {
+        return !!data.firstDueDate;
+      }
+      return true;
+    },
+    {
+      message: 'Data do primeiro vencimento é obrigatória para parcelamento',
+      path: ['firstDueDate'],
+    }
+  );
 
 export type PayableFormData = z.infer<typeof payableSchema>;
 
@@ -93,4 +129,6 @@ export const getDefaultFormValues = (): PayableFormData => ({
   tagIds: [],
   notes: '',
   invoiceNumber: '',
+  installmentCount: 1,
+  firstDueDate: getTodayLocalInput(),
 });
