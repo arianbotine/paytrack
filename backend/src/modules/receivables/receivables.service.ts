@@ -240,7 +240,12 @@ export class ReceivablesService {
     organizationId: string,
     updateDto: UpdateReceivableDto
   ) {
-    const { tagIds, ...data } = updateDto;
+    const {
+      tagIds,
+      installmentCount: _installmentCount,
+      dueDates: _dueDates,
+      ...data
+    } = updateDto;
 
     const receivable = await this.prisma.receivable.findFirst({
       where: { id, organizationId },

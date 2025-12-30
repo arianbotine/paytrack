@@ -240,7 +240,12 @@ export class PayablesService {
     organizationId: string,
     updateDto: UpdatePayableDto
   ) {
-    const { tagIds, ...data } = updateDto;
+    const {
+      tagIds,
+      installmentCount: _installmentCount,
+      dueDates: _dueDates,
+      ...data
+    } = updateDto;
 
     const payable = await this.prisma.payable.findFirst({
       where: { id, organizationId },
