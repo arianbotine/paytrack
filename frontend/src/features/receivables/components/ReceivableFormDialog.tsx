@@ -25,8 +25,15 @@ import {
   Paper,
   Stack,
   Divider,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
-import { CalendarToday, AttachMoney, Numbers } from '@mui/icons-material';
+import {
+  CalendarToday,
+  AttachMoney,
+  Numbers,
+  SwapHoriz,
+} from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -72,6 +79,10 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
   const isEditing = !!receivable;
 
   const [isInstallment, setIsInstallment] = useState(false);
+  const [calculationMode, setCalculationMode] = useState<
+    'total' | 'perInstallment'
+  >('total');
+  const [installmentValue, setInstallmentValue] = useState<number>(0);
 
   // Helper function to determine grid size based on installment count
   const getGridSize = (installmentCount: number = 1) => {
@@ -118,6 +129,18 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
   const installmentCount = watch('installmentCount') || 1;
   const firstDueDate = watch('firstDueDate');
 
+  // Calcular valor total quando modo for 'por parcela'
+  useEffect(() => {
+    if (
+      calculationMode === 'perInstallment' &&
+      installmentValue > 0 &&
+      installmentCount > 1
+    ) {
+      const total = installmentValue * installmentCount;
+      setValue('amount', total);
+    }
+  }, [calculationMode, installmentValue, installmentCount, setValue]);
+
   // Calculate installment preview
   const installmentPreview = useMemo(() => {
     if (!isInstallment || installmentCount <= 1 || !amount || !firstDueDate) {
@@ -159,6 +182,8 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
   const handleClose = () => {
     reset();
     setIsInstallment(false);
+    setCalculationMode('total');
+    setInstallmentValue(0);
     onClose();
   };
 
@@ -282,26 +307,110 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                   />
                 </Grid>
 
+                {/* Campo de Valor - Com alternância fluida entre total e parcela */}
                 <Grid item xs={12} md={6}>
-                  <Controller
-                    name="amount"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Valor"
-                        type="number"
-                        fullWidth
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">R$</InputAdornment>
-                          ),
-                        }}
-                        error={!!errors.amount}
-                        helperText={errors.amount?.message}
-                      />
-                    )}
-                  />
+                  {calculationMode === 'total' || !isInstallment ? (
+                    <Controller
+                      name="amount"
+                      control={control}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label={isInstallment ? 'Valor Total' : 'Valor'}
+                          type="number"
+                          fullWidth
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                R$
+                              </InputAdornment>
+                            ),
+                            endAdornment: isInstallment && (
+                              <InputAdornment position="end">
+                                <Tooltip
+                                  title="Alternar para valor por parcela"
+                                  arrow
+                                >
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => {
+                                      const currentTotal = field.value || 0;
+                                      if (
+                                        currentTotal > 0 &&
+                                        installmentCount > 1
+                                      ) {
+                                        setInstallmentValue(
+                                          currentTotal / installmentCount
+                                        );
+                                      }
+                                      setCalculationMode('perInstallment');
+                                    }}
+                                    sx={{
+                                      color: 'primary.main',
+                                      '&:hover': {
+                                        backgroundColor: 'primary.lighter',
+                                      },
+                                    }}
+                                  >
+                                    <SwapHoriz />
+                                  </IconButton>
+                                </Tooltip>
+                              </InputAdornment>
+                            ),
+                          }}
+                          error={!!errors.amount}
+                          helperText={
+                            errors.amount?.message ||
+                            (isInstallment &&
+                            field.value > 0 &&
+                            installmentCount > 1
+                              ? `${installmentCount}x de ${formatCurrency(field.value / installmentCount)}`
+                              : undefined)
+                          }
+                        />
+                      )}
+                    />
+                  ) : (
+                    <TextField
+                      label="Valor por Parcela"
+                      type="number"
+                      fullWidth
+                      value={installmentValue || ''}
+                      onChange={e =>
+                        setInstallmentValue(Number(e.target.value))
+                      }
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">R$</InputAdornment>
+                        ),
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <Tooltip title="Alternar para valor total" arrow>
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  setCalculationMode('total');
+                                }}
+                                sx={{
+                                  color: 'primary.main',
+                                  '&:hover': {
+                                    backgroundColor: 'primary.lighter',
+                                  },
+                                }}
+                              >
+                                <SwapHoriz />
+                              </IconButton>
+                            </Tooltip>
+                          </InputAdornment>
+                        ),
+                      }}
+                      helperText={
+                        installmentValue > 0 && installmentCount > 1
+                          ? `Total: ${formatCurrency(installmentValue * installmentCount)} (${installmentCount}x)`
+                          : 'Digite o valor de cada parcela'
+                      }
+                    />
+                  )}
                 </Grid>
 
                 <Grid item xs={12} md={6}>
