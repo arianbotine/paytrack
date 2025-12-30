@@ -33,6 +33,7 @@ import {
   AttachMoney,
   Numbers,
   SwapHoriz,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -52,6 +53,8 @@ import {
   generateInstallmentDueDates,
   calculateInstallmentAmounts,
 } from '../../../shared/utils/installmentUtils';
+import { QuickCreateCategory } from '../../../shared/components/QuickCreateCategory';
+import { QuickCreateTag } from '../../../shared/components/QuickCreateTag';
 
 interface ReceivableFormDialogProps {
   open: boolean;
@@ -83,6 +86,8 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
     'total' | 'perInstallment'
   >('total');
   const [installmentValue, setInstallmentValue] = useState<number>(0);
+  const [quickCategoryOpen, setQuickCategoryOpen] = useState(false);
+  const [quickTagOpen, setQuickTagOpen] = useState(false);
 
   // Helper function to determine grid size based on installment count
   const getGridSize = (installmentCount: number = 1) => {
@@ -271,40 +276,57 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Controller
-                    name="categoryId"
-                    control={control}
-                    render={({ field }) => (
-                      <FormControl fullWidth>
-                        <InputLabel>Categoria</InputLabel>
-                        <Select {...field} label="Categoria">
-                          <MenuItem value="">Sem categoria</MenuItem>
-                          {categories.map(category => (
-                            <MenuItem key={category.id} value={category.id}>
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 1,
-                                }}
-                              >
+                  <Box sx={{ position: 'relative' }}>
+                    <Controller
+                      name="categoryId"
+                      control={control}
+                      render={({ field }) => (
+                        <FormControl fullWidth>
+                          <InputLabel>Categoria</InputLabel>
+                          <Select {...field} label="Categoria">
+                            <MenuItem value="">Sem categoria</MenuItem>
+                            {categories.map(category => (
+                              <MenuItem key={category.id} value={category.id}>
                                 <Box
                                   sx={{
-                                    width: 16,
-                                    height: 16,
-                                    borderRadius: '50%',
-                                    backgroundColor:
-                                      category.color || '#e0e0e0',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1,
                                   }}
-                                />
-                                {category.name}
-                              </Box>
+                                >
+                                  <Box
+                                    sx={{
+                                      width: 16,
+                                      height: 16,
+                                      borderRadius: '50%',
+                                      backgroundColor:
+                                        category.color || '#e0e0e0',
+                                    }}
+                                  />
+                                  {category.name}
+                                </Box>
+                              </MenuItem>
+                            ))}
+                            <MenuItem
+                              onClick={() => setQuickCategoryOpen(true)}
+                              sx={{
+                                borderTop: 1,
+                                borderColor: 'divider',
+                                color: 'primary.main',
+                                fontWeight: 600,
+                                '&:hover': {
+                                  backgroundColor: 'primary.lighter',
+                                },
+                              }}
+                            >
+                              <AddIcon sx={{ mr: 1, fontSize: 20 }} />
+                              Criar nova categoria
                             </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    )}
-                  />
+                          </Select>
+                        </FormControl>
+                      )}
+                    />
+                  </Box>
                 </Grid>
 
                 {/* Campo de Valor - Com alternância fluida entre total e parcela */}
@@ -729,40 +751,60 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Controller
-                    name="tagIds"
-                    control={control}
-                    render={({ field }) => (
-                      <Autocomplete
-                        multiple
-                        options={tags}
-                        getOptionLabel={option => option.name}
-                        value={tags.filter(tag =>
-                          field.value?.includes(tag.id)
-                        )}
-                        onChange={(_, newValue) => {
-                          field.onChange(newValue.map(tag => tag.id));
+                  <Box
+                    sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}
+                  >
+                    <Controller
+                      name="tagIds"
+                      control={control}
+                      render={({ field }) => (
+                        <Autocomplete
+                          multiple
+                          options={tags}
+                          getOptionLabel={option => option.name}
+                          value={tags.filter(tag =>
+                            field.value?.includes(tag.id)
+                          )}
+                          onChange={(_, newValue) => {
+                            field.onChange(newValue.map(tag => tag.id));
+                          }}
+                          renderInput={params => (
+                            <TextField {...params} label="Tags" />
+                          )}
+                          renderTags={(value, getTagProps) =>
+                            value.map((option, index) => (
+                              <Chip
+                                {...getTagProps({ index })}
+                                key={option.id}
+                                label={option.name}
+                                size="small"
+                                sx={{
+                                  backgroundColor: option.color || '#e0e0e0',
+                                  color: '#fff',
+                                }}
+                              />
+                            ))
+                          }
+                          sx={{ flexGrow: 1 }}
+                        />
+                      )}
+                    />
+                    <Tooltip title="Criar nova tag" arrow>
+                      <IconButton
+                        onClick={() => setQuickTagOpen(true)}
+                        sx={{
+                          mt: 0.5,
+                          color: 'primary.main',
+                          backgroundColor: 'primary.lighter',
+                          '&:hover': {
+                            backgroundColor: 'primary.light',
+                          },
                         }}
-                        renderInput={params => (
-                          <TextField {...params} label="Tags" />
-                        )}
-                        renderTags={(value, getTagProps) =>
-                          value.map((option, index) => (
-                            <Chip
-                              {...getTagProps({ index })}
-                              key={option.id}
-                              label={option.name}
-                              size="small"
-                              sx={{
-                                backgroundColor: option.color || '#e0e0e0',
-                                color: '#fff',
-                              }}
-                            />
-                          ))
-                        }
-                      />
-                    )}
-                  />
+                      >
+                        <AddIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                 </Grid>
 
                 <Grid item xs={12}>
@@ -800,6 +842,24 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
           </form>
         </Dialog>
       )}
+
+      <QuickCreateCategory
+        open={quickCategoryOpen}
+        type="RECEIVABLE"
+        onClose={() => setQuickCategoryOpen(false)}
+        onCreated={category => {
+          setValue('categoryId', category.id);
+        }}
+      />
+
+      <QuickCreateTag
+        open={quickTagOpen}
+        onClose={() => setQuickTagOpen(false)}
+        onCreated={tag => {
+          const currentTags = watch('tagIds') || [];
+          setValue('tagIds', [...currentTags, tag.id]);
+        }}
+      />
     </AnimatePresence>
   );
 };
