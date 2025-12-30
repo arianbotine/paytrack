@@ -206,11 +206,14 @@ export const PayableFilters: React.FC<PayableFiltersProps> = ({
                     size="small"
                   />
                 )}
-                renderOption={(props, option) => (
-                  <li {...props}>
-                    <Typography variant="body2">{option.name}</Typography>
-                  </li>
-                )}
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props;
+                  return (
+                    <li key={key} {...otherProps}>
+                      <Typography variant="body2">{option.name}</Typography>
+                    </li>
+                  );
+                }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     bgcolor: 'background.paper',
@@ -236,21 +239,24 @@ export const PayableFilters: React.FC<PayableFiltersProps> = ({
                     size="small"
                   />
                 )}
-                renderOption={(props, option) => (
-                  <li {...props}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box
-                        sx={{
-                          width: 16,
-                          height: 16,
-                          borderRadius: '50%',
-                          bgcolor: option.color || '#e0e0e0',
-                        }}
-                      />
-                      <Typography variant="body2">{option.name}</Typography>
-                    </Box>
-                  </li>
-                )}
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props;
+                  return (
+                    <li key={key} {...otherProps}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
+                          sx={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: '50%',
+                            bgcolor: option.color || '#e0e0e0',
+                          }}
+                        />
+                        <Typography variant="body2">{option.name}</Typography>
+                      </Box>
+                    </li>
+                  );
+                }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     bgcolor: 'background.paper',
@@ -297,18 +303,21 @@ export const PayableFilters: React.FC<PayableFiltersProps> = ({
                     />
                   ))
                 }
-                renderOption={(props, option) => (
-                  <li {...props}>
-                    <Chip
-                      label={option.name}
-                      size="small"
-                      sx={{
-                        bgcolor: option.color || '#e0e0e0',
-                        color: '#fff',
-                      }}
-                    />
-                  </li>
-                )}
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props;
+                  return (
+                    <li key={key} {...otherProps}>
+                      <Chip
+                        label={option.name}
+                        size="small"
+                        sx={{
+                          bgcolor: option.color || '#e0e0e0',
+                          color: '#fff',
+                        }}
+                      />
+                    </li>
+                  );
+                }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     bgcolor: 'background.paper',

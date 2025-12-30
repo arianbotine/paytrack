@@ -213,6 +213,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
     <AnimatePresence>
       {open && (
         <Dialog
+          key="payable-dialog"
           open={open}
           onClose={handleClose}
           maxWidth="md"
@@ -837,6 +838,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
       )}
 
       <QuickCreateCategory
+        key="quick-create-category"
         open={quickCategoryOpen}
         type="PAYABLE"
         onClose={() => setQuickCategoryOpen(false)}
@@ -846,6 +848,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
       />
 
       <QuickCreateTag
+        key="quick-create-tag"
         open={quickTagOpen}
         onClose={() => setQuickTagOpen(false)}
         onCreated={tag => {

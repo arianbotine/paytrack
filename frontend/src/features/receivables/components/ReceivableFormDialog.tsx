@@ -213,6 +213,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
     <AnimatePresence>
       {open && (
         <Dialog
+          key="receivable-dialog"
           open={open}
           onClose={handleClose}
           maxWidth="md"
@@ -844,6 +845,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
       )}
 
       <QuickCreateCategory
+        key="quick-create-category"
         open={quickCategoryOpen}
         type="RECEIVABLE"
         onClose={() => setQuickCategoryOpen(false)}
@@ -853,6 +855,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
       />
 
       <QuickCreateTag
+        key="quick-create-tag"
         open={quickTagOpen}
         onClose={() => setQuickTagOpen(false)}
         onCreated={tag => {
