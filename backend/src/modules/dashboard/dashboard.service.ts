@@ -60,6 +60,14 @@ export class DashboardService {
       Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
     );
 
+    // Início e fim do mês vigente
+    const startOfCurrentMonth = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1)
+    );
+    const endOfCurrentMonth = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 0, 23, 59, 59)
+    );
+
     const in7Days = new Date(todayUTC);
     in7Days.setDate(in7Days.getDate() + 7);
 
@@ -72,27 +80,43 @@ export class DashboardService {
       upcomingPayableInstallments,
       upcomingReceivableInstallments,
     ] = await Promise.all([
-      // PayableInstallment summary
+      // PayableInstallment summary - filtrado pelo mês vigente
       this.prisma.payableInstallment.groupBy({
         by: ['status'],
-        where: { organizationId },
+        where: {
+          organizationId,
+          dueDate: {
+            gte: startOfCurrentMonth,
+            lte: endOfCurrentMonth,
+          },
+        },
         _sum: { amount: true, paidAmount: true },
         _count: true,
       }),
 
-      // ReceivableInstallment summary
+      // ReceivableInstallment summary - filtrado pelo mês vigente
       this.prisma.receivableInstallment.groupBy({
         by: ['status'],
-        where: { organizationId },
+        where: {
+          organizationId,
+          dueDate: {
+            gte: startOfCurrentMonth,
+            lte: endOfCurrentMonth,
+          },
+        },
         _sum: { amount: true, receivedAmount: true },
         _count: true,
       }),
 
-      // Overdue payable installments
+      // Overdue payable installments - apenas do mês vigente
       this.prisma.payableInstallment.findMany({
         where: {
           organizationId,
           status: AccountStatus.OVERDUE,
+          dueDate: {
+            gte: startOfCurrentMonth,
+            lte: endOfCurrentMonth,
+          },
         },
         include: {
           payable: {
@@ -108,11 +132,15 @@ export class DashboardService {
         take: 10,
       }),
 
-      // Overdue receivable installments
+      // Overdue receivable installments - apenas do mês vigente
       this.prisma.receivableInstallment.findMany({
         where: {
           organizationId,
           status: AccountStatus.OVERDUE,
+          dueDate: {
+            gte: startOfCurrentMonth,
+            lte: endOfCurrentMonth,
+          },
         },
         include: {
           receivable: {
@@ -128,12 +156,17 @@ export class DashboardService {
         take: 10,
       }),
 
-      // Upcoming payable installments (next 7 days)
+      // Upcoming payable installments (next 7 days within current month)
       this.prisma.payableInstallment.findMany({
         where: {
           organizationId,
           status: { in: [AccountStatus.PENDING, AccountStatus.PARTIAL] },
-          dueDate: { gte: todayUTC, lte: in7Days },
+          dueDate: {
+            gte: todayUTC,
+            lte: new Date(
+              Math.min(in7Days.getTime(), endOfCurrentMonth.getTime())
+            ),
+          },
         },
         include: {
           payable: {
@@ -149,12 +182,17 @@ export class DashboardService {
         take: 10,
       }),
 
-      // Upcoming receivable installments (next 7 days)
+      // Upcoming receivable installments (next 7 days within current month)
       this.prisma.receivableInstallment.findMany({
         where: {
           organizationId,
           status: { in: [AccountStatus.PENDING, AccountStatus.PARTIAL] },
-          dueDate: { gte: todayUTC, lte: in7Days },
+          dueDate: {
+            gte: todayUTC,
+            lte: new Date(
+              Math.min(in7Days.getTime(), endOfCurrentMonth.getTime())
+            ),
+          },
         },
         include: {
           receivable: {

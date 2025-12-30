@@ -171,7 +171,12 @@ export function DashboardPage() {
             Dashboard
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Visão geral das suas finanças
+            Visão geral das finanças do mês vigente (
+            {new Date().toLocaleDateString('pt-BR', {
+              month: 'long',
+              year: 'numeric',
+            })}
+            )
           </Typography>
 
           {/* Summary Cards */}

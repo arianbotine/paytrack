@@ -36,8 +36,8 @@ export class CategoriesController {
   ) {
     return this.categoriesService.findAll(
       organizationId,
-      type,
-      includeInactive
+      includeInactive,
+      type
     );
   }
 
