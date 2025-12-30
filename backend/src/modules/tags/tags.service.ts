@@ -15,6 +15,28 @@ export class TagsService extends BaseEntityService<
   }
 
   /**
+   * Override findAll to include count of related payables and receivables
+   */
+  async findAll(organizationId: string): Promise<any> {
+    try {
+      return await this.prisma.tag.findMany({
+        where: { organizationId },
+        orderBy: this.getDefaultOrderBy(),
+        include: {
+          _count: {
+            select: {
+              payables: true,
+              receivables: true,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Check for unique name constraint
    */
   protected async checkUniqueConstraints(
