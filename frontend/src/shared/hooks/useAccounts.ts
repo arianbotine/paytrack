@@ -45,7 +45,11 @@ export const createAccountKeys = (prefix: readonly string[]) => ({
 // ============================================================
 
 interface UseAccountsParams {
-  status?: string;
+  status?: string | string[];
+  vendorId?: string | null;
+  customerId?: string | null;
+  categoryId?: string | null;
+  tagIds?: string[];
   page: number;
   rowsPerPage: number;
 }
@@ -59,6 +63,10 @@ export const useAccounts = <T>(
   return useQuery({
     queryKey: keys.list({
       status: params.status,
+      vendorId: params.vendorId,
+      customerId: params.customerId,
+      categoryId: params.categoryId,
+      tagIds: params.tagIds,
       page: params.page,
       rowsPerPage: params.rowsPerPage,
     }),
@@ -67,9 +75,33 @@ export const useAccounts = <T>(
         skip: params.page * params.rowsPerPage,
         take: params.rowsPerPage,
       };
-      if (params.status && params.status !== 'ALL') {
-        queryParams.status = params.status;
+
+      // Handle status - pode ser string ou array
+      if (params.status) {
+        if (Array.isArray(params.status) && params.status.length > 0) {
+          queryParams.status = params.status.join(',');
+        } else if (
+          typeof params.status === 'string' &&
+          params.status !== 'ALL'
+        ) {
+          queryParams.status = params.status;
+        }
       }
+
+      // Handle other filters
+      if (params.vendorId) {
+        queryParams.vendorId = params.vendorId;
+      }
+      if (params.customerId) {
+        queryParams.customerId = params.customerId;
+      }
+      if (params.categoryId) {
+        queryParams.categoryId = params.categoryId;
+      }
+      if (params.tagIds && params.tagIds.length > 0) {
+        queryParams.tagIds = params.tagIds.join(',');
+      }
+
       const response = await api.get(config.endpoint, { params: queryParams });
       return response.data;
     },

@@ -1,71 +1,421 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  Paper,
+  Autocomplete,
+  TextField,
   Chip,
   Stack,
-  useMediaQuery,
-  useTheme,
+  IconButton,
+  Collapse,
+  Typography,
+  Grid,
+  Badge,
+  Tooltip,
 } from '@mui/material';
-import { motion } from 'framer-motion';
+import {
+  FilterList as FilterIcon,
+  Clear as ClearIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+} from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
 import { statusOptions } from '../types';
+import type { Vendor, Category, Tag } from '../types';
 
 interface PayableFiltersProps {
-  statusFilter: string;
-  onStatusChange: (status: string) => void;
+  // Status
+  statusFilter: string[];
+  onStatusChange: (status: string[]) => void;
+
+  // Vendor
+  vendorFilter: string | null;
+  onVendorChange: (vendorId: string | null) => void;
+  vendors: Vendor[];
+
+  // Category
+  categoryFilter: string | null;
+  onCategoryChange: (categoryId: string | null) => void;
+  categories: Category[];
+
+  // Tags
+  tagFilters: string[];
+  onTagsChange: (tagIds: string[]) => void;
+  tags: Tag[];
 }
 
 export const PayableFilters: React.FC<PayableFiltersProps> = ({
   statusFilter,
   onStatusChange,
+  vendorFilter,
+  onVendorChange,
+  vendors,
+  categoryFilter,
+  onCategoryChange,
+  categories,
+  tagFilters,
+  onTagsChange,
+  tags,
 }) => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [expanded, setExpanded] = useState(false);
 
-  if (isMobile) {
-    // Chip-based filter for mobile
-    return (
-      <Box sx={{ mb: 3, overflowX: 'auto', pb: 1 }}>
-        <Stack direction="row" spacing={1} sx={{ minWidth: 'max-content' }}>
-          {statusOptions.map(option => (
-            <motion.div key={option.value} whileTap={{ scale: 0.95 }}>
-              <Chip
-                label={option.label}
-                variant={statusFilter === option.value ? 'filled' : 'outlined'}
-                color={statusFilter === option.value ? 'primary' : 'default'}
-                onClick={() => onStatusChange(option.value)}
+  const activeFiltersCount =
+    statusFilter.length +
+    (vendorFilter ? 1 : 0) +
+    (categoryFilter ? 1 : 0) +
+    tagFilters.length;
+
+  const hasActiveFilters = activeFiltersCount > 0;
+
+  const handleStatusToggle = (value: string) => {
+    if (value === 'ALL') {
+      onStatusChange([]);
+    } else {
+      const newStatus = statusFilter.includes(value)
+        ? statusFilter.filter(s => s !== value)
+        : [...statusFilter, value];
+      onStatusChange(newStatus);
+    }
+  };
+
+  const handleClearAll = () => {
+    onStatusChange([]);
+    onVendorChange(null);
+    onCategoryChange(null);
+    onTagsChange([]);
+  };
+
+  const selectedVendor = vendors.find(v => v.id === vendorFilter);
+  const selectedCategory = categories.find(c => c.id === categoryFilter);
+  const selectedTags = tags.filter(t => tagFilters.includes(t.id));
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        mb: 3,
+        border: 1,
+        borderColor: hasActiveFilters ? 'primary.main' : 'divider',
+        borderRadius: 2,
+        overflow: 'hidden',
+        transition: 'all 0.3s ease',
+      }}
+    >
+      {/* Filter Header */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          p: 2,
+          bgcolor: hasActiveFilters ? 'primary.lighter' : 'background.paper',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          '&:hover': {
+            bgcolor: hasActiveFilters ? 'primary.light' : 'action.hover',
+          },
+        }}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <Badge badgeContent={activeFiltersCount} color="primary">
+          <FilterIcon color={hasActiveFilters ? 'primary' : 'action'} />
+        </Badge>
+        <Typography variant="subtitle1" fontWeight={600} sx={{ flexGrow: 1 }}>
+          Filtros
+        </Typography>
+        {hasActiveFilters && (
+          <Tooltip title="Limpar todos os filtros" arrow>
+            <IconButton
+              size="small"
+              onClick={e => {
+                e.stopPropagation();
+                handleClearAll();
+              }}
+              sx={{
+                color: 'primary.main',
+                '&:hover': {
+                  bgcolor: 'primary.lighter',
+                },
+              }}
+            >
+              <ClearIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+      </Box>
+
+      {/* Filter Content */}
+      <Collapse in={expanded}>
+        <Box sx={{ p: 3, pt: 2, bgcolor: 'background.default' }}>
+          <Grid container spacing={2}>
+            {/* Status Chips */}
+            <Grid item xs={12}>
+              <Typography
+                variant="caption"
+                fontWeight={600}
+                color="text.secondary"
+                sx={{ mb: 1, display: 'block' }}
+              >
+                Status
+              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {statusOptions.map(option => {
+                  const isSelected =
+                    option.value === 'ALL'
+                      ? statusFilter.length === 0
+                      : statusFilter.includes(option.value);
+
+                  return (
+                    <motion.div
+                      key={option.value}
+                      whileTap={{ scale: 0.95 }}
+                      whileHover={{ scale: 1.05 }}
+                    >
+                      <Chip
+                        label={option.label}
+                        variant={isSelected ? 'filled' : 'outlined'}
+                        color={isSelected ? 'primary' : 'default'}
+                        onClick={() => handleStatusToggle(option.value)}
+                        sx={{
+                          fontWeight: isSelected ? 600 : 400,
+                          transition: 'all 0.2s ease',
+                          cursor: 'pointer',
+                        }}
+                      />
+                    </motion.div>
+                  );
+                })}
+              </Stack>
+            </Grid>
+
+            {/* Vendor Filter */}
+            <Grid item xs={12} md={6}>
+              <Autocomplete
+                value={selectedVendor || null}
+                onChange={(_, newValue) => {
+                  onVendorChange(newValue?.id || null);
+                }}
+                options={vendors}
+                getOptionLabel={option => option.name}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    label="Credor"
+                    placeholder="Selecione um credor"
+                    size="small"
+                  />
+                )}
+                renderOption={(props, option) => (
+                  <li {...props}>
+                    <Typography variant="body2">{option.name}</Typography>
+                  </li>
+                )}
                 sx={{
-                  fontWeight: statusFilter === option.value ? 600 : 400,
-                  transition: 'all 0.2s ease',
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'background.paper',
+                  },
                 }}
               />
-            </motion.div>
-          ))}
-        </Stack>
-      </Box>
-    );
-  }
+            </Grid>
 
-  // Select-based filter for desktop
-  return (
-    <Box sx={{ mb: 3 }}>
-      <FormControl size="small" sx={{ minWidth: 200 }}>
-        <InputLabel>Status</InputLabel>
-        <Select
-          value={statusFilter}
-          label="Status"
-          onChange={e => onStatusChange(e.target.value)}
-        >
-          {statusOptions.map(option => (
-            <MenuItem key={option.value} value={option.value}>
-              {option.label}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-    </Box>
+            {/* Category Filter */}
+            <Grid item xs={12} md={6}>
+              <Autocomplete
+                value={selectedCategory || null}
+                onChange={(_, newValue) => {
+                  onCategoryChange(newValue?.id || null);
+                }}
+                options={categories}
+                getOptionLabel={option => option.name}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    label="Categoria"
+                    placeholder="Selecione uma categoria"
+                    size="small"
+                  />
+                )}
+                renderOption={(props, option) => (
+                  <li {...props}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        sx={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: '50%',
+                          bgcolor: option.color || '#e0e0e0',
+                        }}
+                      />
+                      <Typography variant="body2">{option.name}</Typography>
+                    </Box>
+                  </li>
+                )}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'background.paper',
+                  },
+                }}
+              />
+            </Grid>
+
+            {/* Tags Filter */}
+            <Grid item xs={12}>
+              <Autocomplete
+                multiple
+                value={selectedTags}
+                onChange={(_, newValue) => {
+                  onTagsChange(newValue.map(tag => tag.id));
+                }}
+                options={tags}
+                getOptionLabel={option => option.name}
+                renderInput={params => (
+                  <TextField
+                    {...params}
+                    label="Tags"
+                    placeholder="Selecione tags"
+                    size="small"
+                  />
+                )}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip
+                      {...getTagProps({ index })}
+                      key={option.id}
+                      label={option.name}
+                      size="small"
+                      sx={{
+                        bgcolor: option.color || '#e0e0e0',
+                        color: '#fff',
+                        '& .MuiChip-deleteIcon': {
+                          color: 'rgba(255, 255, 255, 0.7)',
+                          '&:hover': {
+                            color: '#fff',
+                          },
+                        },
+                      }}
+                    />
+                  ))
+                }
+                renderOption={(props, option) => (
+                  <li {...props}>
+                    <Chip
+                      label={option.name}
+                      size="small"
+                      sx={{
+                        bgcolor: option.color || '#e0e0e0',
+                        color: '#fff',
+                      }}
+                    />
+                  </li>
+                )}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'background.paper',
+                  },
+                }}
+              />
+            </Grid>
+          </Grid>
+
+          {/* Active Filters Summary */}
+          <AnimatePresence>
+            {hasActiveFilters && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Box
+                  sx={{
+                    mt: 2,
+                    pt: 2,
+                    borderTop: 1,
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    fontWeight={600}
+                    color="text.secondary"
+                    sx={{ mb: 1, display: 'block' }}
+                  >
+                    Filtros ativos ({activeFiltersCount})
+                  </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {statusFilter.map(status => {
+                      const option = statusOptions.find(
+                        o => o.value === status
+                      );
+                      return (
+                        <Chip
+                          key={status}
+                          label={option?.label}
+                          size="small"
+                          onDelete={() => handleStatusToggle(status)}
+                          color="primary"
+                          variant="outlined"
+                        />
+                      );
+                    })}
+                    {selectedVendor && (
+                      <Chip
+                        label={`Credor: ${selectedVendor.name}`}
+                        size="small"
+                        onDelete={() => onVendorChange(null)}
+                        color="primary"
+                        variant="outlined"
+                      />
+                    )}
+                    {selectedCategory && (
+                      <Chip
+                        key={`category-${selectedCategory.id}`}
+                        label={`Categoria: ${selectedCategory.name}`}
+                        size="small"
+                        onDelete={() => onCategoryChange(null)}
+                        color="primary"
+                        variant="outlined"
+                        icon={
+                          <Box
+                            component="span"
+                            sx={{
+                              width: 12,
+                              height: 12,
+                              borderRadius: '50%',
+                              bgcolor: selectedCategory.color || '#e0e0e0',
+                            }}
+                          />
+                        }
+                      />
+                    )}
+                    {selectedTags.map(tag => (
+                      <Chip
+                        key={tag.id}
+                        label={tag.name}
+                        size="small"
+                        onDelete={() =>
+                          onTagsChange(tagFilters.filter(id => id !== tag.id))
+                        }
+                        sx={{
+                          bgcolor: tag.color || '#e0e0e0',
+                          color: '#fff',
+                          '& .MuiChip-deleteIcon': {
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            '&:hover': {
+                              color: '#fff',
+                            },
+                          },
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                </Box>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Box>
+      </Collapse>
+    </Paper>
   );
 };

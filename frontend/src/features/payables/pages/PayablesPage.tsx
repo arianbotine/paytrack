@@ -34,7 +34,10 @@ export const PayablesPage: React.FC = () => {
   const [selectedPayable, setSelectedPayable] = useState<Payable | null>(null);
   const [selectedInstallment, setSelectedInstallment] =
     useState<PayableInstallment | null>(null);
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [vendorFilter, setVendorFilter] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -43,7 +46,14 @@ export const PayablesPage: React.FC = () => {
     data: payablesData,
     isLoading,
     error,
-  } = usePayables({ status: statusFilter, page, rowsPerPage });
+  } = usePayables({
+    status: statusFilter,
+    vendorId: vendorFilter,
+    categoryId: categoryFilter,
+    tagIds: tagFilters,
+    page,
+    rowsPerPage,
+  });
 
   const { data: vendors = [] } = useVendors();
   const { data: categories = [] } = useCategories();
@@ -122,8 +132,23 @@ export const PayablesPage: React.FC = () => {
     setPaymentHistoryDialogOpen(true);
   }, []);
 
-  const handleStatusChange = useCallback((status: string) => {
+  const handleStatusChange = useCallback((status: string[]) => {
     setStatusFilter(status);
+    setPage(0);
+  }, []);
+
+  const handleVendorChange = useCallback((vendorId: string | null) => {
+    setVendorFilter(vendorId);
+    setPage(0);
+  }, []);
+
+  const handleCategoryChange = useCallback((categoryId: string | null) => {
+    setCategoryFilter(categoryId);
+    setPage(0);
+  }, []);
+
+  const handleTagsChange = useCallback((tagIds: string[]) => {
+    setTagFilters(tagIds);
     setPage(0);
   }, []);
 
@@ -164,6 +189,15 @@ export const PayablesPage: React.FC = () => {
         <PayableFilters
           statusFilter={statusFilter}
           onStatusChange={handleStatusChange}
+          vendorFilter={vendorFilter}
+          onVendorChange={handleVendorChange}
+          vendors={vendors}
+          categoryFilter={categoryFilter}
+          onCategoryChange={handleCategoryChange}
+          categories={categories}
+          tagFilters={tagFilters}
+          onTagsChange={handleTagsChange}
+          tags={tags}
         />
 
         {error && (

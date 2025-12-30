@@ -38,6 +38,15 @@ export class PayablesService {
       ...(filters?.categoryId && { categoryId: filters.categoryId }),
       ...(filters?.status &&
         filters.status.length > 0 && { status: { in: filters.status } }),
+      ...(filters?.tagIds && filters.tagIds.length > 0
+        ? {
+            tags: {
+              some: {
+                tagId: { in: filters.tagIds },
+              },
+            },
+          }
+        : {}),
       ...(filters?.dueDateFrom || filters?.dueDateTo
         ? {
             dueDate: {

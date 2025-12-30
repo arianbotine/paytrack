@@ -39,7 +39,10 @@ export const ReceivablesPage: React.FC = () => {
     useState<Receivable | null>(null);
   const [selectedInstallment, setSelectedInstallment] =
     useState<ReceivableInstallment | null>(null);
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [customerFilter, setCustomerFilter] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -48,7 +51,14 @@ export const ReceivablesPage: React.FC = () => {
     data: receivablesData,
     isLoading,
     error,
-  } = useReceivables({ status: statusFilter, page, rowsPerPage });
+  } = useReceivables({
+    status: statusFilter,
+    customerId: customerFilter,
+    categoryId: categoryFilter,
+    tagIds: tagFilters,
+    page,
+    rowsPerPage,
+  });
 
   const { data: customers = [] } = useCustomers();
   const { data: categories = [] } = useReceivableCategories();
@@ -130,8 +140,23 @@ export const ReceivablesPage: React.FC = () => {
     [createMutation]
   );
 
-  const handleStatusChange = useCallback((status: string) => {
+  const handleStatusChange = useCallback((status: string[]) => {
     setStatusFilter(status);
+    setPage(0);
+  }, []);
+
+  const handleCustomerChange = useCallback((customerId: string | null) => {
+    setCustomerFilter(customerId);
+    setPage(0);
+  }, []);
+
+  const handleCategoryChange = useCallback((categoryId: string | null) => {
+    setCategoryFilter(categoryId);
+    setPage(0);
+  }, []);
+
+  const handleTagsChange = useCallback((tagIds: string[]) => {
+    setTagFilters(tagIds);
     setPage(0);
   }, []);
 
@@ -172,6 +197,15 @@ export const ReceivablesPage: React.FC = () => {
         <ReceivableFilters
           statusFilter={statusFilter}
           onStatusChange={handleStatusChange}
+          customerFilter={customerFilter}
+          onCustomerChange={handleCustomerChange}
+          customers={customers}
+          categoryFilter={categoryFilter}
+          onCategoryChange={handleCategoryChange}
+          categories={categories}
+          tagFilters={tagFilters}
+          onTagsChange={handleTagsChange}
+          tags={tags}
         />
 
         {error && (

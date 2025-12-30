@@ -48,7 +48,10 @@ export const payableKeys = {
 // ============================================================
 
 interface UsePayablesParams {
-  status?: string;
+  status?: string[];
+  vendorId?: string | null;
+  categoryId?: string | null;
+  tagIds?: string[];
   page: number;
   rowsPerPage: number;
 }

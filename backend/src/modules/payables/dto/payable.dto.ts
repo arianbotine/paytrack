@@ -105,6 +105,21 @@ export class PayableFilterDto {
 
   @ApiPropertyOptional({
     type: [String],
+    example: ['uuid-tag-1', 'uuid-tag-2'],
+  })
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.split(',').map((s: string) => s.trim());
+    }
+    return value;
+  })
+  tagIds?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
     enum: AccountStatus,
     example: [AccountStatus.PENDING, AccountStatus.OVERDUE],
   })

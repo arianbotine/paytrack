@@ -48,7 +48,10 @@ export const receivableKeys = {
 // ============================================================
 
 interface UseReceivablesParams {
-  status?: string;
+  status?: string[];
+  customerId?: string | null;
+  categoryId?: string | null;
+  tagIds?: string[];
   page: number;
   rowsPerPage: number;
 }
