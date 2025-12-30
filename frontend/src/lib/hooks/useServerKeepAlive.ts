@@ -4,6 +4,9 @@ import api from '../api';
 
 const KEEP_ALIVE_INTERVAL = 5 * 60 * 1000; // 5 minutos em milliseconds
 
+// Global flag to prevent duplicate initialization in development (Strict Mode)
+let isKeepAliveInitialized = false;
+
 /**
  * Hook que mantém o servidor ativo fazendo requisições periódicas ao healthcheck.
  * Previne que o servidor seja desligado após período de inatividade.
@@ -36,21 +39,25 @@ export function useServerKeepAlive() {
     };
 
     if (authenticated) {
-      // Fazer ping imediatamente após login
-      pingServer();
+      if (!isKeepAliveInitialized) {
+        // Fazer ping imediatamente após login
+        pingServer();
 
-      // Configurar intervalo de 5 em 5 minutos
-      intervalRef.current = globalThis.setInterval(
-        pingServer,
-        KEEP_ALIVE_INTERVAL
-      );
+        // Configurar intervalo de 5 em 5 minutos
+        intervalRef.current = globalThis.setInterval(
+          pingServer,
+          KEEP_ALIVE_INTERVAL
+        );
 
-      console.debug('[Keep-Alive] Iniciado - ping a cada 5 minutos');
+        console.debug('[Keep-Alive] Iniciado - ping a cada 5 minutos');
+        isKeepAliveInitialized = true;
+      }
     } else if (intervalRef.current !== null) {
       // Limpar intervalo quando usuário não está autenticado
       clearInterval(intervalRef.current);
       intervalRef.current = null;
       console.debug('[Keep-Alive] Parado');
+      isKeepAliveInitialized = false;
     }
 
     // Cleanup ao desmontar componente

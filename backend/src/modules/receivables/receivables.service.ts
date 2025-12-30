@@ -366,13 +366,16 @@ export class ReceivablesService {
   }
 
   async updateOverdueStatus() {
+    // Usar data atual em UTC para evitar problemas de timezone
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayUTC = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+    );
 
     const result = await this.prisma.receivableInstallment.updateMany({
       where: {
         status: AccountStatus.PENDING,
-        dueDate: { lt: today },
+        dueDate: { lt: todayUTC },
       },
       data: { status: AccountStatus.OVERDUE },
     });

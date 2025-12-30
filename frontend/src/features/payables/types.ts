@@ -75,7 +75,7 @@ export const payableSchema = z
     description: z.string().min(1, 'Descrição é obrigatória').max(255),
     amount: z.coerce.number().positive('Valor deve ser positivo'),
     dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
-    vendorId: z.string().min(1, 'Fornecedor é obrigatório'),
+    vendorId: z.string().min(1, 'Credor é obrigatório'),
     categoryId: z.string().optional(),
     tagIds: z.array(z.string()).optional(),
     notes: z.string().optional(),

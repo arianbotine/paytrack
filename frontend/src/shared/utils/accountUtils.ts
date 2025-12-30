@@ -1,4 +1,4 @@
-import { differenceInDays, isAfter } from 'date-fns';
+import { differenceInDays, isAfter, startOfDay } from 'date-fns';
 
 /**
  * Account status utilities
@@ -28,9 +28,11 @@ export type AccountStatus = keyof typeof ACCOUNT_STATUS_LABELS;
 export const isDueSoon = (dueDate: string, status: string): boolean => {
   if (status === 'PAID' || status === 'CANCELLED') return false;
 
-  const today = new Date();
-  // dueDate vem como YYYY-MM-DD do backend - sem conversão de timezone
-  const due = new Date(dueDate);
+  // Normalizar para início do dia para comparar apenas a data, sem horário
+  const today = startOfDay(new Date());
+  // Extrair apenas a parte da data (YYYY-MM-DD) para evitar problemas de timezone
+  const dueDateString = dueDate.split('T')[0];
+  const due = startOfDay(new Date(dueDateString));
   const daysUntilDue = differenceInDays(due, today);
 
   return daysUntilDue >= 0 && daysUntilDue <= 7;
@@ -42,8 +44,11 @@ export const isDueSoon = (dueDate: string, status: string): boolean => {
 export const isOverdue = (dueDate: string, status: string): boolean => {
   if (status === 'PAID' || status === 'CANCELLED') return false;
 
-  const today = new Date();
-  const due = new Date(dueDate);
+  // Normalizar para início do dia para comparar apenas a data, sem horário
+  const today = startOfDay(new Date());
+  // Extrair apenas a parte da data (YYYY-MM-DD) para evitar problemas de timezone
+  const dueDateString = dueDate.split('T')[0];
+  const due = startOfDay(new Date(dueDateString));
 
   return status === 'OVERDUE' || isAfter(today, due);
 };
@@ -52,8 +57,11 @@ export const isOverdue = (dueDate: string, status: string): boolean => {
  * Get days until due date
  */
 export const getDaysUntilDue = (dueDate: string): number => {
-  const today = new Date();
-  const due = new Date(dueDate);
+  // Normalizar para início do dia para comparar apenas a data, sem horário
+  const today = startOfDay(new Date());
+  // Extrair apenas a parte da data (YYYY-MM-DD) para evitar problemas de timezone
+  const dueDateString = dueDate.split('T')[0];
+  const due = startOfDay(new Date(dueDateString));
   return differenceInDays(due, today);
 };
 

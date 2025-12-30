@@ -54,10 +54,13 @@ export class DashboardService {
   }
 
   private async generateSummary(organizationId: string) {
+    // Usar datas em UTC para evitar problemas de timezone
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayUTC = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+    );
 
-    const in7Days = new Date(today);
+    const in7Days = new Date(todayUTC);
     in7Days.setDate(in7Days.getDate() + 7);
 
     // Queries usando as tabelas de installments separadas
@@ -130,7 +133,7 @@ export class DashboardService {
         where: {
           organizationId,
           status: { in: [AccountStatus.PENDING, AccountStatus.PARTIAL] },
-          dueDate: { gte: today, lte: in7Days },
+          dueDate: { gte: todayUTC, lte: in7Days },
         },
         include: {
           payable: {
@@ -151,7 +154,7 @@ export class DashboardService {
         where: {
           organizationId,
           status: { in: [AccountStatus.PENDING, AccountStatus.PARTIAL] },
-          dueDate: { gte: today, lte: in7Days },
+          dueDate: { gte: todayUTC, lte: in7Days },
         },
         include: {
           receivable: {

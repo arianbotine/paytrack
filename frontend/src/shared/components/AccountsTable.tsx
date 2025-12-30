@@ -21,7 +21,7 @@ import {
   Error as ErrorIcon,
   History as HistoryIcon,
 } from '@mui/icons-material';
-import { differenceInDays, isAfter } from 'date-fns';
+import { differenceInDays, isAfter, startOfDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StatusChip } from './StatusChip';
 import { TableSkeleton } from './TableSkeleton';
@@ -54,8 +54,11 @@ interface AccountsTableProps<T extends AccountItem> {
 const getDueDateAlert = (dueDate: string, status: string) => {
   if (status === 'PAID' || status === 'CANCELLED') return null;
 
-  const today = new Date();
-  const due = new Date(dueDate);
+  // Normalizar para início do dia para comparar apenas a data, sem horário
+  const today = startOfDay(new Date());
+  // Extrair apenas a parte da data (YYYY-MM-DD) para evitar problemas de timezone
+  const dueDateString = dueDate.split('T')[0];
+  const due = startOfDay(new Date(dueDateString));
   const daysUntilDue = differenceInDays(due, today);
 
   if (status === 'OVERDUE' || isAfter(today, due)) {

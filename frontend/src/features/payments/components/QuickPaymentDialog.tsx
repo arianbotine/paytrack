@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   Box,
   Button,
@@ -36,6 +36,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
+import { startOfDay, isAfter } from 'date-fns';
 import { formatLocalDate } from '../../../shared/utils/dateUtils';
 import { formatCurrency } from '../../../shared/utils/currencyUtils';
 import { PAYMENT_METHODS, paymentSchema, getDefaultFormValues } from '../types';
@@ -62,6 +63,7 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
 }) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
+  const amountRef = useRef<HTMLInputElement>(null);
 
   const {
     control,
@@ -76,7 +78,12 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
 
   const amount = watch('amount');
 
-  // Informações contextuais da parcela
+  useEffect(() => {
+    if (open && amountRef.current) {
+      setTimeout(() => amountRef.current?.focus(), 100);
+    }
+  }, [open]);
+
   const installmentInfo = useMemo(() => {
     if (!installment) return null;
 
@@ -129,10 +136,11 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
 
   const isOverdue = useMemo(() => {
     if (!installmentInfo) return false;
-    return (
-      new Date(installmentInfo.dueDate) < new Date() &&
-      installmentInfo.status === 'PENDING'
-    );
+    const today = startOfDay(new Date());
+    const dueDateString = installmentInfo.dueDate.split('T')[0];
+    const due = startOfDay(new Date(dueDateString));
+    const result = !isAfter(due, today) && installmentInfo.status === 'PENDING';
+    return result;
   }, [installmentInfo]);
 
   const isPartialPayment = useMemo(() => {
@@ -143,6 +151,9 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
   if (!installmentInfo) return null;
 
   const isReceivable = type === 'RECEIVABLE';
+  const buttonText = isReceivable
+    ? 'Registrar Recebimento'
+    : 'Registrar Pagamento';
 
   return (
     <AnimatePresence>
@@ -247,7 +258,7 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
                               variant="caption"
                               color="text.secondary"
                             >
-                              {isReceivable ? 'Cliente' : 'Fornecedor'}
+                              {isReceivable ? 'Cliente' : 'Credor'}
                             </Typography>
                             <Typography variant="body2" fontWeight={500}>
                               {installmentInfo.entityName}
@@ -266,21 +277,23 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
                             >
                               Vencimento
                             </Typography>
-                            <Typography
-                              variant="body2"
-                              fontWeight={500}
-                              color={isOverdue ? 'error.main' : 'text.primary'}
-                            >
-                              {formatLocalDate(installmentInfo.dueDate)}
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Typography
+                                variant="body2"
+                                fontWeight={500}
+                                color="text.primary"
+                              >
+                                {formatLocalDate(installmentInfo.dueDate)}
+                              </Typography>
                               {isOverdue && (
                                 <Chip
                                   label="Vencido"
                                   size="small"
                                   color="error"
-                                  sx={{ ml: 1, height: 20 }}
+                                  sx={{ height: 20 }}
                                 />
                               )}
-                            </Typography>
+                            </Box>
                           </Box>
                         </Stack>
                       </Grid>
@@ -352,6 +365,7 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
                         required
                         error={!!errors.amount}
                         helperText={errors.amount?.message}
+                        inputRef={amountRef}
                         InputProps={{
                           startAdornment: (
                             <InputAdornment position="start">R$</InputAdornment>
@@ -362,7 +376,6 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
                           min: '0.01',
                           max: installmentInfo.pendingAmount,
                         }}
-                        autoFocus
                       />
                     )}
                   />
@@ -450,11 +463,7 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
                 color={isReceivable ? 'success' : 'error'}
                 disabled={isSubmitting}
               >
-                {isSubmitting
-                  ? 'Registrando...'
-                  : isReceivable
-                    ? 'Registrar Recebimento'
-                    : 'Registrar Pagamento'}
+                {isSubmitting ? 'Registrando...' : buttonText}
               </Button>
             </DialogActions>
           </form>
