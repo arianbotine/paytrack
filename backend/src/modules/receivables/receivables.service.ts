@@ -249,6 +249,11 @@ export class ReceivablesService {
 
     const receivable = await this.prisma.receivable.findFirst({
       where: { id, organizationId },
+      include: {
+        installments: {
+          orderBy: { installmentNumber: 'asc' },
+        },
+      },
     });
 
     if (!receivable) {
@@ -256,6 +261,43 @@ export class ReceivablesService {
     }
 
     const { customerId, categoryId, invoiceNumber, ...updateData } = data;
+
+    // Se a data de vencimento foi alterada e há parcelas, recalcular as datas
+    const shouldUpdateInstallmentDates =
+      data.dueDate && receivable.installments.length > 1;
+
+    if (shouldUpdateInstallmentDates) {
+      const newDueDate = parseDateOnly(data.dueDate);
+      const installmentCount = receivable.installments.length;
+
+      // Gerar novas datas de vencimento mensais
+      const newDueDates: Date[] = [];
+      for (let i = 0; i < installmentCount; i++) {
+        const installmentDate = new Date(newDueDate);
+        installmentDate.setUTCMonth(installmentDate.getUTCMonth() + i);
+        newDueDates.push(installmentDate);
+      }
+
+      // Atualizar apenas parcelas pendentes ou vencidas (não pagas ou parcialmente pagas)
+      const installmentsToUpdate = receivable.installments.filter(
+        installment =>
+          installment.status === AccountStatus.PENDING ||
+          installment.status === AccountStatus.OVERDUE
+      );
+
+      await Promise.all(
+        installmentsToUpdate.map(installment => {
+          // Encontrar o índice original da parcela para pegar a data correta
+          const originalIndex = receivable.installments.findIndex(
+            inst => inst.id === installment.id
+          );
+          return this.prisma.receivableInstallment.update({
+            where: { id: installment.id },
+            data: { dueDate: newDueDates[originalIndex] },
+          });
+        })
+      );
+    }
 
     const updated = await this.prisma.receivable.update({
       where: { id },

@@ -26,7 +26,8 @@ interface Account {
   id: string;
   description: string;
   amount: number;
-  paidAmount: number;
+  paidAmount?: number;
+  receivedAmount?: number;
   dueDate: string;
   vendor?: { name: string };
   customer?: { name: string };
@@ -135,13 +136,20 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                           noWrap
                           sx={{ maxWidth: 120 }}
                         >
-                          {(account as any)[entityName]?.name}
+                          {(account as any)[entityName]?.name ||
+                            (account as any).payable?.[entityName]?.name ||
+                            (account as any).receivable?.[entityName]?.name}
                         </Typography>
                       </TableCell>
                       <TableCell align="right">
                         <Typography variant="body2" fontWeight="medium">
                           {formatCurrency(
-                            Number(account.amount) - Number(account.paidAmount)
+                            Number(account.amount) -
+                              Number(
+                                type === 'payable'
+                                  ? account.paidAmount
+                                  : (account as any).receivedAmount || 0
+                              )
                           )}
                         </Typography>
                       </TableCell>
