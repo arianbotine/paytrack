@@ -247,11 +247,21 @@ export function VendorsPage() {
             </Stack>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseForm}>Cancelar</Button>
+            <Button
+              onClick={handleCloseForm}
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
+              Cancelar
+            </Button>
             <Button
               type="submit"
               variant="contained"
               disabled={createMutation.isPending || updateMutation.isPending}
+              startIcon={
+                createMutation.isPending || updateMutation.isPending ? (
+                  <CircularProgress size={16} />
+                ) : null
+              }
             >
               {editingVendor ? 'Salvar' : 'Criar'}
             </Button>

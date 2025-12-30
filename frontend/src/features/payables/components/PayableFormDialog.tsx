@@ -35,6 +35,7 @@ import {
   SwapHoriz,
   Add as AddIcon,
 } from '@mui/icons-material';
+import { CircularProgress } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -828,8 +829,15 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
               )}
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2 }}>
-              <Button onClick={handleClose}>Cancelar</Button>
-              <Button type="submit" variant="contained" disabled={isSubmitting}>
+              <Button onClick={handleClose} disabled={isSubmitting}>
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={isSubmitting}
+                startIcon={isSubmitting ? <CircularProgress size={16} /> : null}
+              >
                 {isEditing ? 'Salvar' : 'Criar'}
               </Button>
             </DialogActions>

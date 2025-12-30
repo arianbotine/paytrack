@@ -33,6 +33,7 @@ import {
   AttachMoney as MoneyIcon,
   LocalOffer as TagIcon,
 } from '@mui/icons-material';
+import { CircularProgress } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -462,8 +463,9 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
                 variant="contained"
                 color={isReceivable ? 'success' : 'error'}
                 disabled={isSubmitting}
+                startIcon={isSubmitting ? <CircularProgress size={16} /> : null}
               >
-                {isSubmitting ? 'Registrando...' : buttonText}
+                {buttonText}
               </Button>
             </DialogActions>
           </form>

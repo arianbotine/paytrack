@@ -22,6 +22,7 @@ import {
   MenuItem,
 } from '@mui/material';
 import { Add, Link as LinkIcon } from '@mui/icons-material';
+import { CircularProgress } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -321,11 +322,19 @@ export function AdminUsersPage() {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenCreateDialog(false)}>Cancelar</Button>
+            <Button
+              onClick={() => setOpenCreateDialog(false)}
+              disabled={createMutation.isPending}
+            >
+              Cancelar
+            </Button>
             <Button
               type="submit"
               variant="contained"
               disabled={createMutation.isPending}
+              startIcon={
+                createMutation.isPending ? <CircularProgress size={16} /> : null
+              }
             >
               Criar
             </Button>
@@ -383,13 +392,21 @@ export function AdminUsersPage() {
             </TextField>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setOpenAssociateDialog(false)}>
+            <Button
+              onClick={() => setOpenAssociateDialog(false)}
+              disabled={associateMutation.isPending}
+            >
               Cancelar
             </Button>
             <Button
               type="submit"
               variant="contained"
               disabled={associateMutation.isPending}
+              startIcon={
+                associateMutation.isPending ? (
+                  <CircularProgress size={16} />
+                ) : null
+              }
             >
               Associar
             </Button>

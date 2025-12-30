@@ -22,6 +22,7 @@ import {
   Chip,
 } from '@mui/material';
 import { Add, Edit, Visibility } from '@mui/icons-material';
+import { CircularProgress } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -344,12 +345,25 @@ export function AdminOrganizationsPage() {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDialog}>Fechar</Button>
+            <Button
+              onClick={handleCloseDialog}
+              disabled={
+                !viewingOrg &&
+                (createMutation.isPending || updateMutation.isPending)
+              }
+            >
+              Fechar
+            </Button>
             {!viewingOrg && (
               <Button
                 type="submit"
                 variant="contained"
                 disabled={createMutation.isPending || updateMutation.isPending}
+                startIcon={
+                  createMutation.isPending || updateMutation.isPending ? (
+                    <CircularProgress size={16} />
+                  ) : null
+                }
               >
                 {editingOrg ? 'Salvar' : 'Criar'}
               </Button>

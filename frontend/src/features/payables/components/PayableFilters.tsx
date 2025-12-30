@@ -243,7 +243,9 @@ export const PayableFilters: React.FC<PayableFiltersProps> = ({
                   const { key, ...otherProps } = props;
                   return (
                     <li key={key} {...otherProps}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
                         <Box
                           sx={{
                             width: 16,

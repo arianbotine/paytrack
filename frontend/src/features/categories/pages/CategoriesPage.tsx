@@ -31,6 +31,7 @@ import {
   AccountBalance as PayableIcon,
   RequestQuote as ReceivableIcon,
 } from '@mui/icons-material';
+import { CircularProgress } from '@mui/material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -421,11 +422,21 @@ export const CategoriesPage: React.FC = () => {
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancelar</Button>
+            <Button
+              onClick={handleCloseDialog}
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
+              Cancelar
+            </Button>
             <Button
               type="submit"
               variant="contained"
               disabled={createMutation.isPending || updateMutation.isPending}
+              startIcon={
+                createMutation.isPending || updateMutation.isPending ? (
+                  <CircularProgress size={16} />
+                ) : null
+              }
             >
               {selectedCategory ? 'Salvar' : 'Criar'}
             </Button>
