@@ -255,13 +255,21 @@ export class ReceivablesService {
       throw new NotFoundException('Conta a receber não encontrada');
     }
 
+    const { customerId, categoryId, invoiceNumber, ...updateData } = data;
+
     const updated = await this.prisma.receivable.update({
       where: { id },
       data: {
-        ...data,
+        ...updateData,
         ...(data.amount && { amount: MoneyUtils.toDecimal(data.amount) }),
         ...(data.dueDate && { dueDate: parseDateOnly(data.dueDate) }),
-        ...(data.invoiceNumber && { documentNumber: data.invoiceNumber }),
+        ...(invoiceNumber !== undefined && { documentNumber: invoiceNumber }),
+        ...(customerId && { customer: { connect: { id: customerId } } }),
+        ...(categoryId !== undefined && {
+          category: categoryId
+            ? { connect: { id: categoryId } }
+            : { disconnect: true },
+        }),
         ...(tagIds && {
           tags: {
             deleteMany: {},

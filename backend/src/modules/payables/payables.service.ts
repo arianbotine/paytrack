@@ -255,13 +255,21 @@ export class PayablesService {
       throw new NotFoundException('Conta a pagar não encontrada');
     }
 
+    const { vendorId, categoryId, invoiceNumber, ...updateData } = data;
+
     const updated = await this.prisma.payable.update({
       where: { id },
       data: {
-        ...data,
+        ...updateData,
         ...(data.amount && { amount: MoneyUtils.toDecimal(data.amount) }),
         ...(data.dueDate && { dueDate: parseDateOnly(data.dueDate) }),
-        ...(data.invoiceNumber && { documentNumber: data.invoiceNumber }),
+        ...(invoiceNumber !== undefined && { documentNumber: invoiceNumber }),
+        ...(vendorId && { vendor: { connect: { id: vendorId } } }),
+        ...(categoryId !== undefined && {
+          category: categoryId
+            ? { connect: { id: categoryId } }
+            : { disconnect: true },
+        }),
         ...(tagIds && {
           tags: {
             deleteMany: {},
