@@ -179,7 +179,6 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
           categoryId: receivable.category?.id || '',
           tagIds: receivable.tags.map(t => t.tag.id),
           notes: receivable.notes || '',
-          invoiceNumber: receivable.invoiceNumber || '',
         });
       } else {
         reset(getDefaultFormValues());
@@ -729,20 +728,6 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                     )}
                   </>
                 )}
-
-                <Grid item xs={12} md={6}>
-                  <Controller
-                    name="invoiceNumber"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Número da Nota Fiscal"
-                        fullWidth
-                      />
-                    )}
-                  />
-                </Grid>
 
                 <Grid item xs={12} md={6}>
                   <Box

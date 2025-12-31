@@ -35,7 +35,6 @@ export interface BaseAccount {
   amount: number;
   dueDate: string;
   status: AccountStatus;
-  invoiceNumber?: string;
   totalInstallments: number;
   category?: {
     id: string;

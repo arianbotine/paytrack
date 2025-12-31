@@ -105,8 +105,6 @@ export class ReceivablesService {
 
     const mappedData = transformedData.map((item: any) => ({
       ...item,
-      invoiceNumber: item.documentNumber,
-      documentNumber: undefined,
     }));
 
     return { data: mappedData, total };
@@ -150,8 +148,6 @@ export class ReceivablesService {
 
     return {
       ...transformed,
-      invoiceNumber: transformed.documentNumber,
-      documentNumber: undefined,
     };
   }
 
@@ -184,7 +180,6 @@ export class ReceivablesService {
           amount: MoneyUtils.toDecimal(baseData.amount),
           dueDate: parseDateOnly(dueDates ? dueDates[0] : baseData.dueDate),
           notes: baseData.notes,
-          documentNumber: baseData.invoiceNumber,
           totalInstallments: installmentCount,
           status: AccountStatus.PENDING,
           ...(tagIds && tagIds.length > 0
@@ -239,8 +234,6 @@ export class ReceivablesService {
 
     return {
       ...transformed,
-      invoiceNumber: transformed.documentNumber,
-      documentNumber: undefined,
     };
   }
 
@@ -269,7 +262,7 @@ export class ReceivablesService {
       throw new NotFoundException('Conta a receber não encontrada');
     }
 
-    const { customerId, categoryId, invoiceNumber, ...updateData } = data;
+    const { customerId, categoryId, ...updateData } = data;
 
     // Se a data de vencimento foi alterada e há parcelas, recalcular as datas
     const shouldUpdateInstallmentDates =
@@ -314,7 +307,6 @@ export class ReceivablesService {
         ...updateData,
         ...(data.amount && { amount: MoneyUtils.toDecimal(data.amount) }),
         ...(data.dueDate && { dueDate: parseDateOnly(data.dueDate) }),
-        ...(invoiceNumber !== undefined && { documentNumber: invoiceNumber }),
         ...(customerId && { customer: { connect: { id: customerId } } }),
         ...(categoryId !== undefined && {
           category: categoryId
@@ -351,8 +343,6 @@ export class ReceivablesService {
 
     return {
       ...transformed,
-      invoiceNumber: transformed.documentNumber,
-      documentNumber: undefined,
     };
   }
 

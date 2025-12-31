@@ -257,7 +257,6 @@ model Receivable {
   dueDate        DateTime      @map("due_date") @db.Date
   status         AccountStatus @default(PENDING)
   notes          String?
-  documentNumber String?       @map("document_number") // Invoice number, etc.
 
   // Installment metadata
   totalInstallments Int @default(1) @map("total_installments")

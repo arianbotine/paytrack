@@ -46,11 +46,6 @@ export class CreateReceivableDto {
   @IsOptional()
   notes?: string;
 
-  @ApiPropertyOptional({ example: 'PED-12345' })
-  @IsString()
-  @IsOptional()
-  invoiceNumber?: string;
-
   @ApiPropertyOptional({
     type: [String],
     example: ['uuid-tag-1', 'uuid-tag-2'],

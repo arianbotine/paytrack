@@ -180,14 +180,6 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                 >
                                   {account.description}
                                 </Typography>
-                                {account.invoiceNumber && (
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                  >
-                                    NF: {account.invoiceNumber}
-                                  </Typography>
-                                )}
                               </Box>
                             }
                             subheader={
@@ -539,14 +531,6 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                               <Typography fontWeight="medium">
                                 {account.description}
                               </Typography>
-                              {account.invoiceNumber && (
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  NF: {account.invoiceNumber}
-                                </Typography>
-                              )}
                               {hasInstallments(account) && progress && (
                                 <Box sx={{ mt: 0.5 }}>
                                   <Box

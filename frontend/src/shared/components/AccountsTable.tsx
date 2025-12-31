@@ -170,11 +170,6 @@ export function AccountsTable<T extends AccountItem>({
                       <Typography fontWeight="medium">
                         {account.description}
                       </Typography>
-                      {account.invoiceNumber && (
-                        <Typography variant="caption" color="text.secondary">
-                          NF: {account.invoiceNumber}
-                        </Typography>
-                      )}
                       {account.tags.length > 0 && (
                         <Box
                           sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}

@@ -25,7 +25,10 @@ const formatValue = (num: number | string | null): string => {
 };
 
 export const CurrencyField = forwardRef<HTMLInputElement, CurrencyFieldProps>(
-  ({ value, onChange, currencySymbol = 'R$', ...props }, ref) => {
+  (
+    { value, onChange, currencySymbol = 'R$', onFocus, onBlur, ...props },
+    ref
+  ) => {
     // Handle input change - memoizado para performance
     const handleChange = useCallback(
       (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,9 +70,9 @@ export const CurrencyField = forwardRef<HTMLInputElement, CurrencyFieldProps>(
             event.target.value = (numericValue * 100).toString();
           }
         }
-        props.onFocus?.(event);
+        onFocus?.(event);
       },
-      [value, props.onFocus]
+      [value, onFocus]
     );
 
     // Handle blur - memoizado
@@ -81,9 +84,9 @@ export const CurrencyField = forwardRef<HTMLInputElement, CurrencyFieldProps>(
             Number.parseInt(inputValue.replaceAll(/\D/g, ''), 10) / 100;
           event.target.value = formatValue(numericValue);
         }
-        props.onBlur?.(event);
+        onBlur?.(event);
       },
-      [props.onBlur]
+      [onBlur]
     );
 
     const displayValue = formatValue(value || null);

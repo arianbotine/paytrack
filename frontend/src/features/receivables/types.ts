@@ -52,7 +52,6 @@ export interface Receivable {
   dueDate: string;
   status: ReceivableStatus;
   receivedAmount: number;
-  invoiceNumber?: string;
   notes?: string;
   totalInstallments: number;
   customer: Customer;
@@ -80,7 +79,6 @@ export const receivableSchema = z
     categoryId: z.string().optional(),
     tagIds: z.array(z.string()).optional(),
     notes: z.string().optional(),
-    invoiceNumber: z.string().optional(),
     // Campos de parcelas
     installmentCount: z.coerce.number().int().min(1).max(120).optional(),
     firstDueDate: z.string().optional(),
@@ -127,7 +125,6 @@ export const getDefaultFormValues = (): ReceivableFormData => ({
   categoryId: '',
   tagIds: [],
   notes: '',
-  invoiceNumber: '',
   installmentCount: 1,
   firstDueDate: getTodayLocalInput(),
 });
