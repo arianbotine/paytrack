@@ -476,11 +476,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                 <TableCell width={48} />
                 <TableCell>Descrição</TableCell>
                 <TableCell>Cliente</TableCell>
-                <TableCell
-                  sx={{ display: { xs: 'none', tablet: 'table-cell' } }}
-                >
-                  Categoria
-                </TableCell>
+                <TableCell>Categoria</TableCell>
                 <TableCell align="right">Valor</TableCell>
                 <TableCell>Vencimento</TableCell>
                 <TableCell>Status</TableCell>
@@ -608,11 +604,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                             </Box>
                           </TableCell>
                           <TableCell>{account.customer.name}</TableCell>
-                          <TableCell
-                            sx={{
-                              display: { xs: 'none', tablet: 'table-cell' },
-                            }}
-                          >
+                          <TableCell>
                             {account.category && (
                               <Chip
                                 label={account.category.name}
