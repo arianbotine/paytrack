@@ -61,6 +61,12 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
+    // Update last login timestamp
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
     // Filter only active organizations
     const activeOrgs = user.organizations.filter(
       uo => uo.organization.isActive

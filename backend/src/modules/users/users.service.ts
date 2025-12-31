@@ -24,6 +24,7 @@ export class UsersService {
             name: true,
             isSystemAdmin: true,
             isActive: true,
+            lastLoginAt: true,
             createdAt: true,
             updatedAt: true,
           },
@@ -39,6 +40,7 @@ export class UsersService {
       role: uo.role,
       isSystemAdmin: uo.user.isSystemAdmin,
       isActive: uo.isActive && uo.user.isActive,
+      lastLoginAt: uo.user.lastLoginAt,
       createdAt: uo.user.createdAt,
       updatedAt: uo.user.updatedAt,
     }));

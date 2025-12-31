@@ -82,7 +82,7 @@ interface User {
   role: 'OWNER' | 'ADMIN' | 'ACCOUNTANT' | 'VIEWER';
   isActive: boolean;
   createdAt: string;
-  lastLogin?: string;
+  lastLoginAt?: string;
 }
 
 const ROLES = [
@@ -333,8 +333,8 @@ export const UsersPage: React.FC = () => {
           />
         </TableCell>
         <TableCell>
-          {user.lastLogin
-            ? new Date(user.lastLogin).toLocaleString('pt-BR', {
+          {user.lastLoginAt && user.lastLoginAt !== null
+            ? new Date(user.lastLoginAt).toLocaleString('pt-BR', {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric',
