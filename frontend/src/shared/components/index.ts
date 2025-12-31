@@ -9,3 +9,4 @@ export * from './TableSkeleton';
 export * from './ErrorBoundary';
 export * from './LoadingOverlay';
 export * from './ServerWakeupDialog';
+export * from './CurrencyField';

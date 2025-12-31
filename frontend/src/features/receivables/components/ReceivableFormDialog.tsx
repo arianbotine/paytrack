@@ -54,6 +54,7 @@ import {
   generateInstallmentDueDates,
   calculateInstallmentAmounts,
 } from '../../../shared/utils/installmentUtils';
+import { CurrencyField } from '../../../shared/components';
 import { QuickCreateCategory } from '../../../shared/components/QuickCreateCategory';
 import { QuickCreateTag } from '../../../shared/components/QuickCreateTag';
 
@@ -339,22 +340,20 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                       name="amount"
                       control={control}
                       render={({ field }) => (
-                        <TextField
+                        <CurrencyField
                           {...field}
                           label={isInstallment ? 'Valor Total' : 'Valor'}
-                          type="number"
                           fullWidth
-                          onFocus={() => {
-                            if (field.value === 0) {
-                              setValue('amount', '' as any);
-                            }
-                          }}
+                          error={!!errors.amount}
+                          helperText={
+                            errors.amount?.message ||
+                            (isInstallment &&
+                            field.value > 0 &&
+                            installmentCount > 1
+                              ? `${installmentCount}x de ${formatCurrency(field.value / installmentCount)}`
+                              : undefined)
+                          }
                           InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                R$
-                              </InputAdornment>
-                            ),
                             endAdornment: isInstallment && (
                               <InputAdornment position="end">
                                 <Tooltip
@@ -388,36 +387,16 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                               </InputAdornment>
                             ),
                           }}
-                          error={!!errors.amount}
-                          helperText={
-                            errors.amount?.message ||
-                            (isInstallment &&
-                            field.value > 0 &&
-                            installmentCount > 1
-                              ? `${installmentCount}x de ${formatCurrency(field.value / installmentCount)}`
-                              : undefined)
-                          }
                         />
                       )}
                     />
                   ) : (
-                    <TextField
+                    <CurrencyField
                       label="Valor por Parcela"
-                      type="number"
                       fullWidth
-                      value={installmentValue || ''}
-                      onChange={e =>
-                        setInstallmentValue(Number(e.target.value))
-                      }
-                      onFocus={() => {
-                        if (installmentValue === 0) {
-                          setInstallmentValue(null);
-                        }
-                      }}
+                      value={installmentValue}
+                      onChange={setInstallmentValue}
                       InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">R$</InputAdornment>
-                        ),
                         endAdornment: (
                           <InputAdornment position="end">
                             <Tooltip title="Alternar para valor total" arrow>
@@ -441,7 +420,8 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                       }}
                       helperText={
                         installmentValue &&
-                        installmentValue > 0 && installmentCount > 1
+                        installmentValue > 0 &&
+                        installmentCount > 1
                           ? `Total: ${formatCurrency(installmentValue * installmentCount)} (${installmentCount}x)`
                           : 'Digite o valor de cada parcela'
                       }
