@@ -305,7 +305,6 @@ export class ReceivablesService {
       where: { id },
       data: {
         ...updateData,
-        ...(data.amount && { amount: MoneyUtils.toDecimal(data.amount) }),
         ...(data.dueDate && { dueDate: parseDateOnly(data.dueDate) }),
         ...(customerId && { customer: { connect: { id: customerId } } }),
         ...(categoryId !== undefined && {

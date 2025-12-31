@@ -13,8 +13,13 @@ import {
   ArrayMinSize,
   ArrayMaxSize,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { PaymentMethod, AccountStatus } from '@prisma/client';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  PartialType,
+  OmitType,
+} from '@nestjs/swagger';
+import { AccountStatus } from '@prisma/client';
 import { Type, Transform } from 'class-transformer';
 
 export class CreateReceivableDto {
@@ -88,7 +93,9 @@ export class CreateReceivableDto {
   dueDates?: string[];
 }
 
-export class UpdateReceivableDto extends PartialType(CreateReceivableDto) {}
+export class UpdateReceivableDto extends PartialType(
+  OmitType(CreateReceivableDto, ['amount'] as const)
+) {}
 
 export class ReceivableFilterDto {
   @ApiPropertyOptional({ example: 'uuid-do-cliente' })

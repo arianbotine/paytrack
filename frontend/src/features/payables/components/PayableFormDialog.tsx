@@ -344,6 +344,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                           {...field}
                           label={isInstallment ? 'Valor Total' : 'Valor'}
                           fullWidth
+                          disabled={isEditing}
                           error={!!errors.amount}
                           helperText={
                             errors.amount?.message ||

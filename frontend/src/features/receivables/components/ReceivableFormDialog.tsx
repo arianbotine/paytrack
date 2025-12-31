@@ -343,6 +343,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                           {...field}
                           label={isInstallment ? 'Valor Total' : 'Valor'}
                           fullWidth
+                          disabled={isEditing}
                           error={!!errors.amount}
                           helperText={
                             errors.amount?.message ||

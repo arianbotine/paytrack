@@ -312,9 +312,7 @@ export class PayablesService {
       where: { id },
       data: {
         ...updateData,
-        ...(data.amount && { amount: MoneyUtils.toDecimal(data.amount) }),
         ...(data.dueDate && { dueDate: parseDateOnly(data.dueDate) }),
-        ...(invoiceNumber !== undefined && { documentNumber: invoiceNumber }),
         ...(vendorId && { vendor: { connect: { id: vendorId } } }),
         ...(categoryId !== undefined && {
           category: categoryId
