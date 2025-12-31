@@ -84,10 +84,10 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
   const isEditing = !!receivable;
 
   const [isInstallment, setIsInstallment] = useState(false);
-  const [calculationMode, setCalculationMode] = useState<
+  const [userInputValue, setUserInputValue] = useState<number | null>(null);
+  const [userInputMode, setUserInputMode] = useState<
     'total' | 'perInstallment'
   >('total');
-  const [installmentValue, setInstallmentValue] = useState<number | null>(null);
   const [quickCategoryOpen, setQuickCategoryOpen] = useState(false);
   const [quickTagOpen, setQuickTagOpen] = useState(false);
 
@@ -136,18 +136,24 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
   const installmentCount = watch('installmentCount') || 1;
   const firstDueDate = watch('firstDueDate');
 
-  // Calcular valor total quando modo for 'por parcela'
+  // Calcular valores baseado no modo de entrada do usuário
   useEffect(() => {
-    if (
-      calculationMode === 'perInstallment' &&
-      installmentValue &&
-      installmentValue > 0 &&
-      installmentCount > 1
-    ) {
-      const total = installmentValue * installmentCount;
-      setValue('amount', total);
+    if (userInputValue === null) return;
+
+    if (userInputMode === 'total') {
+      setValue('amount', userInputValue);
+    } else {
+      if (isInstallment && installmentCount > 1) {
+        setValue('amount', userInputValue * installmentCount);
+      }
     }
-  }, [calculationMode, installmentValue, installmentCount, setValue]);
+  }, [
+    userInputMode,
+    userInputValue,
+    isInstallment,
+    installmentCount,
+    setValue,
+  ]);
 
   // Calculate installment preview
   const installmentPreview = useMemo(() => {
@@ -168,6 +174,28 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
     }));
   }, [isInstallment, amount, installmentCount, firstDueDate]);
 
+  const helperText = useMemo(() => {
+    if (
+      userInputMode === 'total' &&
+      isInstallment &&
+      userInputValue &&
+      installmentCount > 1
+    ) {
+      return `${installmentCount}x de ${formatCurrency(userInputValue / installmentCount)}`;
+    } else if (
+      userInputMode === 'perInstallment' &&
+      isInstallment &&
+      userInputValue &&
+      installmentCount > 1
+    ) {
+      return `Total: ${formatCurrency(userInputValue * installmentCount)} (${installmentCount}x)`;
+    } else if (userInputMode === 'perInstallment') {
+      return 'Digite o valor de cada parcela';
+    } else {
+      return undefined;
+    }
+  }, [userInputMode, isInstallment, userInputValue, installmentCount]);
+
   useEffect(() => {
     if (open) {
       if (receivable) {
@@ -180,8 +208,12 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
           tagIds: receivable.tags.map(t => t.tag.id),
           notes: receivable.notes || '',
         });
+        setUserInputValue(receivable.amount);
+        setUserInputMode('total');
       } else {
         reset(getDefaultFormValues());
+        setUserInputValue(null);
+        setUserInputMode('total');
       }
     }
   }, [open, receivable, reset]);
@@ -189,8 +221,8 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
   const handleClose = () => {
     reset();
     setIsInstallment(false);
-    setCalculationMode('total');
-    setInstallmentValue(null);
+    setUserInputValue(null);
+    setUserInputMode('total');
     onClose();
   };
 
@@ -334,99 +366,58 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
 
                 {/* Campo de Valor - Com alternância fluida entre total e parcela */}
                 <Grid item xs={12} md={6}>
-                  {calculationMode === 'total' || !isInstallment ? (
-                    <Controller
-                      name="amount"
-                      control={control}
-                      render={({ field }) => (
-                        <CurrencyField
-                          {...field}
-                          label={isInstallment ? 'Valor Total' : 'Valor'}
-                          fullWidth
-                          disabled={isEditing}
-                          error={!!errors.amount}
-                          helperText={
-                            errors.amount?.message ||
-                            (isInstallment &&
-                            field.value > 0 &&
-                            installmentCount > 1
-                              ? `${installmentCount}x de ${formatCurrency(field.value / installmentCount)}`
-                              : undefined)
-                          }
-                          InputProps={{
-                            endAdornment: isInstallment && (
-                              <InputAdornment position="end">
-                                <Tooltip
-                                  title="Alternar para valor por parcela"
-                                  arrow
-                                >
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => {
-                                      const currentTotal = field.value || 0;
-                                      if (
-                                        currentTotal > 0 &&
-                                        installmentCount > 1
-                                      ) {
-                                        setInstallmentValue(
-                                          currentTotal / installmentCount
-                                        );
-                                      }
-                                      setCalculationMode('perInstallment');
-                                    }}
-                                    sx={{
-                                      color: 'primary.main',
-                                      '&:hover': {
-                                        backgroundColor: 'primary.lighter',
-                                      },
-                                    }}
-                                  >
-                                    <SwapHoriz />
-                                  </IconButton>
-                                </Tooltip>
-                              </InputAdornment>
-                            ),
-                          }}
-                        />
-                      )}
-                    />
-                  ) : (
-                    <CurrencyField
-                      label="Valor por Parcela"
-                      fullWidth
-                      value={installmentValue}
-                      onChange={setInstallmentValue}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <Tooltip title="Alternar para valor total" arrow>
-                              <IconButton
-                                size="small"
-                                onClick={() => {
-                                  setCalculationMode('total');
-                                }}
-                                sx={{
-                                  color: 'primary.main',
-                                  '&:hover': {
-                                    backgroundColor: 'primary.lighter',
-                                  },
-                                }}
-                              >
-                                <SwapHoriz />
-                              </IconButton>
-                            </Tooltip>
-                          </InputAdornment>
-                        ),
-                      }}
-                      helperText={
-                        installmentValue &&
-                        installmentValue > 0 &&
-                        installmentCount > 1
-                          ? `Total: ${formatCurrency(installmentValue * installmentCount)} (${installmentCount}x)`
-                          : 'Digite o valor de cada parcela'
+                  {(() => {
+                    let amountLabel;
+                    if (userInputMode === 'total') {
+                      if (isInstallment) {
+                        amountLabel = 'Valor Total';
+                      } else {
+                        amountLabel = 'Valor';
                       }
-                    />
-                  )}
+                    } else {
+                      amountLabel = 'Valor por Parcela';
+                    }
+                    return (
+                      <CurrencyField
+                        label={amountLabel}
+                        fullWidth
+                        value={userInputValue}
+                        onChange={setUserInputValue}
+                        disabled={isEditing}
+                        error={!!errors.amount}
+                        helperText={helperText}
+                        InputProps={{
+                          endAdornment: isInstallment && (
+                            <InputAdornment position="end">
+                              <Tooltip
+                                title={`Alternar para valor ${userInputMode === 'total' ? 'por parcela' : 'total'}`}
+                                arrow
+                              >
+                                <IconButton
+                                  size="small"
+                                  onClick={() => {
+                                    setUserInputMode(
+                                      userInputMode === 'total'
+                                        ? 'perInstallment'
+                                        : 'total'
+                                    );
+                                  }}
+                                  sx={{
+                                    color: 'primary.main',
+                                    '&:hover': {
+                                      backgroundColor: 'primary.lighter',
+                                    },
+                                  }}
+                                >
+                                  <SwapHoriz />
+                                </IconButton>
+                              </Tooltip>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    );
+                  })()}
                 </Grid>
 
                 <Grid item xs={12} md={6}>
