@@ -1,5 +1,6 @@
 import { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../stores/authStore';
+import { useUIStore } from '../stores/uiStore';
 
 /**
  * Interceptor de Autenticação
@@ -122,8 +123,6 @@ export function setupServerWakeupInterceptor(instance: AxiosInstance) {
   };
 
   const retryWithWakeup = async (originalRequest: any): Promise<any> => {
-    const { useUIStore } = await import('../stores/uiStore');
-
     if (wakeupRetryCount === 0) {
       useUIStore.getState().setServerWaking(true);
     }

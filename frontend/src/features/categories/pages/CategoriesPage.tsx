@@ -24,6 +24,7 @@ import {
   Typography,
   ToggleButton,
   ToggleButtonGroup,
+  CircularProgress,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -31,7 +32,6 @@ import {
   AccountBalance as PayableIcon,
   RequestQuote as ReceivableIcon,
 } from '@mui/icons-material';
-import { CircularProgress } from '@mui/material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -106,7 +106,7 @@ export const CategoriesPage: React.FC = () => {
   const { data: categories = [], isLoading } = useQuery({
     queryKey: ['categories', typeFilter],
     queryFn: async () => {
-      const params = typeFilter !== 'ALL' ? { type: typeFilter } : {};
+      const params = typeFilter === 'ALL' ? {} : { type: typeFilter };
       const response = await api.get('/categories', { params });
       return response.data;
     },
@@ -253,71 +253,86 @@ export const CategoriesPage: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} align="center">
-                  Carregando...
-                </TableCell>
-              </TableRow>
-            ) : categories.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} align="center">
-                  Nenhuma categoria encontrada
-                </TableCell>
-              </TableRow>
-            ) : (
-              categories.map((category: Category) => (
-                <TableRow key={category.id} hover>
-                  <TableCell>
-                    <Box
-                      sx={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
-                        backgroundColor: category.color || COLORS[0],
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography fontWeight="medium">{category.name}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {category.description || '-'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{getTypeChip(category.type)}</TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {category._count
-                        ? category.type === 'PAYABLE'
-                          ? `${category._count.payables} contas`
-                          : `${category._count.receivables} contas`
-                        : '-'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Editar">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenDialog(category)}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Excluir">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleDelete(category)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            {(() => {
+              if (isLoading) {
+                return (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      Carregando...
+                    </TableCell>
+                  </TableRow>
+                );
+              } else if (categories.length === 0) {
+                return (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      Nenhuma categoria encontrada
+                    </TableCell>
+                  </TableRow>
+                );
+              } else {
+                return categories.map((category: Category) => {
+                  let usageText = '-';
+                  if (category._count) {
+                    if (category.type === 'PAYABLE') {
+                      usageText = `${category._count.payables} contas`;
+                    } else {
+                      usageText = `${category._count.receivables} contas`;
+                    }
+                  }
+
+                  return (
+                    <TableRow key={category.id} hover>
+                      <TableCell>
+                        <Box
+                          sx={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: '50%',
+                            backgroundColor: category.color || COLORS[0],
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography fontWeight="medium">
+                          {category.name}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {category.description || '-'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{getTypeChip(category.type)}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {usageText}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Tooltip title="Editar">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleOpenDialog(category)}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Excluir">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDelete(category)}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  );
+                });
+              }
+            })()}
           </TableBody>
         </Table>
       </TableContainer>
