@@ -86,7 +86,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
   const [calculationMode, setCalculationMode] = useState<
     'total' | 'perInstallment'
   >('total');
-  const [installmentValue, setInstallmentValue] = useState<number>(0);
+  const [installmentValue, setInstallmentValue] = useState<number | null>(null);
   const [quickCategoryOpen, setQuickCategoryOpen] = useState(false);
   const [quickTagOpen, setQuickTagOpen] = useState(false);
 
@@ -139,6 +139,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
   useEffect(() => {
     if (
       calculationMode === 'perInstallment' &&
+      installmentValue &&
       installmentValue > 0 &&
       installmentCount > 1
     ) {
@@ -189,7 +190,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
     reset();
     setIsInstallment(false);
     setCalculationMode('total');
-    setInstallmentValue(0);
+    setInstallmentValue(null);
     onClose();
   };
 
@@ -343,6 +344,11 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                           label={isInstallment ? 'Valor Total' : 'Valor'}
                           type="number"
                           fullWidth
+                          onFocus={() => {
+                            if (field.value === 0) {
+                              setValue('amount', '' as any);
+                            }
+                          }}
                           InputProps={{
                             startAdornment: (
                               <InputAdornment position="start">
@@ -403,6 +409,11 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                       onChange={e =>
                         setInstallmentValue(Number(e.target.value))
                       }
+                      onFocus={() => {
+                        if (installmentValue === 0) {
+                          setInstallmentValue(null);
+                        }
+                      }}
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">R$</InputAdornment>
@@ -429,6 +440,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                         ),
                       }}
                       helperText={
+                        installmentValue &&
                         installmentValue > 0 && installmentCount > 1
                           ? `Total: ${formatCurrency(installmentValue * installmentCount)} (${installmentCount}x)`
                           : 'Digite o valor de cada parcela'
