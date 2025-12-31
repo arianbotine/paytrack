@@ -44,7 +44,9 @@ export const CurrencyField = forwardRef<HTMLInputElement, CurrencyFieldProps>(
 
         // Interpreta como centavos - especifica base 10
         const numericValue = Number.parseInt(digitsOnly, 10) / 100;
-        onChange?.(numericValue);
+        // Arredonda para 2 casas decimais para evitar problemas de precisão de ponto flutuante
+        const roundedValue = Math.round(numericValue * 100) / 100;
+        onChange?.(roundedValue);
       },
       [onChange]
     );
