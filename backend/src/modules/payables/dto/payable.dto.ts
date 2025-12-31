@@ -32,9 +32,12 @@ export class CreatePayableDto {
   description!: string;
 
   @ApiProperty({ example: 1500 })
-  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsNumber({}, { message: 'Valor deve ser um número válido' })
   @Min(0.01, { message: 'Valor deve ser maior que zero' })
   @Type(() => Number)
+  @Transform(({ value }) =>
+    typeof value === 'number' ? Math.round(value * 100) / 100 : value
+  )
   amount!: number;
 
   @ApiProperty({ example: '2025-12-15' })
