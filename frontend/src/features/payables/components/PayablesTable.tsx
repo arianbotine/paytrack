@@ -286,21 +286,27 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                         </IconButton>
                       </Tooltip>
                     )}
-                    {!hasInstallments(account) ||
-                    account.installments?.length === 1 ? (
-                      <Tooltip title="Registrar pagamento">
-                        <span>
-                          <IconButton
-                            size="small"
-                            color="success"
-                            onClick={() => onPayment(account)}
-                            disabled={account.status === 'PAID'}
-                          >
-                            <PaymentIcon fontSize="small" />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                    ) : null}
+                    <Tooltip
+                      title={
+                        account.installments?.length > 1
+                          ? 'Registrar pagamento diretamente nas parcelas'
+                          : 'Registrar pagamento'
+                      }
+                    >
+                      <span>
+                        <IconButton
+                          size="small"
+                          color="success"
+                          onClick={() => onPayment(account)}
+                          disabled={
+                            account.status === 'PAID' ||
+                            account.installments?.length > 1
+                          }
+                        >
+                          <PaymentIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
                     <Tooltip title="Excluir">
                       <span>
                         <IconButton
@@ -616,32 +622,34 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                   </IconButton>
                                 </Tooltip>
                               )}
-                              {!hasInstallments(account) ||
-                              account.installments?.length === 1 ? (
-                                <Tooltip title="Registrar pagamento">
-                                  <span>
-                                    <IconButton
-                                      size="small"
-                                      color="success"
-                                      onClick={() => {
-                                        if (
-                                          account.installments?.length === 1
-                                        ) {
-                                          onPayment(account.installments[0]);
-                                        } else {
-                                          onPayment(account);
-                                        }
-                                      }}
-                                      disabled={
-                                        account.status === 'PAID' ||
-                                        account.status === 'CANCELLED'
+                              <Tooltip
+                                title={
+                                  account.installments?.length > 1
+                                    ? 'Registrar pagamento diretamente nas parcelas'
+                                    : 'Registrar pagamento'
+                                }
+                              >
+                                <span>
+                                  <IconButton
+                                    size="small"
+                                    color="success"
+                                    onClick={() => {
+                                      if (account.installments?.length === 1) {
+                                        onPayment(account.installments[0]);
+                                      } else {
+                                        onPayment(account);
                                       }
-                                    >
-                                      <PaymentIcon fontSize="small" />
-                                    </IconButton>
-                                  </span>
-                                </Tooltip>
-                              ) : null}
+                                    }}
+                                    disabled={
+                                      account.status === 'PAID' ||
+                                      account.status === 'CANCELLED' ||
+                                      account.installments?.length > 1
+                                    }
+                                  >
+                                    <PaymentIcon fontSize="small" />
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
                               <Tooltip title="Excluir">
                                 <span>
                                   <IconButton
