@@ -94,7 +94,7 @@ export class CreateReceivableDto {
 }
 
 export class UpdateReceivableDto extends PartialType(
-  OmitType(CreateReceivableDto, ['amount'] as const)
+  OmitType(CreateReceivableDto, [] as const)
 ) {}
 
 export class ReceivableFilterDto {

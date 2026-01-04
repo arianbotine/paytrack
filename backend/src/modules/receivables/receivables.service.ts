@@ -264,6 +264,11 @@ export class ReceivablesService {
 
     const { customerId, categoryId, ...updateData } = data;
 
+    // Transform amount to Decimal if present
+    if (updateData.amount !== undefined) {
+      updateData.amount = MoneyUtils.toDecimal(updateData.amount);
+    }
+
     // Se a data de vencimento foi alterada e há parcelas, recalcular as datas
     const shouldUpdateInstallmentDates =
       data.dueDate && receivable.installments.length > 1;

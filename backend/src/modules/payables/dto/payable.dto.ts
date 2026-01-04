@@ -99,7 +99,7 @@ export class CreatePayableDto {
 }
 
 export class UpdatePayableDto extends PartialType(
-  OmitType(CreatePayableDto, ['amount'] as const)
+  OmitType(CreatePayableDto, [] as const)
 ) {}
 
 export class PayableFilterDto {

@@ -271,6 +271,11 @@ export class PayablesService {
 
     const { vendorId, categoryId, invoiceNumber, ...updateData } = data;
 
+    // Transform amount to Decimal if present
+    if (updateData.amount !== undefined) {
+      updateData.amount = MoneyUtils.toDecimal(updateData.amount);
+    }
+
     // Se a data de vencimento foi alterada e há parcelas, recalcular as datas
     const shouldUpdateInstallmentDates =
       data.dueDate && payable.installments.length > 1;
