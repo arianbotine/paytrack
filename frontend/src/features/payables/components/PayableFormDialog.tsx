@@ -380,7 +380,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                     fullWidth
                     value={userInputValue}
                     onChange={setUserInputValue}
-                    disabled={isEditing}
+                    disabled={isEditing && payable?.paidAmount !== 0}
                     error={!!errors.amount}
                     helperText={currencyFieldHelperText}
                     InputProps={{
@@ -794,11 +794,12 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
               </Grid>
 
               {payable && payable.paidAmount > 0 && (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  Esta conta possui pagamentos registrados no valor de{' '}
-                  {formatCurrency(payable.paidAmount)}. Para visualizar o
-                  histórico completo, use o botão "Ver Pagamentos" na lista de
-                  contas.
+                <Alert severity="warning" sx={{ mt: 2 }}>
+                  Esta conta possui pagamentos no valor de{' '}
+                  {formatCurrency(payable.paidAmount)}. Não é possível alterar o
+                  valor total, parcelamento ou datas de vencimento. Para
+                  visualizar o histórico completo, use o botão "Ver Pagamentos"
+                  na lista de contas.
                 </Alert>
               )}
             </DialogContent>

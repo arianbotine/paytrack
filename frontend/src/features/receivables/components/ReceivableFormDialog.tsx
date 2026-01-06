@@ -383,7 +383,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                         fullWidth
                         value={userInputValue}
                         onChange={setUserInputValue}
-                        disabled={isEditing}
+                        disabled={isEditing && receivable?.receivedAmount !== 0}
                         error={!!errors.amount}
                         helperText={helperText}
                         InputProps={{
@@ -796,11 +796,12 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
               </Grid>
 
               {receivable && receivable.receivedAmount > 0 && (
-                <Alert severity="info" sx={{ mt: 2 }}>
+                <Alert severity="warning" sx={{ mt: 2 }}>
                   Esta conta possui recebimentos registrados no valor de{' '}
-                  {formatCurrency(receivable.receivedAmount)}. Para visualizar o
-                  histórico completo, use o botão "Ver Pagamentos" na lista de
-                  contas.
+                  {formatCurrency(receivable.receivedAmount)}. Não é possível
+                  alterar o valor total, parcelamento ou datas de vencimento.
+                  Para visualizar o histórico completo, use o botão "Ver
+                  Pagamentos" na lista de contas.
                 </Alert>
               )}
             </DialogContent>

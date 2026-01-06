@@ -31,6 +31,76 @@ export class PayablesService {
     }
   }
 
+  /**
+   * Recalcula as parcelas quando o valor total é alterado
+   */
+  private async recalculateInstallments(
+    payableId: string,
+    organizationId: string,
+    newAmount: number,
+    installmentCount: number,
+    existingDueDates: string[],
+    description: string
+  ): Promise<void> {
+    // Deletar parcelas antigas
+    await this.prisma.payableInstallment.deleteMany({
+      where: { payableId },
+    });
+
+    // Criar novas parcelas com valores recalculados
+    const newInstallments = generateInstallments(
+      newAmount,
+      installmentCount,
+      existingDueDates,
+      payableId,
+      organizationId,
+      description,
+      'payable'
+    ) as Prisma.PayableInstallmentCreateManyInput[];
+
+    await this.prisma.payableInstallment.createMany({
+      data: newInstallments,
+    });
+  }
+
+  /**
+   * Atualiza as datas de vencimento das parcelas
+   */
+  private async updateInstallmentDates(
+    payableId: string,
+    newDueDate: Date,
+    installments: any[]
+  ): Promise<void> {
+    const installmentCount = installments.length;
+
+    // Gerar novas datas de vencimento mensais
+    const newDueDates: Date[] = [];
+    for (let i = 0; i < installmentCount; i++) {
+      const installmentDate = new Date(newDueDate);
+      installmentDate.setUTCMonth(installmentDate.getUTCMonth() + i);
+      newDueDates.push(installmentDate);
+    }
+
+    // Atualizar apenas parcelas pendentes ou vencidas
+    const installmentsToUpdate = installments.filter(
+      installment =>
+        installment.status === AccountStatus.PENDING ||
+        installment.status === AccountStatus.OVERDUE
+    );
+
+    await Promise.all(
+      installmentsToUpdate.map(installment => {
+        const originalIndex = installments.findIndex(
+          inst => inst.id === installment.id
+        );
+        return this.prisma.payableInstallment.update({
+          where: { id: installment.id },
+          data: { dueDate: newDueDates[originalIndex] },
+        });
+      })
+    );
+  }
+
   async findAll(organizationId: string, filters?: PayableFilterDto) {
     const where: any = {
       organizationId,
@@ -260,6 +330,9 @@ export class PayablesService {
       where: { id, organizationId },
       include: {
         installments: {
+          include: {
+            allocations: true,
+          },
           orderBy: { installmentNumber: 'asc' },
         },
       },
@@ -276,40 +349,53 @@ export class PayablesService {
       updateData.amount = MoneyUtils.toDecimal(updateData.amount);
     }
 
+    // Validar se pode editar o valor: apenas se não houver nenhum pagamento em nenhuma parcela
+    const hasAnyPayment = payable.installments.some(
+      installment => installment.allocations.length > 0
+    );
+
+    if (data.amount !== undefined && hasAnyPayment) {
+      throw new BadRequestException(
+        'Não é possível alterar o valor de uma conta que já possui pagamentos registrados. Cancele os pagamentos para editar o valor.'
+      );
+    }
+
+    // Se o valor foi alterado e não há pagamentos, recalcular as parcelas
+    const shouldRecalculateInstallments =
+      data.amount !== undefined &&
+      !hasAnyPayment &&
+      payable.installments.length > 0;
+
+    if (shouldRecalculateInstallments) {
+      const newAmount = MoneyUtils.toDecimal(data.amount);
+      const installmentCount = payable.installments.length;
+      const existingDueDates = payable.installments.map(inst => {
+        const date = new Date(inst.dueDate);
+        return date.toISOString().split('T')[0];
+      });
+
+      await this.recalculateInstallments(
+        payable.id,
+        organizationId,
+        newAmount.toNumber(),
+        installmentCount,
+        existingDueDates,
+        payable.description
+      );
+    }
+
     // Se a data de vencimento foi alterada e há parcelas, recalcular as datas
     const shouldUpdateInstallmentDates =
-      data.dueDate && payable.installments.length > 1;
+      data.dueDate &&
+      payable.installments.length > 1 &&
+      !shouldRecalculateInstallments;
 
     if (shouldUpdateInstallmentDates) {
       const newDueDate = parseDateOnly(data.dueDate);
-      const installmentCount = payable.installments.length;
-
-      // Gerar novas datas de vencimento mensais
-      const newDueDates: Date[] = [];
-      for (let i = 0; i < installmentCount; i++) {
-        const installmentDate = new Date(newDueDate);
-        installmentDate.setUTCMonth(installmentDate.getUTCMonth() + i);
-        newDueDates.push(installmentDate);
-      }
-
-      // Atualizar apenas parcelas pendentes ou vencidas (não pagas ou parcialmente pagas)
-      const installmentsToUpdate = payable.installments.filter(
-        installment =>
-          installment.status === AccountStatus.PENDING ||
-          installment.status === AccountStatus.OVERDUE
-      );
-
-      await Promise.all(
-        installmentsToUpdate.map(installment => {
-          // Encontrar o índice original da parcela para pegar a data correta
-          const originalIndex = payable.installments.findIndex(
-            inst => inst.id === installment.id
-          );
-          return this.prisma.payableInstallment.update({
-            where: { id: installment.id },
-            data: { dueDate: newDueDates[originalIndex] },
-          });
-        })
+      await this.updateInstallmentDates(
+        payable.id,
+        newDueDate,
+        payable.installments
       );
     }
 
