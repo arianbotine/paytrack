@@ -94,6 +94,8 @@ export const useReceivableOperations = (callbacks?: {
   onCreateSuccess?: () => void;
   onUpdateSuccess?: () => void;
   onDeleteSuccess?: () => void;
+  onDeleteInstallmentSuccess?: () => void;
+  onUpdateInstallmentSuccess?: () => void;
 }) => {
   const operations = useAccountOperations<ReceivableFormData>(
     receivablesConfig,

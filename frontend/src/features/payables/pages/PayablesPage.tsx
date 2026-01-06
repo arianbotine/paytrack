@@ -98,6 +98,7 @@ export const PayablesPage: React.FC = () => {
     submitPayable,
     deleteMutation,
     deleteInstallmentMutation,
+    updateInstallmentMutation,
     isSubmitting,
     isDeleting,
     isDeletingInstallment,
@@ -106,6 +107,9 @@ export const PayablesPage: React.FC = () => {
     onUpdateSuccess: handleCloseDialog,
     onDeleteSuccess: handleCloseDeleteDialog,
     onDeleteInstallmentSuccess: handleCloseDeleteInstallmentDialog,
+    onUpdateInstallmentSuccess: () => {
+      // Apenas fechar sem precisar de diálogo
+    },
   });
 
   const { createMutation, isCreating } = usePaymentOperations({
@@ -207,6 +211,17 @@ export const PayablesPage: React.FC = () => {
     }
   }, [deleteInstallmentMutation, selectedPayable, selectedInstallment]);
 
+  const handleUpdateInstallment = useCallback(
+    (payable: Payable, installment: PayableInstallment, newAmount: number) => {
+      updateInstallmentMutation.mutate({
+        accountId: payable.id,
+        installmentId: installment.id,
+        data: { amount: newAmount },
+      });
+    },
+    [updateInstallmentMutation]
+  );
+
   const payables = payablesData?.data || [];
   const totalCount = payablesData?.total || 0;
 
@@ -252,6 +267,7 @@ export const PayablesPage: React.FC = () => {
           onPayment={handlePayment}
           onViewPayments={handleViewPayments}
           onDeleteInstallment={handleDeleteInstallment}
+          onUpdateInstallment={handleUpdateInstallment}
         />
 
         <PayableFormDialog

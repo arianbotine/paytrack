@@ -241,6 +241,42 @@ export const useDeleteInstallment = (
   });
 };
 
+export const useUpdateInstallment = (
+  config: UseAccountsConfig,
+  onSuccess?: () => void
+) => {
+  const queryClient = useQueryClient();
+  const { showNotification } = useUIStore();
+  const keys = createAccountKeys(config.queryKeyPrefix);
+
+  return useMutation({
+    mutationFn: ({
+      accountId,
+      installmentId,
+      data,
+    }: {
+      accountId: string;
+      installmentId: string;
+      data: { amount: number };
+    }) =>
+      api.patch(
+        `${config.endpoint}/${accountId}/installments/${installmentId}`,
+        data
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.all });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showNotification('Parcela atualizada com sucesso!', 'success');
+      onSuccess?.();
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message || 'Erro ao atualizar parcela';
+      showNotification(message, 'error');
+    },
+  });
+};
+
 // ============================================================
 // Combined Operations Hook
 // ============================================================
@@ -252,6 +288,7 @@ export const useAccountOperations = <T>(
     onUpdateSuccess?: () => void;
     onDeleteSuccess?: () => void;
     onDeleteInstallmentSuccess?: () => void;
+    onUpdateInstallmentSuccess?: () => void;
   }
 ) => {
   const createMutation = useCreateAccount(config, callbacks?.onCreateSuccess);
@@ -260,6 +297,10 @@ export const useAccountOperations = <T>(
   const deleteInstallmentMutation = useDeleteInstallment(
     config,
     callbacks?.onDeleteInstallmentSuccess
+  );
+  const updateInstallmentMutation = useUpdateInstallment(
+    config,
+    callbacks?.onUpdateInstallmentSuccess
   );
 
   const submitAccount = (
@@ -289,9 +330,11 @@ export const useAccountOperations = <T>(
     updateMutation,
     deleteMutation,
     deleteInstallmentMutation,
+    updateInstallmentMutation,
     submitAccount,
     isSubmitting: createMutation.isPending || updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isDeletingInstallment: deleteInstallmentMutation.isPending,
+    isUpdatingInstallment: updateInstallmentMutation.isPending,
   };
 };

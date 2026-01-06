@@ -8,6 +8,7 @@ import {
   CreatePayableDto,
   UpdatePayableDto,
   PayableFilterDto,
+  UpdateInstallmentDto,
 } from './dto/payable.dto';
 import { CacheService } from '../../shared/services/cache.service';
 import { AccountStatus, Prisma } from '@prisma/client';
@@ -319,12 +320,7 @@ export class PayablesService {
     organizationId: string,
     updateDto: UpdatePayableDto
   ) {
-    const {
-      tagIds,
-      installmentCount: _installmentCount,
-      dueDates: _dueDates,
-      ...data
-    } = updateDto;
+    const { tagIds, ...data } = updateDto;
 
     const payable = await this.prisma.payable.findFirst({
       where: { id, organizationId },
@@ -342,12 +338,15 @@ export class PayablesService {
       throw new NotFoundException('Conta a pagar não encontrada');
     }
 
-    const { vendorId, categoryId, invoiceNumber, ...updateData } = data;
+    const { vendorId, categoryId, invoiceNumber, ...restData } = data;
 
-    // Transform amount to Decimal if present
-    if (updateData.amount !== undefined) {
-      updateData.amount = MoneyUtils.toDecimal(updateData.amount);
-    }
+    // Prepare data for Prisma update, transforming amount to Decimal if present
+    const prismaData = {
+      ...restData,
+      ...(restData.amount !== undefined && {
+        amount: MoneyUtils.toDecimal(restData.amount),
+      }),
+    };
 
     // Validar se pode editar o valor: apenas se não houver nenhum pagamento em nenhuma parcela
     const hasAnyPayment = payable.installments.some(
@@ -367,7 +366,7 @@ export class PayablesService {
       payable.installments.length > 0;
 
     if (shouldRecalculateInstallments) {
-      const newAmount = MoneyUtils.toDecimal(data.amount);
+      const newAmount = MoneyUtils.toDecimal(data.amount!);
       const installmentCount = payable.installments.length;
       const existingDueDates = payable.installments.map(inst => {
         const date = new Date(inst.dueDate);
@@ -391,7 +390,7 @@ export class PayablesService {
       !shouldRecalculateInstallments;
 
     if (shouldUpdateInstallmentDates) {
-      const newDueDate = parseDateOnly(data.dueDate);
+      const newDueDate = parseDateOnly(data.dueDate!);
       await this.updateInstallmentDates(
         payable.id,
         newDueDate,
@@ -402,7 +401,7 @@ export class PayablesService {
     const updated = await this.prisma.payable.update({
       where: { id },
       data: {
-        ...updateData,
+        ...prismaData,
         ...(data.dueDate && { dueDate: parseDateOnly(data.dueDate) }),
         ...(vendorId && { vendor: { connect: { id: vendorId } } }),
         ...(categoryId !== undefined && {
@@ -416,6 +415,7 @@ export class PayablesService {
             create: tagIds.map(tagId => ({ tagId })),
           },
         }),
+        ...(invoiceNumber && { documentNumber: invoiceNumber }),
       },
       include: {
         vendor: { select: { id: true, name: true } },
@@ -716,6 +716,92 @@ export class PayablesService {
           paidAmount: newPaidAmount,
           status: newStatus,
           totalInstallments: newTotalInstallments,
+        },
+      });
+    });
+
+    this.invalidateDashboardCache(organizationId);
+
+    // Retornar a conta atualizada
+    return this.findOne(payableId, organizationId);
+  }
+
+  /**
+   * Atualiza o valor de uma parcela pendente e recalcula o valor total da conta
+   */
+  async updateInstallment(
+    payableId: string,
+    installmentId: string,
+    organizationId: string,
+    updateDto: UpdateInstallmentDto
+  ) {
+    // Buscar a conta com suas parcelas
+    const payable = await this.prisma.payable.findFirst({
+      where: { id: payableId, organizationId },
+      include: {
+        installments: {
+          include: {
+            allocations: true,
+          },
+          orderBy: { installmentNumber: 'asc' },
+        },
+      },
+    });
+
+    if (!payable) {
+      throw new NotFoundException('Conta a pagar não encontrada');
+    }
+
+    // Encontrar a parcela a ser editada
+    const installmentToUpdate = payable.installments.find(
+      inst => inst.id === installmentId
+    );
+
+    if (!installmentToUpdate) {
+      throw new NotFoundException('Parcela não encontrada');
+    }
+
+    // Verificar se a parcela está pendente
+    if (installmentToUpdate.status !== AccountStatus.PENDING) {
+      throw new BadRequestException(
+        'Apenas parcelas pendentes podem ter o valor editado'
+      );
+    }
+
+    // Verificar se a parcela tem pagamentos
+    if (installmentToUpdate.allocations.length > 0) {
+      throw new BadRequestException(
+        'Não é possível editar parcela que já possui pagamentos registrados'
+      );
+    }
+
+    const newAmount = MoneyUtils.toDecimal(updateDto.amount);
+
+    // Atualizar a parcela e recalcular o valor total da conta
+    await this.prisma.$transaction(async tx => {
+      // 1. Atualizar o valor da parcela
+      await tx.payableInstallment.update({
+        where: { id: installmentId },
+        data: { amount: newAmount },
+      });
+
+      // 2. Buscar todas as parcelas atualizadas
+      const updatedInstallments = await tx.payableInstallment.findMany({
+        where: { payableId },
+        orderBy: { installmentNumber: 'asc' },
+      });
+
+      // 3. Recalcular valor total da conta (somar todas as parcelas)
+      const newTotalAmount = updatedInstallments.reduce(
+        (sum, inst) => sum.plus(inst.amount),
+        new Prisma.Decimal(0)
+      );
+
+      // 4. Atualizar a conta com o novo valor total
+      await tx.payable.update({
+        where: { id: payableId },
+        data: {
+          amount: newTotalAmount,
         },
       });
     });

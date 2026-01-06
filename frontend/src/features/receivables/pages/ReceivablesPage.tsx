@@ -108,6 +108,7 @@ export const ReceivablesPage: React.FC = () => {
     submitReceivable,
     deleteMutation,
     deleteInstallmentMutation,
+    updateInstallmentMutation,
     isSubmitting,
     isDeleting,
     isDeletingInstallment,
@@ -116,6 +117,9 @@ export const ReceivablesPage: React.FC = () => {
     onUpdateSuccess: handleCloseDialog,
     onDeleteSuccess: handleCloseDeleteDialog,
     onDeleteInstallmentSuccess: handleCloseDeleteInstallmentDialog,
+    onUpdateInstallmentSuccess: () => {
+      // Apenas fechar sem precisar de diálogo
+    },
   });
 
   const { createMutation, isCreating } = usePaymentOperations({
@@ -215,6 +219,21 @@ export const ReceivablesPage: React.FC = () => {
     }
   }, [deleteInstallmentMutation, selectedReceivable, selectedInstallment]);
 
+  const handleUpdateInstallment = useCallback(
+    (
+      receivable: Receivable,
+      installment: ReceivableInstallment,
+      newAmount: number
+    ) => {
+      updateInstallmentMutation.mutate({
+        accountId: receivable.id,
+        installmentId: installment.id,
+        data: { amount: newAmount },
+      });
+    },
+    [updateInstallmentMutation]
+  );
+
   const receivables = receivablesData?.data || [];
   const totalCount = receivablesData?.total || 0;
 
@@ -260,6 +279,7 @@ export const ReceivablesPage: React.FC = () => {
           onPayment={handlePayment}
           onViewPayments={handleViewPayments}
           onDeleteInstallment={handleDeleteInstallment}
+          onUpdateInstallment={handleUpdateInstallment}
         />
 
         <ReceivableFormDialog

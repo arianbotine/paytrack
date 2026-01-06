@@ -14,6 +14,7 @@ import {
   CreateReceivableDto,
   UpdateReceivableDto,
   ReceivableFilterDto,
+  UpdateInstallmentDto,
 } from './dto/receivable.dto';
 import { CurrentUser, Roles } from '../../shared/decorators';
 import { Idempotent } from '../../shared/decorators/idempotent.decorator';
@@ -106,6 +107,23 @@ export class ReceivablesController {
       receivableId,
       installmentId,
       organizationId
+    );
+  }
+
+  @Patch(':receivableId/installments/:installmentId')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'Editar valor de parcela pendente' })
+  async updateInstallment(
+    @Param('receivableId') receivableId: string,
+    @Param('installmentId') installmentId: string,
+    @CurrentUser('organizationId') organizationId: string,
+    @Body() updateDto: UpdateInstallmentDto
+  ) {
+    return this.receivablesService.updateInstallment(
+      receivableId,
+      installmentId,
+      organizationId,
+      updateDto
     );
   }
 }

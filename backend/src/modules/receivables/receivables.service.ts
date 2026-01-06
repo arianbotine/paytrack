@@ -8,6 +8,7 @@ import {
   CreateReceivableDto,
   UpdateReceivableDto,
   ReceivableFilterDto,
+  UpdateInstallmentDto,
 } from './dto/receivable.dto';
 import { CacheService } from '../../shared/services/cache.service';
 import { AccountStatus, Prisma } from '@prisma/client';
@@ -705,6 +706,92 @@ export class ReceivablesService {
           receivedAmount: newReceivedAmount,
           status: newStatus,
           totalInstallments: newTotalInstallments,
+        },
+      });
+    });
+
+    this.invalidateDashboardCache(organizationId);
+
+    // Retornar a conta atualizada
+    return this.findOne(receivableId, organizationId);
+  }
+
+  /**
+   * Atualiza o valor de uma parcela pendente e recalcula o valor total da conta
+   */
+  async updateInstallment(
+    receivableId: string,
+    installmentId: string,
+    organizationId: string,
+    updateDto: UpdateInstallmentDto
+  ) {
+    // Buscar a conta com suas parcelas
+    const receivable = await this.prisma.receivable.findFirst({
+      where: { id: receivableId, organizationId },
+      include: {
+        installments: {
+          include: {
+            allocations: true,
+          },
+          orderBy: { installmentNumber: 'asc' },
+        },
+      },
+    });
+
+    if (!receivable) {
+      throw new NotFoundException('Conta a receber não encontrada');
+    }
+
+    // Encontrar a parcela a ser editada
+    const installmentToUpdate = receivable.installments.find(
+      inst => inst.id === installmentId
+    );
+
+    if (!installmentToUpdate) {
+      throw new NotFoundException('Parcela não encontrada');
+    }
+
+    // Verificar se a parcela está pendente
+    if (installmentToUpdate.status !== AccountStatus.PENDING) {
+      throw new BadRequestException(
+        'Apenas parcelas pendentes podem ter o valor editado'
+      );
+    }
+
+    // Verificar se a parcela tem recebimentos
+    if (installmentToUpdate.allocations.length > 0) {
+      throw new BadRequestException(
+        'Não é possível editar parcela que já possui recebimentos registrados'
+      );
+    }
+
+    const newAmount = MoneyUtils.toDecimal(updateDto.amount);
+
+    // Atualizar a parcela e recalcular o valor total da conta
+    await this.prisma.$transaction(async tx => {
+      // 1. Atualizar o valor da parcela
+      await tx.receivableInstallment.update({
+        where: { id: installmentId },
+        data: { amount: newAmount },
+      });
+
+      // 2. Buscar todas as parcelas atualizadas
+      const updatedInstallments = await tx.receivableInstallment.findMany({
+        where: { receivableId },
+        orderBy: { installmentNumber: 'asc' },
+      });
+
+      // 3. Recalcular valor total da conta (somar todas as parcelas)
+      const newTotalAmount = updatedInstallments.reduce(
+        (sum, inst) => sum.plus(inst.amount),
+        new Prisma.Decimal(0)
+      );
+
+      // 4. Atualizar a conta com o novo valor total
+      await tx.receivable.update({
+        where: { id: receivableId },
+        data: {
+          amount: newTotalAmount,
         },
       });
     });

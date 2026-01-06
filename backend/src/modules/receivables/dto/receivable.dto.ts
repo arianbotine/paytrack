@@ -163,3 +163,14 @@ export class ReceivableFilterDto {
   @Type(() => Number)
   take?: number;
 }
+
+export class UpdateInstallmentDto {
+  @ApiProperty({ example: 250.5 })
+  @IsNumber({}, { message: 'Valor deve ser um número válido' })
+  @Min(0.01, { message: 'Valor deve ser maior que zero' })
+  @Type(() => Number)
+  @Transform(({ value }) =>
+    typeof value === 'number' ? Math.round(value * 100) / 100 : value
+  )
+  amount!: number;
+}

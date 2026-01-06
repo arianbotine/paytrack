@@ -14,6 +14,7 @@ import {
   CreatePayableDto,
   UpdatePayableDto,
   PayableFilterDto,
+  UpdateInstallmentDto,
 } from './dto/payable.dto';
 import { CurrentUser, Roles } from '../../shared/decorators';
 import { Idempotent } from '../../shared/decorators/idempotent.decorator';
@@ -106,6 +107,23 @@ export class PayablesController {
       payableId,
       installmentId,
       organizationId
+    );
+  }
+
+  @Patch(':payableId/installments/:installmentId')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'Editar valor de parcela pendente' })
+  async updateInstallment(
+    @Param('payableId') payableId: string,
+    @Param('installmentId') installmentId: string,
+    @CurrentUser('organizationId') organizationId: string,
+    @Body() updateDto: UpdateInstallmentDto
+  ) {
+    return this.payablesService.updateInstallment(
+      payableId,
+      installmentId,
+      organizationId,
+      updateDto
     );
   }
 }
