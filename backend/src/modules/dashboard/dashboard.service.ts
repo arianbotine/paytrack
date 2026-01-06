@@ -122,9 +122,13 @@ export class DashboardService {
           payable: {
             select: {
               id: true,
-              description: true,
               vendor: { select: { id: true, name: true } },
               category: { select: { id: true, name: true, color: true } },
+              tags: {
+                select: {
+                  tag: { select: { id: true, name: true, color: true } },
+                },
+              },
             },
           },
         },
@@ -146,9 +150,13 @@ export class DashboardService {
           receivable: {
             select: {
               id: true,
-              description: true,
               customer: { select: { id: true, name: true } },
               category: { select: { id: true, name: true, color: true } },
+              tags: {
+                select: {
+                  tag: { select: { id: true, name: true, color: true } },
+                },
+              },
             },
           },
         },
@@ -172,9 +180,13 @@ export class DashboardService {
           payable: {
             select: {
               id: true,
-              description: true,
               vendor: { select: { id: true, name: true } },
               category: { select: { id: true, name: true, color: true } },
+              tags: {
+                select: {
+                  tag: { select: { id: true, name: true, color: true } },
+                },
+              },
             },
           },
         },
@@ -198,9 +210,13 @@ export class DashboardService {
           receivable: {
             select: {
               id: true,
-              description: true,
               customer: { select: { id: true, name: true } },
               category: { select: { id: true, name: true, color: true } },
+              tags: {
+                select: {
+                  tag: { select: { id: true, name: true, color: true } },
+                },
+              },
             },
           },
         },

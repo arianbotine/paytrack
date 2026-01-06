@@ -29,13 +29,11 @@ export class PaymentsService {
               payableInstallment: {
                 select: {
                   id: true,
-                  description: true,
                   installmentNumber: true,
                   totalInstallments: true,
                   payable: {
                     select: {
                       id: true,
-                      description: true,
                       vendor: { select: { name: true } },
                     },
                   },
@@ -44,13 +42,11 @@ export class PaymentsService {
               receivableInstallment: {
                 select: {
                   id: true,
-                  description: true,
                   installmentNumber: true,
                   totalInstallments: true,
                   receivable: {
                     select: {
                       id: true,
-                      description: true,
                       customer: { select: { name: true } },
                     },
                   },
@@ -86,14 +82,12 @@ export class PaymentsService {
             payableInstallment: {
               select: {
                 id: true,
-                description: true,
                 installmentNumber: true,
                 totalInstallments: true,
                 amount: true,
                 payable: {
                   select: {
                     id: true,
-                    description: true,
                     vendor: { select: { name: true } },
                   },
                 },
@@ -102,14 +96,12 @@ export class PaymentsService {
             receivableInstallment: {
               select: {
                 id: true,
-                description: true,
                 installmentNumber: true,
                 totalInstallments: true,
                 amount: true,
                 receivable: {
                   select: {
                     id: true,
-                    description: true,
                     customer: { select: { name: true } },
                   },
                 },
@@ -183,13 +175,11 @@ export class PaymentsService {
                 payableInstallment: {
                   select: {
                     id: true,
-                    description: true,
                     installmentNumber: true,
                     totalInstallments: true,
                     payable: {
                       select: {
                         id: true,
-                        description: true,
                         vendor: { select: { name: true } },
                       },
                     },
@@ -198,13 +188,11 @@ export class PaymentsService {
                 receivableInstallment: {
                   select: {
                     id: true,
-                    description: true,
                     installmentNumber: true,
                     totalInstallments: true,
                     receivable: {
                       select: {
                         id: true,
-                        description: true,
                         customer: { select: { name: true } },
                       },
                     },

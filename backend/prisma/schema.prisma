@@ -195,7 +195,6 @@ model Payable {
   organizationId String        @map("organization_id")
   vendorId       String        @map("vendor_id")
   categoryId     String?       @map("category_id")
-  description    String
   amount         Decimal       @db.Decimal(15, 2)
   paidAmount     Decimal       @default(0) @map("paid_amount") @db.Decimal(15, 2)
   dueDate        DateTime      @map("due_date") @db.Date
@@ -232,7 +231,6 @@ model PayableInstallment {
   paidAmount        Decimal       @default(0) @map("paid_amount") @db.Decimal(15, 2)
   dueDate           DateTime      @map("due_date") @db.Date
   status            AccountStatus @default(PENDING)
-  description       String
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
 
@@ -252,7 +250,6 @@ model Receivable {
   organizationId String        @map("organization_id")
   customerId     String        @map("customer_id")
   categoryId     String?       @map("category_id")
-  description    String
   amount         Decimal       @db.Decimal(15, 2)
   receivedAmount Decimal       @default(0) @map("received_amount") @db.Decimal(15, 2)
   dueDate        DateTime      @map("due_date") @db.Date
@@ -288,7 +285,6 @@ model ReceivableInstallment {
   receivedAmount    Decimal       @default(0) @map("received_amount") @db.Decimal(15, 2)
   dueDate           DateTime      @map("due_date") @db.Date
   status            AccountStatus @default(PENDING)
-  description       String
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
 

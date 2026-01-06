@@ -119,10 +119,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
     return payable.installments && payable.installments.length > 0;
   };
 
-  const handleStartEdit = (
-    installment: PayableInstallment,
-    currentAmount: number
-  ) => {
+  const handleStartEdit = (installment: PayableInstallment) => {
     setEditingInstallment(installment.id);
     setEditAmount(null);
   };
@@ -221,7 +218,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                     title={
                       <Box>
                         <Typography variant="subtitle1" fontWeight="medium">
-                          {account.description}
+                          {account.vendor.name}
                         </Typography>
                         {account.invoiceNumber && (
                           <Typography variant="caption" color="text.secondary">
@@ -232,9 +229,44 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                     }
                     subheader={
                       <Box sx={{ mt: 1 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          {account.vendor.name} •{' '}
-                          {formatLocalDate(account.dueDate)}
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            gap: 1,
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                          }}
+                        >
+                          {account.category && (
+                            <Chip
+                              label={account.category.name}
+                              size="small"
+                              sx={{
+                                bgcolor: account.category.color,
+                                color: 'white',
+                                fontWeight: 500,
+                              }}
+                            />
+                          )}
+                          {account.tags.map(({ tag }) => (
+                            <Chip
+                              key={tag.id}
+                              label={tag.name}
+                              size="small"
+                              variant="outlined"
+                              sx={{
+                                borderColor: tag.color,
+                                color: tag.color,
+                              }}
+                            />
+                          ))}
+                        </Box>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ mt: 1 }}
+                        >
+                          Vencimento: {formatLocalDate(account.dueDate)}
                         </Typography>
                         <Box
                           sx={{
@@ -477,10 +509,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                           size="small"
                                           color="primary"
                                           onClick={() =>
-                                            handleStartEdit(
-                                              installment,
-                                              installment.amount
-                                            )
+                                            handleStartEdit(installment)
                                           }
                                         >
                                           <EditIcon fontSize="small" />
@@ -561,9 +590,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
             <TableHead>
               <TableRow>
                 <TableCell width={48} />
-                <TableCell>Descrição</TableCell>
-                <TableCell>Credor</TableCell>
-                <TableCell>Categoria</TableCell>
+                <TableCell>Fornecedor & Identificação</TableCell>
                 <TableCell align="right">Valor</TableCell>
                 <TableCell>Vencimento</TableCell>
                 <TableCell>Status</TableCell>
@@ -571,10 +598,10 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {isLoading && <TableSkeleton columns={8} rows={rowsPerPage} />}
+              {isLoading && <TableSkeleton columns={6} rows={rowsPerPage} />}
               {!isLoading && filteredAccounts.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={6}>
                     <EmptyState
                       variant="empty"
                       title="Nenhuma conta a pagar"
@@ -623,19 +650,67 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                 gap: 0.5,
                               }}
                             >
-                              <Typography fontWeight="medium">
-                                {account.description}
+                              {/* Nome do fornecedor como título principal */}
+                              <Typography fontWeight="600" fontSize="0.9rem">
+                                {account.vendor.name}
                               </Typography>
-                              {account.invoiceNumber && (
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  NF: {account.invoiceNumber}
-                                </Typography>
-                              )}
+
+                              {/* Categoria e Tags em uma única linha */}
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  gap: 0.5,
+                                  flexWrap: 'wrap',
+                                  alignItems: 'center',
+                                }}
+                              >
+                                {account.category && (
+                                  <Chip
+                                    label={account.category.name}
+                                    size="small"
+                                    sx={{
+                                      bgcolor:
+                                        account.category.color || '#6B7280',
+                                      color: 'white',
+                                      fontWeight: 600,
+                                      fontSize: '0.7rem',
+                                      height: 22,
+                                    }}
+                                  />
+                                )}
+                                {account.tags.map(({ tag }) => (
+                                  <Chip
+                                    key={tag.id}
+                                    label={tag.name}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{
+                                      borderColor: tag.color || '#3B82F6',
+                                      color: tag.color || '#3B82F6',
+                                      fontSize: '0.7rem',
+                                      height: 22,
+                                      fontWeight: 500,
+                                    }}
+                                  />
+                                ))}
+                                {account.invoiceNumber && (
+                                  <Chip
+                                    label={`NF: ${account.invoiceNumber}`}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{
+                                      borderColor: '#9CA3AF',
+                                      color: '#6B7280',
+                                      fontSize: '0.7rem',
+                                      height: 22,
+                                    }}
+                                  />
+                                )}
+                              </Box>
+
+                              {/* Progresso de parcelas se houver */}
                               {hasInstallments(account) && progress && (
-                                <Box sx={{ mt: 0.5 }}>
+                                <Box sx={{ mt: 0.5, maxWidth: 300 }}>
                                   <Box
                                     sx={{
                                       display: 'flex',
@@ -646,6 +721,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                     <Typography
                                       variant="caption"
                                       color="text.secondary"
+                                      fontWeight={500}
                                     >
                                       {progress.paidCount}/{progress.totalCount}{' '}
                                       parcelas
@@ -653,6 +729,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                     <Typography
                                       variant="caption"
                                       color="text.secondary"
+                                      fontWeight={600}
                                     >
                                       {progress.percentage}%
                                     </Typography>
@@ -660,49 +737,18 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                   <LinearProgress
                                     variant="determinate"
                                     value={progress.percentage}
-                                    sx={{ height: 6, borderRadius: 1 }}
+                                    sx={{
+                                      height: 6,
+                                      borderRadius: 1,
+                                      bgcolor: 'grey.200',
+                                      '& .MuiLinearProgress-bar': {
+                                        borderRadius: 1,
+                                      },
+                                    }}
                                   />
                                 </Box>
                               )}
-                              {account.tags.length > 0 && (
-                                <Box
-                                  sx={{
-                                    display: 'flex',
-                                    gap: 0.5,
-                                    flexWrap: 'wrap',
-                                    mt: 0.5,
-                                  }}
-                                >
-                                  {account.tags.map(({ tag }) => (
-                                    <Chip
-                                      key={tag.id}
-                                      label={tag.name}
-                                      size="small"
-                                      sx={{
-                                        height: 20,
-                                        fontSize: '0.7rem',
-                                        backgroundColor: tag.color || '#e0e0e0',
-                                        color: '#fff',
-                                      }}
-                                    />
-                                  ))}
-                                </Box>
-                              )}
                             </Box>
-                          </TableCell>
-                          <TableCell>{account.vendor.name}</TableCell>
-                          <TableCell>
-                            {account.category && (
-                              <Chip
-                                label={account.category.name}
-                                size="small"
-                                sx={{
-                                  backgroundColor:
-                                    account.category.color || '#e0e0e0',
-                                  color: '#fff',
-                                }}
-                              />
-                            )}
                           </TableCell>
                           <TableCell align="right">
                             <Typography fontWeight="medium">
@@ -988,8 +1034,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                                           color="primary"
                                                           onClick={() =>
                                                             handleStartEdit(
-                                                              installment,
-                                                              installment.amount
+                                                              installment
                                                             )
                                                           }
                                                         >

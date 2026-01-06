@@ -40,8 +40,7 @@ export class PayablesService {
     organizationId: string,
     newAmount: number,
     installmentCount: number,
-    existingDueDates: string[],
-    description: string
+    existingDueDates: string[]
   ): Promise<void> {
     // Deletar parcelas antigas
     await this.prisma.payableInstallment.deleteMany({
@@ -55,7 +54,6 @@ export class PayablesService {
       existingDueDates,
       payableId,
       organizationId,
-      description,
       'payable'
     ) as Prisma.PayableInstallmentCreateManyInput[];
 
@@ -157,7 +155,6 @@ export class PayablesService {
               paidAmount: true,
               dueDate: true,
               status: true,
-              description: true,
             },
             orderBy: { installmentNumber: 'asc' },
           },
@@ -203,7 +200,6 @@ export class PayablesService {
             paidAmount: true,
             dueDate: true,
             status: true,
-            description: true,
           },
           orderBy: { installmentNumber: 'asc' },
         },
@@ -251,7 +247,6 @@ export class PayablesService {
           organizationId,
           vendorId: baseData.vendorId,
           categoryId: baseData.categoryId,
-          description: baseData.description,
           amount: MoneyUtils.toDecimal(baseData.amount),
           dueDate: parseDateOnly(dueDates ? dueDates[0] : baseData.dueDate),
           notes: baseData.notes,
@@ -275,7 +270,6 @@ export class PayablesService {
         dueDates || [baseData.dueDate],
         payable.id,
         organizationId,
-        baseData.description,
         'payable'
       ) as Prisma.PayableInstallmentCreateManyInput[];
 
@@ -338,7 +332,14 @@ export class PayablesService {
       throw new NotFoundException('Conta a pagar não encontrada');
     }
 
-    const { vendorId, categoryId, invoiceNumber, ...restData } = data;
+    const {
+      vendorId,
+      categoryId,
+      invoiceNumber,
+      installmentCount,
+      dueDates,
+      ...restData
+    } = data;
 
     // Prepare data for Prisma update, transforming amount to Decimal if present
     const prismaData = {
@@ -353,7 +354,14 @@ export class PayablesService {
       installment => installment.allocations.length > 0
     );
 
-    if (data.amount !== undefined && hasAnyPayment) {
+    // Verificar se o valor realmente mudou (comparar com 2 casas decimais)
+    const currentAmount = Number(payable.amount);
+    const newAmount =
+      data.amount !== undefined ? Number(data.amount) : currentAmount;
+    const amountChanged =
+      data.amount !== undefined && Math.abs(currentAmount - newAmount) > 0.001;
+
+    if (amountChanged && hasAnyPayment) {
       throw new BadRequestException(
         'Não é possível alterar o valor de uma conta que já possui pagamentos registrados. Cancele os pagamentos para editar o valor.'
       );
@@ -361,9 +369,7 @@ export class PayablesService {
 
     // Se o valor foi alterado e não há pagamentos, recalcular as parcelas
     const shouldRecalculateInstallments =
-      data.amount !== undefined &&
-      !hasAnyPayment &&
-      payable.installments.length > 0;
+      amountChanged && !hasAnyPayment && payable.installments.length > 0;
 
     if (shouldRecalculateInstallments) {
       const newAmount = MoneyUtils.toDecimal(data.amount!);
@@ -378,8 +384,7 @@ export class PayablesService {
         organizationId,
         newAmount.toNumber(),
         installmentCount,
-        existingDueDates,
-        payable.description
+        existingDueDates
       );
     }
 
@@ -585,7 +590,6 @@ export class PayablesService {
                 allocation.payableInstallment.installmentNumber,
               totalInstallments:
                 allocation.payableInstallment.totalInstallments,
-              description: allocation.payableInstallment.description,
             }
           : undefined,
       };

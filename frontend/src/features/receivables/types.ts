@@ -37,17 +37,14 @@ export interface ReceivableInstallment {
   receivedAmount: number;
   dueDate: string;
   status: ReceivableStatus;
-  description: string;
   receivable?: {
     id: string;
-    description: string;
     customer: { id: string; name: string };
   };
 }
 
 export interface Receivable {
   id: string;
-  description: string;
   amount: number;
   dueDate: string;
   status: ReceivableStatus;
@@ -72,7 +69,6 @@ export interface ReceivablesResponse {
 
 export const receivableSchema = z
   .object({
-    description: z.string().min(1, 'Descrição é obrigatória').max(255),
     amount: z.coerce.number().positive('Valor deve ser positivo'),
     dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
     customerId: z.string().min(1, 'Cliente é obrigatório'),
@@ -118,7 +114,6 @@ export const statusOptions = [
 // ============================================================
 
 export const getDefaultFormValues = (): ReceivableFormData => ({
-  description: '',
   amount: 0,
   dueDate: getTodayLocalInput(),
   customerId: '',

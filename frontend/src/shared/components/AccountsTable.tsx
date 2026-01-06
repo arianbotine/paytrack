@@ -168,30 +168,47 @@ export function AccountsTable<T extends AccountItem>({
                       }}
                     >
                       <Typography fontWeight="medium">
-                        {account.description}
+                        {getEntityName(account)}
                       </Typography>
-                      {account.tags.length > 0 && (
-                        <Box
-                          sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}
-                        >
-                          {account.tags.map(({ tag }) => (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          gap: 0.5,
+                          flexWrap: 'wrap',
+                          alignItems: 'center',
+                        }}
+                      >
+                        {account.category && (
+                          <Chip
+                            label={account.category.name}
+                            size="small"
+                            sx={{
+                              height: 20,
+                              fontSize: '0.7rem',
+                              backgroundColor:
+                                account.category.color || '#1976d2',
+                              color: '#fff',
+                            }}
+                          />
+                        )}
+                        {account.tags.length > 0 &&
+                          account.tags.map(({ tag }) => (
                             <Chip
                               key={tag.id}
                               label={tag.name}
                               size="small"
+                              variant="outlined"
                               sx={{
                                 height: 20,
                                 fontSize: '0.7rem',
-                                backgroundColor: tag.color || '#e0e0e0',
-                                color: '#fff',
+                                borderColor: tag.color || '#e0e0e0',
+                                color: tag.color || '#666',
                               }}
                             />
                           ))}
-                        </Box>
-                      )}
+                      </Box>
                     </Box>
                   </TableCell>
-                  <TableCell>{getEntityName(account)}</TableCell>
                   <TableCell
                     sx={{ display: { xs: 'none', tablet: 'table-cell' } }}
                   >

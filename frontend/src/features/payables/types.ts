@@ -36,17 +36,14 @@ export interface PayableInstallment {
   paidAmount: number;
   dueDate: string;
   status: PayableStatus;
-  description: string;
   payable?: {
     id: string;
-    description: string;
     vendor: { id: string; name: string };
   };
 }
 
 export interface Payable {
   id: string;
-  description: string;
   amount: number;
   dueDate: string;
   status: PayableStatus;
@@ -72,7 +69,6 @@ export interface PayablesResponse {
 
 export const payableSchema = z
   .object({
-    description: z.string().min(1, 'Descrição é obrigatória').max(255),
     amount: z.coerce.number().positive('Valor deve ser positivo'),
     dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
     vendorId: z.string().min(1, 'Credor é obrigatório'),
@@ -121,7 +117,6 @@ export const statusOptions = [
 import { getTodayLocalInput } from '../../shared/utils/dateUtils';
 
 export const getDefaultFormValues = (): PayableFormData => ({
-  description: '',
   amount: 0,
   dueDate: getTodayLocalInput(),
   vendorId: '',

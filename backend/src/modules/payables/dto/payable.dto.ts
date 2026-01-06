@@ -32,10 +32,6 @@ export class CreatePayableDto {
   @IsOptional()
   categoryId?: string;
 
-  @ApiProperty({ example: 'Aluguel do escritório' })
-  @IsString()
-  description!: string;
-
   @ApiProperty({ example: 1500 })
   @IsNumber({}, { message: 'Valor deve ser um número válido' })
   @Min(0.01, { message: 'Valor deve ser maior que zero' })

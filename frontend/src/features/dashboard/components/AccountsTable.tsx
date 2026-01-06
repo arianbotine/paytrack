@@ -22,15 +22,36 @@ import { motion } from 'framer-motion';
 import { formatLocalDate } from '../../../shared/utils/dateUtils';
 import { formatCurrency } from '../../../shared/utils/currencyUtils';
 
+interface Tag {
+  id: string;
+  name: string;
+  color?: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  color?: string;
+}
+
 interface Account {
   id: string;
-  description: string;
   amount: number;
   paidAmount?: number;
   receivedAmount?: number;
   dueDate: string;
   vendor?: { name: string };
   customer?: { name: string };
+  payable?: {
+    category?: Category;
+    tags?: { tag: Tag }[];
+    vendor?: { name: string };
+  };
+  receivable?: {
+    category?: Category;
+    tags?: { tag: Tag }[];
+    customer?: { name: string };
+  };
 }
 
 interface AccountsTableProps {
@@ -106,7 +127,7 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Descrição</TableCell>
+                    <TableCell>Categoria & Tags</TableCell>
                     <TableCell>{entityLabel}</TableCell>
                     <TableCell align="right">Valor</TableCell>
                     <TableCell align="center">Vencimento</TableCell>
@@ -122,13 +143,89 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                       style={{ display: 'table-row' }}
                     >
                       <TableCell>
-                        <Typography
-                          variant="body2"
-                          noWrap
-                          sx={{ maxWidth: 180 }}
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 0.5,
+                            maxWidth: 250,
+                          }}
                         >
-                          {account.description}
-                        </Typography>
+                          {/* Categoria */}
+                          {((account as any).payable?.category ||
+                            (account as any).receivable?.category) && (
+                            <Chip
+                              label={
+                                (account as any).payable?.category?.name ||
+                                (account as any).receivable?.category?.name
+                              }
+                              size="small"
+                              sx={{
+                                bgcolor:
+                                  (account as any).payable?.category?.color ||
+                                  (account as any).receivable?.category
+                                    ?.color ||
+                                  '#6B7280',
+                                color: '#fff',
+                                fontWeight: 600,
+                                fontSize: '0.7rem',
+                                height: 22,
+                              }}
+                            />
+                          )}
+
+                          {/* Tags */}
+                          {((account as any).payable?.tags || []).map(
+                            (tagItem: { tag: Tag }) => (
+                              <Chip
+                                key={tagItem.tag.id}
+                                label={tagItem.tag.name}
+                                size="small"
+                                variant="outlined"
+                                sx={{
+                                  borderColor: tagItem.tag.color || '#3B82F6',
+                                  color: tagItem.tag.color || '#3B82F6',
+                                  fontSize: '0.7rem',
+                                  height: 22,
+                                  fontWeight: 500,
+                                }}
+                              />
+                            )
+                          )}
+                          {((account as any).receivable?.tags || []).map(
+                            (tagItem: { tag: Tag }) => (
+                              <Chip
+                                key={tagItem.tag.id}
+                                label={tagItem.tag.name}
+                                size="small"
+                                variant="outlined"
+                                sx={{
+                                  borderColor: tagItem.tag.color || '#3B82F6',
+                                  color: tagItem.tag.color || '#3B82F6',
+                                  fontSize: '0.7rem',
+                                  height: 22,
+                                  fontWeight: 500,
+                                }}
+                              />
+                            )
+                          )}
+
+                          {/* Fallback se não houver categoria nem tags */}
+                          {!(account as any).payable?.category &&
+                            !(account as any).receivable?.category &&
+                            ((account as any).payable?.tags || []).length ===
+                              0 &&
+                            ((account as any).receivable?.tags || []).length ===
+                              0 && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ fontStyle: 'italic', py: 0.5 }}
+                              >
+                                Sem categoria
+                              </Typography>
+                            )}
+                        </Box>
                       </TableCell>
                       <TableCell>
                         <Typography

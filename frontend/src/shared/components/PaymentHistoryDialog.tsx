@@ -23,7 +23,6 @@ interface PaymentHistoryDialogProps {
   accountType: 'payable' | 'receivable';
   accountData: {
     id: string;
-    description: string;
     amount: number;
     paidAmount: number;
     dueDate: string;
@@ -87,9 +86,6 @@ export const PaymentHistoryDialog = ({
               {accountType === 'payable' ? 'Pagamentos' : 'Recebimentos'}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {accountData.description}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
               {accountData.entityName}
             </Typography>
           </Box>

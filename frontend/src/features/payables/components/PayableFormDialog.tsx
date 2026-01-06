@@ -136,10 +136,8 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
 
     if (userInputMode === 'total') {
       setValue('amount', userInputValue);
-    } else {
-      if (isInstallment && installmentCount && installmentCount > 1) {
-        setValue('amount', userInputValue * installmentCount);
-      }
+    } else if (isInstallment && installmentCount && installmentCount > 1) {
+      setValue('amount', userInputValue * installmentCount);
     }
   }, [
     userInputMode,
@@ -201,7 +199,6 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
     if (open) {
       if (payable) {
         reset({
-          description: payable.description,
           amount: payable.amount,
           dueDate: payable.dueDate.split('T')[0], // Extrai apenas YYYY-MM-DD
           vendorId: payable.vendor.id,
@@ -278,23 +275,6 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
             </DialogTitle>
             <DialogContent>
               <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                <Grid item xs={12}>
-                  <Controller
-                    name="description"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Descrição"
-                        fullWidth
-                        error={!!errors.description}
-                        helperText={errors.description?.message}
-                        autoFocus
-                      />
-                    )}
-                  />
-                </Grid>
-
                 <Grid item xs={12} tablet={4} md={6}>
                   <Controller
                     name="vendorId"

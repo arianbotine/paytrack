@@ -7,26 +7,22 @@ import { getNowLocalDatetimeInput } from '../../shared/utils/dateUtils';
 
 export interface PayableInstallment {
   id: string;
-  description: string;
   installmentNumber: number;
   totalInstallments: number;
   amount: number;
   payable: {
     id: string;
-    description: string;
     vendor: { name: string };
   };
 }
 
 export interface ReceivableInstallment {
   id: string;
-  description: string;
   installmentNumber: number;
   totalInstallments: number;
   amount: number;
   receivable: {
     id: string;
-    description: string;
     customer: { name: string };
   };
 }
@@ -53,7 +49,6 @@ export interface PaymentHistoryItem {
   installment?: {
     installmentNumber: number;
     totalInstallments: number;
-    description: string;
   };
 }
 

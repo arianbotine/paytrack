@@ -200,7 +200,6 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
     if (open) {
       if (receivable) {
         reset({
-          description: receivable.description,
           amount: receivable.amount,
           dueDate: receivable.dueDate.split('T')[0], // Extrai apenas YYYY-MM-DD
           customerId: receivable.customer.id,
@@ -269,23 +268,6 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
             </DialogTitle>
             <DialogContent>
               <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                <Grid item xs={12}>
-                  <Controller
-                    name="description"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Descrição"
-                        fullWidth
-                        error={!!errors.description}
-                        helperText={errors.description?.message}
-                        autoFocus
-                      />
-                    )}
-                  />
-                </Grid>
-
                 <Grid item xs={12} md={6}>
                   <Controller
                     name="customerId"

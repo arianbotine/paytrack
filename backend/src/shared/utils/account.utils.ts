@@ -28,7 +28,6 @@ export function mapInvoiceToDocument<T extends Record<string, any>>(
  * @param dueDates - Array of due dates for each installment
  * @param accountId - The account ID (payableId or receivableId)
  * @param organizationId - Organization ID
- * @param description - Description for installments
  * @param type - 'payable' or 'receivable' to determine the amount field
  * @returns Array of installment create inputs
  */
@@ -38,7 +37,6 @@ export function generateInstallments(
   dueDates: string[],
   accountId: string,
   organizationId: string,
-  description: string,
   type: 'payable' | 'receivable'
 ): (
   | Prisma.PayableInstallmentCreateManyInput
@@ -66,7 +64,6 @@ export function generateInstallments(
       amount: installmentAmount,
       dueDate: parseDateOnly(dueDates[i]),
       status: AccountStatus.PENDING,
-      description,
     };
 
     if (type === 'payable') {

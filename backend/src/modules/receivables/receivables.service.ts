@@ -40,8 +40,7 @@ export class ReceivablesService {
     organizationId: string,
     newAmount: number,
     installmentCount: number,
-    existingDueDates: string[],
-    description: string
+    existingDueDates: string[]
   ): Promise<void> {
     // Deletar parcelas antigas
     await this.prisma.receivableInstallment.deleteMany({
@@ -55,7 +54,6 @@ export class ReceivablesService {
       existingDueDates,
       receivableId,
       organizationId,
-      description,
       'receivable'
     ) as Prisma.ReceivableInstallmentCreateManyInput[];
 
@@ -157,7 +155,6 @@ export class ReceivablesService {
               receivedAmount: true,
               dueDate: true,
               status: true,
-              description: true,
             },
             orderBy: { installmentNumber: 'asc' },
           },
@@ -201,7 +198,6 @@ export class ReceivablesService {
             receivedAmount: true,
             dueDate: true,
             status: true,
-            description: true,
           },
           orderBy: { installmentNumber: 'asc' },
         },
@@ -247,7 +243,6 @@ export class ReceivablesService {
           organizationId,
           customerId: baseData.customerId,
           categoryId: baseData.categoryId,
-          description: baseData.description,
           amount: MoneyUtils.toDecimal(baseData.amount),
           dueDate: parseDateOnly(dueDates ? dueDates[0] : baseData.dueDate),
           notes: baseData.notes,
@@ -270,7 +265,6 @@ export class ReceivablesService {
         dueDates || [baseData.dueDate],
         receivable.id,
         organizationId,
-        baseData.description,
         'receivable'
       ) as Prisma.ReceivableInstallmentCreateManyInput[];
 
@@ -343,7 +337,14 @@ export class ReceivablesService {
       installment => installment.allocations.length > 0
     );
 
-    if (data.amount !== undefined && hasAnyPayment) {
+    // Verificar se o valor realmente mudou (comparar com 2 casas decimais)
+    const currentAmount = Number(receivable.amount);
+    const newAmount =
+      data.amount !== undefined ? Number(data.amount) : currentAmount;
+    const amountChanged =
+      data.amount !== undefined && Math.abs(currentAmount - newAmount) > 0.001;
+
+    if (amountChanged && hasAnyPayment) {
       throw new BadRequestException(
         'Não é possível alterar o valor de uma conta que já possui recebimentos registrados. Cancele os recebimentos para editar o valor.'
       );
@@ -351,9 +352,7 @@ export class ReceivablesService {
 
     // Se o valor foi alterado e não há pagamentos, recalcular as parcelas
     const shouldRecalculateInstallments =
-      data.amount !== undefined &&
-      !hasAnyPayment &&
-      receivable.installments.length > 0;
+      amountChanged && !hasAnyPayment && receivable.installments.length > 0;
 
     if (shouldRecalculateInstallments) {
       const newAmount = MoneyUtils.toDecimal(data.amount);
@@ -368,8 +367,7 @@ export class ReceivablesService {
         organizationId,
         newAmount.toNumber(),
         installmentCount,
-        existingDueDates,
-        receivable.description
+        existingDueDates
       );
     }
 
@@ -575,7 +573,6 @@ export class ReceivablesService {
                 allocation.receivableInstallment.installmentNumber,
               totalInstallments:
                 allocation.receivableInstallment.totalInstallments,
-              description: allocation.receivableInstallment.description,
             }
           : undefined,
       };

@@ -16,7 +16,6 @@ export interface PayableInstallment {
   paidAmount: number;
   dueDate: string;
   status: AccountStatus;
-  description: string;
 }
 
 export interface ReceivableInstallment {
@@ -26,12 +25,10 @@ export interface ReceivableInstallment {
   receivedAmount: number;
   dueDate: string;
   status: AccountStatus;
-  description: string;
 }
 
 export interface BaseAccount {
   id: string;
-  description: string;
   amount: number;
   dueDate: string;
   status: AccountStatus;

@@ -108,11 +108,6 @@ const PaymentRow = React.forwardRef<
           <Box>
             <Typography fontWeight="medium">
               {isPayable
-                ? allocation?.payableInstallment?.payable?.description
-                : allocation?.receivableInstallment?.receivable?.description}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {isPayable
                 ? allocation?.payableInstallment?.payable?.vendor.name
                 : allocation?.receivableInstallment?.receivable?.customer.name}
             </Typography>
@@ -204,12 +199,6 @@ const PaymentRow = React.forwardRef<
                       >
                         <Box>
                           <Typography variant="body2" fontWeight={600}>
-                            {allocIsPayable
-                              ? alloc.payableInstallment?.payable?.description
-                              : alloc.receivableInstallment?.receivable
-                                  ?.description}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
                             {allocIsPayable
                               ? alloc.payableInstallment?.payable?.vendor.name
                               : alloc.receivableInstallment?.receivable

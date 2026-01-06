@@ -97,7 +97,6 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
       : (installment as PayableInstallment);
 
     return {
-      description: installment.description,
       installmentNumber: installment.installmentNumber,
       totalInstallments: installment.totalInstallments,
       amount: installment.amount,
@@ -109,9 +108,6 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
       entityName: isReceivable
         ? receivableInst?.receivable?.customer?.name
         : payableInst?.payable?.vendor?.name,
-      parentDescription: isReceivable
-        ? receivableInst?.receivable?.description
-        : payableInst?.payable?.description,
     };
   }, [installment, type]);
 
@@ -221,14 +217,7 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
                     >
                       <Box flex={1}>
                         <Typography variant="h6" gutterBottom>
-                          {installmentInfo.parentDescription}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          gutterBottom
-                        >
-                          {installmentInfo.description}
+                          {installmentInfo.entityName}
                         </Typography>
                       </Box>
                       <Chip

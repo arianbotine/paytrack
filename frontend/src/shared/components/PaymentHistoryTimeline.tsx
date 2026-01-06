@@ -297,8 +297,9 @@ export const PaymentHistoryTimeline = ({
                           borderColor: 'background.paper',
                           zIndex: 2,
                         },
-                        '&::after': !isLast
-                          ? {
+                        '&::after': isLast
+                          ? {}
+                          : {
                               content: '""',
                               position: 'absolute',
                               left: -14.5,
@@ -307,8 +308,7 @@ export const PaymentHistoryTimeline = ({
                               height: 'calc(100% + 16px)',
                               bgcolor: 'divider',
                               zIndex: 1,
-                            }
-                          : {},
+                            },
                       }}
                     >
                       <CardContent sx={{ p: 3 }}>
@@ -344,16 +344,6 @@ export const PaymentHistoryTimeline = ({
                                   borderRadius: 1,
                                 }}
                               />
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{
-                                  fontStyle: 'italic',
-                                  opacity: 0.8,
-                                }}
-                              >
-                                {item.installment.description}
-                              </Typography>
                             </Stack>
                           )}
 
