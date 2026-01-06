@@ -27,10 +27,10 @@ export class CreateReceivableDto {
   @IsUUID()
   customerId!: string;
 
-  @ApiPropertyOptional({ example: 'uuid-da-categoria' })
+  @ApiPropertyOptional({ example: 'uuid-da-categoria', nullable: true })
   @IsUUID()
   @IsOptional()
-  categoryId?: string;
+  categoryId?: string | null;
 
   @ApiProperty({ example: 1500 })
   @IsNumber({}, { message: 'Valor deve ser um número válido' })

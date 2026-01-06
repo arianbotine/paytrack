@@ -396,9 +396,10 @@ export class ReceivablesService {
         ...(data.dueDate && { dueDate: parseDateOnly(data.dueDate) }),
         ...(customerId && { customer: { connect: { id: customerId } } }),
         ...(categoryId !== undefined && {
-          category: categoryId
-            ? { connect: { id: categoryId } }
-            : { disconnect: true },
+          category:
+            categoryId && categoryId !== ''
+              ? { connect: { id: categoryId } }
+              : { disconnect: true },
         }),
         ...(tagIds && {
           tags: {

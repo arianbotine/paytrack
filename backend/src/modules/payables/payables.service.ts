@@ -410,9 +410,10 @@ export class PayablesService {
         ...(data.dueDate && { dueDate: parseDateOnly(data.dueDate) }),
         ...(vendorId && { vendor: { connect: { id: vendorId } } }),
         ...(categoryId !== undefined && {
-          category: categoryId
-            ? { connect: { id: categoryId } }
-            : { disconnect: true },
+          category:
+            categoryId && categoryId !== ''
+              ? { connect: { id: categoryId } }
+              : { disconnect: true },
         }),
         ...(tagIds && {
           tags: {

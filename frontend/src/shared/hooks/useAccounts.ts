@@ -13,6 +13,22 @@ interface BaseResponse<T> {
   total: number;
 }
 
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
+
+interface AccountFormData {
+  categoryId?: string | null;
+  tagIds?: string[];
+  dueDates?: string[];
+  firstDueDate?: string;
+  [key: string]: unknown;
+}
+
 export interface UseAccountsConfig {
   type: AccountType;
   endpoint: string;
@@ -151,7 +167,7 @@ export const useCreateAccount = (
       showNotification(config.messages.createSuccess, 'success');
       onSuccess?.();
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message =
         error.response?.data?.message || config.messages.createError;
       showNotification(message, 'error');
@@ -176,7 +192,7 @@ export const useUpdateAccount = (
       showNotification(config.messages.updateSuccess, 'success');
       onSuccess?.();
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message =
         error.response?.data?.message || config.messages.updateError;
       showNotification(message, 'error');
@@ -200,7 +216,7 @@ export const useDeleteAccount = (
       showNotification(config.messages.deleteSuccess, 'success');
       onSuccess?.();
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message =
         error.response?.data?.message || config.messages.deleteError;
       showNotification(message, 'error');
@@ -233,7 +249,7 @@ export const useDeleteInstallment = (
       showNotification('Parcela excluída com sucesso!', 'success');
       onSuccess?.();
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message =
         error.response?.data?.message || 'Erro ao excluir parcela';
       showNotification(message, 'error');
@@ -269,7 +285,7 @@ export const useUpdateInstallment = (
       showNotification('Parcela atualizada com sucesso!', 'success');
       onSuccess?.();
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       const message =
         error.response?.data?.message || 'Erro ao atualizar parcela';
       showNotification(message, 'error');
@@ -307,15 +323,18 @@ export const useAccountOperations = <T>(
     data: T & { dueDate: string | Date; dueDates?: string[] },
     accountId?: string
   ) => {
+    const formData = data as T & AccountFormData;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { firstDueDate: _firstDueDate, ...payloadData } = data as any;
+    const { firstDueDate: _firstDueDate, ...payloadData } = formData;
     const payload = {
       ...payloadData,
       // dueDate e dueDates são date-only - enviar como está sem conversão
       dueDate: data.dueDate,
-      dueDates: (data as any).dueDates,
-      categoryId: (data as any).categoryId || undefined,
-      tagIds: (data as any).tagIds?.length ? (data as any).tagIds : undefined,
+      dueDates: formData.dueDates,
+      // Se categoryId é string vazia, enviar null para remover categoria
+      categoryId:
+        formData.categoryId === '' ? null : formData.categoryId || undefined,
+      tagIds: formData.tagIds?.length ? formData.tagIds : undefined,
     };
 
     if (accountId) {
