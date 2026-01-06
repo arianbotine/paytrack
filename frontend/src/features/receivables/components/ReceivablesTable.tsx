@@ -57,6 +57,10 @@ interface ReceivablesTableProps {
   onDelete: (receivable: Receivable) => void;
   onPayment: (item: Receivable | ReceivableInstallment) => void;
   onViewPayments?: (receivable: Receivable) => void;
+  onDeleteInstallment?: (
+    receivable: Receivable,
+    installment: ReceivableInstallment
+  ) => void;
 }
 
 const MotionTableRow = motion.create(TableRow);
@@ -73,6 +77,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
   onDelete,
   onPayment,
   onViewPayments,
+  onDeleteInstallment,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -439,6 +444,24 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                             </IconButton>
                                           </span>
                                         </Tooltip>
+                                        {onDeleteInstallment &&
+                                          installment.status === 'PENDING' &&
+                                          installments.length > 1 && (
+                                            <Tooltip title="Excluir parcela">
+                                              <IconButton
+                                                size="small"
+                                                color="error"
+                                                onClick={() =>
+                                                  onDeleteInstallment(
+                                                    account,
+                                                    installment
+                                                  )
+                                                }
+                                              >
+                                                <DeleteIcon fontSize="small" />
+                                              </IconButton>
+                                            </Tooltip>
+                                          )}
                                       </Box>
                                     </Box>
                                   </Box>
@@ -851,6 +874,25 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                                   </IconButton>
                                                 </span>
                                               </Tooltip>
+                                              {onDeleteInstallment &&
+                                                installment.status ===
+                                                  'PENDING' &&
+                                                installments.length > 1 && (
+                                                  <Tooltip title="Excluir parcela">
+                                                    <IconButton
+                                                      size="small"
+                                                      color="error"
+                                                      onClick={() =>
+                                                        onDeleteInstallment(
+                                                          account,
+                                                          installment
+                                                        )
+                                                      }
+                                                    >
+                                                      <DeleteIcon fontSize="small" />
+                                                    </IconButton>
+                                                  </Tooltip>
+                                                )}
                                             </Box>
                                           </TableCell>
                                         </TableRow>

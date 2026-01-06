@@ -28,6 +28,8 @@ export const PayablesPage: React.FC = () => {
   // State
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteInstallmentDialogOpen, setDeleteInstallmentDialogOpen] =
+    useState(false);
   const [paymentHistoryDialogOpen, setPaymentHistoryDialogOpen] =
     useState(false);
   const [quickPaymentDialogOpen, setQuickPaymentDialogOpen] = useState(false);
@@ -76,6 +78,12 @@ export const PayablesPage: React.FC = () => {
     setSelectedPayable(null);
   }, []);
 
+  const handleCloseDeleteInstallmentDialog = useCallback(() => {
+    setDeleteInstallmentDialogOpen(false);
+    setSelectedPayable(null);
+    setSelectedInstallment(null);
+  }, []);
+
   const handleCloseQuickPaymentDialog = useCallback(() => {
     setQuickPaymentDialogOpen(false);
     setSelectedInstallment(null);
@@ -86,12 +94,19 @@ export const PayablesPage: React.FC = () => {
     // Don't clear selectedPayable here to keep the data loaded
   }, []);
 
-  const { submitPayable, deleteMutation, isSubmitting, isDeleting } =
-    usePayableOperations({
-      onCreateSuccess: handleCloseDialog,
-      onUpdateSuccess: handleCloseDialog,
-      onDeleteSuccess: handleCloseDeleteDialog,
-    });
+  const {
+    submitPayable,
+    deleteMutation,
+    deleteInstallmentMutation,
+    isSubmitting,
+    isDeleting,
+    isDeletingInstallment,
+  } = usePayableOperations({
+    onCreateSuccess: handleCloseDialog,
+    onUpdateSuccess: handleCloseDialog,
+    onDeleteSuccess: handleCloseDeleteDialog,
+    onDeleteInstallmentSuccess: handleCloseDeleteInstallmentDialog,
+  });
 
   const { createMutation, isCreating } = usePaymentOperations({
     onCreateSuccess: handleCloseQuickPaymentDialog,
@@ -174,6 +189,24 @@ export const PayablesPage: React.FC = () => {
     }
   }, [deleteMutation, selectedPayable]);
 
+  const handleDeleteInstallment = useCallback(
+    (payable: Payable, installment: PayableInstallment) => {
+      setSelectedPayable(payable);
+      setSelectedInstallment(installment);
+      setDeleteInstallmentDialogOpen(true);
+    },
+    []
+  );
+
+  const confirmDeleteInstallment = useCallback(() => {
+    if (selectedPayable && selectedInstallment) {
+      deleteInstallmentMutation.mutate({
+        accountId: selectedPayable.id,
+        installmentId: selectedInstallment.id,
+      });
+    }
+  }, [deleteInstallmentMutation, selectedPayable, selectedInstallment]);
+
   const payables = payablesData?.data || [];
   const totalCount = payablesData?.total || 0;
 
@@ -218,6 +251,7 @@ export const PayablesPage: React.FC = () => {
           onDelete={handleDelete}
           onPayment={handlePayment}
           onViewPayments={handleViewPayments}
+          onDeleteInstallment={handleDeleteInstallment}
         />
 
         <PayableFormDialog
@@ -239,6 +273,16 @@ export const PayablesPage: React.FC = () => {
           onConfirm={confirmDelete}
           onCancel={handleCloseDeleteDialog}
           isLoading={isDeleting}
+        />
+
+        <ConfirmDialog
+          open={deleteInstallmentDialogOpen}
+          title="Excluir Parcela"
+          message={`Tem certeza que deseja excluir a parcela ${selectedInstallment?.installmentNumber}/${selectedInstallment?.totalInstallments} no valor de R$ ${selectedInstallment?.amount.toFixed(2)}? O valor total da conta será recalculado.`}
+          confirmLabel="Excluir Parcela"
+          onConfirm={confirmDeleteInstallment}
+          onCancel={handleCloseDeleteInstallmentDialog}
+          isLoading={isDeletingInstallment}
         />
 
         <PaymentHistoryDialog

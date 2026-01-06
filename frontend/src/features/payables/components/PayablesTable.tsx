@@ -57,6 +57,10 @@ interface PayablesTableProps {
   onDelete: (payable: Payable) => void;
   onPayment: (item: Payable | PayableInstallment) => void;
   onViewPayments?: (payable: Payable) => void;
+  onDeleteInstallment?: (
+    payable: Payable,
+    installment: PayableInstallment
+  ) => void;
 }
 
 const MotionTableRow = motion.create(TableRow);
@@ -73,6 +77,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
   onDelete,
   onPayment,
   onViewPayments,
+  onDeleteInstallment,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -398,6 +403,24 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                   </IconButton>
                                 </span>
                               </Tooltip>
+                              {onDeleteInstallment &&
+                                installment.status === 'PENDING' &&
+                                installments.length > 1 && (
+                                  <Tooltip title="Excluir parcela">
+                                    <IconButton
+                                      size="small"
+                                      color="error"
+                                      onClick={() =>
+                                        onDeleteInstallment(
+                                          account,
+                                          installment
+                                        )
+                                      }
+                                    >
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                )}
                             </Box>
                           </Box>
                         ))}
@@ -832,6 +855,25 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                                   </IconButton>
                                                 </span>
                                               </Tooltip>
+                                              {onDeleteInstallment &&
+                                                installment.status ===
+                                                  'PENDING' &&
+                                                installments.length > 1 && (
+                                                  <Tooltip title="Excluir parcela">
+                                                    <IconButton
+                                                      size="small"
+                                                      color="error"
+                                                      onClick={() =>
+                                                        onDeleteInstallment(
+                                                          account,
+                                                          installment
+                                                        )
+                                                      }
+                                                    >
+                                                      <DeleteIcon fontSize="small" />
+                                                    </IconButton>
+                                                  </Tooltip>
+                                                )}
                                             </Box>
                                           </TableCell>
                                         </TableRow>

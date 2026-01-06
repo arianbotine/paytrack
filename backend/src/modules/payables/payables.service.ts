@@ -591,4 +591,138 @@ export class PayablesService {
       };
     });
   }
+
+  /**
+   * Exclui uma parcela pendente e recalcula o valor total da conta
+   */
+  async deleteInstallment(
+    payableId: string,
+    installmentId: string,
+    organizationId: string
+  ) {
+    // Buscar a conta com suas parcelas
+    const payable = await this.prisma.payable.findFirst({
+      where: { id: payableId, organizationId },
+      include: {
+        installments: {
+          include: {
+            allocations: true,
+          },
+          orderBy: { installmentNumber: 'asc' },
+        },
+      },
+    });
+
+    if (!payable) {
+      throw new NotFoundException('Conta a pagar não encontrada');
+    }
+
+    // Verificar se há apenas uma parcela
+    if (payable.installments.length === 1) {
+      throw new BadRequestException(
+        'Não é possível excluir a única parcela da conta. Exclua a conta inteira.'
+      );
+    }
+
+    // Encontrar a parcela a ser excluída
+    const installmentToDelete = payable.installments.find(
+      inst => inst.id === installmentId
+    );
+
+    if (!installmentToDelete) {
+      throw new NotFoundException('Parcela não encontrada');
+    }
+
+    // Verificar se a parcela está pendente
+    if (installmentToDelete.status !== AccountStatus.PENDING) {
+      throw new BadRequestException(
+        'Apenas parcelas pendentes podem ser excluídas'
+      );
+    }
+
+    // Verificar se a parcela tem pagamentos
+    if (installmentToDelete.allocations.length > 0) {
+      throw new BadRequestException(
+        'Não é possível excluir parcela que já possui pagamentos registrados'
+      );
+    }
+
+    // Excluir a parcela e recalcular o valor total da conta
+    await this.prisma.$transaction(async tx => {
+      // 1. Excluir a parcela
+      await tx.payableInstallment.delete({
+        where: { id: installmentId },
+      });
+
+      // 2. Buscar parcelas restantes
+      const remainingInstallments = await tx.payableInstallment.findMany({
+        where: { payableId },
+        orderBy: { installmentNumber: 'asc' },
+      });
+
+      // 3. Recalcular valor total e valor pago (somar todas as parcelas restantes)
+      const newTotalAmount = remainingInstallments.reduce(
+        (sum, inst) => sum.plus(inst.amount),
+        new Prisma.Decimal(0)
+      );
+      const newPaidAmount = remainingInstallments.reduce(
+        (sum, inst) => sum.plus(inst.paidAmount),
+        new Prisma.Decimal(0)
+      );
+
+      // 4. Reavaliar status da conta baseado nas parcelas restantes
+      let newStatus: AccountStatus;
+      const allPaid = remainingInstallments.every(
+        inst => inst.status === AccountStatus.PAID
+      );
+      const anyPaid = remainingInstallments.some(
+        inst =>
+          inst.status === AccountStatus.PAID ||
+          inst.status === AccountStatus.PARTIAL
+      );
+      const anyOverdue = remainingInstallments.some(
+        inst => inst.status === AccountStatus.OVERDUE
+      );
+
+      if (allPaid) {
+        newStatus = AccountStatus.PAID;
+      } else if (anyPaid) {
+        newStatus = AccountStatus.PARTIAL;
+      } else if (anyOverdue) {
+        newStatus = AccountStatus.OVERDUE;
+      } else {
+        newStatus = AccountStatus.PENDING;
+      }
+
+      // 5. Renumerar as parcelas para manter sequência
+      const newTotalInstallments = remainingInstallments.length;
+      await Promise.all(
+        remainingInstallments.map((inst, index) =>
+          tx.payableInstallment.update({
+            where: { id: inst.id },
+            data: {
+              installmentNumber: index + 1,
+              totalInstallments: newTotalInstallments,
+            },
+          })
+        )
+      );
+
+      // 6. Atualizar a conta com o novo valor total, valor pago e status
+      await tx.payable.update({
+        where: { id: payableId },
+        data: {
+          amount: newTotalAmount,
+          paidAmount: newPaidAmount,
+          status: newStatus,
+          totalInstallments: newTotalInstallments,
+        },
+      });
+    });
+
+    this.invalidateDashboardCache(organizationId);
+
+    // Retornar a conta atualizada
+    return this.findOne(payableId, organizationId);
+  }
 }

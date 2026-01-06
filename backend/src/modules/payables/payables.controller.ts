@@ -93,4 +93,19 @@ export class PayablesController {
   ) {
     return this.payablesService.getPayments(id, organizationId);
   }
+
+  @Delete(':payableId/installments/:installmentId')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'Excluir parcela pendente' })
+  async deleteInstallment(
+    @Param('payableId') payableId: string,
+    @Param('installmentId') installmentId: string,
+    @CurrentUser('organizationId') organizationId: string
+  ) {
+    return this.payablesService.deleteInstallment(
+      payableId,
+      installmentId,
+      organizationId
+    );
+  }
 }

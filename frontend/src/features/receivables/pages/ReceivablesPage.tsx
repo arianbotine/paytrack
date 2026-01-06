@@ -32,6 +32,8 @@ export const ReceivablesPage: React.FC = () => {
   // State
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteInstallmentDialogOpen, setDeleteInstallmentDialogOpen] =
+    useState(false);
   const [paymentHistoryDialogOpen, setPaymentHistoryDialogOpen] =
     useState(false);
   const [quickPaymentDialogOpen, setQuickPaymentDialogOpen] = useState(false);
@@ -81,6 +83,12 @@ export const ReceivablesPage: React.FC = () => {
     setSelectedReceivable(null);
   }, []);
 
+  const handleCloseDeleteInstallmentDialog = useCallback(() => {
+    setDeleteInstallmentDialogOpen(false);
+    setSelectedReceivable(null);
+    setSelectedInstallment(null);
+  }, []);
+
   const handleCloseQuickPaymentDialog = useCallback(() => {
     setQuickPaymentDialogOpen(false);
     setSelectedInstallment(null);
@@ -96,12 +104,19 @@ export const ReceivablesPage: React.FC = () => {
     setSelectedReceivable(null);
   }, []);
 
-  const { submitReceivable, deleteMutation, isSubmitting, isDeleting } =
-    useReceivableOperations({
-      onCreateSuccess: handleCloseDialog,
-      onUpdateSuccess: handleCloseDialog,
-      onDeleteSuccess: handleCloseDeleteDialog,
-    });
+  const {
+    submitReceivable,
+    deleteMutation,
+    deleteInstallmentMutation,
+    isSubmitting,
+    isDeleting,
+    isDeletingInstallment,
+  } = useReceivableOperations({
+    onCreateSuccess: handleCloseDialog,
+    onUpdateSuccess: handleCloseDialog,
+    onDeleteSuccess: handleCloseDeleteDialog,
+    onDeleteInstallmentSuccess: handleCloseDeleteInstallmentDialog,
+  });
 
   const { createMutation, isCreating } = usePaymentOperations({
     onCreateSuccess: handleCloseQuickPaymentDialog,
@@ -182,6 +197,24 @@ export const ReceivablesPage: React.FC = () => {
     }
   }, [deleteMutation, selectedReceivable]);
 
+  const handleDeleteInstallment = useCallback(
+    (receivable: Receivable, installment: ReceivableInstallment) => {
+      setSelectedReceivable(receivable);
+      setSelectedInstallment(installment);
+      setDeleteInstallmentDialogOpen(true);
+    },
+    []
+  );
+
+  const confirmDeleteInstallment = useCallback(() => {
+    if (selectedReceivable && selectedInstallment) {
+      deleteInstallmentMutation.mutate({
+        accountId: selectedReceivable.id,
+        installmentId: selectedInstallment.id,
+      });
+    }
+  }, [deleteInstallmentMutation, selectedReceivable, selectedInstallment]);
+
   const receivables = receivablesData?.data || [];
   const totalCount = receivablesData?.total || 0;
 
@@ -226,6 +259,7 @@ export const ReceivablesPage: React.FC = () => {
           onDelete={handleDelete}
           onPayment={handlePayment}
           onViewPayments={handleViewPayments}
+          onDeleteInstallment={handleDeleteInstallment}
         />
 
         <ReceivableFormDialog
@@ -247,6 +281,16 @@ export const ReceivablesPage: React.FC = () => {
           onConfirm={confirmDelete}
           onCancel={handleCloseDeleteDialog}
           isLoading={isDeleting}
+        />
+
+        <ConfirmDialog
+          open={deleteInstallmentDialogOpen}
+          title="Excluir Parcela"
+          message={`Tem certeza que deseja excluir a parcela ${selectedInstallment?.installmentNumber}/${selectedInstallment?.totalInstallments} no valor de R$ ${selectedInstallment?.amount.toFixed(2)}? O valor total da conta será recalculado.`}
+          confirmLabel="Excluir Parcela"
+          onConfirm={confirmDeleteInstallment}
+          onCancel={handleCloseDeleteInstallmentDialog}
+          isLoading={isDeletingInstallment}
         />
 
         <PaymentHistoryDialog

@@ -93,4 +93,19 @@ export class ReceivablesController {
   ) {
     return this.receivablesService.getPayments(id, organizationId);
   }
+
+  @Delete(':receivableId/installments/:installmentId')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'Excluir parcela pendente' })
+  async deleteInstallment(
+    @Param('receivableId') receivableId: string,
+    @Param('installmentId') installmentId: string,
+    @CurrentUser('organizationId') organizationId: string
+  ) {
+    return this.receivablesService.deleteInstallment(
+      receivableId,
+      installmentId,
+      organizationId
+    );
+  }
 }

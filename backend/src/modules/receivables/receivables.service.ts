@@ -337,11 +337,6 @@ export class ReceivablesService {
 
     const { customerId, categoryId, ...updateData } = data;
 
-    // Transform amount to Decimal if present
-    if (updateData.amount !== undefined) {
-      updateData.amount = MoneyUtils.toDecimal(updateData.amount);
-    }
-
     // Validar se pode editar o valor: apenas se não houver nenhum pagamento em nenhuma parcela
     const hasAnyPayment = receivable.installments.some(
       installment => installment.allocations.length > 0
@@ -396,6 +391,9 @@ export class ReceivablesService {
       where: { id },
       data: {
         ...updateData,
+        ...(updateData.amount !== undefined && {
+          amount: MoneyUtils.toDecimal(updateData.amount),
+        }),
         ...(data.dueDate && { dueDate: parseDateOnly(data.dueDate) }),
         ...(customerId && { customer: { connect: { id: customerId } } }),
         ...(categoryId !== undefined && {
@@ -581,5 +579,139 @@ export class ReceivablesService {
           : undefined,
       };
     });
+  }
+
+  /**
+   * Exclui uma parcela pendente e recalcula o valor total da conta
+   */
+  async deleteInstallment(
+    receivableId: string,
+    installmentId: string,
+    organizationId: string
+  ) {
+    // Buscar a conta com suas parcelas
+    const receivable = await this.prisma.receivable.findFirst({
+      where: { id: receivableId, organizationId },
+      include: {
+        installments: {
+          include: {
+            allocations: true,
+          },
+          orderBy: { installmentNumber: 'asc' },
+        },
+      },
+    });
+
+    if (!receivable) {
+      throw new NotFoundException('Conta a receber não encontrada');
+    }
+
+    // Verificar se há apenas uma parcela
+    if (receivable.installments.length === 1) {
+      throw new BadRequestException(
+        'Não é possível excluir a única parcela da conta. Exclua a conta inteira.'
+      );
+    }
+
+    // Encontrar a parcela a ser excluída
+    const installmentToDelete = receivable.installments.find(
+      inst => inst.id === installmentId
+    );
+
+    if (!installmentToDelete) {
+      throw new NotFoundException('Parcela não encontrada');
+    }
+
+    // Verificar se a parcela está pendente
+    if (installmentToDelete.status !== AccountStatus.PENDING) {
+      throw new BadRequestException(
+        'Apenas parcelas pendentes podem ser excluídas'
+      );
+    }
+
+    // Verificar se a parcela tem recebimentos
+    if (installmentToDelete.allocations.length > 0) {
+      throw new BadRequestException(
+        'Não é possível excluir parcela que já possui recebimentos registrados'
+      );
+    }
+
+    // Excluir a parcela e recalcular o valor total da conta
+    await this.prisma.$transaction(async tx => {
+      // 1. Excluir a parcela
+      await tx.receivableInstallment.delete({
+        where: { id: installmentId },
+      });
+
+      // 2. Buscar parcelas restantes
+      const remainingInstallments = await tx.receivableInstallment.findMany({
+        where: { receivableId },
+        orderBy: { installmentNumber: 'asc' },
+      });
+
+      // 3. Recalcular valor total e valor recebido (somar todas as parcelas restantes)
+      const newTotalAmount = remainingInstallments.reduce(
+        (sum, inst) => sum.plus(inst.amount),
+        new Prisma.Decimal(0)
+      );
+      const newReceivedAmount = remainingInstallments.reduce(
+        (sum, inst) => sum.plus(inst.receivedAmount),
+        new Prisma.Decimal(0)
+      );
+
+      // 4. Reavaliar status da conta baseado nas parcelas restantes
+      let newStatus: AccountStatus;
+      const allPaid = remainingInstallments.every(
+        inst => inst.status === AccountStatus.PAID
+      );
+      const anyPaid = remainingInstallments.some(
+        inst =>
+          inst.status === AccountStatus.PAID ||
+          inst.status === AccountStatus.PARTIAL
+      );
+      const anyOverdue = remainingInstallments.some(
+        inst => inst.status === AccountStatus.OVERDUE
+      );
+
+      if (allPaid) {
+        newStatus = AccountStatus.PAID;
+      } else if (anyPaid) {
+        newStatus = AccountStatus.PARTIAL;
+      } else if (anyOverdue) {
+        newStatus = AccountStatus.OVERDUE;
+      } else {
+        newStatus = AccountStatus.PENDING;
+      }
+
+      // 5. Renumerar as parcelas para manter sequência
+      const newTotalInstallments = remainingInstallments.length;
+      await Promise.all(
+        remainingInstallments.map((inst, index) =>
+          tx.receivableInstallment.update({
+            where: { id: inst.id },
+            data: {
+              installmentNumber: index + 1,
+              totalInstallments: newTotalInstallments,
+            },
+          })
+        )
+      );
+
+      // 6. Atualizar a conta com o novo valor total, valor recebido e status
+      await tx.receivable.update({
+        where: { id: receivableId },
+        data: {
+          amount: newTotalAmount,
+          receivedAmount: newReceivedAmount,
+          status: newStatus,
+          totalInstallments: newTotalInstallments,
+        },
+      });
+    });
+
+    this.invalidateDashboardCache(organizationId);
+
+    // Retornar a conta atualizada
+    return this.findOne(receivableId, organizationId);
   }
 }

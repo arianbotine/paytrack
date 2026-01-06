@@ -208,6 +208,39 @@ export const useDeleteAccount = (
   });
 };
 
+export const useDeleteInstallment = (
+  config: UseAccountsConfig,
+  onSuccess?: () => void
+) => {
+  const queryClient = useQueryClient();
+  const { showNotification } = useUIStore();
+  const keys = createAccountKeys(config.queryKeyPrefix);
+
+  return useMutation({
+    mutationFn: ({
+      accountId,
+      installmentId,
+    }: {
+      accountId: string;
+      installmentId: string;
+    }) =>
+      api.delete(
+        `${config.endpoint}/${accountId}/installments/${installmentId}`
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.all });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showNotification('Parcela excluída com sucesso!', 'success');
+      onSuccess?.();
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message || 'Erro ao excluir parcela';
+      showNotification(message, 'error');
+    },
+  });
+};
+
 // ============================================================
 // Combined Operations Hook
 // ============================================================
@@ -218,11 +251,16 @@ export const useAccountOperations = <T>(
     onCreateSuccess?: () => void;
     onUpdateSuccess?: () => void;
     onDeleteSuccess?: () => void;
+    onDeleteInstallmentSuccess?: () => void;
   }
 ) => {
   const createMutation = useCreateAccount(config, callbacks?.onCreateSuccess);
   const updateMutation = useUpdateAccount(config, callbacks?.onUpdateSuccess);
   const deleteMutation = useDeleteAccount(config, callbacks?.onDeleteSuccess);
+  const deleteInstallmentMutation = useDeleteInstallment(
+    config,
+    callbacks?.onDeleteInstallmentSuccess
+  );
 
   const submitAccount = (
     data: T & { dueDate: string | Date; dueDates?: string[] },
@@ -250,8 +288,10 @@ export const useAccountOperations = <T>(
     createMutation,
     updateMutation,
     deleteMutation,
+    deleteInstallmentMutation,
     submitAccount,
     isSubmitting: createMutation.isPending || updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
+    isDeletingInstallment: deleteInstallmentMutation.isPending,
   };
 };
