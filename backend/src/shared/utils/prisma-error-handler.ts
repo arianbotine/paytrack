@@ -74,6 +74,10 @@ export class PrismaErrorHandler {
   ): string {
     const target = error.meta?.target as string[] | undefined;
 
+    if (target?.includes('name') && target?.includes('type')) {
+      return `${entityName} já existe com este nome e tipo`;
+    }
+
     if (target?.includes('name')) {
       return `${entityName} já existe com este nome`;
     }

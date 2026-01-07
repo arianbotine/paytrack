@@ -120,8 +120,9 @@ export const CategoriesPage: React.FC = () => {
       showNotification('Categoria criada com sucesso!', 'success');
       handleCloseDialog();
     },
-    onError: () => {
-      showNotification('Erro ao criar categoria', 'error');
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || 'Erro ao criar categoria';
+      showNotification(message, 'error');
     },
   });
 
@@ -133,8 +134,9 @@ export const CategoriesPage: React.FC = () => {
       showNotification('Categoria atualizada com sucesso!', 'success');
       handleCloseDialog();
     },
-    onError: () => {
-      showNotification('Erro ao atualizar categoria', 'error');
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || 'Erro ao atualizar categoria';
+      showNotification(message, 'error');
     },
   });
 
@@ -146,8 +148,9 @@ export const CategoriesPage: React.FC = () => {
       setDeleteDialogOpen(false);
       setSelectedCategory(null);
     },
-    onError: () => {
-      showNotification('Erro ao excluir categoria', 'error');
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || 'Erro ao excluir categoria';
+      showNotification(message, 'error');
     },
   });
 

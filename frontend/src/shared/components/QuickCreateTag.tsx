@@ -52,8 +52,9 @@ export const QuickCreateTag: React.FC<QuickCreateTagProps> = ({
       onCreated(response.data);
       handleClose();
     },
-    onError: () => {
-      showNotification('Erro ao criar tag', 'error');
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || 'Erro ao criar tag';
+      showNotification(message, 'error');
     },
   });
 

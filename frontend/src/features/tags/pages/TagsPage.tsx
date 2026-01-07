@@ -100,8 +100,9 @@ export const TagsPage: React.FC = () => {
       showNotification('Tag criada com sucesso!', 'success');
       handleCloseDialog();
     },
-    onError: () => {
-      showNotification('Erro ao criar tag', 'error');
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || 'Erro ao criar tag';
+      showNotification(message, 'error');
     },
   });
 
@@ -113,8 +114,9 @@ export const TagsPage: React.FC = () => {
       showNotification('Tag atualizada com sucesso!', 'success');
       handleCloseDialog();
     },
-    onError: () => {
-      showNotification('Erro ao atualizar tag', 'error');
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || 'Erro ao atualizar tag';
+      showNotification(message, 'error');
     },
   });
 

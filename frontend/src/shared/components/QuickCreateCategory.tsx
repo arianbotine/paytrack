@@ -55,8 +55,9 @@ export const QuickCreateCategory: React.FC<QuickCreateCategoryProps> = ({
       onCreated(response.data);
       handleClose();
     },
-    onError: () => {
-      showNotification('Erro ao criar categoria', 'error');
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || 'Erro ao criar categoria';
+      showNotification(message, 'error');
     },
   });
 
