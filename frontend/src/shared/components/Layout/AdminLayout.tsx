@@ -27,6 +27,7 @@ import {
   People as PeopleIcon,
   ExitToApp as ExitToAppIcon,
   Home as HomeIcon,
+  Lock as LockIcon,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../../lib/stores/authStore';
 import { api } from '../../../lib/api';
@@ -81,6 +82,11 @@ export function AdminLayout() {
     } else {
       navigate('/select-organization');
     }
+  };
+
+  const handleChangePassword = () => {
+    handleMenuClose();
+    navigate('/change-password');
   };
 
   const handleOrganizationChange = async (organizationId: string) => {
@@ -225,6 +231,10 @@ export function AdminLayout() {
             open={Boolean(anchorEl)}
             onClose={handleMenuClose}
           >
+            <MenuItem onClick={handleChangePassword}>
+              <LockIcon sx={{ mr: 1 }} />
+              Alterar Senha
+            </MenuItem>
             <MenuItem onClick={handleLogout}>
               <ExitToAppIcon sx={{ mr: 1 }} />
               Sair

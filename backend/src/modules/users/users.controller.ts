@@ -16,6 +16,7 @@ import {
   UpdateProfileDto,
   AssociateUserDto,
 } from './dto/user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { CurrentUser, Roles } from '../../shared/decorators';
 import { SystemAdminGuard } from '../../shared/guards';
 import { UserRole } from '@prisma/client';
@@ -40,6 +41,15 @@ export class UsersController {
     @Body() updateDto: UpdateProfileDto
   ) {
     return this.usersService.updateProfile(userId, updateDto);
+  }
+
+  @Patch('me/password')
+  @ApiOperation({ summary: 'Alterar senha do usuário logado' })
+  async changePassword(
+    @CurrentUser('sub') userId: string,
+    @Body() changePasswordDto: ChangePasswordDto
+  ) {
+    return this.usersService.changePassword(userId, changePasswordDto);
   }
 
   @Get(':id')

@@ -38,6 +38,7 @@ import {
   LightMode as LightModeIcon,
   AdminPanelSettings as AdminIcon,
   Business as BusinessIcon,
+  Lock as LockIcon,
 } from '@mui/icons-material';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useUIStore } from '@/lib/stores/uiStore';
@@ -107,6 +108,11 @@ export function MainLayout() {
   const handleAdminPanel = () => {
     handleCloseMenu();
     navigate('/admin');
+  };
+
+  const handleChangePassword = () => {
+    handleCloseMenu();
+    navigate('/change-password');
   };
 
   const handleOrganizationSwitcher = () => {
@@ -311,6 +317,13 @@ export function MainLayout() {
                 <Divider />
               </>
             )}
+            <MenuItem onClick={handleChangePassword}>
+              <ListItemIcon>
+                <LockIcon fontSize="small" />
+              </ListItemIcon>
+              Alterar Senha
+            </MenuItem>
+            <Divider />
             <MenuItem onClick={handleLogout}>
               <ListItemIcon>
                 <LogoutIcon fontSize="small" />

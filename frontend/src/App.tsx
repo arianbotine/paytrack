@@ -20,6 +20,11 @@ const SelectOrganizationPage = lazy(() =>
     default: m.SelectOrganizationPage,
   }))
 );
+const ChangePasswordPage = lazy(() =>
+  import('./features/auth/pages/ChangePasswordPage').then(m => ({
+    default: m.ChangePasswordPage,
+  }))
+);
 const DashboardPage = lazy(() =>
   import('./features/dashboard/pages/DashboardPage').then(m => ({
     default: m.DashboardPage,
@@ -138,6 +143,7 @@ function App() {
           >
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="change-password" element={<ChangePasswordPage />} />
             <Route path="payables" element={<PayablesPage />} />
             <Route path="receivables" element={<ReceivablesPage />} />
             <Route path="payments" element={<PaymentsPage />} />
