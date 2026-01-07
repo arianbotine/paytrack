@@ -11,11 +11,11 @@ export class CustomersService extends BaseEntityService<
   UpdateCustomerDto
 > {
   constructor(prisma: PrismaService) {
-    super(prisma, 'Customer', prisma.customer, 'Cliente');
+    super(prisma, 'Customer', prisma.customer, 'Devedor');
   }
 
   /**
-   * Check if customer has related receivables
+   * Verificar se devedor possui contas a receber relacionadas
    */
   protected async checkIfInUse(id: string): Promise<boolean> {
     const count = await this.prisma.receivable.count({
@@ -25,7 +25,7 @@ export class CustomersService extends BaseEntityService<
   }
 
   /**
-   * Customers ordered by name
+   * Devedores ordenados por nome
    */
   protected getDefaultOrderBy() {
     return { name: 'asc' };

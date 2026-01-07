@@ -35,7 +35,7 @@ export class CreateCustomerDto {
   @IsOptional()
   address?: string;
 
-  @ApiPropertyOptional({ example: 'Cliente VIP' })
+  @ApiPropertyOptional({ example: 'Devedor preferencial' })
   @IsString()
   @IsOptional()
   notes?: string;

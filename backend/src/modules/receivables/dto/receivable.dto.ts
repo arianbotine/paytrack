@@ -23,7 +23,7 @@ import { AccountStatus } from '@prisma/client';
 import { Type, Transform } from 'class-transformer';
 
 export class CreateReceivableDto {
-  @ApiProperty({ example: 'uuid-do-cliente' })
+  @ApiProperty({ example: 'uuid-do-devedor' })
   @IsUUID()
   customerId!: string;
 
@@ -95,7 +95,7 @@ export class UpdateReceivableDto extends PartialType(
 ) {}
 
 export class ReceivableFilterDto {
-  @ApiPropertyOptional({ example: 'uuid-do-cliente' })
+  @ApiPropertyOptional({ example: 'uuid-do-devedor' })
   @IsUUID()
   @IsOptional()
   customerId?: string;

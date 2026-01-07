@@ -70,7 +70,7 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
   alertColor,
 }) => {
   const entityName = type === 'payable' ? 'vendor' : 'customer';
-  const entityLabel = type === 'payable' ? 'Credor' : 'Cliente';
+  const entityLabel = type === 'payable' ? 'Credor' : 'Devedor';
 
   return (
     <motion.div

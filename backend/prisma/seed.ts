@@ -157,18 +157,18 @@ async function main() {
   }
   console.log('✅ Fornecedores demo criados');
 
-  // Criar clientes demo
+  // Criar devedores demo
   const customersData = [
     {
-      name: 'Cliente A',
+      name: 'Devedor A',
       document: '123.456.789-00',
       email: 'cliente.a@email.com',
       phone: '(11) 91111-1111',
     },
     {
-      name: 'Cliente B',
-      document: '987.654.321-00',
-      email: 'cliente.b@email.com',
+      name: 'Devedor B',
+      document: '98765432109',
+      email: 'devedor.b@email.com',
       phone: '(11) 92222-2222',
     },
   ];
@@ -181,7 +181,7 @@ async function main() {
       },
     });
   }
-  console.log('✅ Clientes demo criados');
+  console.log('✅ Devedores demo criados');
 
   console.log('\n🎉 Seed concluído com sucesso!');
   console.log('\n📝 Credenciais de acesso:');

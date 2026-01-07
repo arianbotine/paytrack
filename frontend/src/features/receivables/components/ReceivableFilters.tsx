@@ -28,7 +28,7 @@ interface ReceivableFiltersProps {
   statusFilter: string[];
   onStatusChange: (status: string[]) => void;
 
-  // Customer
+  // Devedor
   customerFilter: string | null;
   onCustomerChange: (customerId: string | null) => void;
   customers: Customer[];
@@ -201,8 +201,8 @@ export const ReceivableFilters: React.FC<ReceivableFiltersProps> = ({
                 renderInput={params => (
                   <TextField
                     {...params}
-                    label="Cliente"
-                    placeholder="Selecione um cliente"
+                    label="Devedor"
+                    placeholder="Selecione um devedor"
                     size="small"
                   />
                 )}
@@ -372,7 +372,7 @@ export const ReceivableFilters: React.FC<ReceivableFiltersProps> = ({
                     })}
                     {selectedCustomer && (
                       <Chip
-                        label={`Cliente: ${selectedCustomer.name}`}
+                        label={`Devedor: ${selectedCustomer.name}`}
                         size="small"
                         onDelete={() => onCustomerChange(null)}
                         color="primary"

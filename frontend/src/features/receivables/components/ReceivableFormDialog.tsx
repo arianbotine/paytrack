@@ -274,8 +274,8 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                     control={control}
                     render={({ field }) => (
                       <FormControl fullWidth error={!!errors.customerId}>
-                        <InputLabel>Cliente</InputLabel>
-                        <Select {...field} label="Cliente">
+                        <InputLabel>Devedor</InputLabel>
+                        <Select {...field} label="Devedor">
                           {customers.map(customer => (
                             <MenuItem key={customer.id} value={customer.id}>
                               {customer.name}

@@ -295,7 +295,7 @@ Key entities in `backend/prisma/schema.prisma`:
 - `User` → unique email per org, roles: OWNER, ADMIN, ACCOUNTANT, VIEWER
 - `Payable`/`Receivable` → main transaction types with status tracking
 - `Payment` + `PaymentAllocation` → supports partial payments across multiple accounts
-- `Category` (typed: PAYABLE/RECEIVABLE), `Tag`, `Vendor`, `Customer`
+- `Category` (typed: PAYABLE/RECEIVABLE), `Tag`, `Vendor`, `Customer` (Devedor)
 
 ## API Conventions
 

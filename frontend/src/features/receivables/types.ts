@@ -71,7 +71,7 @@ export const receivableSchema = z
   .object({
     amount: z.coerce.number().positive('Valor deve ser positivo'),
     dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
-    customerId: z.string().min(1, 'Cliente é obrigatório'),
+    customerId: z.string().min(1, 'Devedor é obrigatório'),
     categoryId: z.string().optional(),
     tagIds: z.array(z.string()).optional(),
     notes: z.string().optional(),

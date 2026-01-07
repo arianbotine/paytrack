@@ -18,14 +18,14 @@ import { CustomersService } from './customers.service';
 import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
 import { CurrentUser } from '../../shared/decorators';
 
-@ApiTags('Clientes')
+@ApiTags('Devedores')
 @ApiBearerAuth()
 @Controller('customers')
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar todos os clientes' })
+  @ApiOperation({ summary: 'Listar todos os devedores' })
   @ApiQuery({ name: 'includeInactive', required: false, type: Boolean })
   async findAll(
     @CurrentUser('organizationId') organizationId: string,
@@ -35,7 +35,7 @@ export class CustomersController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Obter cliente por ID' })
+  @ApiOperation({ summary: 'Obter devedor por ID' })
   async findOne(
     @Param('id') id: string,
     @CurrentUser('organizationId') organizationId: string
@@ -44,7 +44,7 @@ export class CustomersController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Criar novo cliente' })
+  @ApiOperation({ summary: 'Criar novo devedor' })
   async create(
     @CurrentUser('organizationId') organizationId: string,
     @Body() createDto: CreateCustomerDto
@@ -53,7 +53,7 @@ export class CustomersController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Atualizar cliente' })
+  @ApiOperation({ summary: 'Atualizar devedor' })
   async update(
     @Param('id') id: string,
     @CurrentUser('organizationId') organizationId: string,
@@ -63,7 +63,7 @@ export class CustomersController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Excluir cliente' })
+  @ApiOperation({ summary: 'Excluir devedor' })
   async remove(
     @Param('id') id: string,
     @CurrentUser('organizationId') organizationId: string

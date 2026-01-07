@@ -91,7 +91,7 @@ export const ChangePasswordPage: React.FC = () => {
   const hasMinLength = newPassword.length >= 6;
   const hasUpperCase = /[A-Z]/.test(newPassword);
   const hasLowerCase = /[a-z]/.test(newPassword);
-  const hasNumber = /[0-9]/.test(newPassword);
+  const hasNumber = /\d/.test(newPassword);
 
   const passwordStrength = [
     hasMinLength,

@@ -26,7 +26,7 @@ interface PaymentHistoryDialogProps {
     amount: number;
     paidAmount: number;
     dueDate: string;
-    entityName: string; // vendor or customer name
+    entityName: string; // vendor or debtor name
     status: string;
   } | null;
   payments: PaymentHistoryItem[];

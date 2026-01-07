@@ -251,7 +251,7 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
                               variant="caption"
                               color="text.secondary"
                             >
-                              {isReceivable ? 'Cliente' : 'Credor'}
+                              {isReceivable ? 'Devedor' : 'Credor'}
                             </Typography>
                             <Typography variant="body2" fontWeight={500}>
                               {installmentInfo.entityName}

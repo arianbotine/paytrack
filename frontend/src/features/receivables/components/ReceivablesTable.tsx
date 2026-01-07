@@ -624,7 +624,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
             <TableHead>
               <TableRow>
                 <TableCell width={48} />
-                <TableCell>Cliente & Identificação</TableCell>
+                <TableCell>Devedor & Identificação</TableCell>
                 <TableCell align="right">Valor</TableCell>
                 <TableCell>Vencimento</TableCell>
                 <TableCell>Status</TableCell>
@@ -684,7 +684,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                 gap: 0.5,
                               }}
                             >
-                              {/* Nome do cliente como título principal */}
+                              {/* Nome do devedor como título principal */}
                               <Typography fontWeight="600" fontSize="0.9rem">
                                 {account.customer.name}
                               </Typography>

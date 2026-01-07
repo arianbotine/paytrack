@@ -142,9 +142,9 @@ export function CustomersPage() {
   return (
     <Box>
       <PageHeader
-        title="Clientes"
-        subtitle="Gerencie os clientes para vincular às contas a receber"
-        action={{ label: 'Novo Cliente', onClick: () => handleOpenForm() }}
+        title="Devedores"
+        subtitle="Gerencie os devedores para vincular às contas a receber"
+        action={{ label: 'Novo Devedor', onClick: () => handleOpenForm() }}
       />
 
       <Card>
@@ -164,7 +164,7 @@ export function CustomersPage() {
               {customers?.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6}>
-                    <Alert severity="info">Nenhum cliente cadastrado</Alert>
+                    <Alert severity="info">Nenhum devedor cadastrado</Alert>
                   </TableCell>
                 </TableRow>
               )}
@@ -211,7 +211,7 @@ export function CustomersPage() {
       <Dialog open={openForm} onClose={handleCloseForm} maxWidth="sm" fullWidth>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogTitle>
-            {editingCustomer ? 'Editar Cliente' : 'Novo Cliente'}
+            {editingCustomer ? 'Editar Devedor' : 'Novo Devedor'}
           </DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
@@ -272,8 +272,8 @@ export function CustomersPage() {
       {/* Delete Confirmation */}
       <ConfirmDialog
         open={!!deleteId}
-        title="Excluir Cliente"
-        message="Tem certeza que deseja excluir este cliente? Se houver contas vinculadas, ele será inativado."
+        title="Excluir Devedor"
+        message="Tem certeza que deseja excluir este devedor? Se houver contas vinculadas, ele será inativado."
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
         onCancel={() => setDeleteId(null)}
         isLoading={deleteMutation.isPending}

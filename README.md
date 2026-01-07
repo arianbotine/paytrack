@@ -232,7 +232,7 @@ make studio
 
 - ✅ Autenticação JWT com roles (OWNER, ADMIN, ACCOUNTANT, VIEWER)
 - ✅ Gestão de organizações (multi-tenant)
-- ✅ CRUD de usuários, clientes e fornecedores
+- ✅ CRUD de usuários, devedores e fornecedores
 - ✅ Contas a pagar e receber
 - ✅ Categorias e tags
 - ✅ Baixa de contas (pagamentos)

@@ -114,11 +114,12 @@ model UserOrganization {
   @@map("user_organizations")
 }
 
+// Devedor (mantém nome "Customer" no banco por compatibilidade)
 model Customer {
   id             String   @id @default(uuid())
   organizationId String   @map("organization_id")
   name           String
-  document       String?  // CPF or CNPJ
+  document       String?  // CPF ou CNPJ
   email          String?
   phone          String?
   address        String?
