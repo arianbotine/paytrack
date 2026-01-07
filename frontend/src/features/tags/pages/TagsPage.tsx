@@ -19,7 +19,12 @@ import {
   Typography,
   CircularProgress,
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import {
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  ArrowUpward as ArrowUpwardIcon,
+  ArrowDownward as ArrowDownwardIcon,
+} from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -47,6 +52,8 @@ interface Tag {
   };
 }
 
+type OrderByColumn = 'name' | 'payables' | 'receivables' | 'color';
+
 const COLORS = [
   '#1976d2',
   '#388e3c',
@@ -65,12 +72,52 @@ const COLORS = [
   '#607d8b',
 ];
 
+interface SortableTableCellProps {
+  column: OrderByColumn;
+  children: React.ReactNode;
+  orderBy: OrderByColumn;
+  orderDirection: 'asc' | 'desc';
+  onSort: (column: OrderByColumn) => void;
+}
+
+const SortableTableCell: React.FC<SortableTableCellProps> = ({
+  column,
+  children,
+  orderBy,
+  orderDirection,
+  onSort,
+}) => (
+  <TableCell
+    onClick={() => onSort(column)}
+    sx={{
+      cursor: 'pointer',
+      userSelect: 'none',
+      '&:hover': {
+        backgroundColor: 'action.hover',
+      },
+      fontWeight: orderBy === column ? 600 : 400,
+    }}
+  >
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      {children}
+      {orderBy === column &&
+        (orderDirection === 'asc' ? (
+          <ArrowUpwardIcon fontSize="small" />
+        ) : (
+          <ArrowDownwardIcon fontSize="small" />
+        ))}
+    </Box>
+  </TableCell>
+);
+
 export const TagsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { showNotification } = useUIStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
+  const [orderBy, setOrderBy] = useState<OrderByColumn>('name');
+  const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('asc');
 
   const {
     control,
@@ -176,6 +223,32 @@ export const TagsPage: React.FC = () => {
     }
   };
 
+  const handleSort = (column: OrderByColumn) => {
+    if (orderBy === column) {
+      setOrderDirection(orderDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setOrderBy(column);
+      setOrderDirection('asc');
+    }
+  };
+
+  const sortedTags = [...tags].sort((a, b) => {
+    let compareValue = 0;
+
+    if (orderBy === 'name') {
+      compareValue = a.name.localeCompare(b.name);
+    } else if (orderBy === 'payables') {
+      compareValue = (a._count?.payables || 0) - (b._count?.payables || 0);
+    } else if (orderBy === 'receivables') {
+      compareValue =
+        (a._count?.receivables || 0) - (b._count?.receivables || 0);
+    } else if (orderBy === 'color') {
+      compareValue = (a.color || '').localeCompare(b.color || '');
+    }
+
+    return orderDirection === 'asc' ? compareValue : -compareValue;
+  });
+
   return (
     <Box>
       <PageHeader
@@ -188,10 +261,38 @@ export const TagsPage: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Cor</TableCell>
-              <TableCell>Nome</TableCell>
-              <TableCell>Uso em Contas a Pagar</TableCell>
-              <TableCell>Uso em Contas a Receber</TableCell>
+              <SortableTableCell
+                column="color"
+                orderBy={orderBy}
+                orderDirection={orderDirection}
+                onSort={handleSort}
+              >
+                Cor
+              </SortableTableCell>
+              <SortableTableCell
+                column="name"
+                orderBy={orderBy}
+                orderDirection={orderDirection}
+                onSort={handleSort}
+              >
+                Nome
+              </SortableTableCell>
+              <SortableTableCell
+                column="payables"
+                orderBy={orderBy}
+                orderDirection={orderDirection}
+                onSort={handleSort}
+              >
+                Uso em Contas a Pagar
+              </SortableTableCell>
+              <SortableTableCell
+                column="receivables"
+                orderBy={orderBy}
+                orderDirection={orderDirection}
+                onSort={handleSort}
+              >
+                Uso em Contas a Receber
+              </SortableTableCell>
               <TableCell align="right">Ações</TableCell>
             </TableRow>
           </TableHead>
@@ -214,7 +315,7 @@ export const TagsPage: React.FC = () => {
                   </TableRow>
                 );
               } else {
-                return tags.map((tag: Tag) => (
+                return sortedTags.map((tag: Tag) => (
                   <TableRow key={tag.id} hover>
                     <TableCell>
                       <Box

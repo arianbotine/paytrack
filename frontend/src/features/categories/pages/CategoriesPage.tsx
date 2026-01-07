@@ -31,6 +31,8 @@ import {
   Delete as DeleteIcon,
   AccountBalance as PayableIcon,
   RequestQuote as ReceivableIcon,
+  ArrowUpward as ArrowUpwardIcon,
+  ArrowDownward as ArrowDownwardIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
@@ -64,6 +66,8 @@ interface Category {
   };
 }
 
+type OrderByColumn = 'name' | 'type' | 'usage' | 'color';
+
 const COLORS = [
   '#1976d2',
   '#388e3c',
@@ -77,6 +81,44 @@ const COLORS = [
   '#512da8',
 ];
 
+interface SortableTableCellProps {
+  column: OrderByColumn;
+  children: React.ReactNode;
+  orderBy: OrderByColumn;
+  orderDirection: 'asc' | 'desc';
+  onSort: (column: OrderByColumn) => void;
+}
+
+const SortableTableCell: React.FC<SortableTableCellProps> = ({
+  column,
+  children,
+  orderBy,
+  orderDirection,
+  onSort,
+}) => (
+  <TableCell
+    onClick={() => onSort(column)}
+    sx={{
+      cursor: 'pointer',
+      userSelect: 'none',
+      '&:hover': {
+        backgroundColor: 'action.hover',
+      },
+      fontWeight: orderBy === column ? 600 : 400,
+    }}
+  >
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      {children}
+      {orderBy === column &&
+        (orderDirection === 'asc' ? (
+          <ArrowUpwardIcon fontSize="small" />
+        ) : (
+          <ArrowDownwardIcon fontSize="small" />
+        ))}
+    </Box>
+  </TableCell>
+);
+
 export const CategoriesPage: React.FC = () => {
   const queryClient = useQueryClient();
   const { showNotification } = useUIStore();
@@ -88,6 +130,8 @@ export const CategoriesPage: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<
     'ALL' | 'PAYABLE' | 'RECEIVABLE'
   >('ALL');
+  const [orderBy, setOrderBy] = useState<OrderByColumn>('name');
+  const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('asc');
 
   const {
     control,
@@ -121,7 +165,8 @@ export const CategoriesPage: React.FC = () => {
       handleCloseDialog();
     },
     onError: (error: any) => {
-      const message = error?.response?.data?.message || 'Erro ao criar categoria';
+      const message =
+        error?.response?.data?.message || 'Erro ao criar categoria';
       showNotification(message, 'error');
     },
   });
@@ -135,7 +180,8 @@ export const CategoriesPage: React.FC = () => {
       handleCloseDialog();
     },
     onError: (error: any) => {
-      const message = error?.response?.data?.message || 'Erro ao atualizar categoria';
+      const message =
+        error?.response?.data?.message || 'Erro ao atualizar categoria';
       showNotification(message, 'error');
     },
   });
@@ -149,7 +195,8 @@ export const CategoriesPage: React.FC = () => {
       setSelectedCategory(null);
     },
     onError: (error: any) => {
-      const message = error?.response?.data?.message || 'Erro ao excluir categoria';
+      const message =
+        error?.response?.data?.message || 'Erro ao excluir categoria';
       showNotification(message, 'error');
     },
   });
@@ -185,10 +232,14 @@ export const CategoriesPage: React.FC = () => {
     const formData = { ...data, name: data.name.toUpperCase() };
     if (selectedCategory) {
       // Remove 'type' from update payload as it cannot be changed
-      const { type, ...updateData } = formData;
+      const updateData: CategoryUpdateData = {
+        name: formData.name,
+        description: formData.description,
+        color: formData.color,
+      };
       updateMutation.mutate({
         id: selectedCategory.id,
-        data: updateData as CategoryUpdateData,
+        data: updateData,
       });
     } else {
       createMutation.mutate(formData);
@@ -205,6 +256,39 @@ export const CategoriesPage: React.FC = () => {
       deleteMutation.mutate(selectedCategory.id);
     }
   };
+
+  const handleSort = (column: OrderByColumn) => {
+    if (orderBy === column) {
+      setOrderDirection(orderDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setOrderBy(column);
+      setOrderDirection('asc');
+    }
+  };
+
+  const sortedCategories = [...categories].sort((a, b) => {
+    let compareValue = 0;
+
+    if (orderBy === 'name') {
+      compareValue = a.name.localeCompare(b.name);
+    } else if (orderBy === 'type') {
+      compareValue = a.type.localeCompare(b.type);
+    } else if (orderBy === 'usage') {
+      const aCount =
+        a.type === 'PAYABLE'
+          ? a._count?.payables || 0
+          : a._count?.receivables || 0;
+      const bCount =
+        b.type === 'PAYABLE'
+          ? b._count?.payables || 0
+          : b._count?.receivables || 0;
+      compareValue = aCount - bCount;
+    } else if (orderBy === 'color') {
+      compareValue = (a.color || '').localeCompare(b.color || '');
+    }
+
+    return orderDirection === 'asc' ? compareValue : -compareValue;
+  });
 
   const getTypeChip = (type: 'PAYABLE' | 'RECEIVABLE') => {
     if (type === 'PAYABLE') {
@@ -254,11 +338,39 @@ export const CategoriesPage: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Cor</TableCell>
-              <TableCell>Nome</TableCell>
+              <SortableTableCell
+                column="color"
+                orderBy={orderBy}
+                orderDirection={orderDirection}
+                onSort={handleSort}
+              >
+                Cor
+              </SortableTableCell>
+              <SortableTableCell
+                column="name"
+                orderBy={orderBy}
+                orderDirection={orderDirection}
+                onSort={handleSort}
+              >
+                Nome
+              </SortableTableCell>
               <TableCell>Descrição</TableCell>
-              <TableCell>Tipo</TableCell>
-              <TableCell>Uso</TableCell>
+              <SortableTableCell
+                column="type"
+                orderBy={orderBy}
+                orderDirection={orderDirection}
+                onSort={handleSort}
+              >
+                Tipo
+              </SortableTableCell>
+              <SortableTableCell
+                column="usage"
+                orderBy={orderBy}
+                orderDirection={orderDirection}
+                onSort={handleSort}
+              >
+                Uso
+              </SortableTableCell>
               <TableCell align="right">Ações</TableCell>
             </TableRow>
           </TableHead>
@@ -281,7 +393,7 @@ export const CategoriesPage: React.FC = () => {
                   </TableRow>
                 );
               } else {
-                return categories.map((category: Category) => {
+                return sortedCategories.map((category: Category) => {
                   let usageText = '-';
                   if (category._count) {
                     if (category.type === 'PAYABLE') {
