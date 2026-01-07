@@ -74,7 +74,7 @@ export class CategoriesService extends BaseEntityService<
 
     const where: any = {
       organizationId,
-      name: dto.name,
+      name: dto.name.toUpperCase(),
       type,
     };
 

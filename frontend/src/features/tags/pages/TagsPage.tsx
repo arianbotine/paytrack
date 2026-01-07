@@ -155,10 +155,11 @@ export const TagsPage: React.FC = () => {
   };
 
   const onSubmit = (data: TagFormData) => {
+    const formData = { ...data, name: data.name.toUpperCase() };
     if (selectedTag) {
-      updateMutation.mutate({ id: selectedTag.id, data });
+      updateMutation.mutate({ id: selectedTag.id, data: formData });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(formData);
     }
   };
 

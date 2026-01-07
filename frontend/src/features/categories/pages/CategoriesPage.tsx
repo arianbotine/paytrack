@@ -179,15 +179,16 @@ export const CategoriesPage: React.FC = () => {
   };
 
   const onSubmit = (data: CategoryFormData) => {
+    const formData = { ...data, name: data.name.toUpperCase() };
     if (selectedCategory) {
       // Remove 'type' from update payload as it cannot be changed
-      const { type, ...updateData } = data;
+      const { type, ...updateData } = formData;
       updateMutation.mutate({
         id: selectedCategory.id,
         data: updateData as CategoryUpdateData,
       });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(formData);
     }
   };
 

@@ -32,6 +32,7 @@ enum PaymentMethod {
   PIX
   BOLETO
   CHECK
+  ACCOUNT_DEBIT
   OTHER
 }
 

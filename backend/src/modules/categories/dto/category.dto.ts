@@ -5,10 +5,14 @@ import {
   PartialType,
   OmitType,
 } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { CategoryType } from '@prisma/client';
 
 export class CreateCategoryDto {
   @ApiProperty({ example: 'Aluguel' })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.toUpperCase() : value
+  )
   @IsString()
   name!: string;
 

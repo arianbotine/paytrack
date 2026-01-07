@@ -73,6 +73,12 @@ export class QueryReceivablesUseCase {
               receivedAmount: true,
               dueDate: true,
               status: true,
+              receivable: {
+                select: {
+                  id: true,
+                  customer: { select: { id: true, name: true } },
+                },
+              },
             },
             orderBy: { installmentNumber: 'asc' },
           },

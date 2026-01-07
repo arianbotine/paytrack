@@ -24,6 +24,7 @@ import {
   Notes as NotesIcon,
   Receipt as ReceiptIcon,
   TrendingUp as TrendingUpIcon,
+  Person as PersonIcon,
 } from '@mui/icons-material';
 import { formatCurrency } from '../utils/currencyUtils';
 import {
@@ -39,6 +40,7 @@ interface PaymentHistoryTimelineProps {
   payments: PaymentHistoryItem[];
   isLoading?: boolean;
   onAddPayment?: () => void;
+  entityName?: string;
 }
 
 const paymentMethodLabels: Record<string, string> = {
@@ -49,6 +51,7 @@ const paymentMethodLabels: Record<string, string> = {
   PIX: 'PIX',
   BANK_SLIP: 'Boleto',
   CHECK: 'Cheque',
+  ACCOUNT_DEBIT: 'Débito em Conta',
   OTHER: 'Outro',
 };
 
@@ -63,6 +66,7 @@ const paymentMethodColors: Record<
   CREDIT_CARD: 'secondary',
   BANK_SLIP: 'default',
   CHECK: 'default',
+  ACCOUNT_DEBIT: 'primary',
   OTHER: 'default',
 };
 
@@ -88,6 +92,7 @@ export const PaymentHistoryTimeline = ({
   payments,
   isLoading = false,
   onAddPayment,
+  entityName,
 }: PaymentHistoryTimelineProps) => {
   const [expanded, setExpanded] = useState(true);
 
@@ -343,6 +348,37 @@ export const PaymentHistoryTimeline = ({
                                 />
                               </Stack>
                             )}
+
+                          {/* Informação do Credor/Devedor */}
+                          {entityName && (
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                              sx={{ mb: 0.5 }}
+                            >
+                              <PersonIcon
+                                sx={{
+                                  fontSize: 16,
+                                  color:
+                                    accountType === 'payable'
+                                      ? 'error.main'
+                                      : 'success.main',
+                                  opacity: 0.7,
+                                }}
+                              />
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                fontWeight={500}
+                              >
+                                {accountType === 'payable'
+                                  ? 'Credor'
+                                  : 'Devedor'}
+                                : {entityName}
+                              </Typography>
+                            </Stack>
+                          )}
 
                           {/* Informações do Pagamento */}
                           <Stack

@@ -171,6 +171,7 @@ export const PaymentHistoryDialog = ({
             paidAmount={accountData.paidAmount}
             payments={payments}
             isLoading={isLoading}
+            entityName={accountData.entityName}
           />
         </Stack>
       </DialogContent>

@@ -70,6 +70,12 @@ export class ListPayablesUseCase {
               paidAmount: true,
               dueDate: true,
               status: true,
+              payable: {
+                select: {
+                  id: true,
+                  vendor: { select: { id: true, name: true } },
+                },
+              },
             },
             orderBy: { installmentNumber: 'asc' },
           },

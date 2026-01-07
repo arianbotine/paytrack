@@ -49,7 +49,7 @@ export class TagsService extends BaseEntityService<
 
     const where: any = {
       organizationId,
-      name: dto.name,
+      name: dto.name.toUpperCase(),
     };
 
     if (excludeId) {
