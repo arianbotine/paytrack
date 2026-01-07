@@ -38,7 +38,10 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import { startOfDay, isAfter } from 'date-fns';
-import { formatLocalDate } from '../../../shared/utils/dateUtils';
+import {
+  formatLocalDate,
+  getNowLocalDatetimeInput,
+} from '../../../shared/utils/dateUtils';
 import { formatCurrency } from '../../../shared/utils/currencyUtils';
 import { PAYMENT_METHODS, paymentSchema, getDefaultFormValues } from '../types';
 import type { PaymentFormData } from '../types';
@@ -385,6 +388,9 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
                         error={!!errors.paymentDate}
                         helperText={errors.paymentDate?.message}
                         InputLabelProps={{ shrink: true }}
+                        inputProps={{
+                          max: getNowLocalDatetimeInput(),
+                        }}
                       />
                     )}
                   />
