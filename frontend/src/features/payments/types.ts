@@ -34,22 +34,18 @@ export interface PaymentAllocation {
   receivableInstallment?: ReceivableInstallment;
 }
 
-export interface PaymentDetails {
-  id: string;
-  amount: number;
-  paymentDate: string;
-  method: string;
-  notes?: string;
-}
-
 export interface PaymentHistoryItem {
   id: string;
   amount: number;
-  payment: PaymentDetails;
-  installment?: {
-    installmentNumber: number;
-    totalInstallments: number;
-  };
+  paymentDate: string;
+  paymentMethod: string;
+  notes?: string;
+  allocations: Array<{
+    id: string;
+    amount: number;
+    installmentNumber?: number;
+    installmentId?: string;
+  }>;
 }
 
 export interface Payment {

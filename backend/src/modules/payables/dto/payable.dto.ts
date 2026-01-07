@@ -28,6 +28,7 @@ export class CreatePayableDto {
   vendorId!: string;
 
   @ApiPropertyOptional({ example: 'uuid-da-categoria', nullable: true })
+  @Transform(({ value }) => (value === '' ? null : value))
   @IsUUID()
   @IsOptional()
   categoryId?: string | null;
@@ -95,7 +96,7 @@ export class CreatePayableDto {
 }
 
 export class UpdatePayableDto extends PartialType(
-  OmitType(CreatePayableDto, [] as const)
+  OmitType(CreatePayableDto, ['installmentCount', 'dueDates'] as const)
 ) {}
 
 export class PayableFilterDto {

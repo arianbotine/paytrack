@@ -49,6 +49,7 @@ const categorySchema = z.object({
 });
 
 type CategoryFormData = z.infer<typeof categorySchema>;
+type CategoryUpdateData = Omit<CategoryFormData, 'type'>;
 
 interface Category {
   id: string;
@@ -125,7 +126,7 @@ export const CategoriesPage: React.FC = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: CategoryFormData }) =>
+    mutationFn: ({ id, data }: { id: string; data: CategoryUpdateData }) =>
       api.patch(`/categories/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -179,7 +180,12 @@ export const CategoriesPage: React.FC = () => {
 
   const onSubmit = (data: CategoryFormData) => {
     if (selectedCategory) {
-      updateMutation.mutate({ id: selectedCategory.id, data });
+      // Remove 'type' from update payload as it cannot be changed
+      const { type, ...updateData } = data;
+      updateMutation.mutate({
+        id: selectedCategory.id,
+        data: updateData as CategoryUpdateData,
+      });
     } else {
       createMutation.mutate(data);
     }
@@ -318,14 +324,29 @@ export const CategoriesPage: React.FC = () => {
                             <EditIcon />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="Excluir">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleDelete(category)}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
+                        <Tooltip
+                          title={
+                            (category._count?.payables || 0) +
+                              (category._count?.receivables || 0) >
+                            0
+                              ? 'Categoria não pode ser excluída pois está em uso'
+                              : 'Excluir'
+                          }
+                        >
+                          <span>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleDelete(category)}
+                              disabled={
+                                (category._count?.payables || 0) +
+                                  (category._count?.receivables || 0) >
+                                0
+                              }
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </span>
                         </Tooltip>
                       </TableCell>
                     </TableRow>
@@ -388,10 +409,23 @@ export const CategoriesPage: React.FC = () => {
                 render={({ field }) => (
                   <FormControl fullWidth error={!!errors.type}>
                     <InputLabel>Tipo</InputLabel>
-                    <Select {...field} label="Tipo">
+                    <Select
+                      {...field}
+                      label="Tipo"
+                      disabled={!!selectedCategory}
+                    >
                       <MenuItem value="PAYABLE">Contas a Pagar</MenuItem>
                       <MenuItem value="RECEIVABLE">Contas a Receber</MenuItem>
                     </Select>
+                    {selectedCategory && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ mt: 0.5 }}
+                      >
+                        O tipo não pode ser alterado após a criação
+                      </Typography>
+                    )}
                   </FormControl>
                 )}
               />

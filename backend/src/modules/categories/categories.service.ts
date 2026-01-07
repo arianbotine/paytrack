@@ -35,6 +35,14 @@ export class CategoriesService extends BaseEntityService<
     return this.prisma.category.findMany({
       where,
       orderBy: { name: 'asc' },
+      include: {
+        _count: {
+          select: {
+            payables: true,
+            receivables: true,
+          },
+        },
+      },
     });
   }
 

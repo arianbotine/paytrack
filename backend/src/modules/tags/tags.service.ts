@@ -32,6 +32,7 @@ export class TagsService extends BaseEntityService<
         },
       });
     } catch (error) {
+      console.error('Error finding tags:', error);
       throw error;
     }
   }
@@ -63,9 +64,24 @@ export class TagsService extends BaseEntityService<
   }
 
   /**
+   * Check if tag is in use
+   */
+  protected async checkIfInUse(id: string): Promise<boolean> {
+    const usageCount =
+      (await this.prisma.payable.count({
+        where: { tags: { some: { tagId: id } } },
+      })) +
+      (await this.prisma.receivable.count({
+        where: { tags: { some: { tagId: id } } },
+      }));
+
+    return usageCount > 0;
+  }
+
+  /**
    * Tags ordered by name
    */
   protected getDefaultOrderBy() {
-    return { name: 'asc' };
+    return { name: 'asc' as const };
   }
 }

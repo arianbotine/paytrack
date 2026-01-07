@@ -28,6 +28,7 @@ export class CreateReceivableDto {
   customerId!: string;
 
   @ApiPropertyOptional({ example: 'uuid-da-categoria', nullable: true })
+  @Transform(({ value }) => (value === '' ? null : value))
   @IsUUID()
   @IsOptional()
   categoryId?: string | null;
@@ -90,7 +91,7 @@ export class CreateReceivableDto {
 }
 
 export class UpdateReceivableDto extends PartialType(
-  OmitType(CreateReceivableDto, [] as const)
+  OmitType(CreateReceivableDto, ['installmentCount', 'dueDates'] as const)
 ) {}
 
 export class ReceivableFilterDto {

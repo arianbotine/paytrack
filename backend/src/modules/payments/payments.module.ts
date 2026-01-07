@@ -3,10 +3,45 @@ import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
 import { CacheModule } from '../../shared/modules/cache.module';
 
+// Repositories
+import { PaymentsRepository } from './repositories';
+
+// Domain Services
+import {
+  InstallmentBalanceManager,
+  PaymentAllocationsValidator,
+} from './domain';
+
+// Use Cases
+import {
+  CreatePaymentUseCase,
+  QuickPaymentUseCase,
+  DeletePaymentUseCase,
+  ListPaymentsUseCase,
+  GetPaymentUseCase,
+} from './use-cases';
+
 @Module({
   imports: [CacheModule],
   controllers: [PaymentsController],
-  providers: [PaymentsService],
+  providers: [
+    // Application Service
+    PaymentsService,
+
+    // Repositories
+    PaymentsRepository,
+
+    // Domain Services
+    InstallmentBalanceManager,
+    PaymentAllocationsValidator,
+
+    // Use Cases
+    CreatePaymentUseCase,
+    QuickPaymentUseCase,
+    DeletePaymentUseCase,
+    ListPaymentsUseCase,
+    GetPaymentUseCase,
+  ],
   exports: [PaymentsService],
 })
 export class PaymentsModule {}

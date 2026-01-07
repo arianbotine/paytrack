@@ -193,66 +193,87 @@ export const TagsPage: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={5} align="center">
-                  Carregando...
-                </TableCell>
-              </TableRow>
-            ) : tags.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} align="center">
-                  Nenhuma tag encontrada
-                </TableCell>
-              </TableRow>
-            ) : (
-              tags.map((tag: Tag) => (
-                <TableRow key={tag.id} hover>
-                  <TableCell>
-                    <Box
-                      sx={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: '4px',
-                        backgroundColor: tag.color || COLORS[0],
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography fontWeight="medium">{tag.name}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {tag._count?.payables || 0} contas
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {tag._count?.receivables || 0} contas
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Editar">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenDialog(tag)}
+            {(() => {
+              if (isLoading) {
+                return (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">
+                      Carregando...
+                    </TableCell>
+                  </TableRow>
+                );
+              } else if (tags.length === 0) {
+                return (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">
+                      Nenhuma tag encontrada
+                    </TableCell>
+                  </TableRow>
+                );
+              } else {
+                return tags.map((tag: Tag) => (
+                  <TableRow key={tag.id} hover>
+                    <TableCell>
+                      <Box
+                        sx={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: '4px',
+                          backgroundColor: tag.color || COLORS[0],
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography fontWeight="medium">{tag.name}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {tag._count?.payables || 0} contas
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {tag._count?.receivables || 0} contas
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Editar">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenDialog(tag)}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip
+                        title={
+                          (tag._count?.payables || 0) +
+                            (tag._count?.receivables || 0) >
+                          0
+                            ? 'Tag não pode ser excluída pois está em uso'
+                            : 'Excluir'
+                        }
                       >
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Excluir">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleDelete(tag)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+                        <span>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDelete(tag)}
+                            disabled={
+                              (tag._count?.payables || 0) +
+                                (tag._count?.receivables || 0) >
+                              0
+                            }
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ));
+              }
+            })()}
           </TableBody>
         </Table>
       </TableContainer>

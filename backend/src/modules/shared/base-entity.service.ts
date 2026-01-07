@@ -1,10 +1,6 @@
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
 import { PrismaErrorHandler } from '../../shared/utils/prisma-error-handler';
-
-// Constantes de paginação
-const MAX_PAGE_SIZE = 100;
-const DEFAULT_PAGE_SIZE = 10;
 
 /**
  * Base service with common CRUD operations
@@ -116,11 +112,19 @@ export abstract class BaseEntityService<TModel, TCreateDto, TUpdateDto> {
 
       const isInUse = await this.checkIfInUse(id);
 
-      if (isInUse && this.hasIsActiveField()) {
-        return await this.modelDelegate.update({
-          where: { id },
-          data: { isActive: false },
-        });
+      if (isInUse) {
+        if (this.hasIsActiveField()) {
+          // Soft delete: marca como inativo
+          return await this.modelDelegate.update({
+            where: { id },
+            data: { isActive: false },
+          });
+        } else {
+          // Entidade não suporta soft delete, bloquear exclusão
+          throw new ConflictException(
+            `${this.entityDisplayName} não pode ser excluído(a) pois está em uso`
+          );
+        }
       }
 
       await this.modelDelegate.delete({ where: { id } });

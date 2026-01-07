@@ -314,38 +314,35 @@ export const PaymentHistoryTimeline = ({
                       <CardContent sx={{ p: 3 }}>
                         <Stack spacing={2.5}>
                           {/* Informação de Parcela - Design discreto */}
-                          {item.installment && (
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                              sx={{ mb: 0.5 }}
-                            >
-                              <ReceiptIcon
-                                sx={{
-                                  fontSize: 16,
-                                  color: 'primary.main',
-                                  opacity: 0.7,
-                                }}
-                              />
-                              <Chip
-                                label={
-                                  item.installment.totalInstallments > 1
-                                    ? `${item.installment.installmentNumber}/${item.installment.totalInstallments}`
-                                    : 'Única'
-                                }
-                                size="small"
-                                variant="outlined"
-                                color="primary"
-                                sx={{
-                                  fontWeight: 600,
-                                  fontSize: '0.75rem',
-                                  height: 24,
-                                  borderRadius: 1,
-                                }}
-                              />
-                            </Stack>
-                          )}
+                          {item.allocations.length > 0 &&
+                            item.allocations[0].installmentNumber && (
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                                sx={{ mb: 0.5 }}
+                              >
+                                <ReceiptIcon
+                                  sx={{
+                                    fontSize: 16,
+                                    color: 'primary.main',
+                                    opacity: 0.7,
+                                  }}
+                                />
+                                <Chip
+                                  label={`Parcela ${item.allocations[0].installmentNumber}`}
+                                  size="small"
+                                  variant="outlined"
+                                  color="primary"
+                                  sx={{
+                                    fontWeight: 600,
+                                    fontSize: '0.75rem',
+                                    height: 24,
+                                    borderRadius: 1,
+                                  }}
+                                />
+                              </Stack>
+                            )}
 
                           {/* Informações do Pagamento */}
                           <Stack
@@ -370,25 +367,21 @@ export const PaymentHistoryTimeline = ({
                                   sx={{ fontSize: 18, color: 'primary.main' }}
                                 />
                                 <Tooltip
-                                  title={formatLocalDatetime(
-                                    item.payment.paymentDate
-                                  )}
+                                  title={formatLocalDatetime(item.paymentDate)}
                                 >
                                   <Typography variant="body2" fontWeight={600}>
-                                    {formatRelativeDatetime(
-                                      item.payment.paymentDate
-                                    )}
+                                    {formatRelativeDatetime(item.paymentDate)}
                                   </Typography>
                                 </Tooltip>
                               </Stack>
                               <Chip
                                 label={
-                                  paymentMethodLabels[item.payment.method] ||
-                                  item.payment.method
+                                  paymentMethodLabels[item.paymentMethod] ||
+                                  item.paymentMethod
                                 }
                                 size="small"
                                 color={
-                                  paymentMethodColors[item.payment.method] ||
+                                  paymentMethodColors[item.paymentMethod] ||
                                   'default'
                                 }
                                 sx={{ width: 'fit-content' }}
@@ -426,7 +419,7 @@ export const PaymentHistoryTimeline = ({
                           </Stack>
 
                           {/* Notas Adicionais */}
-                          {item.payment.notes && (
+                          {item.notes && (
                             <Paper
                               elevation={0}
                               sx={{
@@ -465,7 +458,7 @@ export const PaymentHistoryTimeline = ({
                                     color="text.secondary"
                                     sx={{ mt: 0.5 }}
                                   >
-                                    {item.payment.notes}
+                                    {item.notes}
                                   </Typography>
                                 </Box>
                               </Stack>

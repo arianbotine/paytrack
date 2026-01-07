@@ -6,6 +6,7 @@ import {
   alpha,
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect } from 'react';
 
 interface LoadingOverlayProps {
   open: boolean;
@@ -16,6 +17,13 @@ export function LoadingOverlay({
   open,
   message,
 }: Readonly<LoadingOverlayProps>) {
+  // Blur active element when overlay opens to prevent focus retention issues with aria-hidden
+  useEffect(() => {
+    if (open && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }, [open]);
+
   return (
     <AnimatePresence>
       {open && (

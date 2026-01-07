@@ -34,6 +34,13 @@ export function ServerWakeupDialog() {
   const [progress, setProgress] = useState(0);
   const [tip] = useState(() => TIPS[Math.floor(Math.random() * TIPS.length)]);
 
+  // Blur active element when dialog opens to prevent focus retention issues with aria-hidden
+  useEffect(() => {
+    if (serverWaking && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }, [serverWaking]);
+
   useEffect(() => {
     if (!serverWaking) {
       setCurrentMessage(0);
@@ -49,7 +56,7 @@ export function ServerWakeupDialog() {
         if (prev >= 70) return prev + 1;
         return prev + 2;
       });
-    }, 500);
+    }, 1000);
 
     // Cycle through messages
     const messageInterval = setInterval(() => {

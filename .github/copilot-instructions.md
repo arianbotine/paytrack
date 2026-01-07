@@ -26,11 +26,175 @@ async findAll(@CurrentUser("organizationId") organizationId: string) {
 
 ### Module Structure (Backend)
 
-Each feature follows: `backend/src/modules/{feature}/`
+**Nova Arquitetura em Camadas** (seguindo SOLID e Clean Architecture):
+
+Cada feature segue: `backend/src/modules/{feature}/`
+
+```
+{feature}/
+├── repositories/             # Camada de Dados (Data Access Layer)
+│   ├── {entity}.repository.ts
+│   └── index.ts
+├── domain/                   # Camada de Domínio (Business Rules Layer)
+│   ├── {domain-logic}.service.ts
+│   └── index.ts
+├── use-cases/                # Camada de Aplicação (Application Layer)
+│   ├── create-{entity}.use-case.ts
+│   ├── update-{entity}.use-case.ts
+│   ├── delete-{entity}.use-case.ts
+│   ├── query-{entity}.use-case.ts
+│   └── index.ts
+├── {feature}.service.ts      # Application Service (coordenação)
+├── {feature}.controller.ts   # REST endpoints
+├── {feature}.module.ts       # NestJS module
+└── dto/
+    ├── {feature}.dto.ts
+    └── index.ts
+```
+
+#### Responsabilidades por Camada
+
+**1. Repositories (Camada de Dados)**
+
+- **Responsabilidade**: Isolate database access via Prisma
+- **Características**:
+  - CRUD operations básicas
+  - Query builders específicos
+  - Transaction management
+  - **NÃO** contém lógica de negócio
+- **Exemplo**:
+
+  ```typescript
+  @Injectable()
+  export class PayablesRepository {
+    constructor(private readonly prisma: PrismaService) {}
+
+    async findMany(where, options) { ... }
+    async findFirst(where, include) { ... }
+    async create(data) { ... }
+    async update(where, data) { ... }
+    async delete(where) { ... }
+    async transaction(callback) { ... }
+  }
+  ```
+
+**2. Domain Services (Camada de Domínio)**
+
+- **Responsabilidade**: Pure business logic, sem dependências externas
+- **Características**:
+  - Cálculos e algoritmos de negócio
+  - Validações de regras de domínio
+  - **NÃO** depende de repositories
+  - **NÃO** faz I/O (banco, cache, APIs)
+  - Fácil de testar (sem mocks)
+- **Exemplo**:
+  ```typescript
+  @Injectable()
+  export class InstallmentsCalculator {
+    generateInstallments(amount, count, dates) { ... }
+    calculateMonthlyDueDates(startDate, count) { ... }
+    calculateStatus(paidAmount, totalAmount) { ... }
+  }
+  ```
+
+**3. Use Cases (Camada de Aplicação)**
+
+- **Responsabilidade**: Orquestrar uma operação específica de negócio
+- **Características**:
+  - Um arquivo = um caso de uso
+  - Coordena Repositories + Domain Services
+  - Gerencia transações
+  - Invalida cache quando necessário
+  - Contém fluxo completo da operação
+- **Exemplo**:
+
+  ```typescript
+  @Injectable()
+  export class CreatePayableUseCase {
+    constructor(
+      private readonly repository: PayablesRepository,
+      private readonly calculator: InstallmentsCalculator,
+      private readonly cache: CacheService
+    ) {}
+
+    async execute(organizationId, dto) {
+      // 1. Validar com domain service
+      // 2. Criar em transação
+      // 3. Invalidar cache
+      return result;
+    }
+  }
+  ```
+
+**4. Application Services (Camada de Coordenação)**
+
+- **Responsabilidade**: Interface pública para Controllers
+- **Características**:
+  - Camada **fina** (thin layer)
+  - Apenas delega para Use Cases
+  - Mantém compatibilidade com Controllers
+  - Pode ter operações auxiliares simples
+- **Exemplo**:
+
+  ```typescript
+  @Injectable()
+  export class PayablesService {
+    constructor(
+      private readonly createUseCase: CreatePayableUseCase,
+      private readonly updateUseCase: UpdatePayableUseCase // ... outros use cases
+    ) {}
+
+    async create(orgId, dto) {
+      return this.createUseCase.execute(orgId, dto);
+    }
+  }
+  ```
+
+#### Quando Usar Cada Camada
+
+**Criar Repository quando**:
+
+- Precisar acessar dados do Prisma
+- Precisar de query complexa reutilizável
+- Quiser isolar mudanças do ORM
+
+**Criar Domain Service quando**:
+
+- Tiver lógica de cálculo complexa
+- Tiver validação de regra de negócio
+- Precisar compartilhar lógica entre módulos
+- Quiser testar sem mocks
+
+**Criar Use Case quando**:
+
+- Tiver operação completa de negócio (Create, Update, Delete, etc.)
+- Precisar coordenar múltiplos serviços
+- Precisar gerenciar transação
+- A operação tiver múltiplos passos
+
+**NÃO criar camadas extras se**:
+
+- Operação é trivial (ex: findAll sem lógica)
+- Não há lógica de negócio complexa
+- Módulo é muito simples (ex: Tags, Categories básicos)
+
+#### Módulos Refatorados
+
+✅ **Payables**: Implementa arquitetura completa
+✅ **Payments**: Implementa arquitetura completa
+✅ **Receivables**: Implementa arquitetura completa
+⏳ **Users**: 497 linhas - candidato à refatoração
+⏳ **Auth**: 391 linhas - candidato à refatoração
+
+Ver documentação completa em: `backend/ARCHITECTURE_REFACTORING.md`
+
+### Module Structure (Backend) - Legacy
+
+**Nota**: Estrutura antiga ainda presente em alguns módulos:
 
 - `{feature}.module.ts` - NestJS module
 - `{feature}.controller.ts` - REST endpoints with Swagger decorators
-- `{feature}.service.ts` - Business logic, Prisma queries
+- `{feature}.service.ts` - Business logic, Prisma queries (monolítico)
 - `dto/{feature}.dto.ts` - class-validator DTOs with Swagger examples
 
 ### Feature Structure (Frontend)
@@ -52,15 +216,15 @@ Each feature follows: `frontend/src/features/{feature}/`
 ### Backend Controllers
 
 ```typescript
-@ApiTags("Contas a Pagar")
+@ApiTags('Contas a Pagar')
 @ApiBearerAuth()
-@Controller("payables")
+@Controller('payables')
 export class PayablesController {
   @Post()
   @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
-  @ApiOperation({ summary: "Criar nova conta a pagar" })
+  @ApiOperation({ summary: 'Criar nova conta a pagar' })
   async create(
-    @CurrentUser("organizationId") orgId: string,
+    @CurrentUser('organizationId') orgId: string,
     @Body() dto: CreateDto
   ) {}
 }
@@ -72,7 +236,7 @@ Use `react-hook-form` + `zod` + MUI:
 
 ```typescript
 const schema = z.object({
-  description: z.string().min(1, "Descrição é obrigatória"),
+  description: z.string().min(1, 'Descrição é obrigatória'),
 });
 const { control, handleSubmit } = useForm({ resolver: zodResolver(schema) });
 ```
@@ -81,11 +245,11 @@ const { control, handleSubmit } = useForm({ resolver: zodResolver(schema) });
 
 ```typescript
 const { data } = useQuery({
-  queryKey: ["payables"],
-  queryFn: () => api.get("/payables"),
+  queryKey: ['payables'],
+  queryFn: () => api.get('/payables'),
 });
 const mutation = useMutation({
-  mutationFn: (data) => api.post("/payables", data),
+  mutationFn: data => api.post('/payables', data),
 });
 ```
 
@@ -156,3 +320,63 @@ Key entities in `backend/prisma/schema.prisma`:
 - Backend: kebab-case (`payables.service.ts`)
 - Frontend: PascalCase for components (`PayablesPage.tsx`), camelCase for utilities
 - DTOs: grouped by feature (`payable.dto.ts` contains Create, Update, Filter DTOs)
+
+## Code Quality & Best Practices
+
+### TypeScript
+
+- **Tipos Explícitos**: Sempre usar tipos explícitos em parâmetros de callbacks e retornos de função
+- **NUNCA usar `any`**:
+  - ❌ **PROIBIDO**: `const data: any`, `as any`, `(item: any) =>`
+  - ✅ **Usar**: Tipos específicos do Prisma, interfaces, type aliases, ou `unknown` quando realmente necessário
+  - ✅ **Prisma Types**: Usar `Prisma.PayableGetPayload<{include: ...}>` para tipos com includes
+  - ✅ **Helper Types**: Criar tipos auxiliares em `shared/types/prisma-helpers.ts`
+  - ✅ **Unknown**: Usar `unknown` e fazer type guards quando tipo é realmente desconhecido
+- **Enum Values**: Usar valores corretos do Prisma (ex: `AccountStatus.PARTIAL` não `PARTIALLY_PAID`)
+- **DTO Mapping**: `invoiceNumber` (DTO) mapeia para `documentNumber` (banco)
+- **Type Assertions**: Apenas quando absolutamente necessário e com comentário explicativo
+
+### SonarQube/SonarLint
+
+- **Cognitive Complexity**: Máximo 15 por função
+- **Formatação**: Seguir regras do Prettier/ESLint
+  - Arrays multi-linha: um item por linha com trailing comma
+  - Strings longas: quebrar em múltiplas linhas se > 80 caracteres
+  - Parâmetros de função: quebrar se > 3 parâmetros
+- **Padrões**:
+
+  ```typescript
+  // ✅ Correto
+  const items = array.map(item => ({ ...item }));
+  const status = condition ? value1 : value2;
+
+  // ❌ Evitar
+  const items = array.map(item => ({ ...item })); // parênteses desnecessários
+  const status = !condition ? value2 : value1; // condição negada
+  ```
+
+### Arquitetura
+
+- **Separation of Concerns**: Cada classe deve ter uma única responsabilidade
+- **Dependency Direction**: Dependências apontam para dentro
+  - Controllers → Services → Use Cases → Domain Services
+  - Domain Services **NÃO** dependem de nada
+- **Transaction Management**: Sempre usar transactions para operações multi-step
+- **Cache Invalidation**: Invalidar cache após mutations que afetam dashboard
+- **Error Handling**:
+  - Lançar exceções específicas do NestJS (`NotFoundException`, `BadRequestException`)
+  - Mensagens de erro em português brasileiro
+  - Incluir contexto relevante no erro
+
+### Testing
+
+- **Unit Tests**: Testar Domain Services sem mocks
+- **Integration Tests**: Testar Use Cases com mocks de repositories
+- **E2E Tests**: Testar fluxos completos via API
+
+### Database
+
+- **Status Enum**: `PENDING`, `PARTIAL`, `PAID`, `OVERDUE`, `CANCELLED`
+- **Monetary Values**: Sempre usar `MoneyUtils.toDecimal()` para converter numbers
+- **Dates**: Usar `parseDateOnly()` para datas sem hora, `parseDatetime()` para timestamps
+- **Multi-tenancy**: **SEMPRE** filtrar por `organizationId` em queries

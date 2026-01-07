@@ -1,0 +1,97 @@
+import { Injectable } from '@nestjs/common';
+import { AccountStatus } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
+
+type GroupedInstallment = {
+  _sum: {
+    amount: Decimal | null;
+    paidAmount?: Decimal | null;
+    receivedAmount?: Decimal | null;
+  };
+  _count: number;
+  status: AccountStatus;
+};
+
+type Totals = {
+  total: number;
+  paid: number;
+  pending: number;
+  partial: number;
+  overdue: number;
+  cancelled: number;
+  count: number;
+};
+
+/**
+ * Domain Service para cálculos de totais do dashboard
+ * Responsabilidade: Lógica pura de agregação e cálculos
+ */
+@Injectable()
+export class DashboardCalculator {
+  /**
+   * Calcula totais baseado em parcelas agrupadas por status
+   */
+  calculateTotals(grouped: GroupedInstallment[]): Totals {
+    const totals: Totals = {
+      total: 0,
+      paid: 0,
+      pending: 0,
+      partial: 0,
+      overdue: 0,
+      cancelled: 0,
+      count: 0,
+    };
+
+    for (const group of grouped) {
+      const amount = Number(group._sum.amount || 0);
+      const paidAmount = Number(
+        group._sum.paidAmount || group._sum.receivedAmount || 0
+      );
+      const remaining = amount - paidAmount;
+
+      totals.count += group._count;
+      totals.total += amount;
+
+      switch (group.status) {
+        case AccountStatus.PAID:
+          totals.paid += amount;
+          break;
+        case AccountStatus.PENDING:
+          totals.pending += remaining;
+          break;
+        case AccountStatus.PARTIAL:
+          totals.partial += remaining;
+          break;
+        case AccountStatus.OVERDUE:
+          totals.overdue += remaining;
+          break;
+        case AccountStatus.CANCELLED:
+          totals.cancelled += amount;
+          break;
+      }
+    }
+
+    return totals;
+  }
+
+  /**
+   * Calcula saldo líquido (a receber - a pagar)
+   */
+  calculateNetBalance(toReceive: number, toPay: number): number {
+    return toReceive - toPay;
+  }
+
+  /**
+   * Calcula total a receber (pending + partial + overdue)
+   */
+  calculateToReceive(totals: Totals): number {
+    return totals.pending + totals.partial + totals.overdue;
+  }
+
+  /**
+   * Calcula total a pagar (pending + partial + overdue)
+   */
+  calculateToPay(totals: Totals): number {
+    return totals.pending + totals.partial + totals.overdue;
+  }
+}
