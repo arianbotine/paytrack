@@ -51,7 +51,6 @@ const categorySchema = z.object({
 });
 
 type CategoryFormData = z.infer<typeof categorySchema>;
-type CategoryUpdateData = Omit<CategoryFormData, 'type'>;
 
 interface Category {
   id: string;
@@ -172,8 +171,13 @@ export const CategoriesPage: React.FC = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: CategoryUpdateData }) =>
-      api.patch(`/categories/${id}`, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<CategoryFormData>;
+    }) => api.patch(`/categories/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       showNotification('Categoria atualizada com sucesso!', 'success');
@@ -231,12 +235,21 @@ export const CategoriesPage: React.FC = () => {
   const onSubmit = (data: CategoryFormData) => {
     const formData = { ...data, name: data.name.toUpperCase() };
     if (selectedCategory) {
-      // Remove 'type' from update payload as it cannot be changed
-      const updateData: CategoryUpdateData = {
+      const updateData: Partial<CategoryFormData> = {
         name: formData.name,
         description: formData.description,
         color: formData.color,
       };
+
+      // Allow type change only if category is not in use
+      const isInUse =
+        (selectedCategory._count?.payables || 0) +
+          (selectedCategory._count?.receivables || 0) >
+        0;
+      if (!isInUse) {
+        updateData.type = formData.type;
+      }
+
       updateMutation.mutate({
         id: selectedCategory.id,
         data: updateData,
@@ -528,20 +541,29 @@ export const CategoriesPage: React.FC = () => {
                     <Select
                       {...field}
                       label="Tipo"
-                      disabled={!!selectedCategory}
+                      disabled={
+                        !!selectedCategory &&
+                        (selectedCategory._count?.payables || 0) +
+                          (selectedCategory._count?.receivables || 0) >
+                          0
+                      }
                     >
                       <MenuItem value="PAYABLE">Contas a Pagar</MenuItem>
                       <MenuItem value="RECEIVABLE">Contas a Receber</MenuItem>
                     </Select>
-                    {selectedCategory && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ mt: 0.5 }}
-                      >
-                        O tipo não pode ser alterado após a criação
-                      </Typography>
-                    )}
+                    {selectedCategory &&
+                      (selectedCategory._count?.payables || 0) +
+                        (selectedCategory._count?.receivables || 0) >
+                        0 && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ mt: 0.5 }}
+                        >
+                          O tipo não pode ser alterado pois a categoria está em
+                          uso
+                        </Typography>
+                      )}
                   </FormControl>
                 )}
               />

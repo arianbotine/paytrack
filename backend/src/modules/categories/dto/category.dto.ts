@@ -31,10 +31,7 @@ export class CreateCategoryDto {
   description?: string;
 }
 
-export class UpdateCategoryDto extends OmitType(
-  PartialType(CreateCategoryDto),
-  ['type'] as const
-) {
+export class UpdateCategoryDto extends PartialType(CreateCategoryDto) {
   @ApiPropertyOptional({ example: true })
   @IsBoolean()
   @IsOptional()

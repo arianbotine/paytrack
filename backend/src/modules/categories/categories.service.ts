@@ -106,4 +106,25 @@ export class CategoriesService extends BaseEntityService<
   protected getDefaultOrderBy() {
     return { name: 'asc' };
   }
+
+  /**
+   * Update category with type validation
+   */
+  async update(
+    id: string,
+    organizationId: string,
+    updateDto: UpdateCategoryDto
+  ) {
+    // Check if trying to update type
+    if (updateDto.type !== undefined) {
+      const isInUse = await this.checkIfInUse(id);
+      if (isInUse) {
+        throw new ConflictException(
+          'Não é possível alterar o tipo de uma categoria que está em uso'
+        );
+      }
+    }
+
+    return super.update(id, organizationId, updateDto);
+  }
 }
