@@ -49,4 +49,11 @@ export class DateRangeCalculator {
   min(date1: Date, date2: Date): Date {
     return new Date(Math.min(date1.getTime(), date2.getTime()));
   }
+
+  /**
+   * Formata data como string YYYY-MM-DD
+   */
+  toDateString(date: Date): string {
+    return date.toISOString().split('T')[0];
+  }
 }

@@ -4,6 +4,7 @@ import {
   CardContent,
   Typography,
   Chip,
+  Tooltip,
   Table,
   TableBody,
   TableCell,
@@ -40,6 +41,7 @@ interface Account {
   paidAmount?: number;
   receivedAmount?: number;
   nextUnpaidDueDate: string | null;
+  nextUnpaidAmount?: number | string | null;
   vendor?: { name: string };
   customer?: { name: string };
   category?: Category;
@@ -61,8 +63,6 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
   emptyMessage,
   alertColor,
 }) => {
-  const entityLabel = type === 'payable' ? 'Credor' : 'Devedor';
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -118,10 +118,8 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Categoria & Tags</TableCell>
-                    <TableCell>{entityLabel}</TableCell>
-                    <TableCell align="right">Valor</TableCell>
-                    <TableCell align="center">Vencimento</TableCell>
+                    <TableCell>Conta</TableCell>
+                    <TableCell align="right">Vencimento</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -134,90 +132,160 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                       style={{ display: 'table-row' }}
                     >
                       <TableCell>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            gap: 0.5,
-                            maxWidth: 250,
-                          }}
-                        >
-                          {/* Categoria */}
-                          {account.category && (
-                            <Chip
-                              label={account.category.name}
-                              size="small"
-                              sx={{
-                                bgcolor: account.category.color || '#6B7280',
-                                color: '#fff',
-                                fontWeight: 600,
-                                fontSize: '0.7rem',
-                                height: 22,
-                              }}
-                            />
-                          )}
+                        {(() => {
+                          const name =
+                            account.vendor?.name || account.customer?.name;
 
-                          {/* Tags */}
-                          {account.tags.map((tagItem: { tag: Tag }) => (
-                            <Chip
-                              key={tagItem.tag.id}
-                              label={tagItem.tag.name}
-                              size="small"
-                              variant="outlined"
-                              sx={{
-                                borderColor: tagItem.tag.color || '#3B82F6',
-                                color: tagItem.tag.color || '#3B82F6',
-                                fontSize: '0.7rem',
-                                height: 22,
-                                fontWeight: 500,
-                              }}
-                            />
-                          ))}
+                          const tagsCount = account.tags.length;
+                          let tagsText: string | null = null;
+                          if (tagsCount === 1) {
+                            tagsText = account.tags[0].tag.name;
+                          } else if (tagsCount > 1) {
+                            tagsText = `+${tagsCount} tags`;
+                          }
 
-                          {/* Fallback se não houver categoria nem tags */}
-                          {!account.category && account.tags.length === 0 && (
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{ fontStyle: 'italic', py: 0.5 }}
+                          let tagsTooltip = '';
+                          if (tagsCount > 0) {
+                            tagsTooltip = account.tags
+                              .map((t: { tag: Tag }) => t.tag.name)
+                              .join(', ');
+                          }
+
+                          return (
+                            <Box
+                              sx={{ display: 'flex', flexDirection: 'column' }}
                             >
-                              Sem categoria
-                            </Typography>
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          noWrap
-                          sx={{ maxWidth: 120 }}
-                        >
-                          {account.vendor?.name || account.customer?.name}
-                        </Typography>
+                              <Typography
+                                variant="body2"
+                                fontWeight={600}
+                                noWrap
+                                sx={{ maxWidth: 220 }}
+                              >
+                                {name}
+                              </Typography>
+
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  gap: 0.5,
+                                  flexWrap: 'wrap',
+                                  pt: 0.25,
+                                }}
+                              >
+                                {account.category && (
+                                  <Chip
+                                    label={account.category.name}
+                                    size="small"
+                                    sx={{
+                                      bgcolor:
+                                        account.category.color || '#6B7280',
+                                      color: '#fff',
+                                      fontWeight: 600,
+                                      fontSize: '0.7rem',
+                                      height: 20,
+                                    }}
+                                  />
+                                )}
+
+                                {tagsText && (
+                                  <Tooltip
+                                    title={tagsTooltip}
+                                    placement="top"
+                                    arrow
+                                  >
+                                    <Chip
+                                      label={tagsText}
+                                      size="small"
+                                      variant="outlined"
+                                      sx={{
+                                        fontSize: '0.7rem',
+                                        height: 20,
+                                      }}
+                                    />
+                                  </Tooltip>
+                                )}
+
+                                {!account.category && !tagsText && (
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ fontStyle: 'italic' }}
+                                  >
+                                    Sem categoria
+                                  </Typography>
+                                )}
+                              </Box>
+                            </Box>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell align="right">
-                        <Typography variant="body2" fontWeight="medium">
-                          {formatCurrency(
+                        {(() => {
+                          const remainingTotal =
                             Number(account.amount) -
-                              Number(
-                                type === 'payable'
-                                  ? account.paidAmount
-                                  : account.receivedAmount || 0
-                              )
-                          )}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Chip
-                          label={
-                            account.nextUnpaidDueDate
-                              ? formatLocalDate(account.nextUnpaidDueDate)
-                              : '-'
-                          }
-                          size="small"
-                          color={alertColor}
-                          variant="outlined"
-                        />
+                            Number(
+                              type === 'payable'
+                                ? account.paidAmount
+                                : account.receivedAmount || 0
+                            );
+
+                          const hasNextUnpaidAmount =
+                            account.nextUnpaidAmount !== null &&
+                            account.nextUnpaidAmount !== undefined;
+
+                          const nextUnpaidAmount = hasNextUnpaidAmount
+                            ? Number(account.nextUnpaidAmount)
+                            : null;
+
+                          const shownAmount =
+                            nextUnpaidAmount ?? remainingTotal;
+                          const showTotalHint =
+                            hasNextUnpaidAmount &&
+                            Math.abs(shownAmount - remainingTotal) > 0.009;
+
+                          const dueDateLabel = account.nextUnpaidDueDate
+                            ? formatLocalDate(account.nextUnpaidDueDate)
+                            : '-';
+
+                          const amountNode = (
+                            <Typography variant="body2" fontWeight={700}>
+                              {formatCurrency(shownAmount)}
+                            </Typography>
+                          );
+
+                          return (
+                            <Box
+                              sx={{ display: 'flex', flexDirection: 'column' }}
+                            >
+                              {showTotalHint ? (
+                                <Tooltip
+                                  title={`Saldo total em aberto: ${formatCurrency(
+                                    remainingTotal
+                                  )}`}
+                                  placement="top"
+                                  arrow
+                                >
+                                  <Box
+                                    sx={{
+                                      display: 'inline-flex',
+                                      justifyContent: 'flex-end',
+                                    }}
+                                  >
+                                    {amountNode}
+                                  </Box>
+                                </Tooltip>
+                              ) : (
+                                amountNode
+                              )}
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {dueDateLabel}
+                              </Typography>
+                            </Box>
+                          );
+                        })()}
                       </TableCell>
                     </motion.tr>
                   ))}

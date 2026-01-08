@@ -245,7 +245,7 @@ export function DashboardPage() {
           <Grid container spacing={3} sx={{ mb: 3 }}>
             <Grid item xs={12} md={6}>
               <AccountsTable
-                title="Recebimentos Vencidos"
+                title="Recebimentos vencidos"
                 accounts={data.receivableInstallments.overdue}
                 type="receivable"
                 emptyMessage="Nenhum recebimento vencido!"
@@ -254,7 +254,7 @@ export function DashboardPage() {
             </Grid>
             <Grid item xs={12} md={6}>
               <AccountsTable
-                title="Pagamentos Vencidos"
+                title="Pagamentos vencidos"
                 accounts={data.payableInstallments.overdue}
                 type="payable"
                 emptyMessage="Nenhum pagamento vencido!"
@@ -267,7 +267,7 @@ export function DashboardPage() {
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <AccountsTable
-                title="Recebimentos Próximos (7 dias)"
+                title="Recebimentos a vencer (7 dias)"
                 accounts={data.receivableInstallments.upcoming}
                 type="receivable"
                 emptyMessage="Nenhum recebimento nos próximos 7 dias"
@@ -276,7 +276,7 @@ export function DashboardPage() {
             </Grid>
             <Grid item xs={12} md={6}>
               <AccountsTable
-                title="Pagamentos Próximos (7 dias)"
+                title="Pagamentos a vencer (7 dias)"
                 accounts={data.payableInstallments.upcoming}
                 type="payable"
                 emptyMessage="Nenhum pagamento nos próximos 7 dias"

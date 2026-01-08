@@ -64,12 +64,12 @@ export class GetDashboardSummaryUseCase {
       this.repository.getOverduePayableInstallments(
         organizationId,
         startOfCurrentMonth,
-        endOfCurrentMonth
+        todayUTC
       ),
       this.repository.getOverdueReceivableInstallments(
         organizationId,
         startOfCurrentMonth,
-        endOfCurrentMonth
+        todayUTC
       ),
       this.repository.getUpcomingPayableInstallments(
         organizationId,

@@ -307,6 +307,7 @@ export const useAccountOperations = <T>(
     onUpdateInstallmentSuccess?: () => void;
   }
 ) => {
+  const { showNotification } = useUIStore();
   const createMutation = useCreateAccount(config, callbacks?.onCreateSuccess);
   const updateMutation = useUpdateAccount(config, callbacks?.onUpdateSuccess);
   const deleteMutation = useDeleteAccount(config, callbacks?.onDeleteSuccess);
@@ -320,16 +321,34 @@ export const useAccountOperations = <T>(
   );
 
   const submitAccount = (
-    data: T & { dueDate: string | Date; dueDates?: string[] },
+    data: T & {
+      dueDate?: string | Date;
+      firstDueDate?: string | Date;
+      dueDates?: string[];
+    },
     accountId?: string
   ) => {
-    const formData = data as T & AccountFormData;
+    const formData = data as T &
+      AccountFormData & {
+        dueDate?: string | Date;
+        firstDueDate?: string | Date;
+      };
+
+    const dueDate = formData.dueDate ?? formData.firstDueDate;
+    const hasDueDatesArray = formData.dueDates && formData.dueDates.length > 0;
+
+    if (!dueDate && !hasDueDatesArray) {
+      showNotification('Data de vencimento é obrigatória', 'error');
+      return;
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { firstDueDate: _firstDueDate, ...payloadData } = formData;
     const payload = {
       ...payloadData,
-      // dueDate e dueDates são date-only - enviar como está sem conversão
-      dueDate: data.dueDate,
+      // Se há dueDates (array), não enviar dueDate (evita conflito no DTO do backend)
+      // Se não há dueDates, enviar dueDate (update de conta única)
+      ...(hasDueDatesArray ? {} : { dueDate }),
       dueDates: formData.dueDates,
       // Se categoryId é string vazia, enviar null para remover categoria
       categoryId:
