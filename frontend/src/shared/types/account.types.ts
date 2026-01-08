@@ -30,7 +30,7 @@ export interface ReceivableInstallment {
 export interface BaseAccount {
   id: string;
   amount: number;
-  dueDate: string;
+  nextUnpaidDueDate: string | null;
   status: AccountStatus;
   totalInstallments: number;
   category?: {

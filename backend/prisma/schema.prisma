@@ -199,7 +199,6 @@ model Payable {
   categoryId     String?       @map("category_id")
   amount         Decimal       @db.Decimal(15, 2)
   paidAmount     Decimal       @default(0) @map("paid_amount") @db.Decimal(15, 2)
-  dueDate        DateTime      @map("due_date") @db.Date
   status         AccountStatus @default(PENDING)
   notes          String?
   documentNumber String?       @map("document_number") // Invoice number, etc.
@@ -217,8 +216,7 @@ model Payable {
   tags         PayableTag[]
   installments PayableInstallment[]
 
-  @@index([organizationId, status, dueDate])
-  @@index([organizationId, dueDate])
+  @@index([organizationId, status])
   @@index([vendorId])
   @@map("payables")
 }
@@ -244,6 +242,7 @@ model PayableInstallment {
   @@index([payableId, installmentNumber])
   @@index([organizationId, status, dueDate])
   @@index([organizationId, dueDate])
+  @@index([payableId, status, dueDate])
   @@map("payable_installments")
 }
 
@@ -254,7 +253,6 @@ model Receivable {
   categoryId     String?       @map("category_id")
   amount         Decimal       @db.Decimal(15, 2)
   receivedAmount Decimal       @default(0) @map("received_amount") @db.Decimal(15, 2)
-  dueDate        DateTime      @map("due_date") @db.Date
   status         AccountStatus @default(PENDING)
   notes          String?
 
@@ -271,8 +269,7 @@ model Receivable {
   tags         ReceivableTag[]
   installments ReceivableInstallment[]
 
-  @@index([organizationId, status, dueDate])
-  @@index([organizationId, dueDate])
+  @@index([organizationId, status])
   @@index([customerId])
   @@map("receivables")
 }
@@ -298,6 +295,7 @@ model ReceivableInstallment {
   @@index([receivableId, installmentNumber])
   @@index([organizationId, status, dueDate])
   @@index([organizationId, dueDate])
+  @@index([receivableId, status, dueDate])
   @@map("receivable_installments")
 }
 

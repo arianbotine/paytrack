@@ -37,7 +37,6 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
-import { startOfDay, isAfter } from 'date-fns';
 import {
   formatLocalDate,
   getNowLocalDatetimeInput,
@@ -136,11 +135,14 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
 
   const isOverdue = useMemo(() => {
     if (!installmentInfo) return false;
-    const today = startOfDay(new Date());
-    const dueDateString = installmentInfo.dueDate.split('T')[0];
-    const due = startOfDay(new Date(dueDateString));
-    const result = !isAfter(due, today) && installmentInfo.status === 'PENDING';
-    return result;
+
+    // Extrair apenas a parte da data (YYYY-MM-DD) para comparação sem timezone
+    const dueDateOnly = installmentInfo.dueDate.split('T')[0];
+    const today = new Date();
+    const todayOnly = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    // Vencido = data de vencimento é ANTES de hoje (comparação de strings YYYY-MM-DD)
+    return dueDateOnly < todayOnly && installmentInfo.status === 'PENDING';
   }, [installmentInfo]);
 
   const isPartialPayment = useMemo(() => {

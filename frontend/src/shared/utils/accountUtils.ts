@@ -1,4 +1,4 @@
-import { differenceInDays, isAfter, startOfDay } from 'date-fns';
+import { differenceInDays, startOfDay } from 'date-fns';
 
 /**
  * Account status utilities
@@ -44,13 +44,13 @@ export const isDueSoon = (dueDate: string, status: string): boolean => {
 export const isOverdue = (dueDate: string, status: string): boolean => {
   if (status === 'PAID' || status === 'CANCELLED') return false;
 
-  // Normalizar para início do dia para comparar apenas a data, sem horário
-  const today = startOfDay(new Date());
-  // Extrair apenas a parte da data (YYYY-MM-DD) para evitar problemas de timezone
-  const dueDateString = dueDate.split('T')[0];
-  const due = startOfDay(new Date(dueDateString));
+  // Extrair apenas a parte da data (YYYY-MM-DD) para comparação sem timezone
+  const dueDateOnly = dueDate.split('T')[0];
+  const today = new Date();
+  const todayOnly = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-  return status === 'OVERDUE' || isAfter(today, due);
+  // Vencido = data de vencimento é ANTES de hoje OU status já é OVERDUE
+  return status === 'OVERDUE' || dueDateOnly < todayOnly;
 };
 
 /**

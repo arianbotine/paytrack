@@ -1,5 +1,4 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { AccountStatus } from '@prisma/client';
 import { PayableInstallmentsRepository } from '../repositories';
 import { InstallmentsCalculator } from './installments-calculator.service';
 
@@ -38,40 +37,6 @@ export class PayableInstallmentsManager {
     );
 
     await this.installmentsRepository.createMany(newInstallments as any);
-  }
-
-  /**
-   * Atualiza as datas de vencimento das parcelas
-   */
-  async updateInstallmentDates(
-    payableId: string,
-    newDueDate: Date,
-    installments: any[]
-  ): Promise<void> {
-    const installmentCount = installments.length;
-    const newDueDates = this.calculator.calculateMonthlyDueDates(
-      newDueDate,
-      installmentCount
-    );
-
-    // Atualizar apenas parcelas pendentes ou vencidas
-    const installmentsToUpdate = installments.filter(
-      installment =>
-        installment.status === AccountStatus.PENDING ||
-        installment.status === AccountStatus.OVERDUE
-    );
-
-    await Promise.all(
-      installmentsToUpdate.map(installment => {
-        const originalIndex = installments.findIndex(
-          inst => inst.id === installment.id
-        );
-        return this.installmentsRepository.update(
-          { id: installment.id },
-          { dueDate: newDueDates[originalIndex] }
-        );
-      })
-    );
   }
 
   /**

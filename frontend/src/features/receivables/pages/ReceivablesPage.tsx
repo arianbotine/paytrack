@@ -323,7 +323,6 @@ export const ReceivablesPage: React.FC = () => {
                   id: selectedReceivable.id,
                   amount: selectedReceivable.amount,
                   paidAmount: selectedReceivable.receivedAmount,
-                  dueDate: selectedReceivable.dueDate,
                   entityName: selectedReceivable.customer.name,
                   status: selectedReceivable.status,
                 }

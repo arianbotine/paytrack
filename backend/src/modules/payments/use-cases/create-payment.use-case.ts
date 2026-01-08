@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PaymentsRepository } from '../repositories';
@@ -20,6 +21,8 @@ import { CacheService } from '../../../shared/services/cache.service';
  */
 @Injectable()
 export class CreatePaymentUseCase {
+  private readonly logger = new Logger(CreatePaymentUseCase.name);
+
   constructor(
     private readonly paymentsRepository: PaymentsRepository,
     private readonly balanceManager: InstallmentBalanceManager,
@@ -114,28 +117,60 @@ export class CreatePaymentUseCase {
         return payment;
       });
 
-      // Invalidar cache do dashboard
+      // Invalidar cache do dashboard e das listas de contas
       this.cacheService.del(`dashboard:summary:${organizationId}`);
+      await Promise.all([
+        this.cacheService.invalidate(`payables:list:${organizationId}`),
+        this.cacheService.invalidate(`receivables:list:${organizationId}`),
+      ]);
 
       return result;
     } catch (error) {
+      // Log do erro para debug
+      this.logger.error(
+        `Erro ao criar pagamento: ${error.message}`,
+        error.stack
+      );
+
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new BadRequestException(
-          'Erro ao processar o pagamento: dados inválidos'
-        );
+        // Erros conhecidos do Prisma (ex: violação de constraint)
+        const errorMessages: Record<string, string> = {
+          P2002: 'Já existe um pagamento com estes dados',
+          P2003: 'Parcela informada não existe ou não pertence à organização',
+          P2025: 'Registro não encontrado para atualização',
+        };
+        const message =
+          errorMessages[error.code] ||
+          `Erro ao processar pagamento: ${error.code}`;
+        throw new BadRequestException(message);
       }
+
       if (error instanceof Prisma.PrismaClientValidationError) {
         throw new BadRequestException(
-          'Erro de validação nos dados do pagamento'
+          'Erro de validação: verifique os dados do pagamento (valores, datas, método)'
         );
       }
+
       if (
         error instanceof BadRequestException ||
         error instanceof NotFoundException
       ) {
         throw error;
       }
-      throw new BadRequestException('Erro interno ao processar o pagamento');
+
+      // Erro genérico - log detalhado para debug
+      this.logger.error(
+        `Erro inesperado ao processar pagamento para organização ${organizationId}`,
+        {
+          error: error.message,
+          stack: error.stack,
+          dto,
+        }
+      );
+
+      throw new BadRequestException(
+        `Erro ao processar pagamento: ${error.message || 'erro desconhecido'}`
+      );
     }
   }
 }

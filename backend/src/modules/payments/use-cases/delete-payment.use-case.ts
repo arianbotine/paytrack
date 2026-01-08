@@ -51,8 +51,12 @@ export class DeletePaymentUseCase {
       return payment;
     });
 
-    // Invalidar cache
+    // Invalidar cache do dashboard e das listas de contas
     this.cacheService.del(`dashboard:summary:${organizationId}`);
+    await Promise.all([
+      this.cacheService.invalidate(`payables:list:${organizationId}`),
+      this.cacheService.invalidate(`receivables:list:${organizationId}`),
+    ]);
 
     return result;
   }

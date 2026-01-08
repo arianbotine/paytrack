@@ -7,7 +7,6 @@ import { PayablesRepository } from '../repositories';
 import { PayableInstallmentsManager } from '../domain';
 import { UpdatePayableDto } from '../dto/payable.dto';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
-import { parseDateOnly } from '../../../shared/utils/date.utils';
 import { CacheService } from '../../../shared/services/cache.service';
 import { AccountStatus } from '@prisma/client';
 
@@ -71,13 +70,8 @@ export class UpdatePayableUseCase {
 
     // Flags para operações
     const installments = (existingPayable as any).installments;
-    const dueDateChanged = updateData.dueDate !== undefined;
     const shouldRecalculateInstallments =
       amountChanged && installments.length > 0;
-    const shouldUpdateDueDates =
-      dueDateChanged &&
-      installments.length > 0 &&
-      !shouldRecalculateInstallments; // Não atualizar datas se já recalculou parcelas
 
     // Atualizar em transação
     const result = await this.payablesRepository.transaction(async tx => {
@@ -94,9 +88,6 @@ export class UpdatePayableUseCase {
           }),
           ...(updateData.invoiceNumber !== undefined && {
             documentNumber: updateData.invoiceNumber,
-          }),
-          ...(updateData.dueDate && {
-            dueDate: parseDateOnly(updateData.dueDate),
           }),
           ...(updateData.notes !== undefined && { notes: updateData.notes }),
         },
@@ -116,16 +107,7 @@ export class UpdatePayableUseCase {
         );
       }
 
-      // 3. Atualizar datas se a data de vencimento mudou (mas valor não mudou)
-      if (shouldUpdateDueDates && updateData.dueDate !== undefined) {
-        await this.installmentsManager.updateInstallmentDates(
-          id,
-          parseDateOnly(updateData.dueDate),
-          installments
-        );
-      }
-
-      // 4. Atualizar tags
+      // 3. Atualizar tags
       if (tagIds !== undefined) {
         await tx.payableTag.deleteMany({ where: { payableId: id } });
         if (tagIds.length > 0) {

@@ -311,7 +311,6 @@ export const PayablesPage: React.FC = () => {
                   id: selectedPayable.id,
                   amount: selectedPayable.amount,
                   paidAmount: selectedPayable.paidAmount,
-                  dueDate: selectedPayable.dueDate,
                   entityName: selectedPayable.vendor.name,
                   status: selectedPayable.status,
                 }

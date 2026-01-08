@@ -25,7 +25,6 @@ interface PaymentHistoryDialogProps {
     id: string;
     amount: number;
     paidAmount: number;
-    dueDate: string;
     entityName: string; // vendor or debtor name
     status: string;
   } | null;

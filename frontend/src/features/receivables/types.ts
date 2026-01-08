@@ -46,7 +46,7 @@ export interface ReceivableInstallment {
 export interface Receivable {
   id: string;
   amount: number;
-  dueDate: string;
+  nextUnpaidDueDate: string | null;
   status: ReceivableStatus;
   receivedAmount: number;
   notes?: string;
@@ -67,32 +67,17 @@ export interface ReceivablesResponse {
 // Validation Schema
 // ============================================================
 
-export const receivableSchema = z
-  .object({
-    amount: z.coerce.number().positive('Valor deve ser positivo'),
-    dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
-    customerId: z.string().min(1, 'Devedor é obrigatório'),
-    categoryId: z.string().optional(),
-    tagIds: z.array(z.string()).optional(),
-    notes: z.string().optional(),
-    // Campos de parcelas
-    installmentCount: z.coerce.number().int().min(1).max(120).optional(),
-    firstDueDate: z.string().optional(),
-    dueDates: z.array(z.string()).optional(),
-  })
-  .refine(
-    data => {
-      // Se installmentCount > 1, firstDueDate é obrigatório
-      if (data.installmentCount && data.installmentCount > 1) {
-        return !!data.firstDueDate;
-      }
-      return true;
-    },
-    {
-      message: 'Data do primeiro vencimento é obrigatória para parcelamento',
-      path: ['firstDueDate'],
-    }
-  );
+export const receivableSchema = z.object({
+  amount: z.coerce.number().positive('Valor deve ser positivo'),
+  firstDueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
+  customerId: z.string().min(1, 'Devedor é obrigatório'),
+  categoryId: z.string().optional(),
+  tagIds: z.array(z.string()).optional(),
+  notes: z.string().optional(),
+  // Campos de parcelas
+  installmentCount: z.coerce.number().int().min(1).max(120).optional(),
+  dueDates: z.array(z.string()).optional(),
+});
 
 export type ReceivableFormData = z.infer<typeof receivableSchema>;
 
@@ -115,11 +100,10 @@ export const statusOptions = [
 
 export const getDefaultFormValues = (): ReceivableFormData => ({
   amount: 0,
-  dueDate: getTodayLocalInput(),
+  firstDueDate: getTodayLocalInput(),
   customerId: '',
   categoryId: '',
   tagIds: [],
   notes: '',
   installmentCount: 1,
-  firstDueDate: getTodayLocalInput(),
 });

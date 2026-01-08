@@ -39,7 +39,7 @@ interface Account {
   amount: number;
   paidAmount?: number;
   receivedAmount?: number;
-  dueDate: string;
+  nextUnpaidDueDate: string | null;
   vendor?: { name: string };
   customer?: { name: string };
   payable?: {
@@ -252,7 +252,11 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                       </TableCell>
                       <TableCell align="center">
                         <Chip
-                          label={formatLocalDate(account.dueDate)}
+                          label={
+                            account.nextUnpaidDueDate
+                              ? formatLocalDate(account.nextUnpaidDueDate)
+                              : '-'
+                          }
                           size="small"
                           color={alertColor}
                           variant="outlined"

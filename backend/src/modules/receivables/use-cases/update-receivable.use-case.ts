@@ -9,7 +9,6 @@ import { ReceivableInstallmentsManager } from '../domain';
 import { CacheService } from '../../../shared/services/cache.service';
 import { UpdateReceivableDto } from '../dto/receivable.dto';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
-import { parseDateOnly } from '../../../shared/utils/date.utils';
 import { generateInstallments } from '../../../shared/utils/account.utils';
 
 /**
@@ -63,10 +62,6 @@ export class UpdateReceivableUseCase {
     // Flags para operações
     const shouldRecalculateInstallments =
       amountChanged && !hasAnyPayment && receivable.installments.length > 0;
-    const shouldUpdateDueDates =
-      data.dueDate &&
-      receivable.installments.length > 1 &&
-      !shouldRecalculateInstallments;
 
     // Executar em transação
     const updated = await this.repository.transaction(async tx => {
@@ -95,18 +90,7 @@ export class UpdateReceivableUseCase {
         });
       }
 
-      // 2. Atualizar datas de vencimento se mudou
-      if (shouldUpdateDueDates) {
-        const newDueDate = parseDateOnly(data.dueDate!);
-        await this.installmentsManager.updateDueDates(
-          id,
-          newDueDate,
-          receivable.installments,
-          tx
-        );
-      }
-
-      // 3. Atualizar receivable
+      // 2. Atualizar receivable
       return tx.receivable.update({
         where: { id },
         data: {
@@ -114,7 +98,6 @@ export class UpdateReceivableUseCase {
           ...(updateData.amount !== undefined && {
             amount: MoneyUtils.toDecimal(updateData.amount),
           }),
-          ...(data.dueDate && { dueDate: parseDateOnly(data.dueDate) }),
           ...(customerId && { customer: { connect: { id: customerId } } }),
           ...(categoryId !== undefined && {
             category:

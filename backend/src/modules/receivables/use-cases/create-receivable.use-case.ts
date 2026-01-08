@@ -7,7 +7,6 @@ import {
 import { CacheService } from '../../../shared/services/cache.service';
 import { CreateReceivableDto } from '../dto/receivable.dto';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
-import { parseDateOnly } from '../../../shared/utils/date.utils';
 import { generateInstallments } from '../../../shared/utils/account.utils';
 
 /**
@@ -25,21 +24,12 @@ export class CreateReceivableUseCase {
   async execute(organizationId: string, dto: CreateReceivableDto) {
     const { installmentCount = 1, dueDates, tagIds, ...baseData } = dto;
 
-    // Validações
-    if (installmentCount > 1 && (!dueDates || dueDates.length === 0)) {
-      throw new BadRequestException(
-        'dueDates é obrigatório quando installmentCount > 1'
-      );
-    }
-
-    if (dueDates && dueDates.length !== installmentCount) {
+    // Validação: dueDates deve ter o mesmo tamanho que installmentCount
+    if (dueDates.length !== installmentCount) {
       throw new BadRequestException(
         `dueDates deve conter exatamente ${installmentCount} datas`
       );
     }
-
-    // Preparar datas de vencimento
-    const dueDateStrings = dueDates || [baseData.dueDate];
 
     // Criar receivable + parcelas em transação
     const result = await this.repository.transaction(async tx => {
@@ -50,7 +40,6 @@ export class CreateReceivableUseCase {
           customerId: baseData.customerId,
           categoryId: baseData.categoryId,
           amount: MoneyUtils.toDecimal(baseData.amount),
-          dueDate: parseDateOnly(dueDateStrings[0]),
           notes: baseData.notes,
           totalInstallments: installmentCount,
           status: AccountStatus.PENDING,
@@ -68,7 +57,7 @@ export class CreateReceivableUseCase {
       const installmentsData = generateInstallments(
         baseData.amount,
         installmentCount,
-        dueDateStrings,
+        dueDates,
         receivable.id,
         organizationId,
         'receivable'

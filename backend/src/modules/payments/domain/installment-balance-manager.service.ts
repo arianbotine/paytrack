@@ -18,13 +18,12 @@ export class InstallmentBalanceManager {
     dueDate: Date
   ): AccountStatus {
     const threshold = 0.01;
-    const now = new Date();
 
     if (paidOrReceivedAmount >= totalAmount - threshold) {
       return AccountStatus.PAID;
     } else if (paidOrReceivedAmount > 0) {
       return AccountStatus.PARTIAL;
-    } else if (now > dueDate) {
+    } else if (this.isOverdue(dueDate)) {
       return AccountStatus.OVERDUE;
     }
 
@@ -35,8 +34,24 @@ export class InstallmentBalanceManager {
    * Obtém o status padrão baseado na data de vencimento
    */
   getDefaultStatus(dueDate: Date): AccountStatus {
-    const now = new Date();
-    return now > dueDate ? AccountStatus.OVERDUE : AccountStatus.PENDING;
+    return this.isOverdue(dueDate)
+      ? AccountStatus.OVERDUE
+      : AccountStatus.PENDING;
+  }
+
+  /**
+   * Verifica se uma data está vencida
+   * Uma conta só está vencida se a data de vencimento for ANTERIOR ao dia atual
+   * Contas com vencimento no dia atual NÃO estão vencidas
+   */
+  private isOverdue(dueDate: Date): boolean {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dueDateOnly = new Date(dueDate);
+    dueDateOnly.setHours(0, 0, 0, 0);
+
+    return dueDateOnly < today;
   }
 
   /**
@@ -137,8 +152,11 @@ export class InstallmentBalanceManager {
     } else if (anyPaid) {
       newStatus = AccountStatus.PARTIAL;
     } else {
-      const account = await tx.payable.findUnique({ where: { id: payableId } });
-      newStatus = this.getDefaultStatus(account!.dueDate);
+      // Verificar se há alguma parcela vencida
+      const hasOverdue = installments.some(
+        i => i.status === AccountStatus.OVERDUE
+      );
+      newStatus = hasOverdue ? AccountStatus.OVERDUE : AccountStatus.PENDING;
     }
 
     const totalPaid = installments.reduce(
@@ -177,10 +195,11 @@ export class InstallmentBalanceManager {
     } else if (anyPaid) {
       newStatus = AccountStatus.PARTIAL;
     } else {
-      const account = await tx.receivable.findUnique({
-        where: { id: receivableId },
-      });
-      newStatus = this.getDefaultStatus(account!.dueDate);
+      // Verificar se há alguma parcela vencida
+      const hasOverdue = installments.some(
+        i => i.status === AccountStatus.OVERDUE
+      );
+      newStatus = hasOverdue ? AccountStatus.OVERDUE : AccountStatus.PENDING;
     }
 
     const totalReceived = installments.reduce(

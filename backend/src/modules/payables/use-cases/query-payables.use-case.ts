@@ -4,6 +4,7 @@ import { PayablesRepository } from '../repositories';
 import { PayableFilterDto } from '../dto/payable.dto';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
 import { parseDateOnly } from '../../../shared/utils/date.utils';
+import { PrismaService } from '../../../infrastructure/database/prisma.service';
 
 const MAX_PAGE_SIZE = 100;
 const DEFAULT_PAGE_SIZE = 10;
@@ -14,7 +15,10 @@ const DEFAULT_PAGE_SIZE = 10;
  */
 @Injectable()
 export class ListPayablesUseCase {
-  constructor(private readonly payablesRepository: PayablesRepository) {}
+  constructor(
+    private readonly payablesRepository: PayablesRepository,
+    private readonly prisma: PrismaService
+  ) {}
 
   async execute(organizationId: string, filters?: PayableFilterDto) {
     const where: Prisma.PayableWhereInput = {
@@ -32,15 +36,19 @@ export class ListPayablesUseCase {
             },
           }
         : {}),
-      ...(filters?.dueDateFrom || filters?.dueDateTo
+      ...(filters?.installmentDueDateFrom || filters?.installmentDueDateTo
         ? {
-            dueDate: {
-              ...(filters?.dueDateFrom && {
-                gte: parseDateOnly(filters.dueDateFrom),
-              }),
-              ...(filters?.dueDateTo && {
-                lte: parseDateOnly(filters.dueDateTo),
-              }),
+            installments: {
+              some: {
+                dueDate: {
+                  ...(filters?.installmentDueDateFrom && {
+                    gte: parseDateOnly(filters.installmentDueDateFrom),
+                  }),
+                  ...(filters?.installmentDueDateTo && {
+                    lte: parseDateOnly(filters.installmentDueDateTo),
+                  }),
+                },
+              },
             },
           }
         : {}),
@@ -80,12 +88,36 @@ export class ListPayablesUseCase {
             orderBy: { installmentNumber: 'asc' },
           },
         },
-        orderBy: [{ dueDate: 'asc' }, { createdAt: 'desc' }],
+        orderBy: [{ createdAt: 'desc' }],
         skip,
         take,
       }),
       this.payablesRepository.count(where),
     ]);
+
+    // Buscar próxima data não paga para cada payable usando raw query otimizada
+    const payableIds = data.map(p => p.id);
+    const nextDueDatesRaw =
+      payableIds.length > 0
+        ? await this.prisma.$queryRaw<
+            Array<{ payable_id: string; next_due_date: Date }>
+          >`
+          SELECT payable_id, MIN(due_date)::date as next_due_date
+          FROM payable_installments
+          WHERE payable_id IN (${Prisma.join(payableIds)})
+            AND status IN ('PENDING', 'PARTIAL', 'OVERDUE')
+          GROUP BY payable_id
+        `
+        : [];
+
+    // Criar map de IDs para datas
+    const dueDateMap = new Map<string, string>();
+    for (const row of nextDueDatesRaw) {
+      dueDateMap.set(
+        row.payable_id,
+        row.next_due_date.toISOString().split('T')[0]
+      );
+    }
 
     const transformedData = MoneyUtils.transformMoneyFieldsArray(data, [
       'amount',
@@ -96,6 +128,7 @@ export class ListPayablesUseCase {
       ...item,
       invoiceNumber: item.documentNumber,
       documentNumber: undefined,
+      nextUnpaidDueDate: dueDateMap.get(item.id) || null,
     }));
 
     return { data: mappedData, total };
@@ -107,7 +140,10 @@ export class ListPayablesUseCase {
  */
 @Injectable()
 export class GetPayableUseCase {
-  constructor(private readonly payablesRepository: PayablesRepository) {}
+  constructor(
+    private readonly payablesRepository: PayablesRepository,
+    private readonly prisma: PrismaService
+  ) {}
 
   async execute(id: string, organizationId: string) {
     const payable = await this.payablesRepository.findFirst(
@@ -139,6 +175,20 @@ export class GetPayableUseCase {
       throw new NotFoundException('Conta a pagar não encontrada');
     }
 
+    // Buscar próxima data não paga
+    const nextDueDateRaw = await this.prisma.$queryRaw<
+      Array<{ next_due_date: Date }>
+    >`
+      SELECT MIN(due_date)::date as next_due_date
+      FROM payable_installments
+      WHERE payable_id = ${payable.id}
+        AND status IN ('PENDING', 'PARTIAL', 'OVERDUE')
+    `;
+
+    const nextUnpaidDueDate = nextDueDateRaw[0]?.next_due_date
+      ? nextDueDateRaw[0].next_due_date.toISOString().split('T')[0]
+      : null;
+
     const transformed = MoneyUtils.transformMoneyFields(payable, [
       'amount',
       'paidAmount',
@@ -148,6 +198,7 @@ export class GetPayableUseCase {
       ...transformed,
       invoiceNumber: transformed.documentNumber,
       documentNumber: undefined,
+      nextUnpaidDueDate,
     };
   }
 }

@@ -45,7 +45,7 @@ export interface PayableInstallment {
 export interface Payable {
   id: string;
   amount: number;
-  dueDate: string;
+  nextUnpaidDueDate: string | null;
   status: PayableStatus;
   paidAmount: number;
   invoiceNumber?: string;
@@ -67,33 +67,18 @@ export interface PayablesResponse {
 // Validation Schema
 // ============================================================
 
-export const payableSchema = z
-  .object({
-    amount: z.coerce.number().positive('Valor deve ser positivo'),
-    dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
-    vendorId: z.string().min(1, 'Credor é obrigatório'),
-    categoryId: z.string().optional(),
-    tagIds: z.array(z.string()).optional(),
-    notes: z.string().optional(),
-    invoiceNumber: z.string().optional(),
-    // Campos de parcelas
-    installmentCount: z.coerce.number().int().min(1).max(120).optional(),
-    firstDueDate: z.string().optional(),
-    dueDates: z.array(z.string()).optional(),
-  })
-  .refine(
-    data => {
-      // Se installmentCount > 1, firstDueDate é obrigatório
-      if (data.installmentCount && data.installmentCount > 1) {
-        return !!data.firstDueDate;
-      }
-      return true;
-    },
-    {
-      message: 'Data do primeiro vencimento é obrigatória para parcelamento',
-      path: ['firstDueDate'],
-    }
-  );
+export const payableSchema = z.object({
+  amount: z.coerce.number().positive('Valor deve ser positivo'),
+  firstDueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
+  vendorId: z.string().min(1, 'Credor é obrigatório'),
+  categoryId: z.string().optional(),
+  tagIds: z.array(z.string()).optional(),
+  notes: z.string().optional(),
+  invoiceNumber: z.string().optional(),
+  // Campos de parcelas
+  installmentCount: z.coerce.number().int().min(1).max(120).optional(),
+  dueDates: z.array(z.string()).optional(),
+});
 
 export type PayableFormData = z.infer<typeof payableSchema>;
 
@@ -118,12 +103,11 @@ import { getTodayLocalInput } from '../../shared/utils/dateUtils';
 
 export const getDefaultFormValues = (): PayableFormData => ({
   amount: 0,
-  dueDate: getTodayLocalInput(),
+  firstDueDate: getTodayLocalInput(),
   vendorId: '',
   categoryId: '',
   tagIds: [],
   notes: '',
   invoiceNumber: '',
   installmentCount: 1,
-  firstDueDate: getTodayLocalInput(),
 });

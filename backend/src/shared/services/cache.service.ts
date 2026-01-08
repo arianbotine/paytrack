@@ -138,6 +138,14 @@ export class CacheService {
   }
 
   /**
+   * Invalida chaves de cache por padrão (alias para delByPattern)
+   * @param pattern Padrão de chave (ex: 'payables:list:*')
+   */
+  async invalidate(pattern: string): Promise<number> {
+    return this.delByPattern(pattern);
+  }
+
+  /**
    * Wrapper para operações com cache: busca ou executa função
    */
   async getOrSet<T>(

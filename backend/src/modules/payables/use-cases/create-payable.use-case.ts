@@ -6,7 +6,6 @@ import {
 import { InstallmentsCalculator } from '../domain';
 import { CreatePayableDto } from '../dto/payable.dto';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
-import { parseDateOnly } from '../../../shared/utils/date.utils';
 import { CacheService } from '../../../shared/services/cache.service';
 
 /**
@@ -25,15 +24,8 @@ export class CreatePayableUseCase {
   async execute(organizationId: string, dto: CreatePayableDto) {
     const { installmentCount = 1, dueDates, tagIds, ...baseData } = dto;
 
-    // Validação: dueDates obrigatório quando installmentCount > 1
-    if (installmentCount > 1 && (!dueDates || dueDates.length === 0)) {
-      throw new BadRequestException(
-        'dueDates é obrigatório quando installmentCount > 1'
-      );
-    }
-
     // Validação: dueDates deve ter o mesmo tamanho que installmentCount
-    if (dueDates && dueDates.length !== installmentCount) {
+    if (dueDates.length !== installmentCount) {
       throw new BadRequestException(
         `dueDates deve conter exatamente ${installmentCount} datas`
       );
@@ -49,7 +41,6 @@ export class CreatePayableUseCase {
           categoryId: baseData.categoryId,
           amount: MoneyUtils.toDecimal(baseData.amount),
           documentNumber: baseData.invoiceNumber,
-          dueDate: parseDateOnly(baseData.dueDate),
           notes: baseData.notes,
         },
       });
@@ -58,7 +49,7 @@ export class CreatePayableUseCase {
       const installments = this.calculator.generateInstallments(
         baseData.amount,
         installmentCount,
-        dueDates || [baseData.dueDate],
+        dueDates,
         payable.id,
         organizationId,
         'payable'

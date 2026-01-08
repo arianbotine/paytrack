@@ -266,7 +266,10 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                           color="text.secondary"
                           sx={{ mt: 1 }}
                         >
-                          Vencimento: {formatLocalDate(account.dueDate)}
+                          Vencimento:{' '}
+                          {account.nextUnpaidDueDate
+                            ? formatLocalDate(account.nextUnpaidDueDate)
+                            : '-'}
                         </Typography>
                         <Box
                           sx={{
@@ -756,7 +759,9 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                             </Typography>
                           </TableCell>
                           <TableCell>
-                            {formatLocalDate(account.dueDate)}
+                            {account.nextUnpaidDueDate
+                              ? formatLocalDate(account.nextUnpaidDueDate)
+                              : '-'}
                           </TableCell>
                           <TableCell>
                             <StatusChip status={account.status} />

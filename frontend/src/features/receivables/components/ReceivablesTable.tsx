@@ -259,7 +259,10 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                   color="text.secondary"
                                   sx={{ mt: 1 }}
                                 >
-                                  Vencimento: {formatLocalDate(account.dueDate)}
+                                  Vencimento:{' '}
+                                  {account.nextUnpaidDueDate
+                                    ? formatLocalDate(account.nextUnpaidDueDate)
+                                    : '-'}
                                 </Typography>
                                 <Box
                                   sx={{
@@ -777,7 +780,9 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                             </Typography>
                           </TableCell>
                           <TableCell>
-                            {formatLocalDate(account.dueDate)}
+                            {account.nextUnpaidDueDate
+                              ? formatLocalDate(account.nextUnpaidDueDate)
+                              : '-'}
                           </TableCell>
                           <TableCell>
                             <StatusChip status={account.status} />

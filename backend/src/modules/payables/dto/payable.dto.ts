@@ -9,7 +9,7 @@ import {
   Min,
   Max,
   IsInt,
-  ValidateIf,
+  Validate,
   ArrayMinSize,
   ArrayMaxSize,
 } from 'class-validator';
@@ -21,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { AccountStatus } from '@prisma/client';
 import { Type, Transform } from 'class-transformer';
+import { IsDateArrayAscendingConstraint } from '../../../shared/validators';
 
 export class CreatePayableDto {
   @ApiProperty({ example: 'uuid-do-credor' })
@@ -41,10 +42,6 @@ export class CreatePayableDto {
     typeof value === 'number' ? Math.round(value * 100) / 100 : value
   )
   amount!: number;
-
-  @ApiProperty({ example: '2025-12-15' })
-  @IsDateString()
-  dueDate!: string;
 
   @ApiPropertyOptional({ example: 'Observações' })
   @IsString()
@@ -81,18 +78,18 @@ export class CreatePayableDto {
   @Type(() => Number)
   installmentCount?: number = 1;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     type: [String],
     example: ['2026-01-15', '2026-02-15', '2026-03-15'],
     description:
-      'Array de datas de vencimento (YYYY-MM-DD) - obrigatório quando installmentCount > 1',
+      'Array de datas de vencimento (YYYY-MM-DD). Para conta única, enviar array com 1 data.',
   })
   @IsArray()
   @IsDateString({}, { each: true })
   @ArrayMinSize(1)
   @ArrayMaxSize(120)
-  @ValidateIf(o => o.installmentCount && o.installmentCount > 1)
-  dueDates?: string[];
+  @Validate(IsDateArrayAscendingConstraint)
+  dueDates!: string[];
 }
 
 export class UpdatePayableDto extends PartialType(
@@ -144,12 +141,12 @@ export class PayableFilterDto {
   @ApiPropertyOptional({ example: '2025-12-01' })
   @IsDateString()
   @IsOptional()
-  dueDateFrom?: string;
+  installmentDueDateFrom?: string;
 
   @ApiPropertyOptional({ example: '2025-12-31' })
   @IsDateString()
   @IsOptional()
-  dueDateTo?: string;
+  installmentDueDateTo?: string;
 
   @ApiPropertyOptional({ example: 0, minimum: 0 })
   @IsNumber()

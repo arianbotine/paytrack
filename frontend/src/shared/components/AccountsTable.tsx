@@ -51,8 +51,8 @@ interface AccountsTableProps<T extends AccountItem> {
   readonly onViewPayments?: (account: T) => void;
 }
 
-const getDueDateAlert = (dueDate: string, status: string) => {
-  if (status === 'PAID' || status === 'CANCELLED') return null;
+const getDueDateAlert = (dueDate: string | null, status: string) => {
+  if (!dueDate || status === 'PAID' || status === 'CANCELLED') return null;
 
   // Normalizar para início do dia para comparar apenas a data, sem horário
   const today = startOfDay(new Date());
@@ -230,8 +230,13 @@ export function AccountsTable<T extends AccountItem>({
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {formatLocalDate(account.dueDate)}
-                      {getDueDateAlert(account.dueDate, account.status)}
+                      {account.nextUnpaidDueDate
+                        ? formatLocalDate(account.nextUnpaidDueDate)
+                        : '-'}
+                      {getDueDateAlert(
+                        account.nextUnpaidDueDate,
+                        account.status
+                      )}
                     </Box>
                   </TableCell>
                   <TableCell>

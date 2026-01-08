@@ -86,45 +86,4 @@ export class ReceivableInstallmentsManager {
 
     return { totalAmount, totalReceived };
   }
-
-  /**
-   * Atualiza datas de vencimento de parcelas pendentes/vencidas
-   */
-  async updateDueDates(
-    receivableId: string,
-    newDueDate: Date,
-    installments: Array<
-      Pick<ReceivableInstallment, 'id' | 'status'> & { dueDate: Date }
-    >,
-    tx: Prisma.TransactionClient
-  ): Promise<void> {
-    const installmentCount = installments.length;
-
-    // Gerar novas datas de vencimento mensais
-    const newDueDates: Date[] = [];
-    for (let i = 0; i < installmentCount; i++) {
-      const installmentDate = new Date(newDueDate);
-      installmentDate.setUTCMonth(installmentDate.getUTCMonth() + i);
-      newDueDates.push(installmentDate);
-    }
-
-    // Atualizar apenas parcelas pendentes ou vencidas
-    const installmentsToUpdate = installments.filter(
-      installment =>
-        installment.status === AccountStatus.PENDING ||
-        installment.status === AccountStatus.OVERDUE
-    );
-
-    await Promise.all(
-      installmentsToUpdate.map(installment => {
-        const originalIndex = installments.findIndex(
-          inst => inst.id === installment.id
-        );
-        return tx.receivableInstallment.update({
-          where: { id: installment.id },
-          data: { dueDate: newDueDates[originalIndex] },
-        });
-      })
-    );
-  }
 }

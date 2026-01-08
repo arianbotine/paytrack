@@ -50,6 +50,7 @@ import type {
 } from '../types';
 import { receivableSchema, getDefaultFormValues } from '../types';
 import { formatCurrency } from '../../../shared/utils/currencyUtils';
+import { getTodayLocalInput } from '../../../shared/utils/dateUtils';
 import {
   generateInstallmentDueDates,
   calculateInstallmentAmounts,
@@ -142,10 +143,8 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
 
     if (userInputMode === 'total') {
       setValue('amount', userInputValue);
-    } else {
-      if (isInstallment && installmentCount > 1) {
-        setValue('amount', userInputValue * installmentCount);
-      }
+    } else if (isInstallment && installmentCount > 1) {
+      setValue('amount', userInputValue * installmentCount);
     }
   }, [
     userInputMode,
@@ -201,7 +200,8 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
       if (receivable) {
         reset({
           amount: receivable.amount,
-          dueDate: receivable.dueDate.split('T')[0], // Extrai apenas YYYY-MM-DD
+          firstDueDate:
+            receivable.nextUnpaidDueDate?.split('T')[0] || getTodayLocalInput(),
           customerId: receivable.customer.id,
           categoryId: receivable.category?.id || '',
           tagIds: receivable.tags.map(t => t.tag.id),
@@ -226,19 +226,23 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
   };
 
   const handleFormSubmit = (data: ReceivableFormData) => {
-    if (isInstallment && !isEditing) {
-      // Para parcelamentos, enviar as datas calculadas
-      const dueDates = installmentPreview.map(p => p.dueDate);
+    if (isEditing) {
+      // Ao editar, remover campos de parcelamento que não são permitidos no DTO
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { installmentCount, firstDueDate, dueDates, ...editData } = data;
+      // Type assertion necessária pois o backend aceita campos parciais na edição
+      onSubmit(editData as unknown as ReceivableFormData);
+    } else {
+      // Ao criar, enviar dueDates como array
+      const dueDates = isInstallment
+        ? installmentPreview.map(p => p.dueDate)
+        : [data.firstDueDate];
+
       onSubmit({
         ...data,
-        installmentCount: data.installmentCount,
+        installmentCount: data.installmentCount || 1,
         dueDates,
       });
-    } else {
-      // Para contas simples ou edição, remover firstDueDate e enviar normalmente
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { firstDueDate: _firstDueDate, ...submitData } = data;
-      onSubmit(submitData);
     }
   };
 
@@ -404,18 +408,22 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
 
                 <Grid item xs={12} md={6}>
                   <Controller
-                    name="dueDate"
+                    name="firstDueDate"
                     control={control}
                     render={({ field }) => (
                       <TextField
                         {...field}
-                        label="Data de Vencimento"
+                        label={
+                          isInstallment
+                            ? 'Vencimento da 1ª Parcela'
+                            : 'Data de Vencimento'
+                        }
                         type="date"
                         fullWidth
                         InputLabelProps={{ shrink: true }}
-                        error={!!errors.dueDate}
-                        helperText={errors.dueDate?.message}
-                        disabled={isInstallment}
+                        error={!!errors.firstDueDate}
+                        helperText={errors.firstDueDate?.message}
+                        disabled={isEditing}
                       />
                     )}
                   />
@@ -460,25 +468,6 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                             }}
                             error={!!errors.installmentCount}
                             helperText={errors.installmentCount?.message}
-                            disabled={isEditing}
-                          />
-                        )}
-                      />
-                    </Grid>
-
-                    <Grid item xs={12} sm={6}>
-                      <Controller
-                        name="firstDueDate"
-                        control={control}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="Vencimento da 1ª Parcela"
-                            type="date"
-                            fullWidth
-                            InputLabelProps={{ shrink: true }}
-                            error={!!errors.firstDueDate}
-                            helperText={errors.firstDueDate?.message}
                             disabled={isEditing}
                           />
                         )}
