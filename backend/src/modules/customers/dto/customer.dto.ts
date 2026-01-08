@@ -12,7 +12,7 @@ export class CreateCustomerDto {
   @ApiProperty({ example: 'João Silva' })
   @IsString()
   @IsNotEmpty({ message: 'Nome é obrigatório' })
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({ example: '12345678900' })
   @IsString()

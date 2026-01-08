@@ -1,10 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
-import NodeCache from 'node-cache';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import NodeCache = require('node-cache');
 
 @Injectable()
-export class CacheService {
+export class CacheService implements OnModuleDestroy {
   private readonly cache: NodeCache;
   private readonly logger = new Logger(CacheService.name);
+  private readonly statsInterval: NodeJS.Timeout;
 
   constructor() {
     this.cache = new NodeCache({
@@ -14,7 +15,7 @@ export class CacheService {
     });
 
     // Log de estatísticas a cada 5 minutos
-    setInterval(
+    this.statsInterval = setInterval(
       () => {
         const stats = this.cache.getStats();
         this.logger.log(
@@ -23,6 +24,12 @@ export class CacheService {
       },
       5 * 60 * 1000
     );
+  }
+
+  onModuleDestroy() {
+    if (this.statsInterval) {
+      clearInterval(this.statsInterval);
+    }
   }
 
   /**

@@ -15,7 +15,13 @@ type UserWithOrganizations = Prisma.UserGetPayload<{
   include: {
     organizations: {
       include: {
-        organization: true;
+        organization: {
+          select: {
+            id: true;
+            name: true;
+            isActive: true;
+          };
+        };
       };
     };
   };

@@ -12,7 +12,7 @@ export class CreateOrganizationDto {
   @ApiProperty({ example: 'Empresa ABC' })
   @IsString()
   @IsNotEmpty({ message: 'Nome é obrigatório' })
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({ example: '12345678000199' })
   @IsString()

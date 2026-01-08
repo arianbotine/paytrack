@@ -1,4 +1,4 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -8,6 +8,7 @@ export class CreateTagDto {
     typeof value === 'string' ? value.toUpperCase() : value
   )
   @IsString()
+  @IsNotEmpty()
   name!: string;
 
   @ApiPropertyOptional({ example: '#EF4444' })

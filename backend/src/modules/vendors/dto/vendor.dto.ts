@@ -12,7 +12,7 @@ export class CreateVendorDto {
   @ApiProperty({ example: 'Fornecedor ABC' })
   @IsString()
   @IsNotEmpty({ message: 'Nome é obrigatório' })
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({ example: '12345678000199' })
   @IsString()

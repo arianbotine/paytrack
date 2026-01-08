@@ -95,28 +95,33 @@ export class QueryReceivablesUseCase {
       this.repository.count(where),
     ]);
 
-    // Buscar próxima data não paga para cada receivable usando raw query otimizada
+    // Buscar próxima data não paga para cada receivable usando Prisma
+    // (evita $queryRaw para compatibilidade com schema isolado em testes)
     const receivableIds = data.map(r => r.id);
-    const nextDueDatesRaw =
+    const nextInstallments =
       receivableIds.length > 0
-        ? await this.prisma.$queryRaw<
-            Array<{ receivable_id: string; next_due_date: Date }>
-          >`
-          SELECT receivable_id, MIN(due_date)::date as next_due_date
-          FROM receivable_installments
-          WHERE receivable_id IN (${Prisma.join(receivableIds)})
-            AND status IN ('PENDING', 'PARTIAL', 'OVERDUE')
-          GROUP BY receivable_id
-        `
+        ? await this.prisma.receivableInstallment.findMany({
+            where: {
+              receivableId: { in: receivableIds },
+              status: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] },
+            },
+            select: {
+              receivableId: true,
+              dueDate: true,
+            },
+            orderBy: { dueDate: 'asc' },
+          })
         : [];
 
-    // Criar map de IDs para datas
+    // Criar map de IDs para próxima data (primeira por receivableId)
     const dueDateMap = new Map<string, string>();
-    for (const row of nextDueDatesRaw) {
-      dueDateMap.set(
-        row.receivable_id,
-        row.next_due_date.toISOString().split('T')[0]
-      );
+    for (const inst of nextInstallments) {
+      if (!dueDateMap.has(inst.receivableId)) {
+        dueDateMap.set(
+          inst.receivableId,
+          inst.dueDate.toISOString().split('T')[0]
+        );
+      }
     }
 
     const transformedData = MoneyUtils.transformMoneyFieldsArray(data, [
@@ -163,18 +168,19 @@ export class QueryReceivablesUseCase {
       throw new NotFoundException('Conta a receber não encontrada');
     }
 
-    // Buscar próxima data não paga
-    const nextDueDateRaw = await this.prisma.$queryRaw<
-      Array<{ next_due_date: Date }>
-    >`
-      SELECT MIN(due_date)::date as next_due_date
-      FROM receivable_installments
-      WHERE receivable_id = ${receivable.id}
-        AND status IN ('PENDING', 'PARTIAL', 'OVERDUE')
-    `;
+    // Buscar próxima data não paga usando findFirst ao invés de $queryRaw
+    // (para compatibilidade com schema isolado em testes E2E)
+    const nextInstallment = await this.prisma.receivableInstallment.findFirst({
+      where: {
+        receivableId: receivable.id,
+        status: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] },
+      },
+      orderBy: { dueDate: 'asc' },
+      select: { dueDate: true },
+    });
 
-    const nextUnpaidDueDate = nextDueDateRaw[0]?.next_due_date
-      ? nextDueDateRaw[0].next_due_date.toISOString().split('T')[0]
+    const nextUnpaidDueDate = nextInstallment?.dueDate
+      ? nextInstallment.dueDate.toISOString().split('T')[0]
       : null;
 
     return {

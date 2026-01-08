@@ -3,7 +3,7 @@
 
 SHELL := /bin/bash
 
-.PHONY: help setup setup-force db-up db-sync db-seed up down restart clean reset studio logs
+.PHONY: help setup setup-force db-up db-sync db-seed up down restart clean reset studio logs tests
 
 # Variáveis
 DOCKER_COMPOSE := docker compose
@@ -31,15 +31,15 @@ help:
 	@echo "  clean       - Limpar logs, node_modules e builds"
 	@echo "  reset       - Resetar banco de dados completamente"
 	@echo "  studio      - Abrir Prisma Studio"
-	@echo "  logs        - Acompanhar logs de todos os serviços"
-	@echo "  logs-backend - Acompanhar logs do backend"
-	@echo "  logs-frontend - Acompanhar logs do frontend"
-	@echo "  logs-db     - Acompanhar logs do banco"
+	@echo "  logs        - Mostrar últimas 300 linhas dos logs de todos os serviços"
+	@echo "  logs-backend - Mostrar últimas 300 linhas dos logs do backend"
+	@echo "  logs-frontend - Mostrar últimas 300 linhas dos logs do frontend"
+	@echo "  logs-db     - Mostrar últimas 300 linhas dos logs do banco"
 	@echo "  status      - Mostrar status dos serviços"
-	@echo "  db-shell    - Acessar shell do PostgreSQL"
 	@echo "  migrate     - Reset banco + sincronizar schema + executar migrações completas"
 	@echo "  migrate-deploy - Aplicar migrações pendentes (produção)"
 	@echo "  generate    - Regenerar Prisma Client"
+	@echo "  tests       - Executar testes e2e do backend"
 
 # Instalar dependências
 setup:
@@ -154,20 +154,20 @@ studio:
 
 # Acompanhar logs
 logs:
-	@echo "Acompanhando logs (Ctrl+C para sair)..."
-	@tail -f $(LOGS_DIR)/backend.log $(LOGS_DIR)/frontend.log &
-	@$(DOCKER_COMPOSE) logs -f $(DB_CONTAINER) &
-	@wait
+	@echo "Mostrando últimas 300 linhas dos logs..."
+	@tail -n 300 $(LOGS_DIR)/backend.log
+	@tail -n 300 $(LOGS_DIR)/frontend.log
+	@$(DOCKER_COMPOSE) logs --tail=300 $(DB_CONTAINER)
 
 # Logs individuais
 logs-backend:
-	@tail -f $(LOGS_DIR)/backend.log
+	@tail -n 300 $(LOGS_DIR)/backend.log
 
 logs-frontend:
-	@tail -f $(LOGS_DIR)/frontend.log
+	@tail -n 300 $(LOGS_DIR)/frontend.log
 
 logs-db:
-	@$(DOCKER_COMPOSE) logs -f $(DB_CONTAINER)
+	@$(DOCKER_COMPOSE) logs --tail=300 $(DB_CONTAINER)
 
 # Status dos serviços
 status:
@@ -191,9 +191,6 @@ status:
 	fi
 
 # Banco de dados
-db-shell:
-	@$(DOCKER_COMPOSE) exec $(DB_CONTAINER) psql -U $(DB_USER) -d $(DB_NAME)
-
 migrate: reset db-up migrate-deploy generate
 
 migrate-deploy:
@@ -203,3 +200,8 @@ migrate-deploy:
 generate:
 	@if [ ! -f .env ]; then cp .env.example .env; fi
 	@set -a && . .env && set +a && cd $(BACKEND_DIR) && npx prisma generate
+
+# Executar testes e2e do backend
+tests:
+	@echo "Executando testes e2e do backend..."
+	@cd $(BACKEND_DIR) && npm run test:e2e

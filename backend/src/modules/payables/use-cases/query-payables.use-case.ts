@@ -95,28 +95,33 @@ export class ListPayablesUseCase {
       this.payablesRepository.count(where),
     ]);
 
-    // Buscar próxima data não paga para cada payable usando raw query otimizada
+    // Buscar próxima data não paga para cada payable usando Prisma
+    // (evita $queryRaw para compatibilidade com schema isolado em testes)
     const payableIds = data.map(p => p.id);
-    const nextDueDatesRaw =
+    const nextInstallments =
       payableIds.length > 0
-        ? await this.prisma.$queryRaw<
-            Array<{ payable_id: string; next_due_date: Date }>
-          >`
-          SELECT payable_id, MIN(due_date)::date as next_due_date
-          FROM payable_installments
-          WHERE payable_id IN (${Prisma.join(payableIds)})
-            AND status IN ('PENDING', 'PARTIAL', 'OVERDUE')
-          GROUP BY payable_id
-        `
+        ? await this.prisma.payableInstallment.findMany({
+            where: {
+              payableId: { in: payableIds },
+              status: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] },
+            },
+            select: {
+              payableId: true,
+              dueDate: true,
+            },
+            orderBy: { dueDate: 'asc' },
+          })
         : [];
 
-    // Criar map de IDs para datas
+    // Criar map de IDs para próxima data (primeira por payableId)
     const dueDateMap = new Map<string, string>();
-    for (const row of nextDueDatesRaw) {
-      dueDateMap.set(
-        row.payable_id,
-        row.next_due_date.toISOString().split('T')[0]
-      );
+    for (const inst of nextInstallments) {
+      if (!dueDateMap.has(inst.payableId)) {
+        dueDateMap.set(
+          inst.payableId,
+          inst.dueDate.toISOString().split('T')[0]
+        );
+      }
     }
 
     const transformedData = MoneyUtils.transformMoneyFieldsArray(data, [
@@ -175,18 +180,19 @@ export class GetPayableUseCase {
       throw new NotFoundException('Conta a pagar não encontrada');
     }
 
-    // Buscar próxima data não paga
-    const nextDueDateRaw = await this.prisma.$queryRaw<
-      Array<{ next_due_date: Date }>
-    >`
-      SELECT MIN(due_date)::date as next_due_date
-      FROM payable_installments
-      WHERE payable_id = ${payable.id}
-        AND status IN ('PENDING', 'PARTIAL', 'OVERDUE')
-    `;
+    // Buscar próxima data não paga usando findFirst ao invés de $queryRaw
+    // (para compatibilidade com schema isolado em testes E2E)
+    const nextInstallment = await this.prisma.payableInstallment.findFirst({
+      where: {
+        payableId: payable.id,
+        status: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] },
+      },
+      orderBy: { dueDate: 'asc' },
+      select: { dueDate: true },
+    });
 
-    const nextUnpaidDueDate = nextDueDateRaw[0]?.next_due_date
-      ? nextDueDateRaw[0].next_due_date.toISOString().split('T')[0]
+    const nextUnpaidDueDate = nextInstallment?.dueDate
+      ? nextInstallment.dueDate.toISOString().split('T')[0]
       : null;
 
     const transformed = MoneyUtils.transformMoneyFields(payable, [

@@ -128,8 +128,8 @@ export class CreatePaymentUseCase {
     } catch (error) {
       // Log do erro para debug
       this.logger.error(
-        `Erro ao criar pagamento: ${error.message}`,
-        error.stack
+        `Erro ao criar pagamento: ${(error as Error).message}`,
+        (error as Error).stack
       );
 
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -162,14 +162,14 @@ export class CreatePaymentUseCase {
       this.logger.error(
         `Erro inesperado ao processar pagamento para organização ${organizationId}`,
         {
-          error: error.message,
-          stack: error.stack,
+          error: (error as Error).message,
+          stack: (error as Error).stack,
           dto,
         }
       );
 
       throw new BadRequestException(
-        `Erro ao processar pagamento: ${error.message || 'erro desconhecido'}`
+        `Erro ao processar pagamento: ${(error as Error).message || 'erro desconhecido'}`
       );
     }
   }

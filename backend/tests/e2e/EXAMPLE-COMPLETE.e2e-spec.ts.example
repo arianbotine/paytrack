@@ -1,0 +1,292 @@
+/**
+ * EXEMPLO COMPLETO DE TESTE E2E
+ *
+ * Este arquivo demonstra todas as boas práticas e padrões
+ * para criação de testes E2E no PayTrack Backend.
+ *
+ * Use este arquivo como referência ao criar novos testes.
+ */
+
+import { INestApplication } from '@nestjs/common';
+import request = require('supertest');
+import { PrismaService } from '../../src/infrastructure/database/prisma.service';
+import {
+  setupE2ETest,
+  teardownE2ETest,
+  createAuthenticatedUser,
+  createMultipleUsers,
+} from '../helpers';
+import { CategoryFactory, VendorFactory } from '../factories';
+
+describe('Example - Complete E2E Test (e2e)', () => {
+  let app: INestApplication;
+  let prisma: PrismaService;
+  let testSchema: string;
+  let accessToken: string;
+  let organizationId: string;
+
+  // ============================================
+  // SETUP E TEARDOWN
+  // ============================================
+  beforeAll(async () => {
+    // 1. Setup do ambiente de teste (schema isolado + app)
+    const context = await setupE2ETest();
+    app = context.app;
+    prisma = context.prisma;
+    testSchema = context.testSchema;
+
+    // 2. Criar usuário autenticado com token
+    const auth = await createAuthenticatedUser(app, prisma, {
+      role: 'OWNER',
+      organizationName: 'Example Organization',
+    });
+    accessToken = auth.accessToken;
+    organizationId = auth.organizationId;
+
+    // 3. Criar dados de teste usando factories
+    const categoryFactory = new CategoryFactory(prisma);
+    await categoryFactory.createBothTypes(organizationId);
+  });
+
+  afterAll(async () => {
+    // Cleanup: remover schema e fechar conexões
+    await teardownE2ETest({ app, prisma, testSchema });
+  });
+
+  // ============================================
+  // TESTES DE LISTAGEM (GET)
+  // ============================================
+  describe('GET /categories', () => {
+    it('deve retornar array de categorias', () => {
+      return request(app.getHttpServer())
+        .get('/categories')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200)
+        .expect((res: any) => {
+          expect(Array.isArray(res.body)).toBe(true);
+          expect(res.body.length).toBeGreaterThan(0);
+        });
+    });
+
+    it('deve retornar 401 sem autenticação', () => {
+      return request(app.getHttpServer()).get('/categories').expect(401);
+    });
+
+    it('deve retornar apenas categorias da organização do usuário', async () => {
+      // Criar segundo usuário em outra organização
+      const user2 = await createAuthenticatedUser(app, prisma);
+
+      const factory = new CategoryFactory(prisma);
+      await factory.create({
+        organizationId: user2.organizationId,
+        name: 'Categoria Org 2',
+      });
+
+      // User 1 não deve ver categoria da Org 2
+      const response = await request(app.getHttpServer())
+        .get('/categories')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      const hasOtherOrgCategory = response.body.some(
+        (cat: any) => cat.name === 'Categoria Org 2'
+      );
+      expect(hasOtherOrgCategory).toBe(false);
+    });
+  });
+
+  // ============================================
+  // TESTES DE CRIAÇÃO (POST)
+  // ============================================
+  describe('POST /categories', () => {
+    it('deve criar categoria e persistir no banco', async () => {
+      const categoryData = {
+        name: 'Nova Categoria',
+        type: 'PAYABLE',
+      };
+
+      // 1. Fazer requisição
+      const response = await request(app.getHttpServer())
+        .post('/categories')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(categoryData)
+        .expect(201);
+
+      // 2. Validar resposta
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.name).toBe(categoryData.name);
+      expect(response.body.type).toBe(categoryData.type);
+
+      // 3. Validar persistência no banco
+      const categoryInDb = await prisma.category.findUnique({
+        where: { id: response.body.id },
+      });
+
+      expect(categoryInDb).toBeTruthy();
+      expect(categoryInDb?.name).toBe(categoryData.name);
+      expect(categoryInDb?.organizationId).toBe(organizationId);
+    });
+
+    it('deve retornar 400 para dados inválidos', () => {
+      return request(app.getHttpServer())
+        .post('/categories')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ name: '' }) // Nome vazio
+        .expect(400);
+    });
+
+    it('deve associar categoria à organização do usuário logado', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/categories')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          name: 'Categoria Multi-Tenancy',
+          type: 'RECEIVABLE',
+        })
+        .expect(201);
+
+      const category = await prisma.category.findUnique({
+        where: { id: response.body.id },
+      });
+
+      expect(category?.organizationId).toBe(organizationId);
+    });
+  });
+
+  // ============================================
+  // TESTES DE ATUALIZAÇÃO (PUT/PATCH)
+  // ============================================
+  describe('PUT /categories/:id', () => {
+    it('deve atualizar categoria existente', async () => {
+      // 1. Criar categoria para atualizar
+      const factory = new CategoryFactory(prisma);
+      const category = await factory.create({
+        organizationId,
+        name: 'Categoria Original',
+      });
+
+      // 2. Atualizar categoria
+      const updateData = { name: 'Categoria Atualizada' };
+
+      const response = await request(app.getHttpServer())
+        .put(`/categories/${category.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send(updateData)
+        .expect(200);
+
+      // 3. Validar resposta
+      expect(response.body.name).toBe(updateData.name);
+
+      // 4. Validar no banco
+      const updated = await prisma.category.findUnique({
+        where: { id: category.id },
+      });
+
+      expect(updated?.name).toBe(updateData.name);
+    });
+
+    it('deve retornar 404 para categoria inexistente', () => {
+      return request(app.getHttpServer())
+        .put('/categories/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ name: 'Teste' })
+        .expect(404);
+    });
+  });
+
+  // ============================================
+  // TESTES DE DELEÇÃO (DELETE)
+  // ============================================
+  describe('DELETE /categories/:id', () => {
+    it('deve deletar categoria', async () => {
+      // 1. Criar categoria para deletar
+      const factory = new CategoryFactory(prisma);
+      const category = await factory.create({ organizationId });
+
+      // 2. Deletar categoria
+      await request(app.getHttpServer())
+        .delete(`/categories/${category.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      // 3. Validar que foi deletada
+      const deleted = await prisma.category.findUnique({
+        where: { id: category.id },
+      });
+
+      expect(deleted).toBeNull();
+    });
+
+    it('não deve permitir deletar categoria de outra organização', async () => {
+      // 1. Criar categoria em outra org
+      const user2 = await createAuthenticatedUser(app, prisma);
+      const factory = new CategoryFactory(prisma);
+      const category = await factory.create({
+        organizationId: user2.organizationId,
+      });
+
+      // 2. Tentar deletar com user da org 1
+      await request(app.getHttpServer())
+        .delete(`/categories/${category.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(404); // Não encontra porque está em outra org
+    });
+  });
+
+  // ============================================
+  // TESTES DE PERMISSÕES E ROLES
+  // ============================================
+  describe('Permissions', () => {
+    it('VIEWER não deve poder criar categoria', async () => {
+      const viewer = await createAuthenticatedUser(app, prisma, {
+        role: 'VIEWER',
+      });
+
+      return request(app.getHttpServer())
+        .post('/categories')
+        .set('Authorization', `Bearer ${viewer.accessToken}`)
+        .send({ name: 'Teste', type: 'PAYABLE' })
+        .expect(403);
+    });
+
+    it('OWNER deve poder criar categoria', async () => {
+      return request(app.getHttpServer())
+        .post('/categories')
+        .set('Authorization', `Bearer ${accessToken}`) // OWNER
+        .send({ name: 'Teste Owner', type: 'PAYABLE' })
+        .expect(201);
+    });
+  });
+
+  // ============================================
+  // TESTES DE FLUXOS COMPLEXOS
+  // ============================================
+  describe('Complex Flows', () => {
+    it('deve criar múltiplas categorias e listar todas', async () => {
+      // 1. Criar múltiplas categorias
+      const factory = new CategoryFactory(prisma);
+      await factory.createMany(5, { organizationId });
+
+      // 2. Listar todas
+      const response = await request(app.getHttpServer())
+        .get('/categories')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      // 3. Validar quantidade (2 do setup + 5 novas)
+      expect(response.body.length).toBeGreaterThanOrEqual(7);
+    });
+
+    it('deve filtrar categorias por tipo', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/categories?type=PAYABLE')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      const allPayable = response.body.every(
+        (cat: any) => cat.type === 'PAYABLE'
+      );
+      expect(allPayable).toBe(true);
+    });
+  });
+});

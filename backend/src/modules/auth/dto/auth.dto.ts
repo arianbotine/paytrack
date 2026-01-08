@@ -32,6 +32,9 @@ export class AuthResponseDto {
   accessToken!: string;
 
   @ApiProperty()
+  refreshToken!: string;
+
+  @ApiProperty()
   user!: {
     id: string;
     email: string;

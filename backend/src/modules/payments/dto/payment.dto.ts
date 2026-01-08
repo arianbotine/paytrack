@@ -7,6 +7,8 @@ import {
   ValidateNested,
   IsUUID,
   Min,
+  IsString,
+  IsIn,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentMethod } from '@prisma/client';
@@ -64,6 +66,8 @@ export class CreatePaymentDto {
 
 export class QuickPaymentDto {
   @ApiProperty({ example: 'payable', enum: ['payable', 'receivable'] })
+  @IsString()
+  @IsIn(['payable', 'receivable'])
   type!: 'payable' | 'receivable';
 
   @ApiProperty({
