@@ -42,16 +42,8 @@ interface Account {
   nextUnpaidDueDate: string | null;
   vendor?: { name: string };
   customer?: { name: string };
-  payable?: {
-    category?: Category;
-    tags?: { tag: Tag }[];
-    vendor?: { name: string };
-  };
-  receivable?: {
-    category?: Category;
-    tags?: { tag: Tag }[];
-    customer?: { name: string };
-  };
+  category?: Category;
+  tags: { tag: Tag }[];
 }
 
 interface AccountsTableProps {
@@ -69,7 +61,6 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
   emptyMessage,
   alertColor,
 }) => {
-  const entityName = type === 'payable' ? 'vendor' : 'customer';
   const entityLabel = type === 'payable' ? 'Credor' : 'Devedor';
 
   return (
@@ -152,20 +143,12 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                           }}
                         >
                           {/* Categoria */}
-                          {((account as any).payable?.category ||
-                            (account as any).receivable?.category) && (
+                          {account.category && (
                             <Chip
-                              label={
-                                (account as any).payable?.category?.name ||
-                                (account as any).receivable?.category?.name
-                              }
+                              label={account.category.name}
                               size="small"
                               sx={{
-                                bgcolor:
-                                  (account as any).payable?.category?.color ||
-                                  (account as any).receivable?.category
-                                    ?.color ||
-                                  '#6B7280',
+                                bgcolor: account.category.color || '#6B7280',
                                 color: '#fff',
                                 fontWeight: 600,
                                 fontSize: '0.7rem',
@@ -175,56 +158,32 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                           )}
 
                           {/* Tags */}
-                          {((account as any).payable?.tags || []).map(
-                            (tagItem: { tag: Tag }) => (
-                              <Chip
-                                key={tagItem.tag.id}
-                                label={tagItem.tag.name}
-                                size="small"
-                                variant="outlined"
-                                sx={{
-                                  borderColor: tagItem.tag.color || '#3B82F6',
-                                  color: tagItem.tag.color || '#3B82F6',
-                                  fontSize: '0.7rem',
-                                  height: 22,
-                                  fontWeight: 500,
-                                }}
-                              />
-                            )
-                          )}
-                          {((account as any).receivable?.tags || []).map(
-                            (tagItem: { tag: Tag }) => (
-                              <Chip
-                                key={tagItem.tag.id}
-                                label={tagItem.tag.name}
-                                size="small"
-                                variant="outlined"
-                                sx={{
-                                  borderColor: tagItem.tag.color || '#3B82F6',
-                                  color: tagItem.tag.color || '#3B82F6',
-                                  fontSize: '0.7rem',
-                                  height: 22,
-                                  fontWeight: 500,
-                                }}
-                              />
-                            )
-                          )}
+                          {account.tags.map((tagItem: { tag: Tag }) => (
+                            <Chip
+                              key={tagItem.tag.id}
+                              label={tagItem.tag.name}
+                              size="small"
+                              variant="outlined"
+                              sx={{
+                                borderColor: tagItem.tag.color || '#3B82F6',
+                                color: tagItem.tag.color || '#3B82F6',
+                                fontSize: '0.7rem',
+                                height: 22,
+                                fontWeight: 500,
+                              }}
+                            />
+                          ))}
 
                           {/* Fallback se não houver categoria nem tags */}
-                          {!(account as any).payable?.category &&
-                            !(account as any).receivable?.category &&
-                            ((account as any).payable?.tags || []).length ===
-                              0 &&
-                            ((account as any).receivable?.tags || []).length ===
-                              0 && (
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ fontStyle: 'italic', py: 0.5 }}
-                              >
-                                Sem categoria
-                              </Typography>
-                            )}
+                          {!account.category && account.tags.length === 0 && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ fontStyle: 'italic', py: 0.5 }}
+                            >
+                              Sem categoria
+                            </Typography>
+                          )}
                         </Box>
                       </TableCell>
                       <TableCell>
@@ -233,9 +192,7 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                           noWrap
                           sx={{ maxWidth: 120 }}
                         >
-                          {(account as any)[entityName]?.name ||
-                            (account as any).payable?.[entityName]?.name ||
-                            (account as any).receivable?.[entityName]?.name}
+                          {account.vendor?.name || account.customer?.name}
                         </Typography>
                       </TableCell>
                       <TableCell align="right">
@@ -245,7 +202,7 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                               Number(
                                 type === 'payable'
                                   ? account.paidAmount
-                                  : (account as any).receivedAmount || 0
+                                  : account.receivedAmount || 0
                               )
                           )}
                         </Typography>
