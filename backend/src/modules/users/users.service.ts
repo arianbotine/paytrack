@@ -140,6 +140,16 @@ export class UsersService {
   }
 
   async update(id: string, organizationId: string, updateDto: UpdateUserDto) {
+    // Validate password confirmation if password is being changed
+    if (updateDto.password) {
+      if (!updateDto.confirmPassword) {
+        throw new BadRequestException('Confirmação de senha é obrigatória');
+      }
+      if (updateDto.password !== updateDto.confirmPassword) {
+        throw new BadRequestException('As senhas não coincidem');
+      }
+    }
+
     // Verify user is in this organization
     const userOrg = await this.prisma.userOrganization.findFirst({
       where: { userId: id, organizationId },

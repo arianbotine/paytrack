@@ -34,6 +34,11 @@ export class CreateUserDto {
 }
 
 export class UpdateUserDto extends PartialType(CreateUserDto) {
+  @ApiPropertyOptional({ example: 'senhaConfirmacao123' })
+  @IsString()
+  @IsOptional()
+  confirmPassword?: string;
+
   @ApiPropertyOptional({ example: true })
   @IsBoolean()
   @IsOptional()

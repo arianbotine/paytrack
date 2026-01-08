@@ -152,8 +152,10 @@ export const UsersPage: React.FC = () => {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UserFormData }) => {
       const payload = { ...data };
-      if (!payload.password) {
+      // Remove password and confirmPassword if password is empty or not provided
+      if (!payload.password || payload.password.trim() === '') {
         delete (payload as Partial<UserFormData>).password;
+        delete (payload as Partial<UserFormData>).confirmPassword;
       }
       return api.patch(`/users/${id}`, payload);
     },
