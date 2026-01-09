@@ -22,12 +22,7 @@ export interface Tag {
   color?: string;
 }
 
-export type ReceivableStatus =
-  | 'PENDING'
-  | 'PAID'
-  | 'PARTIAL'
-  | 'OVERDUE'
-  | 'CANCELLED';
+export type ReceivableStatus = 'PENDING' | 'PAID' | 'PARTIAL' | 'CANCELLED';
 
 export interface ReceivableInstallment {
   id: string;
@@ -37,6 +32,7 @@ export interface ReceivableInstallment {
   receivedAmount: number;
   dueDate: string;
   status: ReceivableStatus;
+  isOverdue?: boolean;
   receivable?: {
     id: string;
     customer: { id: string; name: string };

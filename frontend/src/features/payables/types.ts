@@ -21,12 +21,7 @@ export interface Tag {
   color?: string;
 }
 
-export type PayableStatus =
-  | 'PENDING'
-  | 'PAID'
-  | 'PARTIAL'
-  | 'OVERDUE'
-  | 'CANCELLED';
+export type PayableStatus = 'PENDING' | 'PAID' | 'PARTIAL' | 'CANCELLED';
 
 export interface PayableInstallment {
   id: string;
@@ -36,6 +31,7 @@ export interface PayableInstallment {
   paidAmount: number;
   dueDate: string;
   status: PayableStatus;
+  isOverdue?: boolean;
   payable?: {
     id: string;
     vendor: { id: string; name: string };

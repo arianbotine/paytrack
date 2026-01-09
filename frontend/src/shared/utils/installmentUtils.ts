@@ -189,6 +189,8 @@ export const computeInstallmentProgress = formatInstallmentProgress;
  * - Se alguma parcela está PAID ou PARTIAL → PARTIAL
  * - Caso contrário → PENDING
  *
+ * Nota: OVERDUE não é mais um status, mas um indicador visual calculado via isOverdue
+ *
  * @param installments Array de parcelas com status
  * @returns Status agregado
  */
@@ -200,11 +202,6 @@ export function computeParentStatus(
   }
 
   const statuses = installments.map(i => i.status);
-
-  // OVERDUE tem prioridade máxima
-  if (statuses.includes('OVERDUE')) {
-    return 'OVERDUE';
-  }
 
   // Todas pagas
   if (statuses.every(s => s === 'PAID')) {

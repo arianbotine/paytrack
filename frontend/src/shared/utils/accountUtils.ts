@@ -8,7 +8,6 @@ export const ACCOUNT_STATUS_LABELS = {
   PENDING: 'Pendente',
   PARTIAL: 'Parcial',
   PAID: 'Pago',
-  OVERDUE: 'Vencido',
   CANCELLED: 'Cancelado',
 } as const;
 
@@ -16,7 +15,6 @@ export const ACCOUNT_STATUS_COLORS = {
   PENDING: 'warning',
   PARTIAL: 'info',
   PAID: 'success',
-  OVERDUE: 'error',
   CANCELLED: 'default',
 } as const;
 
@@ -40,6 +38,7 @@ export const isDueSoon = (dueDate: string, status: string): boolean => {
 
 /**
  * Check if account is overdue
+ * Agora apenas compara datas - o backend já envia o campo isOverdue calculado
  */
 export const isOverdue = (dueDate: string, status: string): boolean => {
   if (status === 'PAID' || status === 'CANCELLED') return false;
@@ -49,8 +48,8 @@ export const isOverdue = (dueDate: string, status: string): boolean => {
   const today = new Date();
   const todayOnly = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-  // Vencido = data de vencimento é ANTES de hoje OU status já é OVERDUE
-  return status === 'OVERDUE' || dueDateOnly < todayOnly;
+  // Vencido = data de vencimento é ANTES de hoje
+  return dueDateOnly < todayOnly;
 };
 
 /**

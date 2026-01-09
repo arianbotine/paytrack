@@ -2,12 +2,7 @@
  * Generic types for Payable/Receivable accounts
  */
 
-export type AccountStatus =
-  | 'PENDING'
-  | 'OVERDUE'
-  | 'PAID'
-  | 'PARTIAL'
-  | 'CANCELLED';
+export type AccountStatus = 'PENDING' | 'PAID' | 'PARTIAL' | 'CANCELLED';
 
 export interface PayableInstallment {
   id: string;
@@ -16,6 +11,7 @@ export interface PayableInstallment {
   paidAmount: number;
   dueDate: string;
   status: AccountStatus;
+  isOverdue?: boolean;
 }
 
 export interface ReceivableInstallment {
@@ -25,6 +21,7 @@ export interface ReceivableInstallment {
   receivedAmount: number;
   dueDate: string;
   status: AccountStatus;
+  isOverdue?: boolean;
 }
 
 export interface BaseAccount {

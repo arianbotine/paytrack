@@ -448,7 +448,25 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                               <Chip
                                 label={formatLocalDate(installment.dueDate)}
                                 size="small"
-                                sx={{ ml: 1 }}
+                                color={
+                                  installment.isOverdue &&
+                                  installment.status !== 'PAID'
+                                    ? 'error'
+                                    : 'default'
+                                }
+                                sx={{
+                                  ml: 1,
+                                  ...(installment.isOverdue &&
+                                    installment.status !== 'PAID' && {
+                                      fontWeight: 600,
+                                      animation:
+                                        'pulse 2s ease-in-out infinite',
+                                      '@keyframes pulse': {
+                                        '0%, 100%': { opacity: 1 },
+                                        '50%': { opacity: 0.7 },
+                                      },
+                                    }),
+                                }}
                               />
                             </Box>
                             <Box
@@ -759,9 +777,44 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                             </Typography>
                           </TableCell>
                           <TableCell>
-                            {account.nextUnpaidDueDate
-                              ? formatLocalDate(account.nextUnpaidDueDate)
-                              : '-'}
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                              }}
+                            >
+                              {account.nextUnpaidDueDate ? (
+                                <>
+                                  <Typography variant="body2">
+                                    {formatLocalDate(account.nextUnpaidDueDate)}
+                                  </Typography>
+                                  {account.installments?.some(
+                                    inst =>
+                                      inst.isOverdue && inst.status !== 'PAID'
+                                  ) && (
+                                    <Chip
+                                      label="Vencido"
+                                      size="small"
+                                      color="error"
+                                      sx={{
+                                        height: 20,
+                                        fontSize: '0.65rem',
+                                        fontWeight: 600,
+                                        animation:
+                                          'pulse 2s ease-in-out infinite',
+                                        '@keyframes pulse': {
+                                          '0%, 100%': { opacity: 1 },
+                                          '50%': { opacity: 0.7 },
+                                        },
+                                      }}
+                                    />
+                                  )}
+                                </>
+                              ) : (
+                                '-'
+                              )}
+                            </Box>
                           </TableCell>
                           <TableCell>
                             <StatusChip status={account.status} />
@@ -931,9 +984,41 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                             </Box>
                                           </TableCell>
                                           <TableCell>
-                                            {formatLocalDate(
-                                              installment.dueDate
-                                            )}
+                                            <Box
+                                              sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 1,
+                                              }}
+                                            >
+                                              <Typography variant="body2">
+                                                {formatLocalDate(
+                                                  installment.dueDate
+                                                )}
+                                              </Typography>
+                                              {installment.isOverdue &&
+                                                installment.status !==
+                                                  'PAID' && (
+                                                  <Chip
+                                                    label="Vencido"
+                                                    size="small"
+                                                    color="error"
+                                                    sx={{
+                                                      height: 18,
+                                                      fontSize: '0.65rem',
+                                                      fontWeight: 600,
+                                                      animation:
+                                                        'pulse 2s ease-in-out infinite',
+                                                      '@keyframes pulse': {
+                                                        '0%, 100%': {
+                                                          opacity: 1,
+                                                        },
+                                                        '50%': { opacity: 0.7 },
+                                                      },
+                                                    }}
+                                                  />
+                                                )}
+                                            </Box>
                                           </TableCell>
                                           <TableCell align="right">
                                             {editingInstallment ===
