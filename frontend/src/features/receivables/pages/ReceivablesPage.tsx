@@ -241,6 +241,21 @@ export const ReceivablesPage: React.FC = () => {
     [updateInstallmentMutation]
   );
 
+  const handleUpdateInstallmentDueDate = useCallback(
+    (
+      receivable: Receivable,
+      installment: ReceivableInstallment,
+      newDueDate: string
+    ) => {
+      updateInstallmentMutation.mutate({
+        accountId: receivable.id,
+        installmentId: installment.id,
+        data: { dueDate: newDueDate },
+      });
+    },
+    [updateInstallmentMutation]
+  );
+
   const receivables = receivablesData?.data || [];
   const totalCount = receivablesData?.total || 0;
 
@@ -289,6 +304,7 @@ export const ReceivablesPage: React.FC = () => {
           onViewPayments={handleViewPayments}
           onDeleteInstallment={handleDeleteInstallment}
           onUpdateInstallment={handleUpdateInstallment}
+          onUpdateInstallmentDueDate={handleUpdateInstallmentDueDate}
         />
 
         <ReceivableFormDialog

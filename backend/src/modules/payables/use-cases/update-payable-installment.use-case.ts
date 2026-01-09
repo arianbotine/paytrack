@@ -71,32 +71,64 @@ export class UpdatePayableInstallmentUseCase {
 
     // Atualizar parcela e recalcular total somando todas as parcelas (auto-corretivo)
     await this.repository.transaction(async prisma => {
-      // 1. Atualizar valor da parcela
+      // 1. Atualizar parcela (valor e/ou data de vencimento)
+      const updateData: { amount?: any; dueDate?: Date } = {};
+
+      if (updateDto.amount !== undefined) {
+        updateData.amount = MoneyUtils.toDecimal(updateDto.amount);
+      }
+
+      if (updateDto.dueDate && updateDto.dueDate.trim() !== '') {
+        const dateValue = new Date(updateDto.dueDate + 'T12:00:00.000Z');
+        if (Number.isNaN(dateValue.getTime())) {
+          throw new BadRequestException('Data de vencimento inválida');
+        }
+        updateData.dueDate = dateValue;
+      }
+
       await prisma.payableInstallment.update({
         where: { id: installmentId },
-        data: {
-          amount: MoneyUtils.toDecimal(updateDto.amount),
-        },
+        data: updateData,
       });
 
-      // 2. Buscar todas as parcelas atualizadas
-      const allInstallments = await prisma.payableInstallment.findMany({
-        where: { payableId },
-      });
+      // 2. Se alterou a data de vencimento, reordenar e renumerar parcelas
+      if (updateDto.dueDate) {
+        // Buscar todas as parcelas ordenadas por data de vencimento
+        const allInstallments = await prisma.payableInstallment.findMany({
+          where: { payableId },
+          orderBy: { dueDate: 'asc' },
+        });
 
-      // 3. Recalcular valor total somando todas as parcelas
-      const newTotalAmount = allInstallments.reduce(
-        (sum, inst) => sum + Number(inst.amount),
-        0
-      );
+        // Renumerar parcelas de acordo com a ordem de vencimento
+        for (let i = 0; i < allInstallments.length; i++) {
+          await prisma.payableInstallment.update({
+            where: { id: allInstallments[i].id },
+            data: { installmentNumber: i + 1 },
+          });
+        }
+      }
 
-      // 4. Atualizar payable com novo total
-      await prisma.payable.update({
-        where: { id: payableId },
-        data: {
-          amount: MoneyUtils.toDecimal(newTotalAmount),
-        },
-      });
+      // 3. Se alterou valor, recalcular total
+      if (updateDto.amount !== undefined) {
+        // Buscar todas as parcelas atualizadas
+        const allInstallments = await prisma.payableInstallment.findMany({
+          where: { payableId },
+        });
+
+        // Recalcular valor total somando todas as parcelas
+        const newTotalAmount = allInstallments.reduce(
+          (sum, inst) => sum + Number(inst.amount),
+          0
+        );
+
+        // Atualizar payable com novo total
+        await prisma.payable.update({
+          where: { id: payableId },
+          data: {
+            amount: MoneyUtils.toDecimal(newTotalAmount),
+          },
+        });
+      }
     });
 
     this.invalidateDashboardCache(organizationId);

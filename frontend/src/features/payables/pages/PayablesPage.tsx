@@ -229,6 +229,17 @@ export const PayablesPage: React.FC = () => {
     [updateInstallmentMutation]
   );
 
+  const handleUpdateInstallmentDueDate = useCallback(
+    (payable: Payable, installment: PayableInstallment, newDueDate: string) => {
+      updateInstallmentMutation.mutate({
+        accountId: payable.id,
+        installmentId: installment.id,
+        data: { dueDate: newDueDate },
+      });
+    },
+    [updateInstallmentMutation]
+  );
+
   const payables = payablesData?.data || [];
   const totalCount = payablesData?.total || 0;
 
@@ -277,6 +288,7 @@ export const PayablesPage: React.FC = () => {
           onViewPayments={handleViewPayments}
           onDeleteInstallment={handleDeleteInstallment}
           onUpdateInstallment={handleUpdateInstallment}
+          onUpdateInstallmentDueDate={handleUpdateInstallmentDueDate}
         />
 
         <PayableFormDialog

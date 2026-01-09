@@ -126,6 +126,7 @@ export function DashboardPage() {
       const response = await api.get('/dashboard');
       return response.data;
     },
+    refetchOnMount: 'always',
   });
 
   useEffect(() => {

@@ -27,6 +27,7 @@ import {
   useMediaQuery,
   useTheme,
   Theme,
+  TextField,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -71,6 +72,11 @@ interface PayablesTableProps {
     installment: PayableInstallment,
     newAmount: number
   ) => void;
+  onUpdateInstallmentDueDate?: (
+    payable: Payable,
+    installment: PayableInstallment,
+    newDueDate: string
+  ) => void;
 }
 
 const MotionTableRow = motion.create(TableRow);
@@ -91,6 +97,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
   onViewPayments,
   onDeleteInstallment,
   onUpdateInstallment,
+  onUpdateInstallmentDueDate,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -99,6 +106,8 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
     null
   );
   const [editAmount, setEditAmount] = useState<number | null>(null);
+  const [editingDueDate, setEditingDueDate] = useState<string | null>(null);
+  const [editDueDate, setEditDueDate] = useState<string>('');
 
   // Use payables directly (already filtered by API)
   const filteredAccounts = payables;
@@ -127,6 +136,8 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
   const handleCancelEdit = () => {
     setEditingInstallment(null);
     setEditAmount(null);
+    setEditingDueDate(null);
+    setEditDueDate('');
   };
 
   const handleSaveEdit = (
@@ -135,6 +146,28 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
   ) => {
     if (editAmount && editAmount > 0 && onUpdateInstallment) {
       onUpdateInstallment(payable, installment, editAmount);
+      handleCancelEdit();
+    }
+  };
+
+  const handleStartEditDueDate = (installment: PayableInstallment) => {
+    setEditingDueDate(installment.id);
+    setEditDueDate(installment.dueDate);
+  };
+
+  const handleSaveEditDueDate = (
+    payable: Payable,
+    installment: PayableInstallment
+  ) => {
+    if (
+      editDueDate &&
+      editDueDate.trim() !== '' &&
+      editDueDate !== installment.dueDate &&
+      onUpdateInstallmentDueDate
+    ) {
+      onUpdateInstallmentDueDate(payable, installment, editDueDate);
+      handleCancelEdit();
+    } else {
       handleCancelEdit();
     }
   };
@@ -991,53 +1024,203 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                                 gap: 1,
                                               }}
                                             >
-                                              <Typography variant="body2">
-                                                {formatLocalDate(
-                                                  installment.dueDate
-                                                )}
-                                              </Typography>
-                                              {installment.isOverdue &&
-                                                installment.status !==
-                                                  'PAID' && (
-                                                  <Chip
-                                                    label="Vencido"
+                                              {editingDueDate ===
+                                              installment.id ? (
+                                                <Box
+                                                  sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 0.5,
+                                                  }}
+                                                >
+                                                  <TextField
+                                                    type="date"
                                                     size="small"
-                                                    color="error"
+                                                    value={editDueDate}
+                                                    onChange={e =>
+                                                      setEditDueDate(
+                                                        e.target.value
+                                                      )
+                                                    }
                                                     sx={{
-                                                      height: 18,
-                                                      fontSize: '0.65rem',
-                                                      fontWeight: 600,
-                                                      animation:
-                                                        'pulse 2s ease-in-out infinite',
-                                                      '@keyframes pulse': {
-                                                        '0%, 100%': {
-                                                          opacity: 1,
-                                                        },
-                                                        '50%': { opacity: 0.7 },
+                                                      width: '140px',
+                                                      '& input': {
+                                                        fontSize: '0.875rem',
+                                                        padding: '4px 8px',
                                                       },
                                                     }}
+                                                    autoFocus
+                                                    InputLabelProps={{
+                                                      shrink: true,
+                                                    }}
                                                   />
-                                                )}
+                                                  <Tooltip title="Salvar">
+                                                    <IconButton
+                                                      size="small"
+                                                      color="success"
+                                                      onClick={() =>
+                                                        handleSaveEditDueDate(
+                                                          account,
+                                                          installment
+                                                        )
+                                                      }
+                                                    >
+                                                      <CheckIcon fontSize="small" />
+                                                    </IconButton>
+                                                  </Tooltip>
+                                                  <Tooltip title="Cancelar">
+                                                    <IconButton
+                                                      size="small"
+                                                      color="error"
+                                                      onClick={handleCancelEdit}
+                                                    >
+                                                      <CloseIcon fontSize="small" />
+                                                    </IconButton>
+                                                  </Tooltip>
+                                                </Box>
+                                              ) : (
+                                                <>
+                                                  <Typography variant="body2">
+                                                    {formatLocalDate(
+                                                      installment.dueDate
+                                                    )}
+                                                  </Typography>
+                                                  {installment.isOverdue &&
+                                                    installment.status !==
+                                                      'PAID' && (
+                                                      <Chip
+                                                        label="Vencido"
+                                                        size="small"
+                                                        color="error"
+                                                        sx={{
+                                                          height: 18,
+                                                          fontSize: '0.65rem',
+                                                          fontWeight: 600,
+                                                          animation:
+                                                            'pulse 2s ease-in-out infinite',
+                                                          '@keyframes pulse': {
+                                                            '0%, 100%': {
+                                                              opacity: 1,
+                                                            },
+                                                            '50%': {
+                                                              opacity: 0.7,
+                                                            },
+                                                          },
+                                                        }}
+                                                      />
+                                                    )}
+                                                  {onUpdateInstallmentDueDate &&
+                                                    installment.status ===
+                                                      'PENDING' && (
+                                                      <Tooltip title="Editar data">
+                                                        <IconButton
+                                                          size="small"
+                                                          onClick={() =>
+                                                            handleStartEditDueDate(
+                                                              installment
+                                                            )
+                                                          }
+                                                          sx={{
+                                                            ml: 0.5,
+                                                            padding: 0.5,
+                                                          }}
+                                                        >
+                                                          <EditIcon
+                                                            sx={{
+                                                              fontSize: 16,
+                                                            }}
+                                                          />
+                                                        </IconButton>
+                                                      </Tooltip>
+                                                    )}
+                                                </>
+                                              )}
                                             </Box>
                                           </TableCell>
                                           <TableCell align="right">
-                                            {editingInstallment ===
-                                            installment.id ? (
-                                              <CurrencyField
-                                                size="small"
-                                                value={editAmount}
-                                                onChange={setEditAmount}
-                                                sx={{
-                                                  width: '140px',
-                                                  '& input': {
-                                                    textAlign: 'right',
-                                                  },
-                                                }}
-                                                autoFocus
-                                              />
-                                            ) : (
-                                              formatCurrency(installment.amount)
-                                            )}
+                                            <Box
+                                              sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'flex-end',
+                                                gap: 0.5,
+                                              }}
+                                            >
+                                              {editingInstallment ===
+                                              installment.id ? (
+                                                <>
+                                                  <CurrencyField
+                                                    size="small"
+                                                    value={editAmount}
+                                                    onChange={setEditAmount}
+                                                    sx={{
+                                                      width: '140px',
+                                                      '& input': {
+                                                        textAlign: 'right',
+                                                        fontSize: '0.875rem',
+                                                        padding: '4px 8px',
+                                                      },
+                                                    }}
+                                                    autoFocus
+                                                  />
+                                                  <Tooltip title="Salvar">
+                                                    <IconButton
+                                                      size="small"
+                                                      color="success"
+                                                      onClick={() =>
+                                                        handleSaveEdit(
+                                                          account,
+                                                          installment
+                                                        )
+                                                      }
+                                                    >
+                                                      <CheckIcon fontSize="small" />
+                                                    </IconButton>
+                                                  </Tooltip>
+                                                  <Tooltip title="Cancelar">
+                                                    <IconButton
+                                                      size="small"
+                                                      color="error"
+                                                      onClick={handleCancelEdit}
+                                                    >
+                                                      <CloseIcon fontSize="small" />
+                                                    </IconButton>
+                                                  </Tooltip>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <Typography variant="body2">
+                                                    {formatCurrency(
+                                                      installment.amount
+                                                    )}
+                                                  </Typography>
+                                                  {onUpdateInstallment &&
+                                                    installment.status ===
+                                                      'PENDING' && (
+                                                      <Tooltip title="Editar valor">
+                                                        <IconButton
+                                                          size="small"
+                                                          onClick={() =>
+                                                            handleStartEdit(
+                                                              installment
+                                                            )
+                                                          }
+                                                          sx={{
+                                                            ml: 0.5,
+                                                            padding: 0.5,
+                                                          }}
+                                                        >
+                                                          <EditIcon
+                                                            sx={{
+                                                              fontSize: 16,
+                                                            }}
+                                                          />
+                                                        </IconButton>
+                                                      </Tooltip>
+                                                    )}
+                                                </>
+                                              )}
+                                            </Box>
                                           </TableCell>
                                           <TableCell>
                                             <StatusChip
@@ -1086,73 +1269,25 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                                     </IconButton>
                                                   </Tooltip>
                                                 )}
-                                              {editingInstallment ===
-                                              installment.id ? (
-                                                <>
-                                                  <Tooltip title="Salvar">
-                                                    <IconButton
-                                                      size="small"
-                                                      color="success"
-                                                      onClick={() =>
-                                                        handleSaveEdit(
-                                                          account,
-                                                          installment
-                                                        )
-                                                      }
-                                                    >
-                                                      <CheckIcon fontSize="small" />
-                                                    </IconButton>
-                                                  </Tooltip>
-                                                  <Tooltip title="Cancelar">
-                                                    <IconButton
-                                                      size="small"
-                                                      color="error"
-                                                      onClick={handleCancelEdit}
-                                                    >
-                                                      <CloseIcon fontSize="small" />
-                                                    </IconButton>
-                                                  </Tooltip>
-                                                </>
-                                              ) : (
-                                                <>
-                                                  {onUpdateInstallment &&
-                                                    installment.status ===
-                                                      'PENDING' && (
-                                                      <Tooltip title="Editar valor">
-                                                        <IconButton
-                                                          size="small"
-                                                          color="primary"
-                                                          onClick={() =>
-                                                            handleStartEdit(
-                                                              installment
-                                                            )
-                                                          }
-                                                        >
-                                                          <EditIcon fontSize="small" />
-                                                        </IconButton>
-                                                      </Tooltip>
-                                                    )}
-                                                  <Tooltip title="Registrar pagamento">
-                                                    <span>
-                                                      <IconButton
-                                                        size="small"
-                                                        color="success"
-                                                        onClick={() =>
-                                                          onPayment(installment)
-                                                        }
-                                                        disabled={
-                                                          installment.status ===
-                                                            'PAID' ||
-                                                          installment.status ===
-                                                            'CANCELLED'
-                                                        }
-                                                      >
-                                                        <PaymentIcon fontSize="small" />
-                                                      </IconButton>
-                                                    </span>
-                                                  </Tooltip>
-                                                </>
-                                              )}
+                                              <Tooltip title="Registrar pagamento">
+                                                <span>
+                                                  <IconButton
+                                                    size="small"
+                                                    color="success"
+                                                    onClick={() =>
+                                                      onPayment(installment)
+                                                    }
+                                                    disabled={
+                                                      installment.status ===
+                                                        'PAID' ||
+                                                      installment.status ===
+                                                        'CANCELLED'
+                                                    }
+                                                  >
+                                                    <PaymentIcon fontSize="small" />
+                                                  </IconButton>
+                                                </span>
+                                              </Tooltip>
                                               {onDeleteInstallment &&
                                                 installment.status ===
                                                   'PENDING' &&

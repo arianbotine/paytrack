@@ -174,12 +174,18 @@ export class PayableFilterDto {
 }
 
 export class UpdateInstallmentDto {
-  @ApiProperty({ example: 250.5 })
+  @ApiProperty({ example: 250.5, required: false })
+  @IsOptional()
   @IsNumber({}, { message: 'Valor deve ser um número válido' })
   @Min(0.01, { message: 'Valor deve ser maior que zero' })
   @Type(() => Number)
   @Transform(({ value }) =>
     typeof value === 'number' ? Math.round(value * 100) / 100 : value
   )
-  amount!: number;
+  amount?: number;
+
+  @ApiProperty({ example: '2024-12-25', required: false })
+  @IsOptional()
+  @IsDateString({}, { message: 'Data de vencimento inválida' })
+  dueDate?: string;
 }

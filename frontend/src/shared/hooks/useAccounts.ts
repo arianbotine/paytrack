@@ -278,7 +278,7 @@ export const useUpdateInstallment = (
     }: {
       accountId: string;
       installmentId: string;
-      data: { amount: number };
+      data: { amount?: number; dueDate?: string };
     }) =>
       api.patch(
         `${config.endpoint}/${accountId}/installments/${installmentId}`,
