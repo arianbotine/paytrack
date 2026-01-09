@@ -339,22 +339,33 @@ export const useAccountOperations = <T>(
         firstDueDate?: string | Date;
       };
 
-    const dueDate = formData.dueDate ?? formData.firstDueDate;
-    const hasDueDatesArray = formData.dueDates && formData.dueDates.length > 0;
+    // Para edição de conta, não validar data de vencimento pois não existe mais no nível da conta
+    if (!accountId) {
+      const dueDate = formData.dueDate ?? formData.firstDueDate;
+      const hasDueDatesArray =
+        formData.dueDates && formData.dueDates.length > 0;
 
-    if (!dueDate && !hasDueDatesArray) {
-      showNotification('Data de vencimento é obrigatória', 'error');
-      return;
+      if (!dueDate && !hasDueDatesArray) {
+        showNotification('Data de vencimento é obrigatória', 'error');
+        return;
+      }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { firstDueDate: _firstDueDate, ...payloadData } = formData;
     const payload = {
       ...payloadData,
-      // Se há dueDates (array), não enviar dueDate (evita conflito no DTO do backend)
-      // Se não há dueDates, enviar dueDate (update de conta única)
-      ...(hasDueDatesArray ? {} : { dueDate }),
-      dueDates: formData.dueDates,
+      // Para edição, não incluir datas de vencimento pois não fazem parte da conta
+      ...(accountId
+        ? {}
+        : {
+            // Se há dueDates (array), não enviar dueDate (evita conflito no DTO do backend)
+            // Se não há dueDates, enviar dueDate (criação de conta única)
+            ...(formData.dueDates && formData.dueDates.length > 0
+              ? {}
+              : { dueDate: formData.dueDate ?? formData.firstDueDate }),
+            dueDates: formData.dueDates,
+          }),
       // Se categoryId é string vazia, enviar null para remover categoria
       categoryId:
         formData.categoryId === '' ? null : formData.categoryId || undefined,

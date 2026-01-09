@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   CreatePayableDto,
   UpdatePayableDto,
@@ -10,13 +10,13 @@ import {
   UpdatePayableUseCase,
   DeletePayableUseCase,
   ListPayablesUseCase,
-  GetPayableUseCase,
   UpdateOverdueStatusUseCase,
   CancelPayableUseCase,
   GetPayablePaymentsUseCase,
   DeletePayableInstallmentUseCase,
   UpdatePayableInstallmentUseCase,
 } from './use-cases';
+import { PayablesRepository } from './repositories';
 
 /**
  * Application Service para Payables
@@ -32,12 +32,12 @@ export class PayablesService {
     private readonly updatePayableUseCase: UpdatePayableUseCase,
     private readonly deletePayableUseCase: DeletePayableUseCase,
     private readonly listPayablesUseCase: ListPayablesUseCase,
-    private readonly getPayableUseCase: GetPayableUseCase,
     private readonly updateOverdueStatusUseCase: UpdateOverdueStatusUseCase,
     private readonly cancelPayableUseCase: CancelPayableUseCase,
     private readonly getPayablePaymentsUseCase: GetPayablePaymentsUseCase,
     private readonly deletePayableInstallmentUseCase: DeletePayableInstallmentUseCase,
-    private readonly updatePayableInstallmentUseCase: UpdatePayableInstallmentUseCase
+    private readonly updatePayableInstallmentUseCase: UpdatePayableInstallmentUseCase,
+    private readonly payablesRepository: PayablesRepository
   ) {}
 
   async findAll(organizationId: string, filters?: PayableFilterDto) {
@@ -45,7 +45,23 @@ export class PayablesService {
   }
 
   async findOne(id: string, organizationId: string) {
-    return this.getPayableUseCase.execute(id, organizationId);
+    const payable = await this.payablesRepository.findFirst(
+      { id, organizationId },
+      {
+        vendor: true,
+        category: true,
+        tags: { include: { tag: true } },
+        installments: {
+          orderBy: { installmentNumber: 'asc' },
+        },
+      }
+    );
+
+    if (!payable) {
+      throw new NotFoundException('Conta a pagar não encontrada');
+    }
+
+    return payable;
   }
 
   async create(organizationId: string, createDto: CreatePayableDto) {

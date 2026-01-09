@@ -123,6 +123,21 @@ export class UpdatePayableUseCase {
     // Invalidar cache
     this.cacheService.del(`dashboard:summary:${organizationId}`);
 
-    return result;
+    // Buscar o payable atualizado com includes
+    return this.payablesRepository.findFirst(
+      { id, organizationId },
+      {
+        vendor: { select: { id: true, name: true } },
+        category: { select: { id: true, name: true, color: true } },
+        tags: {
+          include: {
+            tag: { select: { id: true, name: true, color: true } },
+          },
+        },
+        installments: {
+          orderBy: { installmentNumber: 'asc' },
+        },
+      }
+    );
   }
 }
