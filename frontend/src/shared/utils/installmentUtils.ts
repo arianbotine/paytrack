@@ -51,6 +51,7 @@ export function generateInstallmentDueDates(
 /**
  * Calcula valores de parcelas com distribuição igual e arredondamento exato
  * A última parcela absorve o resto para garantir que a soma seja exata
+ * Usa a mesma lógica do backend para consistência
  *
  * @param totalAmount Valor total
  * @param count Quantidade de parcelas
@@ -60,10 +61,10 @@ export function calculateInstallmentAmounts(
   totalAmount: number,
   count: number
 ): number[] {
-  // Arredondar para baixo com 2 casas decimais
-  const baseValue = Math.floor((totalAmount * 100) / count) / 100;
-  // Calcular resto
-  const remainder = totalAmount - baseValue * count;
+  // Usar a mesma lógica do backend: dividir e arredondar para baixo
+  const baseValue = Math.floor((totalAmount / count) * 100) / 100;
+  // Calcular resto para a última parcela
+  const remainder = Math.round((totalAmount - baseValue * count) * 100) / 100;
 
   // Criar array de valores
   return Array.from({ length: count }, (_, i) =>
@@ -97,61 +98,6 @@ export function generateInstallmentPreview(
 }
 
 /**
- * Formata label de parcela de forma consistente
- * Ex: "Parcela 3/6" ou "Fornecedor XYZ - 3/6"
- *
- * @param installmentNumberOrParent Número da parcela OU objeto da conta-pai
- * @param totalInstallmentsOrInstallment Total de parcelas OU objeto da parcela
- * @returns String formatada
- */
-export function formatInstallmentLabel(
-  installmentNumberOrParent:
-    | number
-    | { description: string }
-    | null
-    | undefined,
-  totalInstallmentsOrInstallment?:
-    | number
-    | {
-        installmentNumber: number;
-        totalInstallments: number;
-      }
-): string {
-  // Formato simples: formatInstallmentLabel(3, 6) => "Parcela 3/6"
-  if (
-    typeof installmentNumberOrParent === 'number' &&
-    typeof totalInstallmentsOrInstallment === 'number'
-  ) {
-    return `Parcela ${installmentNumberOrParent}/${totalInstallmentsOrInstallment}`;
-  }
-
-  // Formato completo: formatInstallmentLabel(parent, installment)
-  if (
-    typeof installmentNumberOrParent === 'object' &&
-    typeof totalInstallmentsOrInstallment === 'object'
-  ) {
-    const parent = installmentNumberOrParent;
-    const installment = totalInstallmentsOrInstallment;
-
-    // Sempre mostrar o número da parcela se disponível
-    if (installment.installmentNumber && installment.totalInstallments) {
-      return `Parcela ${installment.installmentNumber}/${installment.totalInstallments}`;
-    }
-
-    // Fallback para descrição do pai
-    const base = parent?.description || 'Pagamento único';
-    const fraction =
-      installment.totalInstallments && installment.totalInstallments > 1
-        ? ` - ${installment.installmentNumber || '?'}/${installment.totalInstallments}`
-        : '';
-    return `${base}${fraction}`;
-  }
-
-  // Fallback genérico
-  return 'Parcela';
-}
-
-/**
  * Calcula progresso de pagamento de parcelas
  *
  * @param installments Array de parcelas com status e número
@@ -180,38 +126,3 @@ export function formatInstallmentProgress(
 
 // Alias para compatibilidade
 export const computeInstallmentProgress = formatInstallmentProgress;
-
-/**
- * Computa status agregado da conta-pai baseado nos status das parcelas
- * Regras:
- * - Se qualquer parcela está OVERDUE → OVERDUE (prioridade máxima)
- * - Se todas parcelas estão PAID → PAID
- * - Se alguma parcela está PAID ou PARTIAL → PARTIAL
- * - Caso contrário → PENDING
- *
- * Nota: OVERDUE não é mais um status, mas um indicador visual calculado via isOverdue
- *
- * @param installments Array de parcelas com status
- * @returns Status agregado
- */
-export function computeParentStatus(
-  installments: Array<{ status: AccountStatus }>
-): AccountStatus {
-  if (!installments || installments.length === 0) {
-    return 'PENDING';
-  }
-
-  const statuses = installments.map(i => i.status);
-
-  // Todas pagas
-  if (statuses.every(s => s === 'PAID')) {
-    return 'PAID';
-  }
-
-  // Alguma paga ou parcialmente paga
-  if (statuses.some(s => s === 'PAID' || s === 'PARTIAL')) {
-    return 'PARTIAL';
-  }
-
-  return 'PENDING';
-}
