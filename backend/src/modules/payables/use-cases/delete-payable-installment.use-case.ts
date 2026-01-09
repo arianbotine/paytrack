@@ -8,6 +8,7 @@ import { AccountStatus } from '@prisma/client';
 import { CacheService } from '../../../shared/services/cache.service';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
 import { InstallmentsCalculator } from '../domain';
+import { PayableStatus } from '../domain/payable-status.enum';
 
 /**
  * Use Case: Excluir Parcela de Payable
@@ -70,7 +71,7 @@ export class DeletePayableInstallmentUseCase {
       throw new NotFoundException('Parcela não encontrada');
     }
 
-    if (installmentToDelete.status !== AccountStatus.PENDING) {
+    if (installmentToDelete.status !== PayableStatus.PENDING) {
       throw new BadRequestException('Só é possível excluir parcelas pendentes');
     }
 

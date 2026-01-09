@@ -5,6 +5,7 @@ import { PayableFilterDto } from '../dto/payable.dto';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
 import { parseDateOnly } from '../../../shared/utils/date.utils';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
+import { PayableStatus } from '../domain/payable-status.enum';
 
 const MAX_PAGE_SIZE = 100;
 const DEFAULT_PAGE_SIZE = 10;
@@ -21,12 +22,32 @@ export class ListPayablesUseCase {
   ) {}
 
   async execute(organizationId: string, filters?: PayableFilterDto) {
+    // Handle status filtering with hideCompleted
+    let statusFilter = filters?.status;
+    const hideCompleted = filters?.hideCompleted;
+    if (hideCompleted) {
+      if (statusFilter && statusFilter.length > 0) {
+        // Remove PAID from the status filter
+        statusFilter = statusFilter.filter(s => s !== PayableStatus.PAID);
+      } else {
+        // If no specific status filter, exclude PAID
+        statusFilter = [
+          PayableStatus.PENDING,
+          PayableStatus.PARTIAL,
+          PayableStatus.OVERDUE,
+          PayableStatus.CANCELLED,
+        ];
+      }
+    } else if (!statusFilter || statusFilter.length === 0) {
+      statusFilter = undefined;
+    }
+
     const where: Prisma.PayableWhereInput = {
       organizationId,
       ...(filters?.vendorId && { vendorId: filters.vendorId }),
       ...(filters?.categoryId && { categoryId: filters.categoryId }),
-      ...(filters?.status &&
-        filters.status.length > 0 && { status: { in: filters.status } }),
+      ...(statusFilter &&
+        statusFilter.length > 0 && { status: { in: statusFilter } }),
       ...(filters?.tagIds && filters.tagIds.length > 0
         ? {
             tags: {
@@ -103,7 +124,13 @@ export class ListPayablesUseCase {
         ? await this.prisma.payableInstallment.findMany({
             where: {
               payableId: { in: payableIds },
-              status: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] },
+              status: {
+                in: [
+                  PayableStatus.PENDING,
+                  PayableStatus.PARTIAL,
+                  PayableStatus.OVERDUE,
+                ],
+              },
             },
             select: {
               payableId: true,
@@ -185,7 +212,13 @@ export class GetPayableUseCase {
     const nextInstallment = await this.prisma.payableInstallment.findFirst({
       where: {
         payableId: payable.id,
-        status: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] },
+        status: {
+          in: [
+            PayableStatus.PENDING,
+            PayableStatus.PARTIAL,
+            PayableStatus.OVERDUE,
+          ],
+        },
       },
       orderBy: { dueDate: 'asc' },
       select: { dueDate: true },

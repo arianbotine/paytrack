@@ -7,6 +7,7 @@ import { ReceivablesRepository } from '../repositories';
 import { AccountStatus } from '@prisma/client';
 import { CacheService } from '../../../shared/services/cache.service';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
+import { ReceivableStatus } from '../domain/receivable-status.enum';
 
 /**
  * Use Case: Excluir Parcela de Receivable
@@ -44,7 +45,7 @@ export class DeleteReceivableInstallmentUseCase {
     const receivableWithInstallments = receivable as typeof receivable & {
       installments: Array<{
         id: string;
-        status: AccountStatus;
+        status: ReceivableStatus;
         allocations: any[];
       }>;
     };
@@ -63,7 +64,7 @@ export class DeleteReceivableInstallmentUseCase {
       throw new NotFoundException('Parcela não encontrada');
     }
 
-    if (installmentToDelete.status !== AccountStatus.PENDING) {
+    if (installmentToDelete.status !== ReceivableStatus.PENDING) {
       throw new BadRequestException('Só é possível excluir parcelas pendentes');
     }
 
@@ -116,13 +117,13 @@ export class DeleteReceivableInstallmentUseCase {
         return sum + installmentPaid;
       }, 0);
 
-      let newStatus: AccountStatus;
+      let newStatus: ReceivableStatus;
       if (totalPaid >= newTotalAmount - 0.01) {
-        newStatus = AccountStatus.PAID;
+        newStatus = ReceivableStatus.PAID;
       } else if (totalPaid > 0) {
-        newStatus = AccountStatus.PARTIAL;
+        newStatus = ReceivableStatus.PARTIAL;
       } else {
-        newStatus = AccountStatus.PENDING;
+        newStatus = ReceivableStatus.PENDING;
       }
 
       // 6. Atualizar receivable com novo total e status

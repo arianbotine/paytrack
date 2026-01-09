@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, AccountStatus } from '@prisma/client';
 import { generateInstallments } from '../../../shared/utils/account.utils';
+import { PayableStatus } from './payable-status.enum';
 
 /**
  * Serviço de domínio para lógica de cálculo e manipulação de parcelas
@@ -53,10 +54,10 @@ export class InstallmentsCalculator {
     threshold: number = 0.01
   ): AccountStatus {
     if (paidAmount >= totalAmount - threshold) {
-      return AccountStatus.PAID;
+      return PayableStatus.PAID;
     } else if (paidAmount > 0) {
-      return AccountStatus.PARTIAL;
+      return PayableStatus.PARTIAL;
     }
-    return AccountStatus.PENDING;
+    return PayableStatus.PENDING;
   }
 }

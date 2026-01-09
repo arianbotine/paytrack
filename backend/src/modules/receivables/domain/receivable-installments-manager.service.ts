@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AccountStatus, Prisma, ReceivableInstallment } from '@prisma/client';
 import { ReceivableInstallmentsRepository } from '../repositories';
+import { ReceivableStatus } from './receivable-status.enum';
 
 type InstallmentWithStatus = Pick<
   ReceivableInstallment,
@@ -20,27 +21,29 @@ export class ReceivableInstallmentsManager {
   /**
    * Recalcula o status da conta baseado nas parcelas
    */
-  calculateAccountStatus(installments: InstallmentWithStatus[]): AccountStatus {
+  calculateAccountStatus(
+    installments: InstallmentWithStatus[]
+  ): ReceivableStatus {
     const allPaid = installments.every(
-      inst => inst.status === AccountStatus.PAID
+      inst => inst.status === ReceivableStatus.PAID
     );
     const anyPaid = installments.some(
       inst =>
-        inst.status === AccountStatus.PAID ||
-        inst.status === AccountStatus.PARTIAL
+        inst.status === ReceivableStatus.PAID ||
+        inst.status === ReceivableStatus.PARTIAL
     );
     const anyOverdue = installments.some(
-      inst => inst.status === AccountStatus.OVERDUE
+      inst => inst.status === ReceivableStatus.OVERDUE
     );
 
     if (allPaid) {
-      return AccountStatus.PAID;
+      return ReceivableStatus.PAID;
     } else if (anyPaid) {
-      return AccountStatus.PARTIAL;
+      return ReceivableStatus.PARTIAL;
     } else if (anyOverdue) {
-      return AccountStatus.OVERDUE;
+      return ReceivableStatus.OVERDUE;
     } else {
-      return AccountStatus.PENDING;
+      return ReceivableStatus.PENDING;
     }
   }
 

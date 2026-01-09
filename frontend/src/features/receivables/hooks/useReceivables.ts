@@ -54,6 +54,7 @@ interface UseReceivablesParams {
   tagIds?: string[];
   page: number;
   rowsPerPage: number;
+  hideCompleted?: boolean;
 }
 
 export const useReceivables = (params: UseReceivablesParams) => {

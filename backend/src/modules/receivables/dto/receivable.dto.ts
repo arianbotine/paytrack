@@ -19,9 +19,9 @@ import {
   PartialType,
   OmitType,
 } from '@nestjs/swagger';
-import { AccountStatus } from '@prisma/client';
 import { Type, Transform } from 'class-transformer';
 import { IsDateArrayAscendingConstraint } from '../../../shared/validators';
+import { ReceivableStatus } from '../domain/receivable-status.enum';
 
 export class CreateReceivableDto {
   @ApiProperty({ example: 'uuid-do-devedor' })
@@ -119,11 +119,11 @@ export class ReceivableFilterDto {
 
   @ApiPropertyOptional({
     type: [String],
-    enum: AccountStatus,
-    example: [AccountStatus.PENDING, AccountStatus.OVERDUE],
+    enum: ReceivableStatus,
+    example: [ReceivableStatus.PENDING, ReceivableStatus.OVERDUE],
   })
   @IsArray()
-  @IsEnum(AccountStatus, { each: true })
+  @IsEnum(ReceivableStatus, { each: true })
   @IsOptional()
   @Transform(({ value }) => {
     if (typeof value === 'string') {
@@ -131,7 +131,7 @@ export class ReceivableFilterDto {
     }
     return value;
   })
-  status?: AccountStatus[];
+  status?: ReceivableStatus[];
 
   @ApiPropertyOptional({ example: '2025-12-01' })
   @IsDateString()
@@ -156,6 +156,16 @@ export class ReceivableFilterDto {
   @IsOptional()
   @Type(() => Number)
   take?: number;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @Transform(({ value }) => {
+    const lowerValue = value.toLowerCase();
+    if (lowerValue === 'true') return true;
+    if (lowerValue === 'false') return false;
+    return undefined;
+  })
+  hideCompleted?: string;
 }
 
 export class UpdateInstallmentDto {

@@ -54,6 +54,8 @@ interface ReceivablesTableProps {
   page: number;
   rowsPerPage: number;
   isLoading: boolean;
+  hideCompleted: boolean;
+  onHideCompletedChange: (hide: boolean) => void;
   onPageChange: (page: number) => void;
   onRowsPerPageChange: (rowsPerPage: number) => void;
   onEdit: (receivable: Receivable) => void;
@@ -79,6 +81,8 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
   page,
   rowsPerPage,
   isLoading,
+  hideCompleted,
+  onHideCompletedChange,
   onPageChange,
   onRowsPerPageChange,
   onEdit,
@@ -91,17 +95,12 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  const [hideCompleted, setHideCompleted] = useState(true);
   const [editingInstallment, setEditingInstallment] = useState<string | null>(
     null
   );
   const [editAmount, setEditAmount] = useState<number | null>(null);
 
-  // Filtrar contas e aplicar filtro de concluídas
-  const filteredAccounts = receivables.filter(r => {
-    if (hideCompleted && r.status === 'PAID') return false;
-    return true;
-  });
+  const filteredAccounts = receivables;
 
   const toggleRow = (id: string) => {
     setExpandedRows(prev => {
@@ -156,7 +155,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
           control={
             <Switch
               checked={hideCompleted}
-              onChange={e => setHideCompleted(e.target.checked)}
+              onChange={e => onHideCompletedChange(e.target.checked)}
             />
           }
           label="Ocultar concluídas"

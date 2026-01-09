@@ -5,6 +5,7 @@ import { ReceivableFilterDto } from '../dto/receivable.dto';
 import { parseDateOnly } from '../../../shared/utils/date.utils';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
+import { ReceivableStatus } from '../domain/receivable-status.enum';
 
 const MAX_PAGE_SIZE = 100;
 const DEFAULT_PAGE_SIZE = 10;
@@ -21,12 +22,32 @@ export class QueryReceivablesUseCase {
   ) {}
 
   async findAll(organizationId: string, filters?: ReceivableFilterDto) {
+    // Handle status filtering with hideCompleted
+    let statusFilter = filters?.status;
+    const hideCompleted = filters?.hideCompleted;
+    if (hideCompleted) {
+      if (statusFilter && statusFilter.length > 0) {
+        // Remove PAID from the status filter
+        statusFilter = statusFilter.filter(s => s !== ReceivableStatus.PAID);
+      } else {
+        // If no specific status filter, exclude PAID
+        statusFilter = [
+          ReceivableStatus.PENDING,
+          ReceivableStatus.PARTIAL,
+          ReceivableStatus.OVERDUE,
+          ReceivableStatus.CANCELLED,
+        ];
+      }
+    } else if (!statusFilter || statusFilter.length === 0) {
+      statusFilter = undefined;
+    }
+
     const where: Prisma.ReceivableWhereInput = {
       organizationId,
       ...(filters?.customerId && { customerId: filters.customerId }),
       ...(filters?.categoryId && { categoryId: filters.categoryId }),
-      ...(filters?.status &&
-        filters.status.length > 0 && { status: { in: filters.status } }),
+      ...(statusFilter &&
+        statusFilter.length > 0 && { status: { in: statusFilter } }),
       ...(filters?.tagIds && filters.tagIds.length > 0
         ? {
             tags: {
@@ -103,7 +124,13 @@ export class QueryReceivablesUseCase {
         ? await this.prisma.receivableInstallment.findMany({
             where: {
               receivableId: { in: receivableIds },
-              status: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] },
+              status: {
+                in: [
+                  ReceivableStatus.PENDING,
+                  ReceivableStatus.PARTIAL,
+                  ReceivableStatus.OVERDUE,
+                ],
+              },
             },
             select: {
               receivableId: true,
@@ -173,7 +200,13 @@ export class QueryReceivablesUseCase {
     const nextInstallment = await this.prisma.receivableInstallment.findFirst({
       where: {
         receivableId: receivable.id,
-        status: { in: ['PENDING', 'PARTIAL', 'OVERDUE'] },
+        status: {
+          in: [
+            ReceivableStatus.PENDING,
+            ReceivableStatus.PARTIAL,
+            ReceivableStatus.OVERDUE,
+          ],
+        },
       },
       orderBy: { dueDate: 'asc' },
       select: { dueDate: true },

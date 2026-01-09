@@ -8,6 +8,7 @@ import { AccountStatus } from '@prisma/client';
 import { CacheService } from '../../../shared/services/cache.service';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
 import { UpdateInstallmentDto } from '../dto/receivable.dto';
+import { ReceivableStatus } from '../domain/receivable-status.enum';
 
 /**
  * Use Case: Atualizar Parcela de Receivable
@@ -45,7 +46,7 @@ export class UpdateReceivableInstallmentUseCase {
     const receivableWithInstallments = receivable as typeof receivable & {
       installments: Array<{
         id: string;
-        status: AccountStatus;
+        status: ReceivableStatus;
         allocations: any[];
       }>;
     };
@@ -58,7 +59,7 @@ export class UpdateReceivableInstallmentUseCase {
       throw new NotFoundException('Parcela não encontrada');
     }
 
-    if (installmentToUpdate.status !== AccountStatus.PENDING) {
+    if (installmentToUpdate.status !== ReceivableStatus.PENDING) {
       throw new BadRequestException('Só é possível editar parcelas pendentes');
     }
 

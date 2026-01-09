@@ -8,6 +8,7 @@ import { AccountStatus } from '@prisma/client';
 import { CacheService } from '../../../shared/services/cache.service';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
 import { UpdateInstallmentDto } from '../dto/payable.dto';
+import { PayableStatus } from '../domain/payable-status.enum';
 
 /**
  * Use Case: Atualizar Parcela de Payable
@@ -58,7 +59,7 @@ export class UpdatePayableInstallmentUseCase {
       throw new NotFoundException('Parcela não encontrada');
     }
 
-    if (installmentToUpdate.status !== AccountStatus.PENDING) {
+    if (installmentToUpdate.status !== PayableStatus.PENDING) {
       throw new BadRequestException('Só é possível editar parcelas pendentes');
     }
 

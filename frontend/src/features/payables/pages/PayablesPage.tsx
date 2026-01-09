@@ -42,6 +42,7 @@ export const PayablesPage: React.FC = () => {
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [hideCompleted, setHideCompleted] = useState(true);
 
   // Queries
   const {
@@ -55,6 +56,7 @@ export const PayablesPage: React.FC = () => {
     tagIds: tagFilters,
     page,
     rowsPerPage,
+    hideCompleted,
   });
 
   const { data: vendors = [] } = useVendors();
@@ -180,6 +182,11 @@ export const PayablesPage: React.FC = () => {
     setPage(0);
   }, []);
 
+  const handleHideCompletedChange = useCallback((hide: boolean) => {
+    setHideCompleted(hide);
+    setPage(0);
+  }, []);
+
   const handleSubmit = useCallback(
     (data: PayableFormData) => {
       submitPayable(data, selectedPayable?.id);
@@ -260,6 +267,8 @@ export const PayablesPage: React.FC = () => {
           page={page}
           rowsPerPage={rowsPerPage}
           isLoading={isLoading}
+          hideCompleted={hideCompleted}
+          onHideCompletedChange={handleHideCompletedChange}
           onPageChange={handlePageChange}
           onRowsPerPageChange={handleRowsPerPageChange}
           onEdit={handleOpenDialog}

@@ -54,6 +54,8 @@ interface PayablesTableProps {
   page: number;
   rowsPerPage: number;
   isLoading: boolean;
+  hideCompleted: boolean;
+  onHideCompletedChange: (hide: boolean) => void;
   onPageChange: (page: number) => void;
   onRowsPerPageChange: (rowsPerPage: number) => void;
   onEdit: (payable: Payable) => void;
@@ -79,6 +81,8 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
   page,
   rowsPerPage,
   isLoading,
+  hideCompleted,
+  onHideCompletedChange,
   onPageChange,
   onRowsPerPageChange,
   onEdit,
@@ -91,17 +95,13 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  const [hideCompleted, setHideCompleted] = useState(true);
   const [editingInstallment, setEditingInstallment] = useState<string | null>(
     null
   );
   const [editAmount, setEditAmount] = useState<number | null>(null);
 
-  // Filtrar contas e aplicar filtro de concluídas
-  const filteredAccounts = payables.filter(p => {
-    if (hideCompleted && p.status === 'PAID') return false;
-    return true;
-  });
+  // Use payables directly (already filtered by API)
+  const filteredAccounts = payables;
 
   const toggleRow = (id: string) => {
     setExpandedRows(prev => {
@@ -573,7 +573,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
           control={
             <Switch
               checked={hideCompleted}
-              onChange={e => setHideCompleted(e.target.checked)}
+              onChange={e => onHideCompletedChange(e.target.checked)}
             />
           }
           label="Ocultar concluídas"
