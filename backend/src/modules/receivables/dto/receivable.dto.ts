@@ -120,7 +120,7 @@ export class ReceivableFilterDto {
   @ApiPropertyOptional({
     type: [String],
     enum: ReceivableStatus,
-    example: [ReceivableStatus.PENDING, ReceivableStatus.OVERDUE],
+    example: [ReceivableStatus.PENDING, ReceivableStatus.PARTIAL],
   })
   @IsArray()
   @IsEnum(ReceivableStatus, { each: true })

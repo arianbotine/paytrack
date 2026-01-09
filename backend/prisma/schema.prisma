@@ -20,7 +20,6 @@ enum AccountStatus {
   PENDING
   PARTIAL
   PAID
-  OVERDUE
   CANCELLED
 }
 

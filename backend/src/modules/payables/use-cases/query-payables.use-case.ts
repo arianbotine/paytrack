@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PayablesRepository } from '../repositories';
 import { PayableFilterDto } from '../dto/payable.dto';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
-import { parseDateOnly } from '../../../shared/utils/date.utils';
+import { parseDateOnly, isOverdue } from '../../../shared/utils/date.utils';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
 import { PayableStatus } from '../domain/payable-status.enum';
 
@@ -34,7 +34,6 @@ export class ListPayablesUseCase {
         statusFilter = [
           PayableStatus.PENDING,
           PayableStatus.PARTIAL,
-          PayableStatus.OVERDUE,
           PayableStatus.CANCELLED,
         ];
       }
@@ -125,11 +124,7 @@ export class ListPayablesUseCase {
             where: {
               payableId: { in: payableIds },
               status: {
-                in: [
-                  PayableStatus.PENDING,
-                  PayableStatus.PARTIAL,
-                  PayableStatus.OVERDUE,
-                ],
+                in: [PayableStatus.PENDING, PayableStatus.PARTIAL],
               },
             },
             select: {
@@ -156,12 +151,35 @@ export class ListPayablesUseCase {
       'paidAmount',
     ]);
 
-    const mappedData = transformedData.map(item => ({
-      ...item,
-      invoiceNumber: item.documentNumber,
-      documentNumber: undefined,
-      nextUnpaidDueDate: dueDateMap.get(item.id) || null,
-    }));
+    // Type assertion para preservar installments
+    type PayableWithInstallments = (typeof transformedData)[0] & {
+      installments?: Array<{
+        id: string;
+        installmentNumber: number;
+        totalInstallments: number;
+        amount: any;
+        paidAmount: any;
+        dueDate: Date;
+        status: any;
+        payable?: {
+          id: string;
+          vendor: { id: string; name: string };
+        };
+      }>;
+    };
+
+    const mappedData = (transformedData as PayableWithInstallments[]).map(
+      item => ({
+        ...item,
+        invoiceNumber: item.documentNumber,
+        documentNumber: undefined,
+        nextUnpaidDueDate: dueDateMap.get(item.id) || null,
+        installments: item.installments?.map(inst => ({
+          ...inst,
+          isOverdue: isOverdue(inst.dueDate),
+        })),
+      })
+    );
 
     return { data: mappedData, total };
   }
@@ -207,17 +225,27 @@ export class GetPayableUseCase {
       throw new NotFoundException('Conta a pagar não encontrada');
     }
 
+    type PayableWithInstallments = typeof payable & {
+      installments: Array<{
+        id: string;
+        installmentNumber: number;
+        totalInstallments: number;
+        amount: any;
+        paidAmount: any;
+        dueDate: Date;
+        status: any;
+      }>;
+    };
+
+    const payableWithInstallments = payable as PayableWithInstallments;
+
     // Buscar próxima data não paga usando findFirst ao invés de $queryRaw
     // (para compatibilidade com schema isolado em testes E2E)
     const nextInstallment = await this.prisma.payableInstallment.findFirst({
       where: {
         payableId: payable.id,
         status: {
-          in: [
-            PayableStatus.PENDING,
-            PayableStatus.PARTIAL,
-            PayableStatus.OVERDUE,
-          ],
+          in: [PayableStatus.PENDING, PayableStatus.PARTIAL],
         },
       },
       orderBy: { dueDate: 'asc' },
@@ -228,16 +256,22 @@ export class GetPayableUseCase {
       ? nextInstallment.dueDate.toISOString().split('T')[0]
       : null;
 
-    const transformed = MoneyUtils.transformMoneyFields(payable, [
-      'amount',
-      'paidAmount',
-    ]);
+    const transformed = MoneyUtils.transformMoneyFields(
+      payableWithInstallments,
+      ['amount', 'paidAmount']
+    );
 
     return {
       ...transformed,
       invoiceNumber: transformed.documentNumber,
       documentNumber: undefined,
       nextUnpaidDueDate,
+      installments: payableWithInstallments.installments.map(inst => ({
+        ...inst,
+        amount: Number(inst.amount),
+        paidAmount: Number(inst.paidAmount),
+        isOverdue: isOverdue(inst.dueDate),
+      })),
     };
   }
 }

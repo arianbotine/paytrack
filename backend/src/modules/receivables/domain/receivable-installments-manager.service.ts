@@ -32,16 +32,11 @@ export class ReceivableInstallmentsManager {
         inst.status === ReceivableStatus.PAID ||
         inst.status === ReceivableStatus.PARTIAL
     );
-    const anyOverdue = installments.some(
-      inst => inst.status === ReceivableStatus.OVERDUE
-    );
 
     if (allPaid) {
       return ReceivableStatus.PAID;
     } else if (anyPaid) {
       return ReceivableStatus.PARTIAL;
-    } else if (anyOverdue) {
-      return ReceivableStatus.OVERDUE;
     } else {
       return ReceivableStatus.PENDING;
     }

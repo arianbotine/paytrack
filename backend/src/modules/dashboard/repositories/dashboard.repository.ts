@@ -73,7 +73,7 @@ export class DashboardRepository {
         SELECT DISTINCT payable_id as "payableId"
         FROM payable_installments
         WHERE organization_id = ${organizationId}
-          AND status IN ('PENDING', 'PARTIAL', 'OVERDUE')
+          AND status IN ('PENDING', 'PARTIAL')
           AND due_date::date < ${referenceDateStr}::date
         LIMIT ${limit}
       `
@@ -124,7 +124,7 @@ export class DashboardRepository {
             (amount - COALESCE(paid_amount, 0)) as next_due_amount
           FROM payable_installments
           WHERE payable_id IN (${Prisma.join(ids)})
-            AND status IN ('PENDING', 'PARTIAL', 'OVERDUE')
+            AND status IN ('PENDING', 'PARTIAL')
           ORDER BY payable_id, due_date ASC
         `
         : [];
@@ -173,7 +173,7 @@ export class DashboardRepository {
         SELECT DISTINCT receivable_id as "receivableId"
         FROM receivable_installments
         WHERE organization_id = ${organizationId}
-          AND status IN ('PENDING', 'PARTIAL', 'OVERDUE')
+          AND status IN ('PENDING', 'PARTIAL')
           AND due_date::date < ${referenceDateStr}::date
         LIMIT ${limit}
       `
@@ -224,7 +224,7 @@ export class DashboardRepository {
             (amount - COALESCE(received_amount, 0)) as next_due_amount
           FROM receivable_installments
           WHERE receivable_id IN (${Prisma.join(ids)})
-            AND status IN ('PENDING', 'PARTIAL', 'OVERDUE')
+            AND status IN ('PENDING', 'PARTIAL')
           ORDER BY receivable_id, due_date ASC
         `
         : [];
@@ -268,11 +268,7 @@ export class DashboardRepository {
       where: {
         organizationId,
         status: {
-          in: [
-            AccountStatus.PENDING,
-            AccountStatus.PARTIAL,
-            AccountStatus.OVERDUE,
-          ],
+          in: [AccountStatus.PENDING, AccountStatus.PARTIAL],
         },
         dueDate: {
           gte: startDate,
@@ -326,7 +322,7 @@ export class DashboardRepository {
             (amount - COALESCE(paid_amount, 0)) as next_due_amount
           FROM payable_installments
           WHERE payable_id IN (${Prisma.join(ids)})
-            AND status IN ('PENDING', 'PARTIAL', 'OVERDUE')
+            AND status IN ('PENDING', 'PARTIAL')
           ORDER BY payable_id, due_date ASC
         `
         : [];
@@ -370,11 +366,7 @@ export class DashboardRepository {
       where: {
         organizationId,
         status: {
-          in: [
-            AccountStatus.PENDING,
-            AccountStatus.PARTIAL,
-            AccountStatus.OVERDUE,
-          ],
+          in: [AccountStatus.PENDING, AccountStatus.PARTIAL],
         },
         dueDate: {
           gte: startDate,
@@ -428,7 +420,7 @@ export class DashboardRepository {
             (amount - COALESCE(received_amount, 0)) as next_due_amount
           FROM receivable_installments
           WHERE receivable_id IN (${Prisma.join(ids)})
-            AND status IN ('PENDING', 'PARTIAL', 'OVERDUE')
+            AND status IN ('PENDING', 'PARTIAL')
           ORDER BY receivable_id, due_date ASC
         `
         : [];

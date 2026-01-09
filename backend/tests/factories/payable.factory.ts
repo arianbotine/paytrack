@@ -13,7 +13,7 @@ export interface CreatePayableData {
   organizationId: string;
   vendorId: string;
   categoryId?: string;
-  status?: 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+  status?: 'PENDING' | 'PARTIAL' | 'PAID' | 'CANCELLED';
   tags?: string[];
   documentNumber?: string;
 }
@@ -103,7 +103,7 @@ export class PayableFactory {
    * Cria conta a pagar com status específico
    */
   async createWithStatus(
-    status: 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE' | 'CANCELLED',
+    status: 'PENDING' | 'PARTIAL' | 'PAID' | 'CANCELLED',
     data: CreatePayableData
   ) {
     return this.create({

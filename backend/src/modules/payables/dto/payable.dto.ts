@@ -125,7 +125,7 @@ export class PayableFilterDto {
   @ApiPropertyOptional({
     type: [String],
     enum: PayableStatus,
-    example: [PayableStatus.PENDING, PayableStatus.OVERDUE],
+    example: [PayableStatus.PENDING, PayableStatus.PARTIAL],
   })
   @IsArray()
   @IsEnum(PayableStatus, { each: true })

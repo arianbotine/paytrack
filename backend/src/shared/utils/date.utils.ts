@@ -34,25 +34,36 @@ export function isValidDate(dateString: string): boolean {
  * Verifica se uma data de vencimento está vencida
  * Uma data é considerada vencida apenas se for ANTERIOR ao dia atual
  * Datas de hoje ou futuras NÃO são consideradas vencidas
+ *
+ * Usa componentes UTC de data (ano, mês, dia) para evitar problemas de timezone
  * @param dueDate Data de vencimento
  * @returns true se a data está vencida (passada), false caso contrário
  */
 export function isOverdue(dueDate: Date): boolean {
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayUTC = Date.UTC(
+    today.getUTCFullYear(),
+    today.getUTCMonth(),
+    today.getUTCDate()
+  );
 
-  const dueDateOnly = new Date(dueDate);
-  dueDateOnly.setHours(0, 0, 0, 0);
+  const dueDateUTC = Date.UTC(
+    dueDate.getUTCFullYear(),
+    dueDate.getUTCMonth(),
+    dueDate.getUTCDate()
+  );
 
-  return dueDateOnly < today;
+  return dueDateUTC < todayUTC;
 }
 
 /**
  * Obtém a data de hoje sem horário (00:00:00)
  * Útil para comparações de data
+ * Usa Date.UTC para evitar problemas de timezone
  */
 export function getTodayWithoutTime(): Date {
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return today;
+  return new Date(
+    Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
+  );
 }

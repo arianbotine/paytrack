@@ -10,7 +10,6 @@ import {
   UpdatePayableUseCase,
   DeletePayableUseCase,
   ListPayablesUseCase,
-  UpdateOverdueStatusUseCase,
   CancelPayableUseCase,
   GetPayablePaymentsUseCase,
   DeletePayableInstallmentUseCase,
@@ -32,7 +31,6 @@ export class PayablesService {
     private readonly updatePayableUseCase: UpdatePayableUseCase,
     private readonly deletePayableUseCase: DeletePayableUseCase,
     private readonly listPayablesUseCase: ListPayablesUseCase,
-    private readonly updateOverdueStatusUseCase: UpdateOverdueStatusUseCase,
     private readonly cancelPayableUseCase: CancelPayableUseCase,
     private readonly getPayablePaymentsUseCase: GetPayablePaymentsUseCase,
     private readonly deletePayableInstallmentUseCase: DeletePayableInstallmentUseCase,
@@ -78,10 +76,6 @@ export class PayablesService {
 
   async remove(id: string, organizationId: string) {
     return this.deletePayableUseCase.execute(id, organizationId);
-  }
-
-  async updateOverdueStatus() {
-    return this.updateOverdueStatusUseCase.execute();
   }
 
   async cancel(id: string, organizationId: string) {

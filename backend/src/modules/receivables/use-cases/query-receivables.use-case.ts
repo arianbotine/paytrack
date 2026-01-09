@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { ReceivablesRepository } from '../repositories';
 import { ReceivableFilterDto } from '../dto/receivable.dto';
-import { parseDateOnly } from '../../../shared/utils/date.utils';
+import { parseDateOnly, isOverdue } from '../../../shared/utils/date.utils';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
 import { ReceivableStatus } from '../domain/receivable-status.enum';
@@ -34,7 +34,6 @@ export class QueryReceivablesUseCase {
         statusFilter = [
           ReceivableStatus.PENDING,
           ReceivableStatus.PARTIAL,
-          ReceivableStatus.OVERDUE,
           ReceivableStatus.CANCELLED,
         ];
       }
@@ -125,11 +124,7 @@ export class QueryReceivablesUseCase {
             where: {
               receivableId: { in: receivableIds },
               status: {
-                in: [
-                  ReceivableStatus.PENDING,
-                  ReceivableStatus.PARTIAL,
-                  ReceivableStatus.OVERDUE,
-                ],
+                in: [ReceivableStatus.PENDING, ReceivableStatus.PARTIAL],
               },
             },
             select: {
@@ -156,10 +151,31 @@ export class QueryReceivablesUseCase {
       'receivedAmount',
     ]);
 
+    // Type assertion para preservar installments
+    type ReceivableWithInstallments = (typeof transformedData)[0] & {
+      installments?: Array<{
+        id: string;
+        installmentNumber: number;
+        totalInstallments: number;
+        amount: any;
+        receivedAmount: any;
+        dueDate: Date;
+        status: any;
+        receivable?: {
+          id: string;
+          customer: { id: string; name: string };
+        };
+      }>;
+    };
+
     return {
-      data: transformedData.map(item => ({
+      data: (transformedData as ReceivableWithInstallments[]).map(item => ({
         ...item,
         nextUnpaidDueDate: dueDateMap.get(item.id) || null,
+        installments: item.installments?.map(inst => ({
+          ...inst,
+          isOverdue: isOverdue(inst.dueDate),
+        })),
       })),
       total,
     };
@@ -170,7 +186,7 @@ export class QueryReceivablesUseCase {
       { id, organizationId },
       {
         customer: { select: { id: true, name: true } },
-        category: { select: { id: true, name: true, color: true } },
+        category: { select: { id: true, name: true } },
         tags: {
           include: {
             tag: { select: { id: true, name: true, color: true } },
@@ -195,17 +211,27 @@ export class QueryReceivablesUseCase {
       throw new NotFoundException('Conta a receber não encontrada');
     }
 
+    type ReceivableWithInstallments = typeof receivable & {
+      installments: Array<{
+        id: string;
+        installmentNumber: number;
+        totalInstallments: number;
+        amount: any;
+        receivedAmount: any;
+        dueDate: Date;
+        status: any;
+      }>;
+    };
+
+    const receivableWithInstallments = receivable as ReceivableWithInstallments;
+
     // Buscar próxima data não paga usando findFirst ao invés de $queryRaw
     // (para compatibilidade com schema isolado em testes E2E)
     const nextInstallment = await this.prisma.receivableInstallment.findFirst({
       where: {
-        receivableId: receivable.id,
+        receivableId: receivableWithInstallments.id,
         status: {
-          in: [
-            ReceivableStatus.PENDING,
-            ReceivableStatus.PARTIAL,
-            ReceivableStatus.OVERDUE,
-          ],
+          in: [ReceivableStatus.PENDING, ReceivableStatus.PARTIAL],
         },
       },
       orderBy: { dueDate: 'asc' },
@@ -216,12 +242,20 @@ export class QueryReceivablesUseCase {
       ? nextInstallment.dueDate.toISOString().split('T')[0]
       : null;
 
+    const transformed = MoneyUtils.transformMoneyFields(
+      receivableWithInstallments,
+      ['amount', 'receivedAmount']
+    );
+
     return {
-      ...MoneyUtils.transformMoneyFields(receivable, [
-        'amount',
-        'receivedAmount',
-      ]),
+      ...transformed,
       nextUnpaidDueDate,
+      installments: receivableWithInstallments.installments.map(inst => ({
+        ...inst,
+        amount: Number(inst.amount),
+        receivedAmount: Number(inst.receivedAmount),
+        isOverdue: isOverdue(inst.dueDate),
+      })),
     };
   }
 }

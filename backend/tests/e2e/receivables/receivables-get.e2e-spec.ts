@@ -315,4 +315,153 @@ describe('[Contas a Receber] GET /api/receivables', () => {
   it('deve retornar 401 quando não autenticado', async () => {
     await request(app.getHttpServer()).get('/api/receivables').expect(401);
   });
+
+  describe('Validação de campo isOverdue', () => {
+    it('deve marcar isOverdue=true para parcelas com data anterior a hoje', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const customerFactory = new CustomerFactory(prisma);
+      const receivableFactory = new ReceivableFactory(prisma);
+
+      const customer = await customerFactory.create({ organizationId });
+
+      // Data passada (ontem) - criar em UTC para evitar problemas de timezone
+      const yesterday = new Date();
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+      yesterday.setUTCHours(0, 0, 0, 0);
+
+      await receivableFactory.create({
+        organizationId,
+        customerId: customer.id,
+        amount: 100,
+        dueDate: yesterday,
+        status: 'PENDING',
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/receivables')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].installments).toHaveLength(1);
+      expect(response.body.data[0].installments[0].isOverdue).toBe(true);
+    });
+
+    it('deve marcar isOverdue=false para parcelas com data igual a hoje', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const customerFactory = new CustomerFactory(prisma);
+      const receivableFactory = new ReceivableFactory(prisma);
+
+      const customer = await customerFactory.create({ organizationId });
+
+      // Data de hoje - criar em UTC para evitar problemas de timezone
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+
+      await receivableFactory.create({
+        organizationId,
+        customerId: customer.id,
+        amount: 100,
+        dueDate: today,
+        status: 'PENDING',
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/receivables')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].installments).toHaveLength(1);
+      expect(response.body.data[0].installments[0].isOverdue).toBe(false);
+    });
+
+    it('deve marcar isOverdue=false para parcelas com data posterior a hoje', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const customerFactory = new CustomerFactory(prisma);
+      const receivableFactory = new ReceivableFactory(prisma);
+
+      const customer = await customerFactory.create({ organizationId });
+
+      // Data futura (amanhã) - criar em UTC para evitar problemas de timezone
+      const tomorrow = new Date();
+      tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+      tomorrow.setUTCHours(0, 0, 0, 0);
+
+      await receivableFactory.create({
+        organizationId,
+        customerId: customer.id,
+        amount: 100,
+        dueDate: tomorrow,
+        status: 'PENDING',
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/receivables')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].installments).toHaveLength(1);
+      expect(response.body.data[0].installments[0].isOverdue).toBe(false);
+    });
+
+    it('deve validar isOverdue considerando apenas data, não hora', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const customerFactory = new CustomerFactory(prisma);
+      const receivableFactory = new ReceivableFactory(prisma);
+
+      const customer = await customerFactory.create({ organizationId });
+
+      // Data de hoje mas com horas diferentes - ambas devem ter isOverdue=false
+      const todayMorning = new Date();
+      todayMorning.setUTCHours(8, 30, 0, 0);
+
+      const todayNight = new Date();
+      todayNight.setUTCHours(23, 59, 59, 999);
+
+      await receivableFactory.create({
+        organizationId,
+        customerId: customer.id,
+        amount: 100,
+        dueDate: todayMorning,
+        status: 'PENDING',
+        installmentCount: 1,
+      });
+
+      await receivableFactory.create({
+        organizationId,
+        customerId: customer.id,
+        amount: 200,
+        dueDate: todayNight,
+        status: 'PENDING',
+        installmentCount: 1,
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/receivables')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(2);
+      // Ambas devem ter isOverdue=false pois a data é hoje (independente da hora)
+      expect(
+        response.body.data.every(
+          (r: any) => r.installments[0].isOverdue === false
+        )
+      ).toBe(true);
+    });
+  });
 });

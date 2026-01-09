@@ -301,4 +301,153 @@ describe('[Contas a Pagar] GET /api/payables', () => {
   it('deve retornar 401 quando não autenticado', async () => {
     await request(app.getHttpServer()).get('/api/payables').expect(401);
   });
+
+  describe('Validação de campo isOverdue', () => {
+    it('deve marcar isOverdue=true para parcelas com data anterior a hoje', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const vendorFactory = new VendorFactory(prisma);
+      const payableFactory = new PayableFactory(prisma);
+
+      const vendor = await vendorFactory.create({ organizationId });
+
+      // Data passada (ontem) - criar em UTC para evitar problemas de timezone
+      const yesterday = new Date();
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+      yesterday.setUTCHours(0, 0, 0, 0);
+
+      await payableFactory.create({
+        organizationId,
+        vendorId: vendor.id,
+        amount: 100,
+        dueDate: yesterday,
+        status: 'PENDING',
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/payables')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].installments).toHaveLength(1);
+      expect(response.body.data[0].installments[0].isOverdue).toBe(true);
+    });
+
+    it('deve marcar isOverdue=false para parcelas com data igual a hoje', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const vendorFactory = new VendorFactory(prisma);
+      const payableFactory = new PayableFactory(prisma);
+
+      const vendor = await vendorFactory.create({ organizationId });
+
+      // Data de hoje - criar em UTC para evitar problemas de timezone
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+
+      await payableFactory.create({
+        organizationId,
+        vendorId: vendor.id,
+        amount: 100,
+        dueDate: today,
+        status: 'PENDING',
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/payables')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].installments).toHaveLength(1);
+      expect(response.body.data[0].installments[0].isOverdue).toBe(false);
+    });
+
+    it('deve marcar isOverdue=false para parcelas com data posterior a hoje', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const vendorFactory = new VendorFactory(prisma);
+      const payableFactory = new PayableFactory(prisma);
+
+      const vendor = await vendorFactory.create({ organizationId });
+
+      // Data futura (amanhã) - criar em UTC para evitar problemas de timezone
+      const tomorrow = new Date();
+      tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+      tomorrow.setUTCHours(0, 0, 0, 0);
+
+      await payableFactory.create({
+        organizationId,
+        vendorId: vendor.id,
+        amount: 100,
+        dueDate: tomorrow,
+        status: 'PENDING',
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/payables')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].installments).toHaveLength(1);
+      expect(response.body.data[0].installments[0].isOverdue).toBe(false);
+    });
+
+    it('deve validar isOverdue considerando apenas data, não hora', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const vendorFactory = new VendorFactory(prisma);
+      const payableFactory = new PayableFactory(prisma);
+
+      const vendor = await vendorFactory.create({ organizationId });
+
+      // Data de hoje mas com horas diferentes - ambas devem ter isOverdue=false
+      const todayMorning = new Date();
+      todayMorning.setUTCHours(8, 30, 0, 0);
+
+      const todayNight = new Date();
+      todayNight.setUTCHours(23, 59, 59, 999);
+
+      await payableFactory.create({
+        organizationId,
+        vendorId: vendor.id,
+        amount: 100,
+        dueDate: todayMorning,
+        status: 'PENDING',
+        installmentCount: 1,
+      });
+
+      await payableFactory.create({
+        organizationId,
+        vendorId: vendor.id,
+        amount: 200,
+        dueDate: todayNight,
+        status: 'PENDING',
+        installmentCount: 1,
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/payables')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(2);
+      // Ambas devem ter isOverdue=false pois a data é hoje (independente da hora)
+      expect(
+        response.body.data.every(
+          (p: any) => p.installments[0].isOverdue === false
+        )
+      ).toBe(true);
+    });
+  });
 });

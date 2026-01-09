@@ -149,12 +149,13 @@ describe('Dashboard - GET (e2e)', () => {
         dueDate: currentMonth,
       });
 
+      // Criar payable com data vencida (status PENDING mas data no passado será detectado como vencido)
       const payable3 = await payableFactory.create({
         organizationId,
         vendorId: vendor.id,
         categoryId: category.id,
         amount: 1500,
-        status: 'OVERDUE',
+        status: 'PENDING',
         dueDate: currentMonth,
       });
 
@@ -169,7 +170,7 @@ describe('Dashboard - GET (e2e)', () => {
 
       expect(payable3).toHaveProperty('id');
       expect(payable3.amount.toNumber()).toBe(1500);
-      expect(payable3.status).toBe('OVERDUE');
+      expect(payable3.status).toBe('PENDING');
 
       const response = await request(app.getHttpServer())
         .get('/api/dashboard')
@@ -179,14 +180,14 @@ describe('Dashboard - GET (e2e)', () => {
       expect(response.body.payableInstallments.totals).toEqual({
         total: 4500, // 1000 + 2000 + 1500
         paid: 1000,
-        pending: 2000,
+        pending: 3500, // PENDING agora inclui o que era overdue
         partial: 0,
-        overdue: 1500,
+        overdue: 0, // Campo mantido para compatibilidade mas sempre 0
         cancelled: 0,
         count: 3,
       });
 
-      expect(response.body.balance.toPay).toBe(3500); // pending + overdue
+      expect(response.body.balance.toPay).toBe(3500); // pending (que inclui vencidos)
     });
 
     it('deve calcular corretamente totais de receivables', async () => {
@@ -256,7 +257,15 @@ describe('Dashboard - GET (e2e)', () => {
     });
 
     it('deve incluir installments em atraso', async () => {
-      // Criar payable vencido (data passada)
+      // Limpar tudo primeiro para evitar dados de testes anteriores
+      await prisma.paymentAllocation.deleteMany();
+      await prisma.payment.deleteMany({ where: { organizationId } });
+      await prisma.payableInstallment.deleteMany({ where: { organizationId } });
+      await prisma.payable.deleteMany({ where: { organizationId } });
+      await prisma.vendor.deleteMany({ where: { organizationId } });
+      cacheService.flush();
+
+      // Criar payable vencido (data passada, status PENDING)
       const vendor = await vendorFactory.create({ organizationId });
       const pastDate = new Date('2020-01-01'); // Data fixa no passado
 
@@ -265,14 +274,14 @@ describe('Dashboard - GET (e2e)', () => {
         vendorId: vendor.id,
         amount: 500,
         dueDate: pastDate,
-        status: 'OVERDUE',
+        status: 'PENDING', // Status PENDING mas com data vencida
       });
 
       // Verificar que o payable foi criado corretamente
       expect(payable).toHaveProperty('id');
       expect(payable.amount.toNumber()).toBe(500);
-      expect(payable.status).toBe('OVERDUE');
-      expect(payable.installments[0].status).toBe('OVERDUE');
+      expect(payable.status).toBe('PENDING');
+      expect(payable.installments[0].status).toBe('PENDING');
       expect(payable.installments[0].dueDate.getTime()).toBeLessThan(
         Date.now()
       ); // Data passada
@@ -282,7 +291,7 @@ describe('Dashboard - GET (e2e)', () => {
         where: { organizationId, payableId: payable.id },
       });
       expect(installmentsInDb).toHaveLength(1);
-      expect(installmentsInDb[0].status).toBe('OVERDUE');
+      expect(installmentsInDb[0].status).toBe('PENDING');
       expect(installmentsInDb[0].dueDate.toISOString().split('T')[0]).toBe(
         '2020-01-01'
       );

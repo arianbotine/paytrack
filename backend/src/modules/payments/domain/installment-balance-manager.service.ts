@@ -11,11 +11,11 @@ import { Decimal } from '@prisma/client/runtime/library';
 export class InstallmentBalanceManager {
   /**
    * Calcula o status de uma parcela com base no valor pago/recebido
+   * Nota: Vencimento não é mais um status, será calculado separadamente via isOverdue()
    */
   calculateInstallmentStatus(
     paidOrReceivedAmount: number,
-    totalAmount: number,
-    dueDate: Date
+    totalAmount: number
   ): AccountStatus {
     const threshold = 0.01;
 
@@ -23,35 +23,9 @@ export class InstallmentBalanceManager {
       return AccountStatus.PAID;
     } else if (paidOrReceivedAmount > 0) {
       return AccountStatus.PARTIAL;
-    } else if (this.isOverdue(dueDate)) {
-      return AccountStatus.OVERDUE;
     }
 
     return AccountStatus.PENDING;
-  }
-
-  /**
-   * Obtém o status padrão baseado na data de vencimento
-   */
-  getDefaultStatus(dueDate: Date): AccountStatus {
-    return this.isOverdue(dueDate)
-      ? AccountStatus.OVERDUE
-      : AccountStatus.PENDING;
-  }
-
-  /**
-   * Verifica se uma data está vencida
-   * Uma conta só está vencida se a data de vencimento for ANTERIOR ao dia atual
-   * Contas com vencimento no dia atual NÃO estão vencidas
-   */
-  private isOverdue(dueDate: Date): boolean {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const dueDateOnly = new Date(dueDate);
-    dueDateOnly.setHours(0, 0, 0, 0);
-
-    return dueDateOnly < today;
   }
 
   /**
@@ -75,8 +49,7 @@ export class InstallmentBalanceManager {
 
     const newStatus = this.calculateInstallmentStatus(
       newPaidAmount,
-      totalAmount,
-      installment.dueDate
+      totalAmount
     );
 
     await tx.payableInstallment.update({
@@ -114,8 +87,7 @@ export class InstallmentBalanceManager {
 
     const newStatus = this.calculateInstallmentStatus(
       newReceivedAmount,
-      totalAmount,
-      installment.dueDate
+      totalAmount
     );
 
     await tx.receivableInstallment.update({
@@ -152,11 +124,7 @@ export class InstallmentBalanceManager {
     } else if (anyPaid) {
       newStatus = AccountStatus.PARTIAL;
     } else {
-      // Verificar se há alguma parcela vencida
-      const hasOverdue = installments.some(
-        i => i.status === AccountStatus.OVERDUE
-      );
-      newStatus = hasOverdue ? AccountStatus.OVERDUE : AccountStatus.PENDING;
+      newStatus = AccountStatus.PENDING;
     }
 
     const totalPaid = installments.reduce(
@@ -195,11 +163,7 @@ export class InstallmentBalanceManager {
     } else if (anyPaid) {
       newStatus = AccountStatus.PARTIAL;
     } else {
-      // Verificar se há alguma parcela vencida
-      const hasOverdue = installments.some(
-        i => i.status === AccountStatus.OVERDUE
-      );
-      newStatus = hasOverdue ? AccountStatus.OVERDUE : AccountStatus.PENDING;
+      newStatus = AccountStatus.PENDING;
     }
 
     const totalReceived = installments.reduce(
@@ -236,9 +200,7 @@ export class InstallmentBalanceManager {
     );
 
     const newStatus =
-      newPaidAmount === 0
-        ? this.getDefaultStatus(installment.dueDate)
-        : AccountStatus.PARTIAL;
+      newPaidAmount === 0 ? AccountStatus.PENDING : AccountStatus.PARTIAL;
 
     await tx.payableInstallment.update({
       where: { id: installmentId },
@@ -271,9 +233,7 @@ export class InstallmentBalanceManager {
     );
 
     const newStatus =
-      newReceivedAmount === 0
-        ? this.getDefaultStatus(installment.dueDate)
-        : AccountStatus.PARTIAL;
+      newReceivedAmount === 0 ? AccountStatus.PENDING : AccountStatus.PARTIAL;
 
     await tx.receivableInstallment.update({
       where: { id: installmentId },

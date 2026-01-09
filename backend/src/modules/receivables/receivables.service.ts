@@ -10,7 +10,6 @@ import {
   UpdateReceivableUseCase,
   DeleteReceivableUseCase,
   QueryReceivablesUseCase,
-  UpdateOverdueStatusUseCase,
   CancelReceivableUseCase,
   GetReceivablePaymentsUseCase,
   DeleteReceivableInstallmentUseCase,
@@ -31,7 +30,6 @@ export class ReceivablesService {
     private readonly updateReceivableUseCase: UpdateReceivableUseCase,
     private readonly deleteReceivableUseCase: DeleteReceivableUseCase,
     private readonly queryReceivablesUseCase: QueryReceivablesUseCase,
-    private readonly updateOverdueStatusUseCase: UpdateOverdueStatusUseCase,
     private readonly cancelReceivableUseCase: CancelReceivableUseCase,
     private readonly getReceivablePaymentsUseCase: GetReceivablePaymentsUseCase,
     private readonly deleteReceivableInstallmentUseCase: DeleteReceivableInstallmentUseCase,
@@ -60,10 +58,6 @@ export class ReceivablesService {
 
   async remove(id: string, organizationId: string) {
     return this.deleteReceivableUseCase.execute(id, organizationId);
-  }
-
-  async updateOverdueStatus() {
-    return this.updateOverdueStatusUseCase.execute();
   }
 
   async cancel(id: string, organizationId: string) {
