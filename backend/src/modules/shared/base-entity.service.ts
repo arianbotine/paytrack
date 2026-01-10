@@ -138,6 +138,7 @@ export abstract class BaseEntityService<TModel, TCreateDto, TUpdateDto> {
    * Override this to check if entity is in use (for soft delete logic).
    * This base implementation returns false - subclasses should override to implement their own logic.
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected async checkIfInUse(id: string): Promise<boolean> {
     return false;
   }
@@ -146,6 +147,7 @@ export abstract class BaseEntityService<TModel, TCreateDto, TUpdateDto> {
    * Override this to check unique constraints before create/update.
    * This base implementation does nothing - subclasses should implement their own validation logic.
    */
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   protected async checkUniqueConstraints(
     organizationId: string,
     dto: Partial<TCreateDto | TUpdateDto>,
@@ -153,6 +155,7 @@ export abstract class BaseEntityService<TModel, TCreateDto, TUpdateDto> {
   ): Promise<void> {
     // Implementation should be provided by subclasses
   }
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   /**
    * Override this to customize default ordering

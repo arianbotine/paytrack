@@ -33,77 +33,63 @@ export class PaymentsReportsRepository {
     filters?: PaymentsReportFilterDto
   ): Promise<TimeSeriesData[]> {
     // Build dynamic WHERE conditions
-    const categoryFilter =
-      filters?.categoryIds && filters.categoryIds.length > 0
-        ? Prisma.sql`AND (
-            pay.category_id IN (${Prisma.join(filters.categoryIds)})
-            OR rec.category_id IN (${Prisma.join(filters.categoryIds)})
-          )`
-        : Prisma.empty;
+    let whereConditions = '';
 
-    const vendorFilter =
-      filters?.vendorIds && filters.vendorIds.length > 0
-        ? Prisma.sql`AND EXISTS (
-            SELECT 1 FROM payment_allocations pa_inner
-            JOIN payable_installments pi ON pa_inner.payable_installment_id = pi.id
-            JOIN payables pay_inner ON pi.payable_id = pay_inner.id
-            WHERE pa_inner.payment_id = p.id
-            AND pay_inner.vendor_id IN (${Prisma.join(filters.vendorIds)})
-          )`
-        : Prisma.empty;
+    if (filters?.categoryIds && filters.categoryIds.length > 0) {
+      whereConditions += ` AND (
+        pay.category_id IN (${Prisma.join(filters.categoryIds)})
+        OR rec.category_id IN (${Prisma.join(filters.categoryIds)})
+      )`;
+    }
 
-    const customerFilter =
-      filters?.customerIds && filters.customerIds.length > 0
-        ? Prisma.sql`AND EXISTS (
-            SELECT 1 FROM payment_allocations pa_inner
-            JOIN receivable_installments ri ON pa_inner.receivable_installment_id = ri.id
-            JOIN receivables rec_inner ON ri.receivable_id = rec_inner.id
-            WHERE pa_inner.payment_id = p.id
-            AND rec_inner.customer_id IN (${Prisma.join(filters.customerIds)})
-          )`
-        : Prisma.empty;
+    if (filters?.vendorIds && filters.vendorIds.length > 0) {
+      whereConditions += ` AND EXISTS (
+        SELECT 1 FROM payment_allocations pa_inner
+        JOIN payable_installments pi ON pa_inner.payable_installment_id = pi.id
+        JOIN payables pay_inner ON pi.payable_id = pay_inner.id
+        WHERE pa_inner.payment_id = p.id
+        AND pay_inner.vendor_id IN (${Prisma.join(filters.vendorIds)})
+      )`;
+    }
 
-    const tagFilter =
-      filters?.tagIds && filters.tagIds.length > 0
-        ? Prisma.sql`AND EXISTS (
-            SELECT 1 FROM payment_allocations pa_inner
-            LEFT JOIN payable_installments pi ON pa_inner.payable_installment_id = pi.id
-            LEFT JOIN payables pay_inner ON pi.payable_id = pay_inner.id
-            LEFT JOIN receivable_installments ri ON pa_inner.receivable_installment_id = ri.id
-            LEFT JOIN receivables rec_inner ON ri.receivable_id = rec_inner.id
-            WHERE pa_inner.payment_id = p.id
-            AND (
-              EXISTS (
-                SELECT 1 FROM payable_tags pt
-                WHERE pt.payable_id = pay_inner.id
-                AND pt.tag_id IN (${Prisma.join(filters.tagIds)})
-              )
-              OR EXISTS (
-                SELECT 1 FROM receivable_tags rt
-                WHERE rt.receivable_id = rec_inner.id
-                AND rt.tag_id IN (${Prisma.join(filters.tagIds)})
-              )
-            )
-          )`
-        : Prisma.empty;
+    if (filters?.customerIds && filters.customerIds.length > 0) {
+      whereConditions += ` AND EXISTS (
+        SELECT 1 FROM payment_allocations pa_inner
+        JOIN receivable_installments ri ON pa_inner.receivable_installment_id = ri.id
+        JOIN receivables rec_inner ON ri.receivable_id = rec_inner.id
+        WHERE pa_inner.payment_id = p.id
+        AND rec_inner.customer_id IN (${Prisma.join(filters.customerIds)})
+      )`;
+    }
+
+    if (filters?.tagIds && filters.tagIds.length > 0) {
+      whereConditions += ` AND EXISTS (
+        SELECT 1 FROM payment_allocations pa_inner
+        LEFT JOIN payable_installments pi ON pa_inner.payable_installment_id = pi.id
+        LEFT JOIN payables pay_inner ON pi.payable_id = pay_inner.id
+        LEFT JOIN receivable_installments ri ON pa_inner.receivable_installment_id = ri.id
+        LEFT JOIN receivables rec_inner ON ri.receivable_id = rec_inner.id
+        WHERE pa_inner.payment_id = p.id
+        AND (
+          EXISTS (
+            SELECT 1 FROM payable_tags pt
+            WHERE pt.payable_id = pay_inner.id
+            AND pt.tag_id IN (${Prisma.join(filters.tagIds)})
+          )
+          OR EXISTS (
+            SELECT 1 FROM receivable_tags rt
+            WHERE rt.receivable_id = rec_inner.id
+            AND rt.tag_id IN (${Prisma.join(filters.tagIds)})
+          )
+        )
+      )`;
+    }
 
     const result = await this.prisma.$queryRaw<TimeSeriesData[]>`
       SELECT
-        DATE_TRUNC(${groupBy}, p.payment_date) as period,
-        COALESCE(SUM(
-          CASE
-            WHEN pa.payable_installment_id IS NOT NULL
-            THEN pa.amount
-            ELSE 0
-          END
-        ), 0)::DECIMAL as payables,
-        COALESCE(SUM(
-          CASE
-            WHEN pa.receivable_installment_id IS NOT NULL
-            THEN pa.amount
-            ELSE 0
-          END
-        ), 0)::DECIMAL as receivables,
+        DATE_TRUNC('month', p.payment_date) as period,
+        COALESCE(SUM(pa.amount), 0)::DECIMAL as payables,
+        0::DECIMAL as receivables,
         COUNT(DISTINCT p.id) as count
       FROM payments p
       JOIN payment_allocations pa ON p.id = pa.payment_id
@@ -114,10 +100,7 @@ export class PaymentsReportsRepository {
       WHERE p.organization_id = ${organizationId}
         AND p.payment_date >= ${startDate}
         AND p.payment_date <= ${endDate}
-        ${categoryFilter}
-        ${vendorFilter}
-        ${customerFilter}
-        ${tagFilter}
+        ${whereConditions}
       GROUP BY period
       ORDER BY period ASC
     `;

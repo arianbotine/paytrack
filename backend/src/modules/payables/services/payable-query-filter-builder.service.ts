@@ -66,7 +66,9 @@ export class PayableQueryFilterBuilder {
       installmentFilters.push({
         tags: {
           some: {
-            tagId: { in: filters.installmentTagIds },
+            tag: {
+              id: { in: filters.installmentTagIds },
+            },
           },
         },
       });

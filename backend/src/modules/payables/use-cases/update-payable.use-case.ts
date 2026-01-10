@@ -74,7 +74,7 @@ export class UpdatePayableUseCase {
       amountChanged && installments.length > 0;
 
     // Atualizar em transação
-    const result = await this.payablesRepository.transaction(async tx => {
+    await this.payablesRepository.transaction(async tx => {
       // 1. Atualizar dados principais
       const updated = await tx.payable.update({
         where: { id },

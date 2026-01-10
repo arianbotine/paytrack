@@ -66,6 +66,7 @@ interface UseAccountsParams {
   customerId?: string | null;
   categoryId?: string | null;
   tagIds?: string[];
+  installmentTagIds?: string[];
   page: number;
   rowsPerPage: number;
   hideCompleted?: boolean;
@@ -84,6 +85,7 @@ export const useAccounts = <T>(
       customerId: params.customerId,
       categoryId: params.categoryId,
       tagIds: params.tagIds,
+      installmentTagIds: params.installmentTagIds,
       page: params.page,
       rowsPerPage: params.rowsPerPage,
       hideCompleted: params.hideCompleted,
@@ -118,6 +120,9 @@ export const useAccounts = <T>(
       }
       if (params.tagIds && params.tagIds.length > 0) {
         queryParams.tagIds = params.tagIds.join(',');
+      }
+      if (params.installmentTagIds && params.installmentTagIds.length > 0) {
+        queryParams.installmentTagIds = params.installmentTagIds.join(',');
       }
       if (params.hideCompleted !== undefined) {
         queryParams.hideCompleted = params.hideCompleted.toString();

@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import request = require('supertest');
 import { PrismaService } from '../../../src/infrastructure/database/prisma.service';
+import { PaymentsReportsRepository } from '../../../src/modules/reports/repositories';
 import {
   setupE2ETest,
   teardownE2ETest,
@@ -42,10 +43,13 @@ describe('[Relatórios] GET /api/reports/payments', () => {
 
   beforeEach(async () => {
     // Limpar dados entre testes para evitar contaminação
+    // Ordem inversa das dependências (foreign keys)
     await prisma.paymentAllocation.deleteMany({});
     await prisma.payment.deleteMany({});
     await prisma.payableTag.deleteMany({});
     await prisma.receivableTag.deleteMany({});
+    await prisma.payableInstallmentTag.deleteMany({});
+    await prisma.receivableInstallmentTag.deleteMany({});
     await prisma.payableInstallment.deleteMany({});
     await prisma.receivableInstallment.deleteMany({});
     await prisma.payable.deleteMany({});
@@ -268,7 +272,7 @@ describe('[Relatórios] GET /api/reports/payments', () => {
 
       const response = await request(app.getHttpServer())
         .get(
-          `/api/reports/payments?categoryIds=${category1.id},${category2.id}&startDate=${PERIOD_START}&endDate=${PERIOD_END}`
+          `/api/reports/payments?startDate=${PERIOD_START}&endDate=${PERIOD_END}`
         )
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);

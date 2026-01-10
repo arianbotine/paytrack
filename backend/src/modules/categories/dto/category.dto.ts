@@ -1,10 +1,5 @@
 import { IsString, IsOptional, IsBoolean, IsEnum } from 'class-validator';
-import {
-  ApiProperty,
-  ApiPropertyOptional,
-  PartialType,
-  OmitType,
-} from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { CategoryType } from '@prisma/client';
 

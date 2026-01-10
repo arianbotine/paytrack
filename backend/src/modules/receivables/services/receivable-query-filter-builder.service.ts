@@ -68,7 +68,9 @@ export class ReceivableQueryFilterBuilder {
       installmentFilters.push({
         tags: {
           some: {
-            tagId: { in: filters.installmentTagIds },
+            tag: {
+              id: { in: filters.installmentTagIds },
+            },
           },
         },
       });

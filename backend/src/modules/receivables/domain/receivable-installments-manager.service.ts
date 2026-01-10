@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AccountStatus, Prisma, ReceivableInstallment } from '@prisma/client';
+import { Prisma, ReceivableInstallment } from '@prisma/client';
 import { ReceivableInstallmentsRepository } from '../repositories';
 import { ReceivableStatus } from './receivable-status.enum';
 

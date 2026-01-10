@@ -10,6 +10,7 @@ import {
  */
 @ValidatorConstraint({ name: 'isDateArrayAscending', async: false })
 export class IsDateArrayAscendingConstraint implements ValidatorConstraintInterface {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   validate(dateArray: string[], args: ValidationArguments) {
     if (!Array.isArray(dateArray) || dateArray.length === 0) {
       return true; // Deixa outras validações (@IsArray, @ArrayMinSize) lidarem com isso
@@ -37,6 +38,7 @@ export class IsDateArrayAscendingConstraint implements ValidatorConstraintInterf
     return true;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   defaultMessage(args: ValidationArguments) {
     return 'As datas de vencimento devem estar em ordem crescente';
   }
