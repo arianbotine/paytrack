@@ -79,7 +79,7 @@ export class CancelPayableUseCase {
   }
 
   private invalidateDashboardCache(organizationId: string) {
-    const cacheKey = `dashboard:${organizationId}`;
+    const cacheKey = `dashboard:summary:${organizationId}`;
     this.cacheService.del(cacheKey);
   }
 }

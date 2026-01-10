@@ -4,7 +4,6 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ReceivablesRepository } from '../repositories';
-import { AccountStatus } from '@prisma/client';
 import { CacheService } from '../../../shared/services/cache.service';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
 import { ReceivableStatus } from '../domain/receivable-status.enum';
@@ -157,7 +156,7 @@ export class DeleteReceivableInstallmentUseCase {
   }
 
   private invalidateDashboardCache(organizationId: string) {
-    const cacheKey = `dashboard:${organizationId}`;
+    const cacheKey = `dashboard:summary:${organizationId}`;
     this.cacheService.del(cacheKey);
   }
 }
