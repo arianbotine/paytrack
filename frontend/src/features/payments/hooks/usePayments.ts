@@ -36,7 +36,16 @@ interface UsePaymentsParams {
 
 export const usePayments = (params: UsePaymentsParams) => {
   return useQuery({
-    queryKey: paymentKeys.list(params),
+    queryKey: paymentKeys.list({
+      paymentMethod: params.paymentMethod,
+      type: params.type,
+      vendorId: params.vendorId,
+      customerId: params.customerId,
+      paymentDateFrom: params.paymentDateFrom,
+      paymentDateTo: params.paymentDateTo,
+      page: params.page,
+      rowsPerPage: params.rowsPerPage,
+    }),
     queryFn: async (): Promise<PaymentsResponse> => {
       const queryParams = new URLSearchParams();
 
@@ -63,9 +72,7 @@ export const usePayments = (params: UsePaymentsParams) => {
       queryParams.append('skip', skip.toString());
       queryParams.append('take', params.rowsPerPage.toString());
 
-      const response = await api.get(
-        `/payments?${queryParams.toString()}`
-      );
+      const response = await api.get(`/payments?${queryParams.toString()}`);
       return response.data;
     },
   });
