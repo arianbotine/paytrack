@@ -24,6 +24,7 @@ import {
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
+  Assessment as AssessmentIcon,
   Receipt as ReceivablesIcon,
   Payment as PayablesIcon,
   AccountBalance as PaymentsIcon,
@@ -50,6 +51,7 @@ const miniWidth = 64;
 
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+  { text: 'Relatórios', icon: <AssessmentIcon />, path: '/reports' },
   { text: 'Contas a Pagar', icon: <PayablesIcon />, path: '/payables' },
   { text: 'Contas a Receber', icon: <ReceivablesIcon />, path: '/receivables' },
   { text: 'Pagamentos', icon: <PaymentsIcon />, path: '/payments' },

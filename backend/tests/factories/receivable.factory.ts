@@ -43,22 +43,6 @@ export class ReceivableFactory {
         categoryId: data.categoryId,
         status: data.status || 'PENDING',
         totalInstallments: installmentCount,
-        installments: {
-          create: Array.from({ length: installmentCount }, (_, index) => {
-            const dueDate = new Date(baseDate);
-            dueDate.setMonth(dueDate.getMonth() + index);
-
-            return {
-              id: randomUUID(),
-              installmentNumber: index + 1,
-              totalInstallments: installmentCount,
-              amount: new Prisma.Decimal(installmentAmount),
-              dueDate,
-              status: data.status || 'PENDING',
-              organizationId: data.organizationId,
-            };
-          }),
-        },
         tags: data.tags
           ? {
               create: data.tags.map(tagId => ({
@@ -68,7 +52,6 @@ export class ReceivableFactory {
           : undefined,
       },
       include: {
-        installments: true,
         tags: {
           include: {
             tag: true,
@@ -77,7 +60,31 @@ export class ReceivableFactory {
       },
     });
 
-    return receivable;
+    // Criar parcelas
+    const installments = [];
+    for (let index = 0; index < installmentCount; index++) {
+      const dueDate = new Date(baseDate);
+      dueDate.setMonth(dueDate.getMonth() + index);
+
+      const installment = await this.prisma.receivableInstallment.create({
+        data: {
+          id: randomUUID(),
+          receivableId: receivable.id,
+          installmentNumber: index + 1,
+          totalInstallments: installmentCount,
+          amount: new Prisma.Decimal(installmentAmount),
+          dueDate,
+          status: data.status || 'PENDING',
+          organizationId: data.organizationId,
+        },
+      });
+      installments.push(installment);
+    }
+
+    return {
+      ...receivable,
+      installments,
+    };
   }
 
   /**

@@ -16,6 +16,7 @@ import { ReceivablesModule } from './modules/receivables/receivables.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HealthModule } from './modules/health/health.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { SerializationInterceptor } from './shared/interceptors/serialization.interceptor';
 import { IdempotencyInterceptor } from './shared/interceptors/idempotency.interceptor';
 import { CacheModule } from './shared/modules/cache.module';
@@ -46,6 +47,7 @@ import { CacheModule } from './shared/modules/cache.module';
     PaymentsModule,
     DashboardModule,
     HealthModule,
+    ReportsModule,
   ],
   providers: [
     {

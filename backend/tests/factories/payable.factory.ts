@@ -45,22 +45,6 @@ export class PayableFactory {
         status: data.status || 'PENDING',
         documentNumber: data.documentNumber,
         totalInstallments: installmentCount,
-        installments: {
-          create: Array.from({ length: installmentCount }, (_, index) => {
-            const dueDate = new Date(baseDate);
-            dueDate.setMonth(dueDate.getMonth() + index);
-
-            return {
-              id: randomUUID(),
-              installmentNumber: index + 1,
-              totalInstallments: installmentCount,
-              amount: new Prisma.Decimal(installmentAmount),
-              dueDate,
-              status: data.status || 'PENDING',
-              organizationId: data.organizationId,
-            };
-          }),
-        },
         tags: data.tags
           ? {
               create: data.tags.map(tagId => ({
@@ -70,7 +54,6 @@ export class PayableFactory {
           : undefined,
       },
       include: {
-        installments: true,
         tags: {
           include: {
             tag: true,
@@ -79,7 +62,31 @@ export class PayableFactory {
       },
     });
 
-    return payable;
+    // Criar parcelas
+    const installments = [];
+    for (let index = 0; index < installmentCount; index++) {
+      const dueDate = new Date(baseDate);
+      dueDate.setMonth(dueDate.getMonth() + index);
+
+      const installment = await this.prisma.payableInstallment.create({
+        data: {
+          id: randomUUID(),
+          payableId: payable.id,
+          installmentNumber: index + 1,
+          totalInstallments: installmentCount,
+          amount: new Prisma.Decimal(installmentAmount),
+          dueDate,
+          status: data.status || 'PENDING',
+          organizationId: data.organizationId,
+        },
+      });
+      installments.push(installment);
+    }
+
+    return {
+      ...payable,
+      installments,
+    };
   }
 
   /**

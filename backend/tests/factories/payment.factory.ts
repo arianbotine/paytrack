@@ -6,9 +6,13 @@ import { Prisma } from '@prisma/client';
  * Dados para criar alocação de pagamento
  */
 export interface CreateAllocationData {
-  accountType: 'PAYABLE' | 'RECEIVABLE';
-  accountId: string;
-  installmentId: string;
+  // Formato antigo (ainda aceito)
+  accountType?: 'PAYABLE' | 'RECEIVABLE';
+  accountId?: string;
+  installmentId?: string;
+  // Formato novo (preferível)
+  payableInstallmentId?: string;
+  receivableInstallmentId?: string;
   amount: number;
 }
 
@@ -57,13 +61,15 @@ export class PaymentFactory {
               create: data.allocations.map(allocation => ({
                 id: randomUUID(),
                 payableInstallmentId:
-                  allocation.accountType === 'PAYABLE'
+                  allocation.payableInstallmentId ||
+                  (allocation.accountType === 'PAYABLE'
                     ? allocation.installmentId
-                    : undefined,
+                    : undefined),
                 receivableInstallmentId:
-                  allocation.accountType === 'RECEIVABLE'
+                  allocation.receivableInstallmentId ||
+                  (allocation.accountType === 'RECEIVABLE'
                     ? allocation.installmentId
-                    : undefined,
+                    : undefined),
                 amount: new Prisma.Decimal(allocation.amount),
               })),
             }

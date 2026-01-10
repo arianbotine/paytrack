@@ -131,6 +131,7 @@ model Customer {
   organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   receivables  Receivable[]
 
+  @@index([organizationId])
   @@map("customers")
 }
 
@@ -151,6 +152,7 @@ model Vendor {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   payables     Payable[]
 
+  @@index([organizationId])
   @@map("vendors")
 }
 
@@ -171,6 +173,7 @@ model Category {
   receivables  Receivable[]
 
   @@unique([organizationId, name, type])
+  @@index([organizationId])
   @@map("categories")
 }
 
@@ -188,6 +191,7 @@ model Tag {
   receivables  ReceivableTag[]
 
   @@unique([organizationId, name])
+  @@index([organizationId])
   @@map("tags")
 }
 
@@ -217,6 +221,8 @@ model Payable {
 
   @@index([organizationId, status])
   @@index([vendorId])
+  @@index([categoryId])
+  @@index([organizationId, categoryId])
   @@map("payables")
 }
 
@@ -270,6 +276,8 @@ model Receivable {
 
   @@index([organizationId, status])
   @@index([customerId])
+  @@index([categoryId])
+  @@index([organizationId, categoryId])
   @@map("receivables")
 }
 
@@ -306,6 +314,8 @@ model PayableTag {
   tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([payableId, tagId])
+  @@index([payableId])
+  @@index([tagId])
   @@map("payable_tags")
 }
 
@@ -317,6 +327,8 @@ model ReceivableTag {
   tag        Tag        @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([receivableId, tagId])
+  @@index([receivableId])
+  @@index([tagId])
   @@map("receivable_tags")
 }
 
@@ -350,6 +362,9 @@ model PaymentAllocation {
   payableInstallment   PayableInstallment?    @relation(fields: [payableInstallmentId], references: [id], onDelete: Cascade)
   receivableInstallment ReceivableInstallment? @relation(fields: [receivableInstallmentId], references: [id], onDelete: Cascade)
 
+  @@index([paymentId])
+  @@index([payableInstallmentId])
+  @@index([receivableInstallmentId])
   @@map("payment_allocations")
 }
 
