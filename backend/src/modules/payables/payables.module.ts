@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PayablesService } from './payables.service';
 import { PayablesController } from './payables.controller';
 import { CacheModule } from '../../shared/modules/cache.module';
+import { PayablesServicesModule } from './services/payables-services.module';
 
 // Repositories
 import {
@@ -26,7 +27,7 @@ import {
 } from './use-cases';
 
 @Module({
-  imports: [CacheModule],
+  imports: [CacheModule, PayablesServicesModule],
   controllers: [PayablesController],
   providers: [
     // Application Service

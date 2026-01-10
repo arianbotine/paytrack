@@ -42,6 +42,7 @@ export interface Payable {
   id: string;
   amount: number;
   nextUnpaidDueDate: string | null;
+  nextUnpaidAmount: number | null;
   status: PayableStatus;
   paidAmount: number;
   invoiceNumber?: string;

@@ -43,6 +43,7 @@ export interface Receivable {
   id: string;
   amount: number;
   nextUnpaidDueDate: string | null;
+  nextUnpaidAmount: number | null;
   status: ReceivableStatus;
   receivedAmount: number;
   notes?: string;

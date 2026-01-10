@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ReceivablesService } from './receivables.service';
 import { ReceivablesController } from './receivables.controller';
 import { CacheModule } from '../../shared/modules/cache.module';
+import { ReceivablesServicesModule } from './services/receivables-services.module';
 
 // Repositories
 import {
@@ -26,7 +27,7 @@ import {
 } from './use-cases';
 
 @Module({
-  imports: [CacheModule],
+  imports: [CacheModule, ReceivablesServicesModule],
   controllers: [ReceivablesController],
   providers: [
     // Application Service

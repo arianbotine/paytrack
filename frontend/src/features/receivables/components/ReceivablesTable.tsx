@@ -38,6 +38,7 @@ import {
   KeyboardArrowUp as ExpandLessIcon,
   Check as CheckIcon,
   Close as CloseIcon,
+  Info as InfoIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StatusChip } from '../../../shared/components/StatusChip';
@@ -304,9 +305,61 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                     alignItems: 'center',
                                   }}
                                 >
-                                  <Typography variant="h6" color="primary">
-                                    {formatCurrency(account.amount)}
-                                  </Typography>
+                                  {account.nextUnpaidAmount !== null &&
+                                  account.nextUnpaidAmount !==
+                                    account.amount ? (
+                                    <Tooltip
+                                      title={
+                                        <Box>
+                                          <Typography
+                                            variant="caption"
+                                            display="block"
+                                          >
+                                            Valor Total:{' '}
+                                            {formatCurrency(account.amount)}
+                                          </Typography>
+                                          <Typography
+                                            variant="caption"
+                                            display="block"
+                                          >
+                                            Próxima Parcela:{' '}
+                                            {formatCurrency(
+                                              account.nextUnpaidAmount
+                                            )}
+                                          </Typography>
+                                        </Box>
+                                      }
+                                      arrow
+                                    >
+                                      <Box
+                                        sx={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: 0.5,
+                                        }}
+                                      >
+                                        <Typography
+                                          variant="h6"
+                                          color="primary"
+                                        >
+                                          {formatCurrency(
+                                            account.nextUnpaidAmount
+                                          )}
+                                        </Typography>
+                                        <InfoIcon
+                                          fontSize="small"
+                                          sx={{
+                                            color: 'text.secondary',
+                                            opacity: 0.7,
+                                          }}
+                                        />
+                                      </Box>
+                                    </Tooltip>
+                                  ) : (
+                                    <Typography variant="h6" color="primary">
+                                      {formatCurrency(account.amount)}
+                                    </Typography>
+                                  )}
                                   <StatusChip status={account.status} />
                                 </Box>
                                 {hasInstallments(account) && progress && (
@@ -841,9 +894,54 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                             </Box>
                           </TableCell>
                           <TableCell align="right">
-                            <Typography fontWeight="medium">
-                              {formatCurrency(account.amount)}
-                            </Typography>
+                            {account.nextUnpaidAmount !== null &&
+                            account.nextUnpaidAmount !== account.amount ? (
+                              <Tooltip
+                                title={
+                                  <Box>
+                                    <Typography
+                                      variant="caption"
+                                      display="block"
+                                    >
+                                      Valor Total:{' '}
+                                      {formatCurrency(account.amount)}
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      display="block"
+                                    >
+                                      Próxima Parcela:{' '}
+                                      {formatCurrency(account.nextUnpaidAmount)}
+                                    </Typography>
+                                  </Box>
+                                }
+                                arrow
+                              >
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'flex-end',
+                                    gap: 0.5,
+                                  }}
+                                >
+                                  <Typography fontWeight="medium">
+                                    {formatCurrency(account.nextUnpaidAmount)}
+                                  </Typography>
+                                  <InfoIcon
+                                    fontSize="small"
+                                    sx={{
+                                      color: 'text.secondary',
+                                      opacity: 0.7,
+                                    }}
+                                  />
+                                </Box>
+                              </Tooltip>
+                            ) : (
+                              <Typography fontWeight="medium">
+                                {formatCurrency(account.amount)}
+                              </Typography>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Box
