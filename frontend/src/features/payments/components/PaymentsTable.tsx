@@ -8,6 +8,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   IconButton,
   Chip,
   Tooltip,
@@ -37,6 +38,11 @@ interface PaymentsTableProps {
   payments: Payment[];
   isLoading: boolean;
   onDelete: (payment: Payment) => void;
+  page: number;
+  rowsPerPage: number;
+  total: number;
+  onPageChange: (event: unknown, newPage: number) => void;
+  onRowsPerPageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 const MotionTableRow = motion.create(TableRow);
@@ -256,6 +262,11 @@ export const PaymentsTable: React.FC<PaymentsTableProps> = ({
   payments,
   isLoading,
   onDelete,
+  page,
+  rowsPerPage,
+  total,
+  onPageChange,
+  onRowsPerPageChange,
 }) => {
   const renderTableBody = () => {
     if (isLoading) {
@@ -291,24 +302,39 @@ export const PaymentsTable: React.FC<PaymentsTableProps> = ({
   };
 
   return (
-    <TableContainer
-      component={Paper}
-      sx={{ borderRadius: 2, overflow: 'hidden' }}
-    >
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Data</TableCell>
-            <TableCell>Tipo</TableCell>
-            <TableCell>Descrição</TableCell>
-            <TableCell>Método</TableCell>
-            <TableCell align="right">Valor</TableCell>
-            <TableCell>Referência</TableCell>
-            <TableCell align="right">Ações</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>{renderTableBody()}</TableBody>
-      </Table>
-    </TableContainer>
+    <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Data</TableCell>
+              <TableCell>Tipo</TableCell>
+              <TableCell>Descrição</TableCell>
+              <TableCell>Método</TableCell>
+              <TableCell align="right">Valor</TableCell>
+              <TableCell>Referência</TableCell>
+              <TableCell align="right">Ações</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>{renderTableBody()}</TableBody>
+        </Table>
+      </TableContainer>
+      <TablePagination
+        component="div"
+        count={total}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={onPageChange}
+        onRowsPerPageChange={onRowsPerPageChange}
+        rowsPerPageOptions={[5, 10, 25, 50]}
+        labelRowsPerPage="Itens por página:"
+        labelDisplayedRows={({ from, to, count }) => {
+          if (count === -1) {
+            return `${from}-${to} de mais de ${to}`;
+          }
+          return `${from}-${to} de ${count}`;
+        }}
+      />
+    </Paper>
   );
 };

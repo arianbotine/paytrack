@@ -1,7 +1,11 @@
-import { Controller, Get, Post, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
-import { CreatePaymentDto, QuickPaymentDto } from './dto/payment.dto';
+import {
+  CreatePaymentDto,
+  QuickPaymentDto,
+  PaymentFilterDto,
+} from './dto/payment.dto';
 import { CurrentUser, Roles } from '../../shared/decorators';
 import { Idempotent } from '../../shared/decorators/idempotent.decorator';
 import { UserRole } from '@prisma/client';
@@ -14,8 +18,11 @@ export class PaymentsController {
 
   @Get()
   @ApiOperation({ summary: 'Listar todos os pagamentos' })
-  async findAll(@CurrentUser('organizationId') organizationId: string) {
-    return this.paymentsService.findAll(organizationId);
+  async findAll(
+    @CurrentUser('organizationId') organizationId: string,
+    @Query() filters: PaymentFilterDto
+  ) {
+    return this.paymentsService.findAll(organizationId, filters);
   }
 
   @Get(':id')

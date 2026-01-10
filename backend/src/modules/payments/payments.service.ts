@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { CreatePaymentDto, QuickPaymentDto } from './dto/payment.dto';
+import {
+  CreatePaymentDto,
+  QuickPaymentDto,
+  PaymentFilterDto,
+} from './dto/payment.dto';
 import {
   CreatePaymentUseCase,
   QuickPaymentUseCase,
@@ -25,8 +29,8 @@ export class PaymentsService {
     private readonly getPaymentUseCase: GetPaymentUseCase
   ) {}
 
-  async findAll(organizationId: string) {
-    return this.listPaymentsUseCase.execute(organizationId);
+  async findAll(organizationId: string, filters: PaymentFilterDto) {
+    return this.listPaymentsUseCase.execute(organizationId, filters);
   }
 
   async findOne(id: string, organizationId: string) {

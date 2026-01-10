@@ -12,7 +12,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentMethod } from '@prisma/client';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class QuickPaymentAllocationDto {
   @ApiPropertyOptional({
@@ -94,4 +94,62 @@ export class QuickPaymentDto {
   @ApiPropertyOptional({ example: 'Observações' })
   @IsOptional()
   notes?: string;
+}
+
+export class PaymentFilterDto {
+  @ApiPropertyOptional({
+    type: [String],
+    enum: PaymentMethod,
+    example: [PaymentMethod.PIX, PaymentMethod.CREDIT_CARD],
+  })
+  @IsArray()
+  @IsEnum(PaymentMethod, { each: true })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.split(',').map((s: string) => s.trim());
+    }
+    return value;
+  })
+  paymentMethod?: PaymentMethod[];
+
+  @ApiPropertyOptional({ example: 'payable', enum: ['payable', 'receivable'] })
+  @IsString()
+  @IsIn(['payable', 'receivable'])
+  @IsOptional()
+  type?: 'payable' | 'receivable';
+
+  @ApiPropertyOptional({ example: 'uuid-do-credor' })
+  @IsUUID()
+  @IsOptional()
+  vendorId?: string;
+
+  @ApiPropertyOptional({ example: 'uuid-do-devedor' })
+  @IsUUID()
+  @IsOptional()
+  customerId?: string;
+
+  @ApiPropertyOptional({ example: '2026-01-01' })
+  @IsDateString()
+  @IsOptional()
+  paymentDateFrom?: string;
+
+  @ApiPropertyOptional({ example: '2026-01-31' })
+  @IsDateString()
+  @IsOptional()
+  paymentDateTo?: string;
+
+  @ApiPropertyOptional({ example: 0, minimum: 0 })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  skip?: number;
+
+  @ApiPropertyOptional({ example: 10, minimum: 1, maximum: 100 })
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  @Type(() => Number)
+  take?: number;
 }

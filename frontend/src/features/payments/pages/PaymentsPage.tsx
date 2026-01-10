@@ -3,8 +3,10 @@ import { Box } from '@mui/material';
 import { AnimatedPage } from '../../../shared/components';
 import { PageHeader } from '../../../shared/components/PageHeader';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
-import { PaymentsTable } from '../components';
+import { PaymentsTable, PaymentFilters } from '../components';
 import { usePayments, usePaymentOperations } from '../hooks/usePayments';
+import { useVendors } from '../../payables/hooks/usePayables';
+import { useCustomers } from '../../receivables/hooks/useReceivables';
 import type { Payment } from '../types';
 
 export const PaymentsPage: React.FC = () => {
@@ -12,11 +14,33 @@ export const PaymentsPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
 
+  // Filter states
+  const [methodFilter, setMethodFilter] = useState<string[]>([]);
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [vendorFilter, setVendorFilter] = useState<string | null>(null);
+  const [customerFilter, setCustomerFilter] = useState<string | null>(null);
+  const [dateFromFilter, setDateFromFilter] = useState<string | null>(null);
+  const [dateToFilter, setDateToFilter] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
   // Queries
-  const { data: paymentsData, isLoading } = usePayments({
-    page: 0,
-    rowsPerPage: 100,
+  const {
+    data: paymentsData,
+    isLoading,
+  } = usePayments({
+    paymentMethod: methodFilter,
+    type: typeFilter,
+    vendorId: vendorFilter,
+    customerId: customerFilter,
+    paymentDateFrom: dateFromFilter,
+    paymentDateTo: dateToFilter,
+    page,
+    rowsPerPage,
   });
+
+  const { data: vendors = [] } = useVendors();
+  const { data: customers = [] } = useCustomers();
 
   // Mutations
   const handleCloseDeleteDialog = useCallback(() => {
@@ -40,7 +64,48 @@ export const PaymentsPage: React.FC = () => {
     }
   }, [deleteMutation, selectedPayment]);
 
+  // Filter handlers - resetam paginação
+  const handleMethodChange = useCallback((methods: string[]) => {
+    setMethodFilter(methods);
+    setPage(0);
+  }, []);
+
+  const handleTypeChange = useCallback((type: string | null) => {
+    setTypeFilter(type);
+    setPage(0);
+  }, []);
+
+  const handleVendorChange = useCallback((vendorId: string | null) => {
+    setVendorFilter(vendorId);
+    setPage(0);
+  }, []);
+
+  const handleCustomerChange = useCallback((customerId: string | null) => {
+    setCustomerFilter(customerId);
+    setPage(0);
+  }, []);
+
+  const handleDateFromChange = useCallback((date: string | null) => {
+    setDateFromFilter(date);
+    setPage(0);
+  }, []);
+
+  const handleDateToChange = useCallback((date: string | null) => {
+    setDateToFilter(date);
+    setPage(0);
+  }, []);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    setPage(newPage);
+  }, []);
+
+  const handleRowsPerPageChange = useCallback((newRowsPerPage: number) => {
+    setRowsPerPage(newRowsPerPage);
+    setPage(0);
+  }, []);
+
   const payments = paymentsData?.data || [];
+  const total = paymentsData?.total || 0;
 
   return (
     <AnimatedPage>
@@ -50,10 +115,34 @@ export const PaymentsPage: React.FC = () => {
           subtitle="Histórico de pagamentos e recebimentos"
         />
 
+        <PaymentFilters
+          methodFilter={methodFilter}
+          onMethodChange={handleMethodChange}
+          typeFilter={typeFilter}
+          onTypeChange={handleTypeChange}
+          vendorFilter={vendorFilter}
+          onVendorChange={handleVendorChange}
+          vendors={vendors}
+          customerFilter={customerFilter}
+          onCustomerChange={handleCustomerChange}
+          customers={customers}
+          dateFromFilter={dateFromFilter}
+          onDateFromChange={handleDateFromChange}
+          dateToFilter={dateToFilter}
+          onDateToChange={handleDateToChange}
+        />
+
         <PaymentsTable
           payments={payments}
           isLoading={isLoading}
           onDelete={handleDelete}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          total={total}
+          onPageChange={(_e, newPage) => handlePageChange(newPage)}
+          onRowsPerPageChange={e =>
+            handleRowsPerPageChange(Number.parseInt(e.target.value, 10))
+          }
         />
 
         <ConfirmDialog

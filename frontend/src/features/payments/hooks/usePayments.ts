@@ -24,15 +24,48 @@ export const paymentKeys = {
 // ============================================================
 
 interface UsePaymentsParams {
+  paymentMethod?: string[];
+  type?: string | null;
+  vendorId?: string | null;
+  customerId?: string | null;
+  paymentDateFrom?: string | null;
+  paymentDateTo?: string | null;
   page: number;
   rowsPerPage: number;
 }
 
-export const usePayments = ({ page, rowsPerPage }: UsePaymentsParams) => {
+export const usePayments = (params: UsePaymentsParams) => {
   return useQuery({
-    queryKey: paymentKeys.list({ page, rowsPerPage }),
+    queryKey: paymentKeys.list(params),
     queryFn: async (): Promise<PaymentsResponse> => {
-      const response = await api.get('/payments');
+      const queryParams = new URLSearchParams();
+
+      if (params.paymentMethod && params.paymentMethod.length > 0) {
+        queryParams.append('paymentMethod', params.paymentMethod.join(','));
+      }
+      if (params.type) {
+        queryParams.append('type', params.type);
+      }
+      if (params.vendorId) {
+        queryParams.append('vendorId', params.vendorId);
+      }
+      if (params.customerId) {
+        queryParams.append('customerId', params.customerId);
+      }
+      if (params.paymentDateFrom) {
+        queryParams.append('paymentDateFrom', params.paymentDateFrom);
+      }
+      if (params.paymentDateTo) {
+        queryParams.append('paymentDateTo', params.paymentDateTo);
+      }
+
+      const skip = params.page * params.rowsPerPage;
+      queryParams.append('skip', skip.toString());
+      queryParams.append('take', params.rowsPerPage.toString());
+
+      const response = await api.get(
+        `/payments?${queryParams.toString()}`
+      );
       return response.data;
     },
   });

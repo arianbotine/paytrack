@@ -14,6 +14,8 @@ export class PaymentsRepository {
     options?: {
       include?: Prisma.PaymentInclude;
       orderBy?: Prisma.PaymentOrderByWithRelationInput[];
+      skip?: number;
+      take?: number;
     }
   ) {
     return this.prisma.payment.findMany({
