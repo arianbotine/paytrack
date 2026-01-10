@@ -25,10 +25,7 @@ export const PaymentsPage: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Queries
-  const {
-    data: paymentsData,
-    isLoading,
-  } = usePayments({
+  const { data: paymentsData, isLoading } = usePayments({
     paymentMethod: methodFilter,
     type: typeFilter,
     vendorId: vendorFilter,

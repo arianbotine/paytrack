@@ -1,11 +1,12 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Grid, Typography, Skeleton } from '@mui/material';
+import { Box, Grid, Typography, Skeleton, Button } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
   Warning as WarningIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { AxiosError } from 'axios';
 import { api } from '@/lib/api';
@@ -119,6 +120,7 @@ function DashboardSkeleton() {
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery<DashboardData>({
     queryKey: ['dashboard'],
@@ -168,9 +170,27 @@ export function DashboardPage() {
     <ErrorBoundary>
       <AnimatedPage>
         <Box>
-          <Typography variant="h4" gutterBottom fontWeight="bold">
-            Dashboard
-          </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: 1,
+            }}
+          >
+            <Typography variant="h4" fontWeight="bold">
+              Dashboard
+            </Typography>
+            <Button
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={() =>
+                queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+              }
+            >
+              Atualizar
+            </Button>
+          </Box>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
             Visão geral das finanças do mês vigente (
             {new Date().toLocaleDateString('pt-BR', {
