@@ -26,6 +26,7 @@ import { PaymentsAreaChart } from '../components/PaymentsAreaChart';
 import { PaymentsBarChart } from '../components/PaymentsBarChart';
 import { ReportFilters as ReportFiltersComponent } from '../components/ReportFilters';
 import { EmptyState } from '../../../shared/components/EmptyState';
+import { calculateDateRange } from '../utils/period-calculator';
 import type { ReportFilters, ChartType } from '../types';
 
 export default function PaymentsReportPage() {
@@ -34,7 +35,29 @@ export default function PaymentsReportPage() {
   // Estado de filtros com valores padrões adequados
   const [filters, setFilters] = useState<ReportFilters>(() => {
     const stored = localStorage.getItem('paymentsReportFilters');
-    return stored ? JSON.parse(stored) : { period: '30d', groupBy: 'month' };
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        // Migrar filtros antigos que usavam 'period'
+        if ('period' in parsed) {
+          // Limpar localStorage antigo
+          localStorage.removeItem('paymentsReportFilters');
+          // Usar padrão
+          const { startDate, endDate } = calculateDateRange('last30');
+          return { startDate, endDate, groupBy: parsed.groupBy || 'month' };
+        }
+        // Validar que tem startDate e endDate
+        if (parsed.startDate && parsed.endDate) {
+          return parsed;
+        }
+      } catch (error) {
+        // Se houver erro ao parsear, limpar localStorage
+        localStorage.removeItem('paymentsReportFilters');
+      }
+    }
+    // Padrão: últimos 30 dias
+    const { startDate, endDate } = calculateDateRange('last30');
+    return { startDate, endDate, groupBy: 'month' };
   });
 
   const [chartType, setChartType] = useState<ChartType>(() => {

@@ -33,11 +33,12 @@ import {
   useReportVendors,
   useReportCustomers,
 } from '../hooks/useReports';
-import type {
-  ReportFilters as ReportFiltersType,
-  ReportPeriod,
-  ReportGroupBy,
-} from '../types';
+import {
+  calculateDateRange,
+  getPeriodSummary,
+  type PeriodShortcut,
+} from '../utils/period-calculator';
+import type { ReportFilters as ReportFiltersType, ReportGroupBy } from '../types';
 
 interface ReportFiltersProps {
   readonly filters: ReportFiltersType;
@@ -55,23 +56,23 @@ const PERIOD_SHORTCUTS = [
   {
     group: 'Últimos dias',
     items: [
-      { key: 'last7', label: 'Últimos 7 dias' },
-      { key: 'last15', label: 'Últimos 15 dias' },
-      { key: 'last30', label: 'Últimos 30 dias' },
+      { key: 'last7' as PeriodShortcut, label: 'Últimos 7 dias' },
+      { key: 'last15' as PeriodShortcut, label: 'Últimos 15 dias' },
+      { key: 'last30' as PeriodShortcut, label: 'Últimos 30 dias' },
     ],
   },
   {
     group: 'Semanas',
     items: [
-      { key: 'thisWeek', label: 'Esta semana' },
-      { key: 'lastWeek', label: 'Semana passada' },
+      { key: 'thisWeek' as PeriodShortcut, label: 'Esta semana' },
+      { key: 'lastWeek' as PeriodShortcut, label: 'Semana passada' },
     ],
   },
   {
     group: 'Meses',
     items: [
-      { key: 'thisMonth', label: 'Este mês' },
-      { key: 'lastMonth', label: 'Mês passado' },
+      { key: 'thisMonth' as PeriodShortcut, label: 'Este mês' },
+      { key: 'lastMonth' as PeriodShortcut, label: 'Mês passado' },
     ],
   },
 ];
@@ -79,7 +80,6 @@ const PERIOD_SHORTCUTS = [
 export function ReportFilters(props: ReportFiltersProps) {
   const { filters, onFiltersChange, onRefresh } = props;
   const [expanded, setExpanded] = useState(false);
-  const [localFilters, setLocalFilters] = useState<ReportFiltersType>(filters);
 
   // Fetch related data
   const { data: categories = [] } = useReportCategories();
@@ -90,101 +90,29 @@ export function ReportFilters(props: ReportFiltersProps) {
   const getActiveFiltersCount = () => {
     return (
       [
-        localFilters.categoryIds?.length,
-        localFilters.tagIds?.length,
-        localFilters.vendorIds?.length,
-        localFilters.customerIds?.length,
+        filters.categoryIds?.length,
+        filters.tagIds?.length,
+        filters.vendorIds?.length,
+        filters.customerIds?.length,
       ].reduce((acc, val) => (acc || 0) + (val || 0), 0) || 0
     );
   };
 
   const activeFiltersCount = getActiveFiltersCount();
 
-  const getQuickDateRange = (type: string) => {
-    const today = new Date();
-    const start = new Date();
-
-    switch (type) {
-      case 'thisWeek': {
-        start.setDate(today.getDate() - today.getDay());
-        return { start, end: today };
-      }
-      case 'lastWeek': {
-        const lastWeekEnd = new Date(today);
-        lastWeekEnd.setDate(today.getDate() - today.getDay() - 1);
-        const lastWeekStart = new Date(lastWeekEnd);
-        lastWeekStart.setDate(lastWeekEnd.getDate() - 6);
-        return { start: lastWeekStart, end: lastWeekEnd };
-      }
-      case 'thisMonth': {
-        start.setDate(1);
-        return { start, end: today };
-      }
-      case 'lastMonth': {
-        const lastMonth = new Date(
-          today.getFullYear(),
-          today.getMonth() - 1,
-          1
-        );
-        const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
-        return { start: lastMonth, end: lastMonthEnd };
-      }
-      case 'last7': {
-        start.setDate(today.getDate() - 7);
-        return { start, end: today };
-      }
-      case 'last15': {
-        start.setDate(today.getDate() - 15);
-        return { start, end: today };
-      }
-      case 'last30':
-      default: {
-        start.setDate(today.getDate() - 30);
-        return { start, end: today };
-      }
-    }
-  };
-
-  const applyQuickDate = (type: string) => {
-    const { start, end } = getQuickDateRange(type);
+  const applyQuickDate = (period: PeriodShortcut) => {
+    const { startDate, endDate } = calculateDateRange(period);
     const newFilters = {
-      ...localFilters,
-      period: 'custom' as ReportPeriod,
-      startDate: start.toISOString().split('T')[0],
-      endDate: end.toISOString().split('T')[0],
+      ...filters,
+      startDate,
+      endDate,
     };
-    updateFilters(newFilters);
-  };
-
-  const updateFilters = (newFilters: ReportFiltersType) => {
-    setLocalFilters(newFilters);
     onFiltersChange(newFilters);
   };
 
   const handleGroupByChange = (groupBy: ReportGroupBy) => {
-    const newFilters = { ...localFilters, groupBy };
-    updateFilters(newFilters);
-  };
-
-  const getPeriodSummary = () => {
-    if (!localFilters.startDate || !localFilters.endDate) {
-      return '';
-    }
-
-    const start = new Date(localFilters.startDate);
-    const end = new Date(localFilters.endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-    const formatDate = (date: Date) => {
-      return date.toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: 'short',
-        year: start.getFullYear() === end.getFullYear() ? undefined : 'numeric',
-      });
-    };
-
-    return `${formatDate(start)} até ${formatDate(end)} (${diffDays} ${diffDays === 1 ? 'dia' : 'dias'})`;
+    const newFilters = { ...filters, groupBy };
+    onFiltersChange(newFilters);
   };
 
   const handleMultiSelectChange = (
@@ -192,26 +120,28 @@ export function ReportFilters(props: ReportFiltersProps) {
     values: string[]
   ) => {
     const newFilters = {
-      ...localFilters,
+      ...filters,
       [field]: values.length > 0 ? values : undefined,
     };
-    updateFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   const handleClearFilter = (
     field: 'categoryIds' | 'tagIds' | 'vendorIds' | 'customerIds'
   ) => {
-    const newFilters = { ...localFilters };
+    const newFilters = { ...filters };
     delete newFilters[field];
-    updateFilters(newFilters);
+    onFiltersChange(newFilters);
   };
 
   const handleReset = () => {
+    const { startDate, endDate } = calculateDateRange('last30');
     const defaultFilters: ReportFiltersType = {
-      period: '30d',
+      startDate,
+      endDate,
       groupBy: 'month',
     };
-    updateFilters(defaultFilters);
+    onFiltersChange(defaultFilters);
   };
 
   return (
@@ -322,9 +252,10 @@ export function ReportFilters(props: ReportFiltersProps) {
               ))}
             </Grid>
 
-            {localFilters.startDate && localFilters.endDate && (
+            {filters.startDate && filters.endDate && (
               <Alert severity="info" sx={{ mt: 2 }}>
-                📅 Período selecionado: {getPeriodSummary()}
+                📅 Período selecionado:{' '}
+                {getPeriodSummary(filters.startDate, filters.endDate)}
               </Alert>
             )}
           </Box>
@@ -342,7 +273,7 @@ export function ReportFilters(props: ReportFiltersProps) {
                     fullWidth
                     select
                     label="Agrupar por"
-                    value={localFilters.groupBy || 'month'}
+                    value={filters.groupBy || 'month'}
                     onChange={e =>
                       handleGroupByChange(e.target.value as ReportGroupBy)
                     }
@@ -382,7 +313,7 @@ export function ReportFilters(props: ReportFiltersProps) {
                   options={categories}
                   getOptionLabel={option => option.name}
                   value={categories.filter(cat =>
-                    localFilters.categoryIds?.includes(cat.id)
+                    filters.categoryIds?.includes(cat.id)
                   )}
                   onChange={(_, newValue) =>
                     handleMultiSelectChange(
@@ -436,7 +367,7 @@ export function ReportFilters(props: ReportFiltersProps) {
                   options={tags}
                   getOptionLabel={option => option.name}
                   value={tags.filter(tag =>
-                    localFilters.tagIds?.includes(tag.id)
+                    filters.tagIds?.includes(tag.id)
                   )}
                   onChange={(_, newValue) =>
                     handleMultiSelectChange(
@@ -493,7 +424,7 @@ export function ReportFilters(props: ReportFiltersProps) {
                   options={vendors}
                   getOptionLabel={option => option.name}
                   value={vendors.filter(vendor =>
-                    localFilters.vendorIds?.includes(vendor.id)
+                    filters.vendorIds?.includes(vendor.id)
                   )}
                   onChange={(_, newValue) =>
                     handleMultiSelectChange(
@@ -547,7 +478,7 @@ export function ReportFilters(props: ReportFiltersProps) {
                   options={customers}
                   getOptionLabel={option => option.name}
                   value={customers.filter(customer =>
-                    localFilters.customerIds?.includes(customer.id)
+                    filters.customerIds?.includes(customer.id)
                   )}
                   onChange={(_, newValue) =>
                     handleMultiSelectChange(
@@ -632,9 +563,12 @@ export function ReportFilters(props: ReportFiltersProps) {
       {!expanded && (
         <Box mt={1}>
           <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
-            {localFilters.startDate && localFilters.endDate && (
+            {filters.startDate && filters.endDate && (
               <Chip
-                label={getPeriodSummary()}
+                label={getPeriodSummary(
+                  filters.startDate,
+                  filters.endDate
+                )}
                 size="small"
                 color="primary"
                 variant="outlined"
@@ -643,48 +577,48 @@ export function ReportFilters(props: ReportFiltersProps) {
             <Chip
               label={
                 GROUP_BY_OPTIONS.find(
-                  g => g.value === (localFilters.groupBy || 'month')
+                  g => g.value === (filters.groupBy || 'month')
                 )?.label
               }
               size="small"
               variant="outlined"
             />
-            {localFilters.categoryIds &&
-              localFilters.categoryIds.length > 0 && (
+            {filters.categoryIds &&
+              filters.categoryIds.length > 0 && (
                 <Chip
                   icon={<CategoryIcon />}
-                  label={`${localFilters.categoryIds.length} ${localFilters.categoryIds.length === 1 ? 'categoria' : 'categorias'}`}
+                  label={`${filters.categoryIds.length} ${filters.categoryIds.length === 1 ? 'categoria' : 'categorias'}`}
                   size="small"
                   color="primary"
                   variant="outlined"
                   onDelete={() => handleClearFilter('categoryIds')}
                 />
               )}
-            {localFilters.tagIds && localFilters.tagIds.length > 0 && (
+            {filters.tagIds && filters.tagIds.length > 0 && (
               <Chip
                 icon={<LabelIcon />}
-                label={`${localFilters.tagIds.length} ${localFilters.tagIds.length === 1 ? 'tag' : 'tags'}`}
+                label={`${filters.tagIds.length} ${filters.tagIds.length === 1 ? 'tag' : 'tags'}`}
                 size="small"
                 color="primary"
                 variant="outlined"
                 onDelete={() => handleClearFilter('tagIds')}
               />
             )}
-            {localFilters.vendorIds && localFilters.vendorIds.length > 0 && (
+            {filters.vendorIds && filters.vendorIds.length > 0 && (
               <Chip
                 icon={<StoreIcon />}
-                label={`${localFilters.vendorIds.length} ${localFilters.vendorIds.length === 1 ? 'fornecedor' : 'fornecedores'}`}
+                label={`${filters.vendorIds.length} ${filters.vendorIds.length === 1 ? 'fornecedor' : 'fornecedores'}`}
                 size="small"
                 color="secondary"
                 variant="outlined"
                 onDelete={() => handleClearFilter('vendorIds')}
               />
             )}
-            {localFilters.customerIds &&
-              localFilters.customerIds.length > 0 && (
+            {filters.customerIds &&
+              filters.customerIds.length > 0 && (
                 <Chip
                   icon={<PersonIcon />}
-                  label={`${localFilters.customerIds.length} ${localFilters.customerIds.length === 1 ? 'cliente' : 'clientes'}`}
+                  label={`${filters.customerIds.length} ${filters.customerIds.length === 1 ? 'cliente' : 'clientes'}`}
                   size="small"
                   color="info"
                   variant="outlined"

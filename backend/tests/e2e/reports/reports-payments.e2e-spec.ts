@@ -67,7 +67,7 @@ describe('[Relatórios] GET /api/reports/payments', () => {
   describe('Cenários básicos', () => {
     it('deve retornar relatório vazio quando não há dados', async () => {
       const response = await request(app.getHttpServer())
-        .get('/api/reports/payments')
+        .get(`/api/reports/payments?startDate=${PERIOD_START}&endDate=${PERIOD_END}`)
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
@@ -179,16 +179,16 @@ describe('[Relatórios] GET /api/reports/payments', () => {
   });
 
   describe('Filtros de período', () => {
-    it('deve filtrar por período pré-definido (30d)', async () => {
+    it('deve retornar erro quando startDate ou endDate não forem fornecidos', async () => {
       const response = await request(app.getHttpServer())
-        .get('/api/reports/payments?period=30d')
+        .get('/api/reports/payments')
         .set('Authorization', `Bearer ${accessToken}`)
-        .expect(200);
+        .expect(400);
 
-      expect(response.body).toBeDefined();
+      expect(response.body.message).toContain('startDate e endDate são obrigatórios');
     });
 
-    it('deve filtrar por período custom', async () => {
+    it('deve filtrar por período customizado', async () => {
       const startDate = '2026-01-01';
       const endDate = '2026-01-31';
 
@@ -403,7 +403,7 @@ describe('[Relatórios] GET /api/reports/payments', () => {
   describe('Agrupamento (groupBy)', () => {
     it('deve agrupar por dia', async () => {
       const response = await request(app.getHttpServer())
-        .get('/api/reports/payments?groupBy=day')
+        .get(`/api/reports/payments?groupBy=day&startDate=${PERIOD_START}&endDate=${PERIOD_END}`)
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
@@ -412,7 +412,7 @@ describe('[Relatórios] GET /api/reports/payments', () => {
 
     it('deve agrupar por semana', async () => {
       const response = await request(app.getHttpServer())
-        .get('/api/reports/payments?groupBy=week')
+        .get(`/api/reports/payments?groupBy=week&startDate=${PERIOD_START}&endDate=${PERIOD_END}`)
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
@@ -421,7 +421,7 @@ describe('[Relatórios] GET /api/reports/payments', () => {
 
     it('deve agrupar por mês (padrão)', async () => {
       const response = await request(app.getHttpServer())
-        .get('/api/reports/payments?groupBy=month')
+        .get(`/api/reports/payments?groupBy=month&startDate=${PERIOD_START}&endDate=${PERIOD_END}`)
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 

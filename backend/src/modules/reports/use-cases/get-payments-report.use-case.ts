@@ -6,7 +6,6 @@ import {
   PaymentsReportFilterDto,
   PaymentsReportResponseDto,
   ComparisonDto,
-  ReportPeriodEnum,
 } from '../dto';
 
 @Injectable()
@@ -21,34 +20,15 @@ export class GetPaymentsReportUseCase {
     organizationId: string,
     filters: PaymentsReportFilterDto
   ): Promise<PaymentsReportResponseDto> {
-    // Parse period
-    let startDate: Date;
-    let endDate: Date;
-
-    if (filters.period === ReportPeriodEnum.CUSTOM) {
-      // Custom period requires startDate and endDate
-      if (!filters.startDate || !filters.endDate) {
-        throw new BadRequestException(
-          'Para período customizado, startDate e endDate são obrigatórios'
-        );
-      }
-      startDate = new Date(filters.startDate);
-      endDate = new Date(filters.endDate);
-    } else if (filters.period) {
-      const parsed = this.periodCalculator.parsePeriodEnum(filters.period);
-      startDate = parsed.start;
-      endDate = parsed.end;
-    } else if (filters.startDate && filters.endDate) {
-      startDate = new Date(filters.startDate);
-      endDate = new Date(filters.endDate);
-    } else {
-      // Default to current month
-      const parsed = this.periodCalculator.parsePeriodEnum(
-        ReportPeriodEnum.MONTH
+    // Validar que startDate e endDate foram fornecidos
+    if (!filters.startDate || !filters.endDate) {
+      throw new BadRequestException(
+        'startDate e endDate são obrigatórios'
       );
-      startDate = parsed.start;
-      endDate = parsed.end;
     }
+
+    const startDate = new Date(filters.startDate);
+    const endDate = new Date(filters.endDate);
 
     // Validate max period (365 days)
     this.periodCalculator.validateMaxPeriod(startDate, endDate);

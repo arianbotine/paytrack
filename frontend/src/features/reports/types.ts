@@ -42,21 +42,12 @@ export interface PaymentsReportResponse {
   breakdown: ReportBreakdown;
 }
 
-export type ReportPeriod =
-  | '7d'
-  | '30d'
-  | '90d'
-  | 'month'
-  | 'quarter'
-  | 'year'
-  | 'custom';
 export type ReportGroupBy = 'day' | 'week' | 'month';
 export type ChartType = 'area' | 'bar';
 
 export interface ReportFilters {
-  period?: ReportPeriod;
-  startDate?: string;
-  endDate?: string;
+  startDate: string;
+  endDate: string;
   groupBy?: ReportGroupBy;
   categoryIds?: string[];
   tagIds?: string[];
