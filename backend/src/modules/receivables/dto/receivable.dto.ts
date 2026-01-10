@@ -166,10 +166,27 @@ export class ReceivableFilterDto {
     return undefined;
   })
   hideCompleted?: string;
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['uuid-tag-1', 'uuid-tag-2'],
+    description:
+      'Tags das parcelas (filtra contas que possuem parcelas com essas tags)',
+  })
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.split(',').map((s: string) => s.trim());
+    }
+    return value;
+  })
+  installmentTagIds?: string[];
 }
 
 export class UpdateInstallmentDto {
-  @ApiProperty({ example: 250.5, required: false })
+  @ApiPropertyOptional({ example: 250.5 })
   @IsOptional()
   @IsNumber({}, { message: 'Valor deve ser um número válido' })
   @Min(0.01, { message: 'Valor deve ser maior que zero' })
@@ -179,8 +196,22 @@ export class UpdateInstallmentDto {
   )
   amount?: number;
 
-  @ApiProperty({ example: '2024-12-25', required: false })
+  @ApiPropertyOptional({ example: '2024-12-25' })
   @IsOptional()
   @IsDateString({}, { message: 'Data de vencimento inválida' })
   dueDate?: string;
+
+  @ApiPropertyOptional({ example: 'Observações sobre a parcela' })
+  @IsString()
+  @IsOptional()
+  notes?: string;
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['uuid-tag-1', 'uuid-tag-2'],
+  })
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  tagIds?: string[];
 }

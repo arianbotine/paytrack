@@ -8,6 +8,7 @@ import {
   PayablesTable,
   PayableFormDialog,
   PayableFilters,
+  EditInstallmentDialog,
 } from '../components';
 import {
   usePayables,
@@ -30,6 +31,8 @@ export const PayablesPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteInstallmentDialogOpen, setDeleteInstallmentDialogOpen] =
     useState(false);
+  const [editInstallmentDialogOpen, setEditInstallmentDialogOpen] =
+    useState(false);
   const [paymentHistoryDialogOpen, setPaymentHistoryDialogOpen] =
     useState(false);
   const [quickPaymentDialogOpen, setQuickPaymentDialogOpen] = useState(false);
@@ -40,6 +43,9 @@ export const PayablesPage: React.FC = () => {
   const [vendorFilter, setVendorFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
+  const [installmentTagFilters, setInstallmentTagFilters] = useState<string[]>(
+    []
+  );
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [hideCompleted, setHideCompleted] = useState(true);
@@ -54,6 +60,7 @@ export const PayablesPage: React.FC = () => {
     vendorId: vendorFilter,
     categoryId: categoryFilter,
     tagIds: tagFilters,
+    installmentTagIds: installmentTagFilters,
     page,
     rowsPerPage,
     hideCompleted,
@@ -86,6 +93,12 @@ export const PayablesPage: React.FC = () => {
     setSelectedInstallment(null);
   }, []);
 
+  const handleCloseEditInstallmentDialog = useCallback(() => {
+    setEditInstallmentDialogOpen(false);
+    setSelectedPayable(null);
+    setSelectedInstallment(null);
+  }, []);
+
   const handleCloseQuickPaymentDialog = useCallback(() => {
     setQuickPaymentDialogOpen(false);
     setSelectedInstallment(null);
@@ -109,9 +122,7 @@ export const PayablesPage: React.FC = () => {
     onUpdateSuccess: handleCloseDialog,
     onDeleteSuccess: handleCloseDeleteDialog,
     onDeleteInstallmentSuccess: handleCloseDeleteInstallmentDialog,
-    onUpdateInstallmentSuccess: () => {
-      // Apenas fechar sem precisar de diálogo
-    },
+    onUpdateInstallmentSuccess: handleCloseEditInstallmentDialog,
   });
 
   const { createMutation, isCreating } = usePaymentOperations({
@@ -173,6 +184,11 @@ export const PayablesPage: React.FC = () => {
     setPage(0);
   }, []);
 
+  const handleInstallmentTagsChange = useCallback((tagIds: string[]) => {
+    setInstallmentTagFilters(tagIds);
+    setPage(0);
+  }, []);
+
   const handlePageChange = useCallback((newPage: number) => {
     setPage(newPage);
   }, []);
@@ -209,6 +225,15 @@ export const PayablesPage: React.FC = () => {
     []
   );
 
+  const handleEditInstallment = useCallback(
+    (payable: Payable, installment: PayableInstallment) => {
+      setSelectedPayable(payable);
+      setSelectedInstallment(installment);
+      setEditInstallmentDialogOpen(true);
+    },
+    []
+  );
+
   const confirmDeleteInstallment = useCallback(() => {
     if (selectedPayable && selectedInstallment) {
       deleteInstallmentMutation.mutate({
@@ -240,6 +265,24 @@ export const PayablesPage: React.FC = () => {
     [updateInstallmentMutation]
   );
 
+  const handleEditInstallmentSubmit = useCallback(
+    (data: {
+      amount?: number;
+      dueDate?: string;
+      notes?: string;
+      tagIds?: string[];
+    }) => {
+      if (selectedPayable && selectedInstallment) {
+        updateInstallmentMutation.mutate({
+          accountId: selectedPayable.id,
+          installmentId: selectedInstallment.id,
+          data,
+        });
+      }
+    },
+    [updateInstallmentMutation, selectedPayable, selectedInstallment]
+  );
+
   const payables = payablesData?.data || [];
   const totalCount = payablesData?.total || 0;
 
@@ -264,6 +307,8 @@ export const PayablesPage: React.FC = () => {
           tagFilters={tagFilters}
           onTagsChange={handleTagsChange}
           tags={tags}
+          installmentTagFilters={installmentTagFilters}
+          onInstallmentTagsChange={handleInstallmentTagsChange}
         />
 
         {error && (
@@ -287,6 +332,7 @@ export const PayablesPage: React.FC = () => {
           onPayment={handlePayment}
           onViewPayments={handleViewPayments}
           onDeleteInstallment={handleDeleteInstallment}
+          onEditInstallment={handleEditInstallment}
           onUpdateInstallment={handleUpdateInstallment}
           onUpdateInstallmentDueDate={handleUpdateInstallmentDueDate}
         />
@@ -348,6 +394,16 @@ export const PayablesPage: React.FC = () => {
           isSubmitting={isCreating}
           onSubmit={handleQuickPaymentSubmit}
           onClose={handleCloseQuickPaymentDialog}
+        />
+
+        <EditInstallmentDialog
+          open={editInstallmentDialogOpen}
+          installment={selectedInstallment}
+          payable={selectedPayable}
+          tags={tags}
+          isSubmitting={updateInstallmentMutation.isPending}
+          onSubmit={handleEditInstallmentSubmit}
+          onClose={handleCloseEditInstallmentDialog}
         />
       </Box>
     </AnimatedPage>

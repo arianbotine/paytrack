@@ -50,6 +50,13 @@ export class PayablesService {
         category: true,
         tags: { include: { tag: true } },
         installments: {
+          include: {
+            tags: {
+              include: {
+                tag: { select: { id: true, name: true, color: true } },
+              },
+            },
+          },
           orderBy: { installmentNumber: 'asc' },
         },
       }

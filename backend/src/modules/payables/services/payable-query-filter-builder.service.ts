@@ -44,6 +44,34 @@ export class PayableQueryFilterBuilder {
   ): Prisma.PayableWhereInput {
     const statusFilter = this.buildStatusFilter(filters);
 
+    // Construir filtro de installments
+    const installmentFilters: any[] = [];
+
+    // Filtro de datas de vencimento
+    if (filters?.installmentDueDateFrom || filters?.installmentDueDateTo) {
+      installmentFilters.push({
+        dueDate: {
+          ...(filters?.installmentDueDateFrom && {
+            gte: parseDateOnly(filters.installmentDueDateFrom),
+          }),
+          ...(filters?.installmentDueDateTo && {
+            lte: parseDateOnly(filters.installmentDueDateTo),
+          }),
+        },
+      });
+    }
+
+    // Filtro de tags de parcelas
+    if (filters?.installmentTagIds && filters.installmentTagIds.length > 0) {
+      installmentFilters.push({
+        tags: {
+          some: {
+            tagId: { in: filters.installmentTagIds },
+          },
+        },
+      });
+    }
+
     return {
       organizationId,
       ...(filters?.vendorId && { vendorId: filters.vendorId }),
@@ -59,18 +87,11 @@ export class PayableQueryFilterBuilder {
             },
           }
         : {}),
-      ...(filters?.installmentDueDateFrom || filters?.installmentDueDateTo
+      ...(installmentFilters.length > 0
         ? {
             installments: {
               some: {
-                dueDate: {
-                  ...(filters?.installmentDueDateFrom && {
-                    gte: parseDateOnly(filters.installmentDueDateFrom),
-                  }),
-                  ...(filters?.installmentDueDateTo && {
-                    lte: parseDateOnly(filters.installmentDueDateTo),
-                  }),
-                },
+                AND: installmentFilters,
               },
             },
           }
@@ -99,6 +120,12 @@ export class PayableQueryFilterBuilder {
           paidAmount: true,
           dueDate: true,
           status: true,
+          notes: true,
+          tags: {
+            include: {
+              tag: { select: { id: true, name: true, color: true } },
+            },
+          },
           payable: {
             select: {
               id: true,
@@ -132,6 +159,12 @@ export class PayableQueryFilterBuilder {
           paidAmount: true,
           dueDate: true,
           status: true,
+          notes: true,
+          tags: {
+            include: {
+              tag: { select: { id: true, name: true, color: true } },
+            },
+          },
         },
         orderBy: { installmentNumber: 'asc' },
       },

@@ -32,6 +32,8 @@ export interface ReceivableInstallment {
   receivedAmount: number;
   dueDate: string;
   status: ReceivableStatus;
+  notes?: string;
+  tags?: { tag: Tag }[];
   isOverdue?: boolean;
   receivable?: {
     id: string;

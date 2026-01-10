@@ -12,6 +12,9 @@ import {
   Grid,
   Badge,
   Tooltip,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 import {
   FilterList as FilterIcon,
@@ -42,6 +45,10 @@ interface ReceivableFiltersProps {
   tagFilters: string[];
   onTagsChange: (tagIds: string[]) => void;
   tags: Tag[];
+
+  // Filtros de parcelas
+  installmentTagFilters: string[];
+  onInstallmentTagsChange: (tagIds: string[]) => void;
 }
 
 export const ReceivableFilters: React.FC<ReceivableFiltersProps> = ({
@@ -56,6 +63,8 @@ export const ReceivableFilters: React.FC<ReceivableFiltersProps> = ({
   tagFilters,
   onTagsChange,
   tags,
+  installmentTagFilters,
+  onInstallmentTagsChange,
 }) => {
   const [expanded, setExpanded] = useState(false);
 
@@ -63,7 +72,8 @@ export const ReceivableFilters: React.FC<ReceivableFiltersProps> = ({
     statusFilter.length +
     (customerFilter ? 1 : 0) +
     (categoryFilter ? 1 : 0) +
-    tagFilters.length;
+    tagFilters.length +
+    installmentTagFilters.length;
 
   const hasActiveFilters = activeFiltersCount > 0;
 
@@ -83,11 +93,15 @@ export const ReceivableFilters: React.FC<ReceivableFiltersProps> = ({
     onCustomerChange(null);
     onCategoryChange(null);
     onTagsChange([]);
+    onInstallmentTagsChange([]);
   };
 
   const selectedCustomer = customers.find(c => c.id === customerFilter);
   const selectedCategory = categories.find(c => c.id === categoryFilter);
   const selectedTags = tags.filter(t => tagFilters.includes(t.id));
+  const selectedInstallmentTags = tags.filter(t =>
+    installmentTagFilters.includes(t.id)
+  );
 
   return (
     <Paper
@@ -329,6 +343,80 @@ export const ReceivableFilters: React.FC<ReceivableFiltersProps> = ({
             </Grid>
           </Grid>
 
+          {/* Filtros Avançados (Parcelas) */}
+          <Accordion
+            elevation={0}
+            sx={{
+              mt: 2,
+              border: 1,
+              borderColor: 'divider',
+              borderRadius: 1,
+              '&:before': { display: 'none' },
+            }}
+          >
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Filtros Avançados (Parcelas)
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Autocomplete
+                    multiple
+                    value={selectedInstallmentTags}
+                    onChange={(_, newValue) => {
+                      onInstallmentTagsChange(newValue.map(tag => tag.id));
+                    }}
+                    options={tags}
+                    getOptionLabel={option => option.name}
+                    renderInput={params => (
+                      <TextField
+                        {...params}
+                        label="Tags das Parcelas"
+                        placeholder="Selecione tags"
+                        size="small"
+                        helperText="Mostra contas que possuem parcelas com essas tags"
+                      />
+                    )}
+                    renderTags={(value, getTagProps) =>
+                      value.map((option, index) => (
+                        <Chip
+                          {...getTagProps({ index })}
+                          key={option.id}
+                          label={option.name}
+                          size="small"
+                          color="secondary"
+                        />
+                      ))
+                    }
+                    renderOption={(props, option) => {
+                      const { key, ...otherProps } = props;
+                      return (
+                        <li key={key} {...otherProps}>
+                          <Chip
+                            label={option.name}
+                            size="small"
+                            color="secondary"
+                            sx={{
+                              bgcolor: option.color || '#e0e0e0',
+                              color: '#fff',
+                            }}
+                          />
+                        </li>
+                      );
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: 'background.paper',
+                      },
+                    }}
+                  />
+                </Grid>
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+
           {/* Active Filters Summary */}
           <AnimatePresence>
             {hasActiveFilters && (
@@ -418,6 +506,19 @@ export const ReceivableFilters: React.FC<ReceivableFiltersProps> = ({
                             },
                           },
                         }}
+                      />
+                    ))}
+                    {selectedInstallmentTags.map(tag => (
+                      <Chip
+                        key={`installment-${tag.id}`}
+                        label={`Tag Parcela: ${tag.name}`}
+                        size="small"
+                        color="secondary"
+                        onDelete={() =>
+                          onInstallmentTagsChange(
+                            installmentTagFilters.filter(id => id !== tag.id)
+                          )
+                        }
                       />
                     ))}
                   </Stack>

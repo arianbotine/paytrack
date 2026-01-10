@@ -46,6 +46,34 @@ export class ReceivableQueryFilterBuilder {
   ): Prisma.ReceivableWhereInput {
     const statusFilter = this.buildStatusFilter(filters);
 
+    // Construir filtro de parcelas combinando data e tags
+    const installmentFilters: Prisma.ReceivableInstallmentWhereInput[] = [];
+
+    // Filtro de data de vencimento das parcelas
+    if (filters?.installmentDueDateFrom || filters?.installmentDueDateTo) {
+      installmentFilters.push({
+        dueDate: {
+          ...(filters?.installmentDueDateFrom && {
+            gte: parseDateOnly(filters.installmentDueDateFrom),
+          }),
+          ...(filters?.installmentDueDateTo && {
+            lte: parseDateOnly(filters.installmentDueDateTo),
+          }),
+        },
+      });
+    }
+
+    // Filtro de tags das parcelas
+    if (filters?.installmentTagIds && filters.installmentTagIds.length > 0) {
+      installmentFilters.push({
+        tags: {
+          some: {
+            tagId: { in: filters.installmentTagIds },
+          },
+        },
+      });
+    }
+
     return {
       organizationId,
       ...(filters?.customerId && { customerId: filters.customerId }),
@@ -61,18 +89,11 @@ export class ReceivableQueryFilterBuilder {
             },
           }
         : {}),
-      ...(filters?.installmentDueDateFrom || filters?.installmentDueDateTo
+      ...(installmentFilters.length > 0
         ? {
             installments: {
               some: {
-                dueDate: {
-                  ...(filters?.installmentDueDateFrom && {
-                    gte: parseDateOnly(filters.installmentDueDateFrom),
-                  }),
-                  ...(filters?.installmentDueDateTo && {
-                    lte: parseDateOnly(filters.installmentDueDateTo),
-                  }),
-                },
+                AND: installmentFilters,
               },
             },
           }
@@ -101,10 +122,16 @@ export class ReceivableQueryFilterBuilder {
           receivedAmount: true,
           dueDate: true,
           status: true,
+          notes: true,
           receivable: {
             select: {
               id: true,
               customer: { select: { id: true, name: true } },
+            },
+          },
+          tags: {
+            include: {
+              tag: { select: { id: true, name: true, color: true } },
             },
           },
         },
@@ -134,6 +161,12 @@ export class ReceivableQueryFilterBuilder {
           receivedAmount: true,
           dueDate: true,
           status: true,
+          notes: true,
+          tags: {
+            include: {
+              tag: { select: { id: true, name: true, color: true } },
+            },
+          },
         },
         orderBy: { installmentNumber: 'asc' },
       },

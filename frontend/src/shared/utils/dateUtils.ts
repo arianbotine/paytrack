@@ -12,6 +12,18 @@
  */
 
 /**
+ * Converte uma string ISO ou date-only para formato de input date (YYYY-MM-DD).
+ * Para campos date-only, extrai apenas a parte da data.
+ */
+export function toLocalDateInput(dateString: string): string {
+  if (!dateString) return '';
+
+  // Para date-only, extrai apenas a parte da data
+  const datePart = dateString.split('T')[0];
+  return datePart;
+}
+
+/**
  * Obtém a data atual no fuso horário local para inputs de data.
  * Retorna no formato 'YYYY-MM-DD'.
  */

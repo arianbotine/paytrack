@@ -52,6 +52,7 @@ interface UseReceivablesParams {
   customerId?: string | null;
   categoryId?: string | null;
   tagIds?: string[];
+  installmentTagIds?: string[];
   page: number;
   rowsPerPage: number;
   hideCompleted?: boolean;

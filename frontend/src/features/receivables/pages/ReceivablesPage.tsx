@@ -8,6 +8,7 @@ import {
   ReceivablesTable,
   ReceivableFormDialog,
   ReceivableFilters,
+  EditInstallmentDialog,
 } from '../components';
 import {
   useReceivables,
@@ -48,6 +49,14 @@ export const ReceivablesPage: React.FC = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [hideCompleted, setHideCompleted] = useState(true);
+  const [installmentTagFilters, setInstallmentTagFilters] = useState<string[]>(
+    []
+  );
+  const [editInstallmentDialogOpen, setEditInstallmentDialogOpen] =
+    useState(false);
+  const [editingReceivable, setEditingReceivable] = useState<Receivable | null>(
+    null
+  );
 
   // Queries
   const {
@@ -59,6 +68,7 @@ export const ReceivablesPage: React.FC = () => {
     customerId: customerFilter,
     categoryId: categoryFilter,
     tagIds: tagFilters,
+    installmentTagIds: installmentTagFilters,
     page,
     rowsPerPage,
     hideCompleted,
@@ -120,7 +130,9 @@ export const ReceivablesPage: React.FC = () => {
     onDeleteSuccess: handleCloseDeleteDialog,
     onDeleteInstallmentSuccess: handleCloseDeleteInstallmentDialog,
     onUpdateInstallmentSuccess: () => {
-      // Apenas fechar sem precisar de diálogo
+      setEditInstallmentDialogOpen(false);
+      setEditingReceivable(null);
+      setSelectedInstallment(null);
     },
   });
 
@@ -178,6 +190,11 @@ export const ReceivablesPage: React.FC = () => {
 
   const handleTagsChange = useCallback((tagIds: string[]) => {
     setTagFilters(tagIds);
+    setPage(0);
+  }, []);
+
+  const handleInstallmentTagsChange = useCallback((tagIds: string[]) => {
+    setInstallmentTagFilters(tagIds);
     setPage(0);
   }, []);
 
@@ -256,6 +273,33 @@ export const ReceivablesPage: React.FC = () => {
     [updateInstallmentMutation]
   );
 
+  const handleEditInstallment = useCallback(
+    (receivable: Receivable, installment: ReceivableInstallment) => {
+      setEditingReceivable(receivable);
+      setSelectedInstallment(installment);
+      setEditInstallmentDialogOpen(true);
+    },
+    []
+  );
+
+  const handleEditInstallmentSubmit = useCallback(
+    (data: {
+      amount?: number;
+      dueDate?: string;
+      notes?: string;
+      tagIds?: string[];
+    }) => {
+      if (editingReceivable && selectedInstallment) {
+        updateInstallmentMutation.mutate({
+          accountId: editingReceivable.id,
+          installmentId: selectedInstallment.id,
+          data,
+        });
+      }
+    },
+    [updateInstallmentMutation, editingReceivable, selectedInstallment]
+  );
+
   const receivables = receivablesData?.data || [];
   const totalCount = receivablesData?.total || 0;
 
@@ -280,6 +324,8 @@ export const ReceivablesPage: React.FC = () => {
           tagFilters={tagFilters}
           onTagsChange={handleTagsChange}
           tags={tags}
+          installmentTagFilters={installmentTagFilters}
+          onInstallmentTagsChange={handleInstallmentTagsChange}
         />
 
         {error && (
@@ -305,6 +351,7 @@ export const ReceivablesPage: React.FC = () => {
           onDeleteInstallment={handleDeleteInstallment}
           onUpdateInstallment={handleUpdateInstallment}
           onUpdateInstallmentDueDate={handleUpdateInstallmentDueDate}
+          onEditInstallment={handleEditInstallment}
         />
 
         <ReceivableFormDialog
@@ -364,6 +411,20 @@ export const ReceivablesPage: React.FC = () => {
           isSubmitting={isCreating}
           onSubmit={handleQuickPaymentSubmit}
           onClose={handleCloseQuickPaymentDialog}
+        />
+
+        <EditInstallmentDialog
+          open={editInstallmentDialogOpen}
+          installment={selectedInstallment}
+          receivable={editingReceivable}
+          tags={tags}
+          isSubmitting={updateInstallmentMutation.isPending}
+          onSubmit={handleEditInstallmentSubmit}
+          onClose={() => {
+            setEditInstallmentDialogOpen(false);
+            setEditingReceivable(null);
+            setSelectedInstallment(null);
+          }}
         />
       </Box>
     </AnimatedPage>

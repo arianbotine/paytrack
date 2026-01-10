@@ -39,6 +39,9 @@ import {
   Check as CheckIcon,
   Close as CloseIcon,
   Info as InfoIcon,
+  LocalOffer as LocalOfferIcon,
+  Comment as CommentIcon,
+  EditNote as EditNoteIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StatusChip } from '../../../shared/components/StatusChip';
@@ -78,6 +81,10 @@ interface ReceivablesTableProps {
     installment: ReceivableInstallment,
     newDueDate: string
   ) => void;
+  onEditInstallment?: (
+    receivable: Receivable,
+    installment: ReceivableInstallment
+  ) => void;
 }
 
 const MotionTableRow = motion.create(TableRow);
@@ -99,6 +106,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
   onDeleteInstallment,
   onUpdateInstallment,
   onUpdateInstallmentDueDate,
+  onEditInstallment,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -1090,6 +1098,8 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                         <TableCell align="right">
                                           Recebido
                                         </TableCell>
+                                        <TableCell>Tags</TableCell>
+                                        <TableCell>Obs.</TableCell>
                                         <TableCell align="right">
                                           Ações
                                         </TableCell>
@@ -1381,6 +1391,71 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                               </Typography>
                                             )}
                                           </TableCell>
+                                          <TableCell>
+                                            {installment.tags &&
+                                            installment.tags.length > 0 ? (
+                                              <Tooltip
+                                                title={
+                                                  <Box>
+                                                    {installment.tags
+                                                      .slice(0, 10)
+                                                      .map(t => (
+                                                        <Box key={t.tag.id}>
+                                                          {t.tag.name}
+                                                        </Box>
+                                                      ))}
+                                                    {installment.tags.length >
+                                                      10 && (
+                                                      <Box
+                                                        sx={{
+                                                          fontStyle: 'italic',
+                                                          mt: 0.5,
+                                                        }}
+                                                      >
+                                                        +
+                                                        {installment.tags
+                                                          .length - 10}{' '}
+                                                        mais...
+                                                      </Box>
+                                                    )}
+                                                  </Box>
+                                                }
+                                              >
+                                                <Chip
+                                                  icon={<LocalOfferIcon />}
+                                                  label={`+${installment.tags.length}`}
+                                                  size="small"
+                                                  color="secondary"
+                                                />
+                                              </Tooltip>
+                                            ) : (
+                                              <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                              >
+                                                —
+                                              </Typography>
+                                            )}
+                                          </TableCell>
+                                          <TableCell>
+                                            {installment.notes ? (
+                                              <Tooltip
+                                                title={installment.notes}
+                                              >
+                                                <CommentIcon
+                                                  fontSize="small"
+                                                  color="action"
+                                                />
+                                              </Tooltip>
+                                            ) : (
+                                              <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                              >
+                                                —
+                                              </Typography>
+                                            )}
+                                          </TableCell>
                                           <TableCell align="right">
                                             <Box
                                               sx={{
@@ -1389,6 +1464,21 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                                 justifyContent: 'flex-end',
                                               }}
                                             >
+                                              {onEditInstallment && (
+                                                <Tooltip title="Editar parcela">
+                                                  <IconButton
+                                                    size="small"
+                                                    onClick={() =>
+                                                      onEditInstallment(
+                                                        account,
+                                                        installment
+                                                      )
+                                                    }
+                                                  >
+                                                    <EditNoteIcon fontSize="small" />
+                                                  </IconButton>
+                                                </Tooltip>
+                                              )}
                                               {onViewPayments &&
                                                 installment.receivedAmount >
                                                   0 && (

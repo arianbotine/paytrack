@@ -6,7 +6,7 @@ import {
   teardownE2ETest,
   createAuthenticatedUser,
 } from '../../helpers';
-import { PayableFactory, VendorFactory } from '../../factories';
+import { PayableFactory, VendorFactory, TagFactory } from '../../factories';
 
 describe('Payables Installments - PATCH (e2e)', () => {
   let app: INestApplication;
@@ -386,6 +386,283 @@ describe('Payables Installments - PATCH (e2e)', () => {
 
         // Verificar que o total foi recalculado (1500 + 1000 + 1000 = 3500)
         expect(response.body.amount).toBe(3500);
+      });
+    });
+
+    describe('Atualização de Observações e Tags', () => {
+      it('deve atualizar observações de uma parcela', async () => {
+        const vendorFactory = new VendorFactory(prisma);
+        const vendor = await vendorFactory.create({ organizationId });
+
+        const payableFactory = new PayableFactory(prisma);
+        const payable = await payableFactory.createWithInstallments(2, {
+          organizationId,
+          vendorId: vendor.id,
+          amount: 2000,
+        });
+
+        const installment = payable.installments[0];
+        const newNotes = 'Observações atualizadas para teste';
+
+        const response = await request(app.getHttpServer())
+          .patch(`/api/payables/${payable.id}/installments/${installment.id}`)
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send({ notes: newNotes })
+          .expect(200);
+
+        const updatedInstallment = response.body.installments.find(
+          (inst: any) => inst.id === installment.id
+        );
+
+        expect(updatedInstallment.notes).toBe(newNotes);
+      });
+
+      it('deve limpar observações enviando string vazia', async () => {
+        const vendorFactory = new VendorFactory(prisma);
+        const vendor = await vendorFactory.create({ organizationId });
+
+        const payableFactory = new PayableFactory(prisma);
+        const payable = await payableFactory.createWithInstallments(2, {
+          organizationId,
+          vendorId: vendor.id,
+          amount: 2000,
+        });
+
+        const installment = payable.installments[0];
+
+        // Primeiro adicionar observações
+        await request(app.getHttpServer())
+          .patch(`/api/payables/${payable.id}/installments/${installment.id}`)
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send({ notes: 'Observações iniciais' })
+          .expect(200);
+
+        // Depois limpar
+        const response = await request(app.getHttpServer())
+          .patch(`/api/payables/${payable.id}/installments/${installment.id}`)
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send({ notes: '' })
+          .expect(200);
+
+        const updatedInstallment = response.body.installments.find(
+          (inst: any) => inst.id === installment.id
+        );
+
+        expect(updatedInstallment.notes).toBeNull();
+      });
+
+      it('deve atualizar tags de uma parcela', async () => {
+        const vendorFactory = new VendorFactory(prisma);
+        const vendor = await vendorFactory.create({ organizationId });
+
+        const tagFactory = new TagFactory(prisma);
+        const tag1 = await tagFactory.create({ organizationId });
+        const tag2 = await tagFactory.create({ organizationId });
+
+        const payableFactory = new PayableFactory(prisma);
+        const payable = await payableFactory.createWithInstallments(2, {
+          organizationId,
+          vendorId: vendor.id,
+          amount: 2000,
+        });
+
+        const installment = payable.installments[0];
+
+        const response = await request(app.getHttpServer())
+          .patch(`/api/payables/${payable.id}/installments/${installment.id}`)
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send({ tagIds: [tag1.id, tag2.id] })
+          .expect(200);
+
+        const updatedInstallment = response.body.installments.find(
+          (inst: any) => inst.id === installment.id
+        );
+
+        expect(updatedInstallment.tags).toHaveLength(2);
+        expect(updatedInstallment.tags.map((t: any) => t.tag.id)).toEqual(
+          expect.arrayContaining([tag1.id, tag2.id])
+        );
+      });
+
+      it('deve remover todas as tags enviando array vazio', async () => {
+        const vendorFactory = new VendorFactory(prisma);
+        const vendor = await vendorFactory.create({ organizationId });
+
+        const tagFactory = new TagFactory(prisma);
+        const tag = await tagFactory.create({ organizationId });
+
+        const payableFactory = new PayableFactory(prisma);
+        const payable = await payableFactory.createWithInstallments(2, {
+          organizationId,
+          vendorId: vendor.id,
+          amount: 2000,
+        });
+
+        const installment = payable.installments[0];
+
+        // Primeiro adicionar tag
+        await request(app.getHttpServer())
+          .patch(`/api/payables/${payable.id}/installments/${installment.id}`)
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send({ tagIds: [tag.id] })
+          .expect(200);
+
+        // Depois remover
+        const response = await request(app.getHttpServer())
+          .patch(`/api/payables/${payable.id}/installments/${installment.id}`)
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send({ tagIds: [] })
+          .expect(200);
+
+        const updatedInstallment = response.body.installments.find(
+          (inst: any) => inst.id === installment.id
+        );
+
+        expect(updatedInstallment.tags).toHaveLength(0);
+      });
+
+      it('deve permitir atualizar observações e tags em parcela paga', async () => {
+        const vendorFactory = new VendorFactory(prisma);
+        const vendor = await vendorFactory.create({ organizationId });
+
+        const tagFactory = new TagFactory(prisma);
+        const tag = await tagFactory.create({ organizationId });
+
+        const payableFactory = new PayableFactory(prisma);
+        const payable = await payableFactory.createWithInstallments(2, {
+          organizationId,
+          vendorId: vendor.id,
+          amount: 2000,
+        });
+
+        const installment = payable.installments[0];
+
+        // Marcar parcela como paga
+        await prisma.payableInstallment.update({
+          where: { id: installment.id },
+          data: { status: 'PAID', paidAmount: installment.amount },
+        });
+
+        const newNotes = 'Observações em parcela paga';
+
+        const response = await request(app.getHttpServer())
+          .patch(`/api/payables/${payable.id}/installments/${installment.id}`)
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send({ notes: newNotes, tagIds: [tag.id] })
+          .expect(200);
+
+        const updatedInstallment = response.body.installments.find(
+          (inst: any) => inst.id === installment.id
+        );
+
+        expect(updatedInstallment.notes).toBe(newNotes);
+        expect(updatedInstallment.tags).toHaveLength(1);
+        expect(updatedInstallment.tags[0].tag.id).toBe(tag.id);
+      });
+
+      it('deve permitir atualizar observações e tags em parcela com pagamentos parciais', async () => {
+        const vendorFactory = new VendorFactory(prisma);
+        const vendor = await vendorFactory.create({ organizationId });
+
+        const tagFactory = new TagFactory(prisma);
+        const tag = await tagFactory.create({ organizationId });
+
+        const payableFactory = new PayableFactory(prisma);
+        const payable = await payableFactory.createWithInstallments(2, {
+          organizationId,
+          vendorId: vendor.id,
+          amount: 2000,
+        });
+
+        const installment = payable.installments[0];
+
+        // Criar pagamento parcial
+        await prisma.payment.create({
+          data: {
+            organizationId,
+            amount: 500,
+            paymentDate: new Date(),
+            paymentMethod: 'PIX',
+            allocations: {
+              create: {
+                amount: 500,
+                payableInstallmentId: installment.id,
+              },
+            },
+          },
+        });
+
+        const newNotes = 'Observações em parcela com pagamento parcial';
+
+        const response = await request(app.getHttpServer())
+          .patch(`/api/payables/${payable.id}/installments/${installment.id}`)
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send({ notes: newNotes, tagIds: [tag.id] })
+          .expect(200);
+
+        const updatedInstallment = response.body.installments.find(
+          (inst: any) => inst.id === installment.id
+        );
+
+        expect(updatedInstallment.notes).toBe(newNotes);
+        expect(updatedInstallment.tags).toHaveLength(1);
+        expect(updatedInstallment.tags[0].tag.id).toBe(tag.id);
+      });
+    });
+
+    describe('Edição Apenas de Observações/Tags com Campos Inalterados', () => {
+      it('deve permitir editar apenas observações e tags em parcela paga mesmo enviando amount/dueDate inalterados', async () => {
+        const vendorFactory = new VendorFactory(prisma);
+        const vendor = await vendorFactory.create({ organizationId });
+
+        const tagFactory = new TagFactory(prisma);
+        const tag = await tagFactory.create({ organizationId });
+
+        const payableFactory = new PayableFactory(prisma);
+        const payable = await payableFactory.createWithInstallments(2, {
+          organizationId,
+          vendorId: vendor.id,
+          amount: 2000,
+        });
+
+        const installment = payable.installments[0];
+        const originalAmount = installment.amount;
+        const originalDueDate = installment.dueDate;
+        const originalDueDateString = originalDueDate
+          .toISOString()
+          .split('T')[0];
+
+        // Marcar parcela como paga
+        await prisma.payableInstallment.update({
+          where: { id: installment.id },
+          data: { status: 'PAID', paidAmount: installment.amount },
+        });
+
+        const newNotes = 'Observações atualizadas em parcela paga';
+        const newTagIds = [tag.id];
+
+        // Enviar amount e dueDate iguais aos originais (simulando comportamento do frontend)
+        const response = await request(app.getHttpServer())
+          .patch(`/api/payables/${payable.id}/installments/${installment.id}`)
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send({
+            amount: originalAmount,
+            dueDate: originalDueDateString, // Formato YYYY-MM-DD
+            notes: newNotes,
+            tagIds: newTagIds,
+          })
+          .expect(200);
+
+        const updatedInstallment = response.body.installments.find(
+          (inst: any) => inst.id === installment.id
+        );
+
+        expect(updatedInstallment.notes).toBe(newNotes);
+        expect(updatedInstallment.tags).toHaveLength(1);
+        expect(updatedInstallment.tags[0].tag.id).toBe(tag.id);
+        // Amount e dueDate devem permanecer inalterados
+        expect(updatedInstallment.amount).toBe(Number(originalAmount));
+        expect(updatedInstallment.dueDate).toContain(originalDueDateString);
       });
     });
 

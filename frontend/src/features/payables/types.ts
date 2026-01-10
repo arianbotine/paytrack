@@ -31,6 +31,14 @@ export interface PayableInstallment {
   paidAmount: number;
   dueDate: string;
   status: PayableStatus;
+  notes?: string;
+  tags?: Array<{
+    tag: {
+      id: string;
+      name: string;
+      color?: string;
+    };
+  }>;
   isOverdue?: boolean;
   payable?: {
     id: string;

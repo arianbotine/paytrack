@@ -186,9 +186,11 @@ model Tag {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   // Relations
-  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  payables     PayableTag[]
-  receivables  ReceivableTag[]
+  organization           Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payables               PayableTag[]
+  receivables            ReceivableTag[]
+  payableInstallments    PayableInstallmentTag[]
+  receivableInstallments ReceivableInstallmentTag[]
 
   @@unique([organizationId, name])
   @@index([organizationId])
@@ -236,13 +238,15 @@ model PayableInstallment {
   paidAmount        Decimal       @default(0) @map("paid_amount") @db.Decimal(15, 2)
   dueDate           DateTime      @map("due_date") @db.Date
   status            AccountStatus @default(PENDING)
+  notes             String?
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
 
   // Relations
-  payable      Payable               @relation(fields: [payableId], references: [id], onDelete: Cascade)
-  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payable      Payable                   @relation(fields: [payableId], references: [id], onDelete: Cascade)
+  organization Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   allocations  PaymentAllocation[]
+  tags         PayableInstallmentTag[]
 
   @@index([payableId, installmentNumber])
   @@index([organizationId, status, dueDate])
@@ -291,13 +295,15 @@ model ReceivableInstallment {
   receivedAmount    Decimal       @default(0) @map("received_amount") @db.Decimal(15, 2)
   dueDate           DateTime      @map("due_date") @db.Date
   status            AccountStatus @default(PENDING)
+  notes             String?
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
 
   // Relations
-  receivable   Receivable            @relation(fields: [receivableId], references: [id], onDelete: Cascade)
-  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  receivable   Receivable                 @relation(fields: [receivableId], references: [id], onDelete: Cascade)
+  organization Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   allocations  PaymentAllocation[]
+  tags         ReceivableInstallmentTag[]
 
   @@index([receivableId, installmentNumber])
   @@index([organizationId, status, dueDate])
@@ -330,6 +336,34 @@ model ReceivableTag {
   @@index([receivableId])
   @@index([tagId])
   @@map("receivable_tags")
+}
+
+model PayableInstallmentTag {
+  payableInstallmentId String @map("payable_installment_id")
+  tagId                String @map("tag_id")
+
+  payableInstallment PayableInstallment @relation(fields: [payableInstallmentId], references: [id], onDelete: Cascade)
+  tag                Tag                @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([payableInstallmentId, tagId])
+  @@index([payableInstallmentId])
+  @@index([tagId])
+  @@index([tagId, payableInstallmentId])
+  @@map("payable_installment_tags")
+}
+
+model ReceivableInstallmentTag {
+  receivableInstallmentId String @map("receivable_installment_id")
+  tagId                   String @map("tag_id")
+
+  receivableInstallment ReceivableInstallment @relation(fields: [receivableInstallmentId], references: [id], onDelete: Cascade)
+  tag                   Tag                   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([receivableInstallmentId, tagId])
+  @@index([receivableInstallmentId])
+  @@index([tagId])
+  @@index([tagId, receivableInstallmentId])
+  @@map("receivable_installment_tags")
 }
 
 model Payment {

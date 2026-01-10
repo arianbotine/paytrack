@@ -39,6 +39,9 @@ import {
   Check as CheckIcon,
   Close as CloseIcon,
   Info as InfoIcon,
+  EditNote as EditNoteIcon,
+  Comment as CommentIcon,
+  LocalOffer as LocalOfferIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StatusChip } from '../../../shared/components/StatusChip';
@@ -65,6 +68,10 @@ interface PayablesTableProps {
   onPayment: (item: Payable | PayableInstallment) => void;
   onViewPayments?: (payable: Payable) => void;
   onDeleteInstallment?: (
+    payable: Payable,
+    installment: PayableInstallment
+  ) => void;
+  onEditInstallment?: (
     payable: Payable,
     installment: PayableInstallment
   ) => void;
@@ -97,6 +104,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
   onPayment,
   onViewPayments,
   onDeleteInstallment,
+  onEditInstallment,
   onUpdateInstallment,
   onUpdateInstallmentDueDate,
 }) => {
@@ -567,6 +575,57 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                 )}
                               </Typography>
                               <StatusChip status={installment.status} />
+                              {/* Tags Badge (Mobile) */}
+                              {installment.tags &&
+                                installment.tags.length > 0 && (
+                                  <Tooltip
+                                    title={
+                                      <Box>
+                                        {installment.tags
+                                          .slice(0, 10)
+                                          .map(t => (
+                                            <Chip
+                                              key={t.tag.id}
+                                              label={t.tag.name}
+                                              size="small"
+                                              sx={{
+                                                m: 0.25,
+                                                bgcolor:
+                                                  t.tag.color || '#e0e0e0',
+                                                color: '#fff',
+                                              }}
+                                            />
+                                          ))}
+                                        {installment.tags.length > 10 && (
+                                          <Typography
+                                            variant="caption"
+                                            sx={{ mt: 0.5, display: 'block' }}
+                                          >
+                                            ...e mais{' '}
+                                            {installment.tags.length - 10} tags
+                                          </Typography>
+                                        )}
+                                      </Box>
+                                    }
+                                  >
+                                    <Chip
+                                      icon={<LocalOfferIcon />}
+                                      label={`+${installment.tags.length}`}
+                                      size="small"
+                                      color="primary"
+                                      variant="outlined"
+                                    />
+                                  </Tooltip>
+                                )}
+                              {/* Notes Icon (Mobile) */}
+                              {installment.notes && (
+                                <Tooltip title={installment.notes}>
+                                  <CommentIcon
+                                    fontSize="small"
+                                    color="action"
+                                  />
+                                </Tooltip>
+                              )}
                               {editingInstallment === installment.id ? (
                                 <>
                                   <Tooltip title="Salvar">
@@ -606,6 +665,21 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                         </IconButton>
                                       </Tooltip>
                                     )}
+                                  {onEditInstallment && (
+                                    <Tooltip title="Editar parcela completa">
+                                      <IconButton
+                                        size="small"
+                                        onClick={() =>
+                                          onEditInstallment(
+                                            account,
+                                            installment
+                                          )
+                                        }
+                                      >
+                                        <EditNoteIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
                                   <Tooltip title="Registrar pagamento">
                                     <span>
                                       <IconButton
@@ -1037,6 +1111,8 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                         <TableCell align="right">
                                           Pago
                                         </TableCell>
+                                        <TableCell>Tags</TableCell>
+                                        <TableCell>Obs</TableCell>
                                         <TableCell align="right">
                                           Ações
                                         </TableCell>
@@ -1328,6 +1404,84 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                               </Typography>
                                             )}
                                           </TableCell>
+                                          {/* Tags Column */}
+                                          <TableCell>
+                                            {installment.tags &&
+                                            installment.tags.length > 0 ? (
+                                              <Tooltip
+                                                title={
+                                                  <Box>
+                                                    {installment.tags
+                                                      .slice(0, 10)
+                                                      .map(t => (
+                                                        <Chip
+                                                          key={t.tag.id}
+                                                          label={t.tag.name}
+                                                          size="small"
+                                                          sx={{
+                                                            m: 0.25,
+                                                            bgcolor:
+                                                              t.tag.color ||
+                                                              '#e0e0e0',
+                                                            color: '#fff',
+                                                          }}
+                                                        />
+                                                      ))}
+                                                    {installment.tags.length >
+                                                      10 && (
+                                                      <Typography
+                                                        variant="caption"
+                                                        sx={{
+                                                          mt: 0.5,
+                                                          display: 'block',
+                                                        }}
+                                                      >
+                                                        ...e mais{' '}
+                                                        {installment.tags
+                                                          .length - 10}{' '}
+                                                        tags
+                                                      </Typography>
+                                                    )}
+                                                  </Box>
+                                                }
+                                              >
+                                                <Chip
+                                                  icon={<LocalOfferIcon />}
+                                                  label={`+${installment.tags.length}`}
+                                                  size="small"
+                                                  color="primary"
+                                                  variant="outlined"
+                                                />
+                                              </Tooltip>
+                                            ) : (
+                                              <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                              >
+                                                —
+                                              </Typography>
+                                            )}
+                                          </TableCell>
+                                          {/* Notes Column */}
+                                          <TableCell>
+                                            {installment.notes ? (
+                                              <Tooltip
+                                                title={installment.notes}
+                                              >
+                                                <CommentIcon
+                                                  fontSize="small"
+                                                  color="action"
+                                                />
+                                              </Tooltip>
+                                            ) : (
+                                              <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                              >
+                                                —
+                                              </Typography>
+                                            )}
+                                          </TableCell>
                                           <TableCell align="right">
                                             <Box
                                               sx={{
@@ -1350,6 +1504,21 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                                     </IconButton>
                                                   </Tooltip>
                                                 )}
+                                              {onEditInstallment && (
+                                                <Tooltip title="Editar parcela completa">
+                                                  <IconButton
+                                                    size="small"
+                                                    onClick={() =>
+                                                      onEditInstallment(
+                                                        account,
+                                                        installment
+                                                      )
+                                                    }
+                                                  >
+                                                    <EditNoteIcon fontSize="small" />
+                                                  </IconButton>
+                                                </Tooltip>
+                                              )}
                                               <Tooltip title="Registrar pagamento">
                                                 <span>
                                                   <IconButton

@@ -52,6 +52,7 @@ interface UsePayablesParams {
   vendorId?: string | null;
   categoryId?: string | null;
   tagIds?: string[];
+  installmentTagIds?: string[];
   page: number;
   rowsPerPage: number;
   hideCompleted?: boolean;

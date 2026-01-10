@@ -12,6 +12,9 @@ import {
   Grid,
   Badge,
   Tooltip,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
 import {
   FilterList as FilterIcon,
@@ -42,6 +45,10 @@ interface PayableFiltersProps {
   tagFilters: string[];
   onTagsChange: (tagIds: string[]) => void;
   tags: Tag[];
+
+  // Installment Tags (Advanced Filters)
+  installmentTagFilters?: string[];
+  onInstallmentTagsChange?: (tagIds: string[]) => void;
 }
 
 export const PayableFilters: React.FC<PayableFiltersProps> = ({
@@ -56,6 +63,8 @@ export const PayableFilters: React.FC<PayableFiltersProps> = ({
   tagFilters,
   onTagsChange,
   tags,
+  installmentTagFilters = [],
+  onInstallmentTagsChange,
 }) => {
   const [expanded, setExpanded] = useState(false);
 
@@ -63,7 +72,8 @@ export const PayableFilters: React.FC<PayableFiltersProps> = ({
     statusFilter.length +
     (vendorFilter ? 1 : 0) +
     (categoryFilter ? 1 : 0) +
-    tagFilters.length;
+    tagFilters.length +
+    installmentTagFilters.length;
 
   const hasActiveFilters = activeFiltersCount > 0;
 
@@ -83,6 +93,7 @@ export const PayableFilters: React.FC<PayableFiltersProps> = ({
     onVendorChange(null);
     onCategoryChange(null);
     onTagsChange([]);
+    onInstallmentTagsChange?.([]);
   };
 
   const selectedVendor = vendors.find(v => v.id === vendorFilter);
@@ -329,6 +340,98 @@ export const PayableFilters: React.FC<PayableFiltersProps> = ({
             </Grid>
           </Grid>
 
+          {/* Advanced Filters Section */}
+          {onInstallmentTagsChange && (
+            <Box sx={{ mt: 3 }}>
+              <Accordion
+                disableGutters
+                elevation={0}
+                sx={{
+                  border: 1,
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  '&:before': { display: 'none' },
+                  bgcolor: 'background.paper',
+                }}
+              >
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="subtitle2" fontWeight={600}>
+                      Filtros Avançados (Parcelas)
+                    </Typography>
+                    {installmentTagFilters.length > 0 && (
+                      <Badge
+                        badgeContent={installmentTagFilters.length}
+                        color="secondary"
+                      />
+                    )}
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <Autocomplete
+                        multiple
+                        value={tags.filter(t =>
+                          installmentTagFilters.includes(t.id)
+                        )}
+                        onChange={(_, newValue) => {
+                          onInstallmentTagsChange(newValue.map(tag => tag.id));
+                        }}
+                        options={tags}
+                        getOptionLabel={option => option.name}
+                        renderInput={params => (
+                          <TextField
+                            {...params}
+                            label="Tags de Parcelas"
+                            placeholder="Filtrar por tags das parcelas"
+                            size="small"
+                            helperText="Mostra contas que possuem parcelas com essas tags"
+                          />
+                        )}
+                        renderTags={(value, getTagProps) =>
+                          value.map((option, index) => (
+                            <Chip
+                              {...getTagProps({ index })}
+                              key={option.id}
+                              label={option.name}
+                              size="small"
+                              sx={{
+                                bgcolor: option.color || '#e0e0e0',
+                                color: '#fff',
+                                '& .MuiChip-deleteIcon': {
+                                  color: 'rgba(255, 255, 255, 0.7)',
+                                  '&:hover': {
+                                    color: '#fff',
+                                  },
+                                },
+                              }}
+                            />
+                          ))
+                        }
+                        renderOption={(props, option) => {
+                          const { key, ...otherProps } = props;
+                          return (
+                            <li key={key} {...otherProps}>
+                              <Chip
+                                label={option.name}
+                                size="small"
+                                sx={{
+                                  bgcolor: option.color || '#e0e0e0',
+                                  color: '#fff',
+                                }}
+                              />
+                            </li>
+                          );
+                        }}
+                      />
+                    </Grid>
+                  </Grid>
+                </AccordionDetails>
+              </Accordion>
+            </Box>
+          )}
+
           {/* Active Filters Summary */}
           <AnimatePresence>
             {hasActiveFilters && (
@@ -420,6 +523,25 @@ export const PayableFilters: React.FC<PayableFiltersProps> = ({
                         }}
                       />
                     ))}
+                    {installmentTagFilters.length > 0 &&
+                      tags
+                        .filter(t => installmentTagFilters.includes(t.id))
+                        .map(tag => (
+                          <Chip
+                            key={`installment-${tag.id}`}
+                            label={`Tag Parcela: ${tag.name}`}
+                            size="small"
+                            onDelete={() =>
+                              onInstallmentTagsChange?.(
+                                installmentTagFilters.filter(
+                                  id => id !== tag.id
+                                )
+                              )
+                            }
+                            color="secondary"
+                            variant="outlined"
+                          />
+                        ))}
                   </Stack>
                 </Box>
               </motion.div>

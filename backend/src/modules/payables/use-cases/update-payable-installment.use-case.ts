@@ -46,6 +46,8 @@ export class UpdatePayableInstallmentUseCase {
     const payableWithInstallments = payable as typeof payable & {
       installments: Array<{
         id: string;
+        amount: number;
+        dueDate: Date;
         status: AccountStatus;
         allocations: any[];
       }>;
@@ -59,20 +61,40 @@ export class UpdatePayableInstallmentUseCase {
       throw new NotFoundException('Parcela não encontrada');
     }
 
-    if (installmentToUpdate.status !== PayableStatus.PENDING) {
-      throw new BadRequestException('Só é possível editar parcelas pendentes');
-    }
+    // Validação condicional: amount/dueDate requerem PENDING sem pagamentos
+    // notes/tagIds podem ser editados sempre
+    const isEditingAmount =
+      updateDto.amount !== undefined &&
+      Number(updateDto.amount) !== Number(installmentToUpdate.amount);
+    const isEditingDueDate =
+      updateDto.dueDate !== undefined &&
+      updateDto.dueDate !==
+        installmentToUpdate.dueDate.toISOString().split('T')[0];
 
-    if (installmentToUpdate.allocations.length > 0) {
-      throw new BadRequestException(
-        'Não é possível editar parcela com pagamentos registrados'
-      );
+    const isEditingAmountOrDate = isEditingAmount || isEditingDueDate;
+
+    if (isEditingAmountOrDate) {
+      if (installmentToUpdate.status !== PayableStatus.PENDING) {
+        throw new BadRequestException(
+          'Só é possível editar valor e data de vencimento de parcelas pendentes'
+        );
+      }
+
+      if (installmentToUpdate.allocations.length > 0) {
+        throw new BadRequestException(
+          'Não é possível editar valor e data de vencimento de parcela com pagamentos registrados'
+        );
+      }
     }
 
     // Atualizar parcela e recalcular total somando todas as parcelas (auto-corretivo)
     await this.repository.transaction(async prisma => {
-      // 1. Atualizar parcela (valor e/ou data de vencimento)
-      const updateData: { amount?: any; dueDate?: Date } = {};
+      // 1. Atualizar parcela (valor, data de vencimento, observações)
+      const updateData: {
+        amount?: any;
+        dueDate?: Date;
+        notes?: string | null;
+      } = {};
 
       if (updateDto.amount !== undefined) {
         updateData.amount = MoneyUtils.toDecimal(updateDto.amount);
@@ -86,12 +108,34 @@ export class UpdatePayableInstallmentUseCase {
         updateData.dueDate = dateValue;
       }
 
+      if (updateDto.notes !== undefined) {
+        updateData.notes = updateDto.notes.trim() || null;
+      }
+
       await prisma.payableInstallment.update({
         where: { id: installmentId },
         data: updateData,
       });
 
-      // 2. Se alterou a data de vencimento, reordenar e renumerar parcelas
+      // 2. Atualizar tags da parcela (se fornecidas)
+      if (updateDto.tagIds !== undefined) {
+        // Deletar todas as tags existentes
+        await prisma.payableInstallmentTag.deleteMany({
+          where: { payableInstallmentId: installmentId },
+        });
+
+        // Criar novas tags
+        if (updateDto.tagIds.length > 0) {
+          await prisma.payableInstallmentTag.createMany({
+            data: updateDto.tagIds.map(tagId => ({
+              payableInstallmentId: installmentId,
+              tagId,
+            })),
+          });
+        }
+      }
+
+      // 3. Se alterou a data de vencimento, reordenar e renumerar parcelas
       if (updateDto.dueDate) {
         // Buscar todas as parcelas ordenadas por data de vencimento
         const allInstallments = await prisma.payableInstallment.findMany({
@@ -108,7 +152,7 @@ export class UpdatePayableInstallmentUseCase {
         }
       }
 
-      // 3. Se alterou valor, recalcular total
+      // 4. Se alterou valor, recalcular total
       if (updateDto.amount !== undefined) {
         // Buscar todas as parcelas atualizadas
         const allInstallments = await prisma.payableInstallment.findMany({
@@ -144,6 +188,13 @@ export class UpdatePayableInstallmentUseCase {
           },
         },
         installments: {
+          include: {
+            tags: {
+              include: {
+                tag: { select: { id: true, name: true, color: true } },
+              },
+            },
+          },
           orderBy: { installmentNumber: 'asc' },
         },
       }
