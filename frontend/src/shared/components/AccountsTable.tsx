@@ -124,7 +124,7 @@ export function AccountsTable<T extends AccountItem>({
               Categoria
             </TableCell>
             <TableCell align="right">Valor</TableCell>
-            <TableCell>Vencimento</TableCell>
+            <TableCell>Próximo vencimento</TableCell>
             <TableCell>Status</TableCell>
             <TableCell
               align="right"

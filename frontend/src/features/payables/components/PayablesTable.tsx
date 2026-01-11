@@ -756,7 +756,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                 <TableCell width={48} />
                 <TableCell>Fornecedor & Identificação</TableCell>
                 <TableCell align="right">Valor</TableCell>
-                <TableCell>Vencimento</TableCell>
+                <TableCell>Próximo vencimento</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell align="right">Ações</TableCell>
               </TableRow>
@@ -1103,10 +1103,10 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                     <TableHead>
                                       <TableRow>
                                         <TableCell>Parcela</TableCell>
-                                        <TableCell>Vencimento</TableCell>
                                         <TableCell align="right">
                                           Valor
                                         </TableCell>
+                                        <TableCell>Vencimento</TableCell>
                                         <TableCell>Status</TableCell>
                                         <TableCell align="right">
                                           Pago
@@ -1170,6 +1170,91 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                                     height: '16px',
                                                   }}
                                                 />
+                                              )}
+                                            </Box>
+                                          </TableCell>
+                                          <TableCell align="right">
+                                            <Box
+                                              sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'flex-end',
+                                                gap: 0.5,
+                                              }}
+                                            >
+                                              {editingInstallment ===
+                                              installment.id ? (
+                                                <>
+                                                  <CurrencyField
+                                                    size="small"
+                                                    value={editAmount}
+                                                    onChange={setEditAmount}
+                                                    sx={{
+                                                      width: '140px',
+                                                      '& input': {
+                                                        textAlign: 'right',
+                                                        fontSize: '0.875rem',
+                                                        padding: '4px 8px',
+                                                      },
+                                                    }}
+                                                    autoFocus
+                                                  />
+                                                  <Tooltip title="Salvar">
+                                                    <IconButton
+                                                      size="small"
+                                                      color="success"
+                                                      onClick={() =>
+                                                        handleSaveEdit(
+                                                          account,
+                                                          installment
+                                                        )
+                                                      }
+                                                    >
+                                                      <CheckIcon fontSize="small" />
+                                                    </IconButton>
+                                                  </Tooltip>
+                                                  <Tooltip title="Cancelar">
+                                                    <IconButton
+                                                      size="small"
+                                                      color="error"
+                                                      onClick={handleCancelEdit}
+                                                    >
+                                                      <CloseIcon fontSize="small" />
+                                                    </IconButton>
+                                                  </Tooltip>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <Typography variant="body2">
+                                                    {formatCurrency(
+                                                      installment.amount
+                                                    )}
+                                                  </Typography>
+                                                  {onUpdateInstallment &&
+                                                    installment.status ===
+                                                      'PENDING' && (
+                                                      <Tooltip title="Editar valor">
+                                                        <IconButton
+                                                          size="small"
+                                                          onClick={() =>
+                                                            handleStartEdit(
+                                                              installment
+                                                            )
+                                                          }
+                                                          sx={{
+                                                            ml: 0.5,
+                                                            padding: 0.5,
+                                                          }}
+                                                        >
+                                                          <EditIcon
+                                                            sx={{
+                                                              fontSize: 16,
+                                                            }}
+                                                          />
+                                                        </IconButton>
+                                                      </Tooltip>
+                                                    )}
+                                                </>
                                               )}
                                             </Box>
                                           </TableCell>
@@ -1274,91 +1359,6 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                                           size="small"
                                                           onClick={() =>
                                                             handleStartEditDueDate(
-                                                              installment
-                                                            )
-                                                          }
-                                                          sx={{
-                                                            ml: 0.5,
-                                                            padding: 0.5,
-                                                          }}
-                                                        >
-                                                          <EditIcon
-                                                            sx={{
-                                                              fontSize: 16,
-                                                            }}
-                                                          />
-                                                        </IconButton>
-                                                      </Tooltip>
-                                                    )}
-                                                </>
-                                              )}
-                                            </Box>
-                                          </TableCell>
-                                          <TableCell align="right">
-                                            <Box
-                                              sx={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'flex-end',
-                                                gap: 0.5,
-                                              }}
-                                            >
-                                              {editingInstallment ===
-                                              installment.id ? (
-                                                <>
-                                                  <CurrencyField
-                                                    size="small"
-                                                    value={editAmount}
-                                                    onChange={setEditAmount}
-                                                    sx={{
-                                                      width: '140px',
-                                                      '& input': {
-                                                        textAlign: 'right',
-                                                        fontSize: '0.875rem',
-                                                        padding: '4px 8px',
-                                                      },
-                                                    }}
-                                                    autoFocus
-                                                  />
-                                                  <Tooltip title="Salvar">
-                                                    <IconButton
-                                                      size="small"
-                                                      color="success"
-                                                      onClick={() =>
-                                                        handleSaveEdit(
-                                                          account,
-                                                          installment
-                                                        )
-                                                      }
-                                                    >
-                                                      <CheckIcon fontSize="small" />
-                                                    </IconButton>
-                                                  </Tooltip>
-                                                  <Tooltip title="Cancelar">
-                                                    <IconButton
-                                                      size="small"
-                                                      color="error"
-                                                      onClick={handleCancelEdit}
-                                                    >
-                                                      <CloseIcon fontSize="small" />
-                                                    </IconButton>
-                                                  </Tooltip>
-                                                </>
-                                              ) : (
-                                                <>
-                                                  <Typography variant="body2">
-                                                    {formatCurrency(
-                                                      installment.amount
-                                                    )}
-                                                  </Typography>
-                                                  {onUpdateInstallment &&
-                                                    installment.status ===
-                                                      'PENDING' && (
-                                                      <Tooltip title="Editar valor">
-                                                        <IconButton
-                                                          size="small"
-                                                          onClick={() =>
-                                                            handleStartEdit(
                                                               installment
                                                             )
                                                           }
