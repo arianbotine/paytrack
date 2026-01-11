@@ -90,8 +90,8 @@ export class PaymentsReportsRepository {
     const result = await this.prisma.$queryRaw<TimeSeriesData[]>`
       SELECT
         DATE_TRUNC('month', p.payment_date) as period,
-        COALESCE(SUM(pa.amount), 0)::DECIMAL as payables,
-        0::DECIMAL as receivables,
+        COALESCE(SUM(CASE WHEN pa.payable_installment_id IS NOT NULL THEN pa.amount ELSE 0 END), 0)::DECIMAL as payables,
+        COALESCE(SUM(CASE WHEN pa.receivable_installment_id IS NOT NULL THEN pa.amount ELSE 0 END), 0)::DECIMAL as receivables,
         COUNT(DISTINCT p.id) as count
       FROM payments p
       JOIN payment_allocations pa ON p.id = pa.payment_id
