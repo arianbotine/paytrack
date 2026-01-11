@@ -91,8 +91,6 @@ export const countActiveFilters = (filters: ReportFiltersType): number => {
   if (filters.tagIds && filters.tagIds.length > 0) count++;
   if (filters.vendorIds && filters.vendorIds.length > 0) count++;
   if (filters.customerIds && filters.customerIds.length > 0) count++;
-  if (filters.period === 'custom' && filters.startDate && filters.endDate)
-    count++;
 
   return count;
 };
