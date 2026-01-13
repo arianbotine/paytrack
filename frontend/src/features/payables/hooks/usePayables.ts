@@ -55,7 +55,6 @@ interface UsePayablesParams {
   installmentTagIds?: string[];
   page: number;
   rowsPerPage: number;
-  hideCompleted?: boolean;
 }
 
 export const usePayables = (params: UsePayablesParams) => {

@@ -157,16 +157,6 @@ export class ReceivableFilterDto {
   @Type(() => Number)
   take?: number;
 
-  @ApiPropertyOptional({ example: true })
-  @IsOptional()
-  @Transform(({ value }) => {
-    const lowerValue = value.toLowerCase();
-    if (lowerValue === 'true') return true;
-    if (lowerValue === 'false') return false;
-    return undefined;
-  })
-  hideCompleted?: string;
-
   @ApiPropertyOptional({
     type: [String],
     example: ['uuid-tag-1', 'uuid-tag-2'],

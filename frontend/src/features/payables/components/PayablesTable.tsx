@@ -15,8 +15,6 @@ import {
   TablePagination,
   Collapse,
   LinearProgress,
-  FormControlLabel,
-  Switch,
   Card,
   CardHeader,
   CardContent,
@@ -59,8 +57,6 @@ interface PayablesTableProps {
   page: number;
   rowsPerPage: number;
   isLoading: boolean;
-  hideCompleted: boolean;
-  onHideCompletedChange: (hide: boolean) => void;
   onPageChange: (page: number) => void;
   onRowsPerPageChange: (rowsPerPage: number) => void;
   onEdit: (payable: Payable) => void;
@@ -95,8 +91,6 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
   page,
   rowsPerPage,
   isLoading,
-  hideCompleted,
-  onHideCompletedChange,
   onPageChange,
   onRowsPerPageChange,
   onEdit,
@@ -729,18 +723,6 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
 
   return (
     <Box>
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={hideCompleted}
-              onChange={e => onHideCompletedChange(e.target.checked)}
-            />
-          }
-          label="Ocultar concluídas"
-        />
-      </Box>
-
       {/* Mobile View - Cards com Accordion */}
       {isMobile ? (
         <Box>{renderMobileContent()}</Box>

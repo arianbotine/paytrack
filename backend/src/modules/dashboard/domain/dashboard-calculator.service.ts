@@ -79,18 +79,18 @@ export class DashboardCalculator {
   }
 
   /**
-   * Calcula total a receber (pending + partial)
-   * Nota: overdue não é mais um status, será calculado no frontend baseado em isOverdue
+   * Calcula total a receber (total - cancelled)
+   * Inclui contas pagas, parciais e pendentes
    */
   calculateToReceive(totals: Totals): number {
-    return totals.pending + totals.partial;
+    return totals.total - totals.cancelled;
   }
 
   /**
-   * Calcula total a pagar (pending + partial)
-   * Nota: overdue não é mais um status, será calculado no frontend baseado em isOverdue
+   * Calcula total a pagar (total - cancelled)
+   * Inclui contas pagas, parciais e pendentes
    */
   calculateToPay(totals: Totals): number {
-    return totals.pending + totals.partial;
+    return totals.total - totals.cancelled;
   }
 }

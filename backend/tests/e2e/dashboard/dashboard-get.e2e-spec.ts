@@ -187,7 +187,7 @@ describe('Dashboard - GET (e2e)', () => {
         count: 3,
       });
 
-      expect(response.body.balance.toPay).toBe(3500); // pending (que inclui vencidos)
+      expect(response.body.balance.toPay).toBe(4500); // total - cancelled
     });
 
     it('deve calcular corretamente totais de receivables', async () => {
@@ -242,7 +242,7 @@ describe('Dashboard - GET (e2e)', () => {
         count: 2,
       });
 
-      expect(response.body.balance.toReceive).toBe(1200); // pending
+      expect(response.body.balance.toReceive).toBe(2000); // total - cancelled
     });
 
     it('deve calcular saldo líquido corretamente', async () => {

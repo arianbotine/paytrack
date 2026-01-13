@@ -15,8 +15,6 @@ import {
   TablePagination,
   Collapse,
   LinearProgress,
-  FormControlLabel,
-  Switch,
   Card,
   CardHeader,
   CardContent,
@@ -59,8 +57,6 @@ interface ReceivablesTableProps {
   page: number;
   rowsPerPage: number;
   isLoading: boolean;
-  hideCompleted: boolean;
-  onHideCompletedChange: (hide: boolean) => void;
   onPageChange: (page: number) => void;
   onRowsPerPageChange: (rowsPerPage: number) => void;
   onEdit: (receivable: Receivable) => void;
@@ -95,8 +91,6 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
   page,
   rowsPerPage,
   isLoading,
-  hideCompleted,
-  onHideCompletedChange,
   onPageChange,
   onRowsPerPageChange,
   onEdit,
@@ -192,18 +186,6 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
 
   return (
     <Box>
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={hideCompleted}
-              onChange={e => onHideCompletedChange(e.target.checked)}
-            />
-          }
-          label="Ocultar concluídas"
-        />
-      </Box>
-
       {/* Mobile View - Cards com Accordion */}
       {isMobile && (
         <Box>

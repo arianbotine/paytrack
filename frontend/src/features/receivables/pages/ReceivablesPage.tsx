@@ -48,7 +48,6 @@ export const ReceivablesPage: React.FC = () => {
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [hideCompleted, setHideCompleted] = useState(true);
   const [installmentTagFilters, setInstallmentTagFilters] = useState<string[]>(
     []
   );
@@ -71,7 +70,6 @@ export const ReceivablesPage: React.FC = () => {
     installmentTagIds: installmentTagFilters,
     page,
     rowsPerPage,
-    hideCompleted,
   });
 
   const { data: customers = [] } = useCustomers();
@@ -207,11 +205,6 @@ export const ReceivablesPage: React.FC = () => {
     setPage(0);
   }, []);
 
-  const handleHideCompletedChange = useCallback((hide: boolean) => {
-    setHideCompleted(hide);
-    setPage(0);
-  }, []);
-
   const handleSubmit = useCallback(
     (data: ReceivableFormData) => {
       submitReceivable(data, selectedReceivable?.id);
@@ -340,8 +333,6 @@ export const ReceivablesPage: React.FC = () => {
           page={page}
           rowsPerPage={rowsPerPage}
           isLoading={isLoading}
-          hideCompleted={hideCompleted}
-          onHideCompletedChange={handleHideCompletedChange}
           onPageChange={handlePageChange}
           onRowsPerPageChange={handleRowsPerPageChange}
           onEdit={handleOpenDialog}

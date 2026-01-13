@@ -10,29 +10,10 @@ import { parseDateOnly } from '../../../shared/utils/date.utils';
 @Injectable()
 export class PayableQueryFilterBuilder {
   /**
-   * Constrói o filtro de status considerando a opção hideCompleted
+   * Constrói o filtro de status
    */
   buildStatusFilter(filters?: PayableFilterDto): PayableStatus[] | undefined {
-    let statusFilter = filters?.status;
-    const hideCompleted = filters?.hideCompleted;
-
-    if (hideCompleted) {
-      if (statusFilter && statusFilter.length > 0) {
-        // Remove PAID from the status filter
-        statusFilter = statusFilter.filter(s => s !== PayableStatus.PAID);
-      } else {
-        // If no specific status filter, exclude PAID
-        statusFilter = [
-          PayableStatus.PENDING,
-          PayableStatus.PARTIAL,
-          PayableStatus.CANCELLED,
-        ];
-      }
-    } else if (!statusFilter || statusFilter.length === 0) {
-      statusFilter = undefined;
-    }
-
-    return statusFilter;
+    return filters?.status;
   }
 
   /**

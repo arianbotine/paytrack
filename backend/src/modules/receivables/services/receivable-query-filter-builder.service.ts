@@ -10,31 +10,12 @@ import { parseDateOnly } from '../../../shared/utils/date.utils';
 @Injectable()
 export class ReceivableQueryFilterBuilder {
   /**
-   * Constrói o filtro de status considerando a opção hideCompleted
+   * Constrói o filtro de status
    */
   buildStatusFilter(
     filters?: ReceivableFilterDto
   ): ReceivableStatus[] | undefined {
-    let statusFilter = filters?.status;
-    const hideCompleted = filters?.hideCompleted;
-
-    if (hideCompleted) {
-      if (statusFilter && statusFilter.length > 0) {
-        // Remove PAID from the status filter
-        statusFilter = statusFilter.filter(s => s !== ReceivableStatus.PAID);
-      } else {
-        // If no specific status filter, exclude PAID
-        statusFilter = [
-          ReceivableStatus.PENDING,
-          ReceivableStatus.PARTIAL,
-          ReceivableStatus.CANCELLED,
-        ];
-      }
-    } else if (!statusFilter || statusFilter.length === 0) {
-      statusFilter = undefined;
-    }
-
-    return statusFilter;
+    return filters?.status;
   }
 
   /**

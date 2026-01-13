@@ -69,7 +69,6 @@ interface UseAccountsParams {
   installmentTagIds?: string[];
   page: number;
   rowsPerPage: number;
-  hideCompleted?: boolean;
 }
 
 export const useAccounts = <T>(
@@ -88,7 +87,6 @@ export const useAccounts = <T>(
       installmentTagIds: params.installmentTagIds,
       page: params.page,
       rowsPerPage: params.rowsPerPage,
-      hideCompleted: params.hideCompleted,
     }),
     queryFn: async (): Promise<BaseResponse<T>> => {
       const queryParams: Record<string, string | number> = {
@@ -123,9 +121,6 @@ export const useAccounts = <T>(
       }
       if (params.installmentTagIds && params.installmentTagIds.length > 0) {
         queryParams.installmentTagIds = params.installmentTagIds.join(',');
-      }
-      if (params.hideCompleted !== undefined) {
-        queryParams.hideCompleted = params.hideCompleted.toString();
       }
 
       const response = await api.get(config.endpoint, { params: queryParams });
