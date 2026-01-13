@@ -42,6 +42,12 @@ import {
     ListPaymentsUseCase,
     GetPaymentUseCase,
   ],
-  exports: [PaymentsService],
+  exports: [
+    PaymentsService,
+    CreatePaymentUseCase,
+    PaymentsRepository,
+    InstallmentBalanceManager,
+    PaymentAllocationsValidator,
+  ],
 })
 export class PaymentsModule {}

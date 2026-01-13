@@ -12,6 +12,7 @@ import {
   Validate,
   ArrayMinSize,
   ArrayMaxSize,
+  ValidateNested,
 } from 'class-validator';
 import {
   ApiProperty,
@@ -22,6 +23,55 @@ import {
 import { Type, Transform } from 'class-transformer';
 import { IsDateArrayAscendingConstraint } from '../../../shared/validators';
 import { PayableStatus } from '../domain/payable-status.enum';
+import { PaymentMethod } from '@prisma/client';
+
+/**
+ * DTO para pagamento opcional durante a criação de conta
+ */
+export class CreatePaymentOnAccountDto {
+  @ApiProperty({
+    type: [Number],
+    example: [1, 2],
+    description:
+      'Números das parcelas a serem pagas (ex: [1, 2, 3] para pagar as 3 primeiras)',
+  })
+  @IsArray()
+  @ArrayMinSize(1, { message: 'Selecione pelo menos uma parcela para pagar' })
+  @IsInt({ each: true })
+  @Min(1, { each: true, message: 'Número de parcela deve ser maior que zero' })
+  installmentNumbers!: number[];
+
+  @ApiProperty({
+    example: '2026-01-13T14:30:00.000Z',
+    description: 'Data e hora do pagamento (ISO datetime, deve ser <= hoje)',
+  })
+  @IsDateString()
+  paymentDate!: string;
+
+  @ApiProperty({
+    enum: PaymentMethod,
+    example: PaymentMethod.PIX,
+    description: 'Método de pagamento utilizado',
+  })
+  @IsEnum(PaymentMethod, { message: 'Método de pagamento inválido' })
+  paymentMethod!: PaymentMethod;
+
+  @ApiPropertyOptional({
+    example: 'Comprovante PIX 123456',
+    description: 'Referência ou comprovante do pagamento',
+  })
+  @IsString()
+  @IsOptional()
+  reference?: string;
+
+  @ApiPropertyOptional({
+    example: 'Pagamento realizado via app',
+    description: 'Observações sobre o pagamento',
+  })
+  @IsString()
+  @IsOptional()
+  notes?: string;
+}
 
 export class CreatePayableDto {
   @ApiProperty({ example: 'uuid-do-credor' })
@@ -90,6 +140,17 @@ export class CreatePayableDto {
   @ArrayMaxSize(120)
   @Validate(IsDateArrayAscendingConstraint)
   dueDates!: string[];
+
+  // Payment during creation (optional)
+  @ApiPropertyOptional({
+    type: CreatePaymentOnAccountDto,
+    description:
+      'Pagamento opcional durante a criação. Permite pagar parcelas completas imediatamente.',
+  })
+  @ValidateNested()
+  @Type(() => CreatePaymentOnAccountDto)
+  @IsOptional()
+  payment?: CreatePaymentOnAccountDto;
 }
 
 export class UpdatePayableDto extends PartialType(

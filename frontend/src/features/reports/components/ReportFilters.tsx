@@ -38,7 +38,10 @@ import {
   getPeriodSummary,
   type PeriodShortcut,
 } from '../utils/period-calculator';
-import type { ReportFilters as ReportFiltersType, ReportGroupBy } from '../types';
+import type {
+  ReportFilters as ReportFiltersType,
+  ReportGroupBy,
+} from '../types';
 
 interface ReportFiltersProps {
   readonly filters: ReportFiltersType;
@@ -366,9 +369,7 @@ export function ReportFilters(props: ReportFiltersProps) {
                   size="small"
                   options={tags}
                   getOptionLabel={option => option.name}
-                  value={tags.filter(tag =>
-                    filters.tagIds?.includes(tag.id)
-                  )}
+                  value={tags.filter(tag => filters.tagIds?.includes(tag.id))}
                   onChange={(_, newValue) =>
                     handleMultiSelectChange(
                       'tagIds',
@@ -565,10 +566,7 @@ export function ReportFilters(props: ReportFiltersProps) {
           <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
             {filters.startDate && filters.endDate && (
               <Chip
-                label={getPeriodSummary(
-                  filters.startDate,
-                  filters.endDate
-                )}
+                label={getPeriodSummary(filters.startDate, filters.endDate)}
                 size="small"
                 color="primary"
                 variant="outlined"
@@ -583,17 +581,16 @@ export function ReportFilters(props: ReportFiltersProps) {
               size="small"
               variant="outlined"
             />
-            {filters.categoryIds &&
-              filters.categoryIds.length > 0 && (
-                <Chip
-                  icon={<CategoryIcon />}
-                  label={`${filters.categoryIds.length} ${filters.categoryIds.length === 1 ? 'categoria' : 'categorias'}`}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                  onDelete={() => handleClearFilter('categoryIds')}
-                />
-              )}
+            {filters.categoryIds && filters.categoryIds.length > 0 && (
+              <Chip
+                icon={<CategoryIcon />}
+                label={`${filters.categoryIds.length} ${filters.categoryIds.length === 1 ? 'categoria' : 'categorias'}`}
+                size="small"
+                color="primary"
+                variant="outlined"
+                onDelete={() => handleClearFilter('categoryIds')}
+              />
+            )}
             {filters.tagIds && filters.tagIds.length > 0 && (
               <Chip
                 icon={<LabelIcon />}
@@ -614,17 +611,16 @@ export function ReportFilters(props: ReportFiltersProps) {
                 onDelete={() => handleClearFilter('vendorIds')}
               />
             )}
-            {filters.customerIds &&
-              filters.customerIds.length > 0 && (
-                <Chip
-                  icon={<PersonIcon />}
-                  label={`${filters.customerIds.length} ${filters.customerIds.length === 1 ? 'cliente' : 'clientes'}`}
-                  size="small"
-                  color="info"
-                  variant="outlined"
-                  onDelete={() => handleClearFilter('customerIds')}
-                />
-              )}
+            {filters.customerIds && filters.customerIds.length > 0 && (
+              <Chip
+                icon={<PersonIcon />}
+                label={`${filters.customerIds.length} ${filters.customerIds.length === 1 ? 'cliente' : 'clientes'}`}
+                size="small"
+                color="info"
+                variant="outlined"
+                onDelete={() => handleClearFilter('customerIds')}
+              />
+            )}
           </Stack>
         </Box>
       )}

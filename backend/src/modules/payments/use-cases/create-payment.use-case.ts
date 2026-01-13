@@ -173,6 +173,70 @@ export class CreatePaymentUseCase {
       );
     }
   }
+
+  /**
+   * Executa criação de pagamento dentro de uma transação existente
+   * Usado quando pagamento é registrado durante criação de conta
+   */
+  async executeInTransaction(
+    tx: any,
+    organizationId: string,
+    dto: CreatePaymentDto
+  ) {
+    const { allocations, ...paymentData } = dto;
+
+    // Validar estrutura das alocações
+    this.allocationsValidator.validateAllocationTargets(allocations);
+    this.allocationsValidator.validateAllocationsSum(allocations, dto.amount);
+
+    // Validar se parcelas existem
+    await this.allocationsValidator.validateInstallmentsExist(
+      tx,
+      organizationId,
+      allocations
+    );
+
+    // Criar pagamento
+    const payment = await tx.payment.create({
+      data: {
+        organizationId,
+        amount: MoneyUtils.toDecimal(paymentData.amount),
+        paymentDate: parseDatetime(paymentData.paymentDate),
+        paymentMethod: paymentData.paymentMethod,
+        notes: paymentData.notes,
+        allocations: {
+          create: allocations.map(a => ({
+            payableInstallmentId: a.payableInstallmentId,
+            receivableInstallmentId: a.receivableInstallmentId,
+            amount: MoneyUtils.toDecimal(a.amount),
+          })),
+        },
+      },
+    });
+
+    // Atualizar saldos das parcelas
+    for (const allocation of allocations) {
+      if (allocation.payableInstallmentId) {
+        await this.balanceManager.updatePayableInstallmentBalance(
+          tx,
+          allocation.payableInstallmentId,
+          allocation.amount
+        );
+      } else if (allocation.receivableInstallmentId) {
+        await this.balanceManager.updateReceivableInstallmentBalance(
+          tx,
+          allocation.receivableInstallmentId,
+          allocation.amount
+        );
+      }
+    }
+
+    this.logger.log(
+      `Pagamento de ${dto.amount} criado dentro da transação para ${allocations.length} parcelas`
+    );
+
+    return payment;
+  }
 }
 
 /**

@@ -66,6 +66,41 @@ export interface ReceivablesResponse {
 // Validation Schema
 // ============================================================
 
+// Schema de pagamento opcional durante criação
+const paymentOnAccountSchema = z.object({
+  installmentNumbers: z
+    .array(z.number().int().positive())
+    .min(1, 'Selecione pelo menos uma parcela para receber'),
+  paymentDate: z
+    .string()
+    .min(1, 'Data do recebimento é obrigatória')
+    .refine(
+      date => {
+        if (!date) return true;
+        const selected = new Date(date);
+        const now = new Date();
+        return selected <= now;
+      },
+      { message: 'Data do recebimento não pode ser futura' }
+    ),
+  paymentMethod: z.enum(
+    [
+      'CASH',
+      'CREDIT_CARD',
+      'DEBIT_CARD',
+      'BANK_TRANSFER',
+      'PIX',
+      'BOLETO',
+      'CHECK',
+      'ACCOUNT_DEBIT',
+      'OTHER',
+    ],
+    { required_error: 'Método de recebimento é obrigatório' }
+  ),
+  reference: z.string().optional(),
+  notes: z.string().optional(),
+});
+
 export const receivableSchema = z.object({
   amount: z.coerce.number().positive('Valor deve ser positivo'),
   firstDueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
@@ -76,6 +111,8 @@ export const receivableSchema = z.object({
   // Campos de parcelas
   installmentCount: z.coerce.number().int().min(1).max(120).optional(),
   dueDates: z.array(z.string()).optional(),
+  // Campo de pagamento opcional
+  payment: paymentOnAccountSchema.optional(),
 });
 
 export type ReceivableFormData = z.infer<typeof receivableSchema>;

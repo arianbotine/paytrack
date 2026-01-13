@@ -3,6 +3,7 @@ import { ReceivablesService } from './receivables.service';
 import { ReceivablesController } from './receivables.controller';
 import { CacheModule } from '../../shared/modules/cache.module';
 import { ReceivablesServicesModule } from './services/receivables-services.module';
+import { PaymentsModule } from '../payments/payments.module';
 
 // Repositories
 import {
@@ -27,7 +28,7 @@ import {
 } from './use-cases';
 
 @Module({
-  imports: [CacheModule, ReceivablesServicesModule],
+  imports: [CacheModule, ReceivablesServicesModule, PaymentsModule],
   controllers: [ReceivablesController],
   providers: [
     // Application Service

@@ -52,6 +52,7 @@ import {
 import { CurrencyField } from '../../../shared/components';
 import { QuickCreateCategory } from '../../../shared/components/QuickCreateCategory';
 import { QuickCreateTag } from '../../../shared/components/QuickCreateTag';
+import { InlinePaymentForm } from '../../../shared/components/InlinePaymentForm';
 
 interface PayableFormDialogProps {
   open: boolean;
@@ -148,13 +149,23 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
     setValue,
   ]);
 
-  // Gerar preview de parcelas
+  // Gerar preview de parcelas (inclui parcela única para pagamento)
   const installmentPreview = useMemo(() => {
-    if (!isInstallment || !installmentCount || installmentCount === 1)
-      return [];
     if (!amount || amount <= 0) return [];
     if (!firstDueDate) return [];
 
+    // Para parcela única (sem toggle de parcelamento ativado)
+    if (!isInstallment || !installmentCount || installmentCount === 1) {
+      return [
+        {
+          number: 1,
+          dueDate: firstDueDate,
+          amount: amount,
+        },
+      ];
+    }
+
+    // Para múltiplas parcelas
     try {
       const dueDates = generateInstallmentDueDates(
         firstDueDate,
@@ -199,6 +210,10 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
   useEffect(() => {
     if (open) {
       if (payable) {
+        // Configurar estado de parcelamento baseado na conta existente
+        const hasMultipleInstallments = payable.totalInstallments > 1;
+        setIsInstallment(hasMultipleInstallments);
+
         reset({
           amount: payable.amount,
           firstDueDate:
@@ -208,6 +223,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
           tagIds: payable.tags.map(t => t.tag.id),
           notes: payable.notes || '',
           invoiceNumber: payable.invoiceNumber || '',
+          installmentCount: payable.totalInstallments,
         });
         setUserInputValue(payable.amount);
         setUserInputMode('total');
@@ -215,6 +231,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
         reset(getDefaultFormValues());
         setUserInputValue(null);
         setUserInputMode('total');
+        setIsInstallment(false);
       }
     }
   }, [open, payable, reset]);
@@ -280,6 +297,17 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
               {isEditing ? 'Editar Conta a Pagar' : 'Nova Conta a Pagar'}
             </DialogTitle>
             <DialogContent>
+              {/* Aviso de conta com pagamentos - Movido para o início */}
+              {payable && payable.paidAmount > 0 && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  Esta conta possui pagamentos no valor de{' '}
+                  {formatCurrency(payable.paidAmount)}. Não é possível alterar o
+                  valor total, parcelamento ou datas de vencimento. Para
+                  visualizar o histórico completo, use o botão "Ver Pagamentos"
+                  na lista de contas.
+                </Alert>
+              )}
+
               <Grid container spacing={2} sx={{ mt: 0.5 }}>
                 <Grid item xs={12} tablet={4} md={6}>
                   <Controller
@@ -419,6 +447,81 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                         error={!!errors.firstDueDate}
                         helperText={errors.firstDueDate?.message}
                         disabled={isEditing}
+                      />
+                    )}
+                  />
+                </Grid>
+
+                {/* Tags */}
+                <Grid item xs={12} md={6}>
+                  <Box
+                    sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}
+                  >
+                    <Controller
+                      name="tagIds"
+                      control={control}
+                      render={({ field }) => (
+                        <Autocomplete
+                          multiple
+                          options={tags}
+                          getOptionLabel={option => option.name}
+                          value={tags.filter(tag =>
+                            field.value?.includes(tag.id)
+                          )}
+                          onChange={(_, newValue) => {
+                            field.onChange(newValue.map(tag => tag.id));
+                          }}
+                          renderInput={params => (
+                            <TextField {...params} label="Tags" />
+                          )}
+                          renderTags={(value, getTagProps) =>
+                            value.map((option, index) => (
+                              <Chip
+                                {...getTagProps({ index })}
+                                key={option.id}
+                                label={option.name}
+                                size="small"
+                                sx={{
+                                  backgroundColor: option.color || '#e0e0e0',
+                                  color: '#fff',
+                                }}
+                              />
+                            ))
+                          }
+                          sx={{ flexGrow: 1 }}
+                        />
+                      )}
+                    />
+                    <Tooltip title="Criar nova tag" arrow>
+                      <IconButton
+                        onClick={() => setQuickTagOpen(true)}
+                        sx={{
+                          mt: 0.5,
+                          color: 'primary.main',
+                          backgroundColor: 'primary.lighter',
+                          '&:hover': {
+                            backgroundColor: 'primary.light',
+                          },
+                        }}
+                      >
+                        <AddIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Grid>
+
+                {/* Observações */}
+                <Grid item xs={12}>
+                  <Controller
+                    name="notes"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Observações"
+                        fullWidth
+                        multiline
+                        rows={3}
                       />
                     )}
                   />
@@ -690,89 +793,19 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                   </>
                 )}
 
-                <Grid item xs={12} tablet={4} md={6}>
-                  <Box
-                    sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}
-                  >
-                    <Controller
-                      name="tagIds"
+                {/* Formulário de Pagamento Opcional - Disponível para parcela única e parcelado */}
+                {!isEditing && installmentPreview.length > 0 && (
+                  <Grid item xs={12}>
+                    <InlinePaymentForm
                       control={control}
-                      render={({ field }) => (
-                        <Autocomplete
-                          multiple
-                          options={tags}
-                          getOptionLabel={option => option.name}
-                          value={tags.filter(tag =>
-                            field.value?.includes(tag.id)
-                          )}
-                          onChange={(_, newValue) => {
-                            field.onChange(newValue.map(tag => tag.id));
-                          }}
-                          renderInput={params => (
-                            <TextField {...params} label="Tags" />
-                          )}
-                          renderTags={(value, getTagProps) =>
-                            value.map((option, index) => (
-                              <Chip
-                                {...getTagProps({ index })}
-                                key={option.id}
-                                label={option.name}
-                                size="small"
-                                sx={{
-                                  backgroundColor: option.color || '#e0e0e0',
-                                  color: '#fff',
-                                }}
-                              />
-                            ))
-                          }
-                          sx={{ flexGrow: 1 }}
-                        />
-                      )}
+                      watch={watch}
+                      errors={errors}
+                      installmentPreview={installmentPreview}
+                      accountType="payable"
                     />
-                    <Tooltip title="Criar nova tag" arrow>
-                      <IconButton
-                        onClick={() => setQuickTagOpen(true)}
-                        sx={{
-                          mt: 0.5,
-                          color: 'primary.main',
-                          backgroundColor: 'primary.lighter',
-                          '&:hover': {
-                            backgroundColor: 'primary.light',
-                          },
-                        }}
-                      >
-                        <AddIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Controller
-                    name="notes"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Observações"
-                        fullWidth
-                        multiline
-                        rows={3}
-                      />
-                    )}
-                  />
-                </Grid>
+                  </Grid>
+                )}
               </Grid>
-
-              {payable && payable.paidAmount > 0 && (
-                <Alert severity="warning" sx={{ mt: 2 }}>
-                  Esta conta possui pagamentos no valor de{' '}
-                  {formatCurrency(payable.paidAmount)}. Não é possível alterar o
-                  valor total, parcelamento ou datas de vencimento. Para
-                  visualizar o histórico completo, use o botão "Ver Pagamentos"
-                  na lista de contas.
-                </Alert>
-              )}
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2 }}>
               <Button onClick={handleClose} disabled={isSubmitting}>

@@ -393,6 +393,11 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
                         inputProps={{
                           max: getNowLocalDatetimeInput(),
                         }}
+                        sx={{
+                          '& .MuiInputBase-root': {
+                            minHeight: '54px',
+                          },
+                        }}
                       />
                     )}
                   />

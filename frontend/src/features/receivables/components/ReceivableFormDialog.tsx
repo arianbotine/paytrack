@@ -58,6 +58,7 @@ import {
 import { CurrencyField } from '../../../shared/components';
 import { QuickCreateCategory } from '../../../shared/components/QuickCreateCategory';
 import { QuickCreateTag } from '../../../shared/components/QuickCreateTag';
+import { InlinePaymentForm } from '../../../shared/components/InlinePaymentForm';
 
 interface ReceivableFormDialogProps {
   open: boolean;
@@ -154,12 +155,24 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
     setValue,
   ]);
 
-  // Calculate installment preview
+  // Calculate installment preview (inclui parcela única para pagamento)
   const installmentPreview = useMemo(() => {
-    if (!isInstallment || installmentCount <= 1 || !amount || !firstDueDate) {
+    if (!amount || !firstDueDate) {
       return [];
     }
 
+    // Para parcela única (sem toggle de parcelamento ativado)
+    if (!isInstallment || installmentCount <= 1) {
+      return [
+        {
+          number: 1,
+          dueDate: firstDueDate,
+          amount: amount,
+        },
+      ];
+    }
+
+    // Para múltiplas parcelas
     const dueDates = generateInstallmentDueDates(
       firstDueDate,
       installmentCount
@@ -198,6 +211,10 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
   useEffect(() => {
     if (open) {
       if (receivable) {
+        // Configurar estado de parcelamento baseado na conta existente
+        const hasMultipleInstallments = receivable.totalInstallments > 1;
+        setIsInstallment(hasMultipleInstallments);
+
         reset({
           amount: receivable.amount,
           firstDueDate:
@@ -206,6 +223,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
           categoryId: receivable.category?.id || '',
           tagIds: receivable.tags.map(t => t.tag.id),
           notes: receivable.notes || '',
+          installmentCount: receivable.totalInstallments,
         });
         setUserInputValue(receivable.amount);
         setUserInputMode('total');
@@ -213,6 +231,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
         reset(getDefaultFormValues());
         setUserInputValue(null);
         setUserInputMode('total');
+        setIsInstallment(false);
       }
     }
   }, [open, receivable, reset]);
@@ -271,6 +290,16 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
               {isEditing ? 'Editar Conta a Receber' : 'Nova Conta a Receber'}
             </DialogTitle>
             <DialogContent>
+              {receivable && receivable.receivedAmount > 0 && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  Esta conta possui recebimentos registrados no valor de{' '}
+                  {formatCurrency(receivable.receivedAmount)}. Não é possível
+                  alterar o valor total, parcelamento ou datas de vencimento.
+                  Para visualizar o histórico completo, use o botão "Ver
+                  Pagamentos" na lista de contas.
+                </Alert>
+              )}
+
               <Grid container spacing={2} sx={{ mt: 0.5 }}>
                 <Grid item xs={12} md={6}>
                   <Controller
@@ -424,6 +453,81 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                         error={!!errors.firstDueDate}
                         helperText={errors.firstDueDate?.message}
                         disabled={isEditing}
+                      />
+                    )}
+                  />
+                </Grid>
+
+                {/* Tags */}
+                <Grid item xs={12} md={6}>
+                  <Box
+                    sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}
+                  >
+                    <Controller
+                      name="tagIds"
+                      control={control}
+                      render={({ field }) => (
+                        <Autocomplete
+                          multiple
+                          options={tags}
+                          getOptionLabel={option => option.name}
+                          value={tags.filter(tag =>
+                            field.value?.includes(tag.id)
+                          )}
+                          onChange={(_, newValue) => {
+                            field.onChange(newValue.map(tag => tag.id));
+                          }}
+                          renderInput={params => (
+                            <TextField {...params} label="Tags" />
+                          )}
+                          renderTags={(value, getTagProps) =>
+                            value.map((option, index) => (
+                              <Chip
+                                {...getTagProps({ index })}
+                                key={option.id}
+                                label={option.name}
+                                size="small"
+                                sx={{
+                                  backgroundColor: option.color || '#e0e0e0',
+                                  color: '#fff',
+                                }}
+                              />
+                            ))
+                          }
+                          sx={{ flexGrow: 1 }}
+                        />
+                      )}
+                    />
+                    <Tooltip title="Criar nova tag" arrow>
+                      <IconButton
+                        onClick={() => setQuickTagOpen(true)}
+                        sx={{
+                          mt: 0.5,
+                          color: 'primary.main',
+                          backgroundColor: 'primary.lighter',
+                          '&:hover': {
+                            backgroundColor: 'primary.light',
+                          },
+                        }}
+                      >
+                        <AddIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Grid>
+
+                {/* Observações */}
+                <Grid item xs={12}>
+                  <Controller
+                    name="notes"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Observações"
+                        fullWidth
+                        multiline
+                        rows={3}
                       />
                     )}
                   />
@@ -692,89 +796,19 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                   </>
                 )}
 
-                <Grid item xs={12} md={6}>
-                  <Box
-                    sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}
-                  >
-                    <Controller
-                      name="tagIds"
+                {/* Formulário de Pagamento Opcional - Disponível para parcela única e parcelado */}
+                {!isEditing && installmentPreview.length > 0 && (
+                  <Grid item xs={12}>
+                    <InlinePaymentForm
                       control={control}
-                      render={({ field }) => (
-                        <Autocomplete
-                          multiple
-                          options={tags}
-                          getOptionLabel={option => option.name}
-                          value={tags.filter(tag =>
-                            field.value?.includes(tag.id)
-                          )}
-                          onChange={(_, newValue) => {
-                            field.onChange(newValue.map(tag => tag.id));
-                          }}
-                          renderInput={params => (
-                            <TextField {...params} label="Tags" />
-                          )}
-                          renderTags={(value, getTagProps) =>
-                            value.map((option, index) => (
-                              <Chip
-                                {...getTagProps({ index })}
-                                key={option.id}
-                                label={option.name}
-                                size="small"
-                                sx={{
-                                  backgroundColor: option.color || '#e0e0e0',
-                                  color: '#fff',
-                                }}
-                              />
-                            ))
-                          }
-                          sx={{ flexGrow: 1 }}
-                        />
-                      )}
+                      watch={watch}
+                      errors={errors}
+                      installmentPreview={installmentPreview}
+                      accountType="receivable"
                     />
-                    <Tooltip title="Criar nova tag" arrow>
-                      <IconButton
-                        onClick={() => setQuickTagOpen(true)}
-                        sx={{
-                          mt: 0.5,
-                          color: 'primary.main',
-                          backgroundColor: 'primary.lighter',
-                          '&:hover': {
-                            backgroundColor: 'primary.light',
-                          },
-                        }}
-                      >
-                        <AddIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <Controller
-                    name="notes"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Observações"
-                        fullWidth
-                        multiline
-                        rows={3}
-                      />
-                    )}
-                  />
-                </Grid>
+                  </Grid>
+                )}
               </Grid>
-
-              {receivable && receivable.receivedAmount > 0 && (
-                <Alert severity="warning" sx={{ mt: 2 }}>
-                  Esta conta possui recebimentos registrados no valor de{' '}
-                  {formatCurrency(receivable.receivedAmount)}. Não é possível
-                  alterar o valor total, parcelamento ou datas de vencimento.
-                  Para visualizar o histórico completo, use o botão "Ver
-                  Pagamentos" na lista de contas.
-                </Alert>
-              )}
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2 }}>
               <Button onClick={handleClose} disabled={isSubmitting}>

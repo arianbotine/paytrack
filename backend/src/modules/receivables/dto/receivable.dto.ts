@@ -12,6 +12,7 @@ import {
   Validate,
   ArrayMinSize,
   ArrayMaxSize,
+  ValidateNested,
 } from 'class-validator';
 import {
   ApiProperty,
@@ -22,6 +23,55 @@ import {
 import { Type, Transform } from 'class-transformer';
 import { IsDateArrayAscendingConstraint } from '../../../shared/validators';
 import { ReceivableStatus } from '../domain/receivable-status.enum';
+import { PaymentMethod } from '@prisma/client';
+
+/**
+ * DTO para pagamento opcional durante a criação de conta
+ */
+export class CreatePaymentOnAccountDto {
+  @ApiProperty({
+    type: [Number],
+    example: [1, 2],
+    description:
+      'Números das parcelas a serem recebidas (ex: [1, 2, 3] para receber as 3 primeiras)',
+  })
+  @IsArray()
+  @ArrayMinSize(1, { message: 'Selecione pelo menos uma parcela para receber' })
+  @IsInt({ each: true })
+  @Min(1, { each: true, message: 'Número de parcela deve ser maior que zero' })
+  installmentNumbers!: number[];
+
+  @ApiProperty({
+    example: '2026-01-13T14:30:00.000Z',
+    description: 'Data e hora do recebimento (ISO datetime, deve ser <= hoje)',
+  })
+  @IsDateString()
+  paymentDate!: string;
+
+  @ApiProperty({
+    enum: PaymentMethod,
+    example: PaymentMethod.PIX,
+    description: 'Método de recebimento utilizado',
+  })
+  @IsEnum(PaymentMethod, { message: 'Método de recebimento inválido' })
+  paymentMethod!: PaymentMethod;
+
+  @ApiPropertyOptional({
+    example: 'Comprovante PIX 123456',
+    description: 'Referência ou comprovante do recebimento',
+  })
+  @IsString()
+  @IsOptional()
+  reference?: string;
+
+  @ApiPropertyOptional({
+    example: 'Recebimento via app',
+    description: 'Observações sobre o recebimento',
+  })
+  @IsString()
+  @IsOptional()
+  notes?: string;
+}
 
 export class CreateReceivableDto {
   @ApiProperty({ example: 'uuid-do-devedor' })
@@ -85,6 +135,17 @@ export class CreateReceivableDto {
   @ArrayMaxSize(120)
   @Validate(IsDateArrayAscendingConstraint)
   dueDates!: string[];
+
+  // Payment during creation (optional)
+  @ApiPropertyOptional({
+    type: CreatePaymentOnAccountDto,
+    description:
+      'Recebimento opcional durante a criação. Permite receber parcelas completas imediatamente.',
+  })
+  @ValidateNested()
+  @Type(() => CreatePaymentOnAccountDto)
+  @IsOptional()
+  payment?: CreatePaymentOnAccountDto;
 }
 
 export class UpdateReceivableDto extends PartialType(
