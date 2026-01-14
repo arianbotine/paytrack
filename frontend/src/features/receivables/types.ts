@@ -152,7 +152,6 @@ export type ReceivableFormData = z.infer<typeof receivableSchema>;
 export const statusOptions = [
   { value: 'ALL', label: 'Todos' },
   { value: 'PENDING', label: 'Pendente' },
-  { value: 'OVERDUE', label: 'Vencido' },
   { value: 'PARTIAL', label: 'Parcial' },
   { value: 'PAID', label: 'Recebido' },
 ] as const;

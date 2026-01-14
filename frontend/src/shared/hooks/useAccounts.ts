@@ -67,6 +67,8 @@ interface UseAccountsParams {
   categoryId?: string | null;
   tagIds?: string[];
   installmentTagIds?: string[];
+  installmentDueDateFrom?: string;
+  installmentDueDateTo?: string;
   page: number;
   rowsPerPage: number;
 }
@@ -85,6 +87,8 @@ export const useAccounts = <T>(
       categoryId: params.categoryId,
       tagIds: params.tagIds,
       installmentTagIds: params.installmentTagIds,
+      installmentDueDateFrom: params.installmentDueDateFrom,
+      installmentDueDateTo: params.installmentDueDateTo,
       page: params.page,
       rowsPerPage: params.rowsPerPage,
     }),
@@ -121,6 +125,12 @@ export const useAccounts = <T>(
       }
       if (params.installmentTagIds && params.installmentTagIds.length > 0) {
         queryParams.installmentTagIds = params.installmentTagIds.join(',');
+      }
+      if (params.installmentDueDateFrom) {
+        queryParams.installmentDueDateFrom = params.installmentDueDateFrom;
+      }
+      if (params.installmentDueDateTo) {
+        queryParams.installmentDueDateTo = params.installmentDueDateTo;
       }
 
       const response = await api.get(config.endpoint, { params: queryParams });

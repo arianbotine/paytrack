@@ -157,7 +157,6 @@ export type PayableFormData = z.infer<typeof payableSchema>;
 export const statusOptions = [
   { value: 'ALL', label: 'Todos' },
   { value: 'PENDING', label: 'Pendente' },
-  { value: 'OVERDUE', label: 'Vencido' },
   { value: 'PARTIAL', label: 'Parcial' },
   { value: 'PAID', label: 'Pago' },
 ] as const;

@@ -43,11 +43,19 @@ export const PayablesPage: React.FC = () => {
   const [vendorFilter, setVendorFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
+  const [showOverdueOnly, setShowOverdueOnly] = useState(false);
   const [installmentTagFilters, setInstallmentTagFilters] = useState<string[]>(
     []
   );
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Helper para calcular data de ontem em formato YYYY-MM-DD
+  const getYesterdayDate = (): string => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().split('T')[0];
+  };
 
   // Queries
   const {
@@ -60,6 +68,7 @@ export const PayablesPage: React.FC = () => {
     categoryId: categoryFilter,
     tagIds: tagFilters,
     installmentTagIds: installmentTagFilters,
+    installmentDueDateTo: showOverdueOnly ? getYesterdayDate() : undefined,
     page,
     rowsPerPage,
   });
@@ -300,6 +309,8 @@ export const PayablesPage: React.FC = () => {
           tagFilters={tagFilters}
           onTagsChange={handleTagsChange}
           tags={tags}
+          showOverdueOnly={showOverdueOnly}
+          onShowOverdueOnlyChange={setShowOverdueOnly}
           installmentTagFilters={installmentTagFilters}
           onInstallmentTagsChange={handleInstallmentTagsChange}
         />

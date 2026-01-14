@@ -3,7 +3,7 @@
 
 SHELL := /bin/bash
 
-.PHONY: help setup setup-force db-up db-sync db-seed up down restart clean reset studio logs tests
+.PHONY: help setup setup-force db-up db-sync up down restart clean reset studio logs tests
 
 # Variáveis
 DOCKER_COMPOSE := docker compose
@@ -24,7 +24,6 @@ help:
 	@echo "  setup-force - Forçar instalação de dependências (remove e reinstala)"
 	@echo "  db-up       - Iniciar container PostgreSQL e aguardar saúde"
 	@echo "  db-sync     - Sincronizar schema do banco e gerar cliente Prisma"
-	@echo "  db-seed     - Executar seeds do banco de dados"
 	@echo "  up          - Iniciar backend e frontend em modo desenvolvimento"
 	@echo "  down        - Parar aplicações e banco de dados"
 	@echo "  restart     - Reiniciar aplicações (down + up)"
@@ -82,13 +81,6 @@ db-sync:
 	@echo "Gerando cliente Prisma..."
 	@set -a && . .env && set +a && cd $(BACKEND_DIR) && npx prisma generate
 	@echo "Sincronização concluída."
-
-# Executar seeds
-db-seed:
-	@if [ ! -f .env ]; then cp .env.example .env; fi
-	@echo "Executando seeds do banco..."
-	@set -a && . .env && set +a && cd $(BACKEND_DIR) && npx prisma db seed
-	@echo "Seeds executadas."
 
 # Iniciar aplicações
 up: setup db-up db-sync

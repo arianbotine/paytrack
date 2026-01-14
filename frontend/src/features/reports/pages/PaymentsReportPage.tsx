@@ -50,7 +50,7 @@ export default function PaymentsReportPage() {
         if (parsed.startDate && parsed.endDate) {
           return parsed;
         }
-      } catch (error) {
+      } catch {
         // Se houver erro ao parsear, limpar localStorage
         localStorage.removeItem('paymentsReportFilters');
       }

@@ -5,7 +5,6 @@ import { Box, Grid, Typography, Skeleton, Button } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
-  Warning as WarningIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { AxiosError } from 'axios';
@@ -83,7 +82,7 @@ function DashboardSkeleton() {
         Dashboard
       </Typography>
       <Grid container spacing={3}>
-        {[1, 2, 3, 4].map(i => (
+        {[1, 2].map(i => (
           <Grid item xs={12} sm={6} md={3} key={i}>
             <Skeleton
               variant="rectangular"
@@ -218,22 +217,6 @@ export function DashboardPage() {
                 subtitle={`${data.payableInstallments.totals.count} contas`}
                 color="#dc2626"
                 icon={<TrendingDownIcon />}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <SummaryCard
-                title="Vencido (Receber)"
-                value={data.receivableInstallments.totals.overdue}
-                color="#ea580c"
-                icon={<WarningIcon />}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <SummaryCard
-                title="Vencido (Pagar)"
-                value={data.payableInstallments.totals.overdue}
-                color="#dc2626"
-                icon={<WarningIcon />}
               />
             </Grid>
           </Grid>

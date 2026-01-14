@@ -15,12 +15,15 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import {
   FilterList as FilterIcon,
   Clear as ClearIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
+  EventBusy as EventBusyIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { statusOptions } from '../types';
@@ -46,6 +49,10 @@ interface PayableFiltersProps {
   onTagsChange: (tagIds: string[]) => void;
   tags: Tag[];
 
+  // Overdue Filter
+  showOverdueOnly?: boolean;
+  onShowOverdueOnlyChange?: (show: boolean) => void;
+
   // Installment Tags (Advanced Filters)
   installmentTagFilters?: string[];
   onInstallmentTagsChange?: (tagIds: string[]) => void;
@@ -63,6 +70,8 @@ export const PayableFilters: React.FC<PayableFiltersProps> = ({
   tagFilters,
   onTagsChange,
   tags,
+  showOverdueOnly = false,
+  onShowOverdueOnlyChange,
   installmentTagFilters = [],
   onInstallmentTagsChange,
 }) => {
@@ -73,7 +82,8 @@ export const PayableFilters: React.FC<PayableFiltersProps> = ({
     (vendorFilter ? 1 : 0) +
     (categoryFilter ? 1 : 0) +
     tagFilters.length +
-    installmentTagFilters.length;
+    installmentTagFilters.length +
+    (showOverdueOnly ? 1 : 0);
 
   const hasActiveFilters = activeFiltersCount > 0;
 
@@ -94,6 +104,7 @@ export const PayableFilters: React.FC<PayableFiltersProps> = ({
     onCategoryChange(null);
     onTagsChange([]);
     onInstallmentTagsChange?.([]);
+    onShowOverdueOnlyChange?.(false);
   };
 
   const selectedVendor = vendors.find(v => v.id === vendorFilter);
@@ -199,6 +210,65 @@ export const PayableFilters: React.FC<PayableFiltersProps> = ({
                 })}
               </Stack>
             </Grid>
+
+            {/* Overdue Filter */}
+            {onShowOverdueOnlyChange && (
+              <Grid item xs={12}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    bgcolor: showOverdueOnly
+                      ? 'error.lighter'
+                      : 'background.paper',
+                    border: 1,
+                    borderColor: showOverdueOnly ? 'error.main' : 'divider',
+                    borderRadius: 1,
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={showOverdueOnly}
+                        onChange={e =>
+                          onShowOverdueOnlyChange(e.target.checked)
+                        }
+                        color="error"
+                      />
+                    }
+                    label={
+                      <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <EventBusyIcon
+                          fontSize="small"
+                          color={showOverdueOnly ? 'error' : 'action'}
+                        />
+                        <Typography
+                          variant="body2"
+                          fontWeight={showOverdueOnly ? 600 : 400}
+                          color={
+                            showOverdueOnly ? 'error.main' : 'text.primary'
+                          }
+                        >
+                          Apenas contas com parcelas vencidas
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                  {showOverdueOnly && (
+                    <Typography
+                      variant="caption"
+                      color="error.main"
+                      sx={{ ml: 4, display: 'block', mt: 0.5 }}
+                    >
+                      Mostrando apenas contas com vencimento anterior a hoje
+                    </Typography>
+                  )}
+                </Paper>
+              </Grid>
+            )}
 
             {/* Vendor Filter */}
             <Grid item xs={12} md={6}>
@@ -458,6 +528,16 @@ export const PayableFilters: React.FC<PayableFiltersProps> = ({
                     Filtros ativos ({activeFiltersCount})
                   </Typography>
                   <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {showOverdueOnly && (
+                      <Chip
+                        label="Apenas vencidas"
+                        size="small"
+                        onDelete={() => onShowOverdueOnlyChange?.(false)}
+                        color="error"
+                        variant="outlined"
+                        icon={<EventBusyIcon fontSize="small" />}
+                      />
+                    )}
                     {statusFilter.map(status => {
                       const option = statusOptions.find(
                         o => o.value === status

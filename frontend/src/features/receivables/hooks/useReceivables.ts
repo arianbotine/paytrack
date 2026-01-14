@@ -53,6 +53,8 @@ interface UseReceivablesParams {
   categoryId?: string | null;
   tagIds?: string[];
   installmentTagIds?: string[];
+  installmentDueDateFrom?: string;
+  installmentDueDateTo?: string;
   page: number;
   rowsPerPage: number;
 }

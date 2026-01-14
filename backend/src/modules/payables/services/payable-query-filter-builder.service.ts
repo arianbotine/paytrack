@@ -39,6 +39,8 @@ export class PayableQueryFilterBuilder {
             lte: parseDateOnly(filters.installmentDueDateTo),
           }),
         },
+        // Ao filtrar por data, considerar apenas parcelas não totalmente pagas
+        status: { not: 'PAID' },
       });
     }
 
