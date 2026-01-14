@@ -14,7 +14,6 @@ import {
   SummaryCard,
   BalanceCard,
   CashFlowChart,
-  StatusBarChart,
   AccountsTable,
 } from '../components';
 
@@ -62,17 +61,6 @@ function generateCashFlowData(balance: DashboardData['balance']) {
     payables: Math.round(basePayables * (0.8 + Math.random() * 0.4)),
     balance: 0,
   }));
-}
-
-// Generate status data from totals
-function generateStatusData(
-  totals: DashboardData['payableInstallments']['totals']
-) {
-  return [
-    { name: 'PENDING', value: totals.pending },
-    { name: 'OVERDUE', value: totals.overdue },
-    { name: 'PARTIAL', value: totals.partial },
-  ];
 }
 
 function DashboardSkeleton() {
@@ -160,10 +148,6 @@ export function DashboardPage() {
   }
 
   const cashFlowData = generateCashFlowData(data.balance);
-  const payableStatusData = generateStatusData(data.payableInstallments.totals);
-  const receivableStatusData = generateStatusData(
-    data.receivableInstallments.totals
-  );
 
   return (
     <ErrorBoundary>
@@ -234,14 +218,8 @@ export function DashboardPage() {
 
           {/* Charts Row */}
           <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12} md={8}>
+            <Grid item xs={12}>
               <CashFlowChart data={cashFlowData} />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <StatusBarChart
-                payableData={payableStatusData}
-                receivableData={receivableStatusData}
-              />
             </Grid>
           </Grid>
 
