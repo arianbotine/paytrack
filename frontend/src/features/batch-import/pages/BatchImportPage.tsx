@@ -7,7 +7,6 @@ import {
   Stack,
   ToggleButtonGroup,
   ToggleButton,
-  Chip,
   Alert,
   CircularProgress,
   LinearProgress,
@@ -225,68 +224,154 @@ export default function BatchImportPage() {
       <Paper sx={{ p: 2.5, mb: 3 }}>
         <Stack spacing={2.5}>
           {/* Linha de Status e Ações Principais */}
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={2}
-            justifyContent="space-between"
-            alignItems={{ xs: 'stretch', sm: 'center' }}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2,
+              alignItems: { xs: 'stretch', sm: 'center' },
+              justifyContent: 'space-between',
+            }}
           >
             {/* Resumo de Status */}
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              flexWrap="wrap"
-              sx={{ gap: 1 }}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                flexWrap: 'wrap',
+              }}
             >
               {state.accounts.length === 0 ? (
                 <Typography
                   variant="body2"
                   color="text.secondary"
-                  sx={{ py: 0.5 }}
+                  sx={{
+                    py: 1,
+                    px: 2,
+                    bgcolor: 'grey.50',
+                    borderRadius: 1,
+                    fontStyle: 'italic',
+                  }}
                 >
                   Nenhuma conta cadastrada
                 </Typography>
               ) : (
-                <>
-                  <Chip
-                    label={`${state.accounts.length} ${state.accounts.length === 1 ? 'conta' : 'contas'}`}
-                    size="medium"
-                    sx={{ fontWeight: 'bold' }}
-                  />
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  {/* Total de contas */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.75,
+                      px: 2,
+                      py: 0.75,
+                      bgcolor: '#2563eb',
+                      color: '#ffffff',
+                      borderRadius: 3,
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      boxShadow: 'none',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                    }}
+                  >
+                    <span>{state.accounts.length}</span>
+                    <span>
+                      {state.accounts.length === 1 ? 'conta' : 'contas'}
+                    </span>
+                  </Box>
+
+                  {/* Contas processadas com sucesso */}
                   <Fade in={result.successCount > 0}>
-                    <Chip
-                      label={`${result.successCount} processadas`}
-                      color="success"
-                      size="medium"
-                      icon={<span>✓</span>}
-                    />
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.75,
+                        px: 2,
+                        py: 0.75,
+                        bgcolor: '#16a34a',
+                        color: '#ffffff',
+                        borderRadius: 3,
+                        fontSize: '0.875rem',
+                        boxShadow: 'none',
+                        fontWeight: 600,
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                      }}
+                    >
+                      <span>✓</span>
+                      <span>{result.successCount} processadas</span>
+                    </Box>
                   </Fade>
+
+                  {/* Contas pendentes */}
                   <Fade in={pendingCount > 0}>
-                    <Chip
-                      label={`${pendingCount} pendentes`}
-                      color="default"
-                      size="medium"
-                      variant={result.isProcessing ? 'filled' : 'outlined'}
-                    />
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.75,
+                        px: 2,
+                        py: 0.75,
+                        bgcolor: result.isProcessing ? '#f59e0b' : '#6b7280',
+                        color: '#ffffff',
+                        borderRadius: 3,
+                        fontSize: '0.875rem',
+                        boxShadow: 'none',
+                        fontWeight: 600,
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        animation: result.isProcessing
+                          ? 'pulse 2s infinite'
+                          : 'none',
+                        '@keyframes pulse': {
+                          '0%': { opacity: 1 },
+                          '50%': { opacity: 0.75 },
+                          '100%': { opacity: 1 },
+                        },
+                      }}
+                    >
+                      <span>{pendingCount} pendentes</span>
+                    </Box>
                   </Fade>
+
+                  {/* Contas com erro */}
                   <Fade in={errorCount > 0}>
-                    <Chip
-                      label={`${errorCount} com erro`}
-                      color="error"
-                      size="medium"
-                      icon={<span>✗</span>}
-                    />
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.75,
+                        px: 2,
+                        py: 0.75,
+                        bgcolor: '#dc2626',
+                        color: '#ffffff',
+                        borderRadius: 3,
+                        fontSize: '0.875rem',
+                        boxShadow: 'none',
+                        fontWeight: 600,
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                      }}
+                    >
+                      <span>✗</span>
+                      <span>{errorCount} com erro</span>
+                    </Box>
                   </Fade>
-                </>
+                </Box>
               )}
-            </Stack>
+            </Box>
 
             {/* Botões de Ação Principal */}
-            <Stack
-              direction="row"
-              spacing={1.5}
+            <Box
               sx={{
+                display: 'flex',
+                gap: 1.5,
                 flexShrink: 0,
                 '& .MuiButton-root': {
                   minWidth: { xs: '100%', sm: 'auto' },
@@ -342,8 +427,8 @@ export default function BatchImportPage() {
                   </Button>
                 </>
               )}
-            </Stack>
-          </Stack>
+            </Box>
+          </Box>
 
           {/* Barra de Progresso */}
           {result.isProcessing && (
