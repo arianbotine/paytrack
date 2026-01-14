@@ -29,6 +29,7 @@ import {
   ExpandMore as ExpandMoreIcon,
   ContentCopy as ContentCopyIcon,
   Info as InfoIcon,
+  Payment as PaymentIcon,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { BatchAccount, AccountType } from '../types';
@@ -39,7 +40,11 @@ import {
   calculateDueDates,
   calculateSubsequentDueDates,
 } from '../utils/installmentCalculator';
-import { getTodayLocalInput } from '../../../shared/utils/dateUtils';
+import {
+  getTodayLocalInput,
+  getNowLocalDatetimeInput,
+} from '../../../shared/utils/dateUtils';
+import { PAYMENT_METHODS } from '../../payments/types';
 import type { Vendor, Category, Tag } from '../../payables/types';
 import type { Customer } from '../../receivables/types';
 
@@ -83,6 +88,7 @@ export const BatchAccountRow = memo<BatchAccountRowProps>(
 
     // Estados para UX aprimorado
     const [showInstallments, setShowInstallments] = useState(false);
+    const [showPayment, setShowPayment] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
     // Calcular cor de fundo conforme status
@@ -237,6 +243,58 @@ export const BatchAccountRow = memo<BatchAccountRowProps>(
         currency: 'BRL',
       }).format(value);
     };
+
+    // Handler para toggle de parcelas no pagamento
+    const handleTogglePaymentInstallment = useCallback(
+      (installmentNumber: number) => {
+        const current = account.payment?.installmentNumbers || [];
+        const isSelected = current.includes(installmentNumber);
+
+        const newNumbers = isSelected
+          ? current.filter(n => n !== installmentNumber)
+          : [...current, installmentNumber].sort((a, b) => a - b);
+
+        handleFieldChange('payment', {
+          ...account.payment,
+          installmentNumbers: newNumbers,
+          paymentDate:
+            account.payment?.paymentDate || getNowLocalDatetimeInput(),
+          paymentMethod: account.payment?.paymentMethod || '',
+        });
+      },
+      [account.payment, handleFieldChange]
+    );
+
+    // Calcular valor total do pagamento
+    const totalPaymentAmount = useCallback(() => {
+      const selected = account.payment?.installmentNumbers || [];
+      if (!selected.length) return 0;
+
+      const installmentAmount = account.amount / account.installmentCount;
+      return selected.length * installmentAmount;
+    }, [
+      account.payment?.installmentNumbers,
+      account.amount,
+      account.installmentCount,
+    ]);
+
+    // Labels contextuais para pagamento/recebimento
+    const paymentLabels = {
+      payable: {
+        title: 'Registrar Pagamento?',
+        verb: 'pagar',
+        statusVerb: 'pagas',
+        action: 'Pagamento',
+      },
+      receivable: {
+        title: 'Registrar Recebimento?',
+        verb: 'receber',
+        statusVerb: 'recebidas',
+        action: 'Recebimento',
+      },
+    };
+
+    const currentPaymentLabels = paymentLabels[accountType];
 
     // Validar se todos os campos obrigatórios estão preenchidos
     const isAccountValid = useCallback(() => {
@@ -695,6 +753,356 @@ export const BatchAccountRow = memo<BatchAccountRowProps>(
                 </Collapse>
               </Grid>
             )}
+
+            {/* Registro de Pagamento/Recebimento */}
+            <Grid item xs={12}>
+              <Paper
+                elevation={0}
+                sx={{
+                  border: 1,
+                  borderColor: showPayment ? 'primary.main' : 'divider',
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  transition: 'all 0.3s',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    bgcolor: 'action.hover',
+                  },
+                }}
+              >
+                <Button
+                  fullWidth
+                  onClick={() => setShowPayment(!showPayment)}
+                  disabled={isDisabled}
+                  sx={{
+                    justifyContent: 'space-between',
+                    p: 1.5,
+                    textTransform: 'none',
+                    color: 'text.primary',
+                    '&:hover': {
+                      bgcolor: 'transparent',
+                    },
+                  }}
+                  endIcon={
+                    <ExpandMoreIcon
+                      sx={{
+                        transform: showPayment ? 'rotate(180deg)' : 'none',
+                        transition: '0.3s',
+                      }}
+                    />
+                  }
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <PaymentIcon color="primary" />
+                    <Typography fontWeight={600}>
+                      {currentPaymentLabels.title}
+                    </Typography>
+                    <Chip
+                      label="Opcional"
+                      size="small"
+                      variant="outlined"
+                      color="default"
+                    />
+                    {account.payment?.installmentNumbers &&
+                      account.payment.installmentNumbers.length > 0 && (
+                        <Chip
+                          label={`${account.payment.installmentNumbers.length} selecionadas`}
+                          size="small"
+                          color="success"
+                          icon={<CheckCircleIcon />}
+                        />
+                      )}
+                  </Box>
+                </Button>
+
+                <Collapse in={showPayment}>
+                  <Divider />
+                  <Box sx={{ p: 2.5 }}>
+                    <Grid container spacing={2.5}>
+                      {/* Seleção de Parcelas */}
+                      <Grid item xs={12}>
+                        <Typography
+                          variant="subtitle2"
+                          color="text.secondary"
+                          gutterBottom
+                        >
+                          Selecione as parcelas a {currentPaymentLabels.verb}
+                        </Typography>
+                        <Grid container spacing={1} sx={{ mt: 0.5 }}>
+                          {Array.from(
+                            { length: account.installmentCount },
+                            (_, i) => i + 1
+                          ).map(installmentNum => {
+                            const isSelected =
+                              account.payment?.installmentNumbers?.includes(
+                                installmentNum
+                              ) || false;
+                            const installmentAmount =
+                              account.amount / account.installmentCount;
+                            const dueDate =
+                              account.dueDates[installmentNum - 1];
+
+                            return (
+                              <Grid
+                                item
+                                xs={6}
+                                sm={4}
+                                md={3}
+                                key={installmentNum}
+                              >
+                                <Paper
+                                  onClick={() =>
+                                    !isDisabled &&
+                                    handleTogglePaymentInstallment(
+                                      installmentNum
+                                    )
+                                  }
+                                  sx={{
+                                    p: 1.5,
+                                    cursor: isDisabled ? 'default' : 'pointer',
+                                    border: 2,
+                                    borderColor: isSelected
+                                      ? 'primary.main'
+                                      : 'divider',
+                                    bgcolor: isSelected
+                                      ? 'primary.lighter'
+                                      : 'background.paper',
+                                    transition: 'all 0.2s',
+                                    opacity: isDisabled ? 0.5 : 1,
+                                    '&:hover': {
+                                      borderColor: isDisabled
+                                        ? 'divider'
+                                        : 'primary.main',
+                                      bgcolor: isDisabled
+                                        ? undefined
+                                        : isSelected
+                                          ? 'primary.lighter'
+                                          : 'action.hover',
+                                      transform: isDisabled
+                                        ? 'none'
+                                        : 'translateY(-2px)',
+                                      boxShadow: isDisabled ? undefined : 2,
+                                    },
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      gap: 0.5,
+                                    }}
+                                  >
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 0.5,
+                                      }}
+                                    >
+                                      {isSelected && (
+                                        <CheckCircleIcon
+                                          fontSize="small"
+                                          color="primary"
+                                        />
+                                      )}
+                                      <Chip
+                                        label={`${installmentNum}/${account.installmentCount}`}
+                                        size="small"
+                                        color={
+                                          isSelected ? 'primary' : 'default'
+                                        }
+                                      />
+                                    </Box>
+                                    <Typography
+                                      variant="body2"
+                                      fontWeight={isSelected ? 600 : 400}
+                                    >
+                                      {formatCurrency(installmentAmount)}
+                                    </Typography>
+                                    {dueDate && (
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        {new Date(
+                                          dueDate + 'T00:00:00'
+                                        ).toLocaleDateString('pt-BR', {
+                                          day: '2-digit',
+                                          month: '2-digit',
+                                        })}
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                </Paper>
+                              </Grid>
+                            );
+                          })}
+                        </Grid>
+                      </Grid>
+
+                      {/* Campos do Pagamento */}
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          label={`Data do ${currentPaymentLabels.action}`}
+                          type="datetime-local"
+                          value={account.payment?.paymentDate || ''}
+                          onChange={e =>
+                            handleFieldChange('payment', {
+                              ...account.payment,
+                              installmentNumbers:
+                                account.payment?.installmentNumbers || [],
+                              paymentDate: e.target.value,
+                              paymentMethod:
+                                account.payment?.paymentMethod || '',
+                            })
+                          }
+                          disabled={isDisabled}
+                          fullWidth
+                          size="small"
+                          InputLabelProps={{ shrink: true }}
+                          inputProps={{
+                            max: getNowLocalDatetimeInput(),
+                          }}
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} sm={6}>
+                        <FormControl
+                          fullWidth
+                          size="small"
+                          disabled={isDisabled}
+                        >
+                          <InputLabel>Método de Pagamento</InputLabel>
+                          <Select
+                            value={account.payment?.paymentMethod || ''}
+                            onChange={e =>
+                              handleFieldChange('payment', {
+                                ...account.payment,
+                                installmentNumbers:
+                                  account.payment?.installmentNumbers || [],
+                                paymentDate:
+                                  account.payment?.paymentDate ||
+                                  getNowLocalDatetimeInput(),
+                                paymentMethod: e.target.value,
+                              })
+                            }
+                            label="Método de Pagamento"
+                          >
+                            {PAYMENT_METHODS.map(method => (
+                              <MenuItem key={method.value} value={method.value}>
+                                {method.label}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Grid>
+
+                      <Grid item xs={12}>
+                        <TextField
+                          label="Referência/Comprovante (opcional)"
+                          value={account.payment?.reference || ''}
+                          onChange={e =>
+                            handleFieldChange('payment', {
+                              ...account.payment,
+                              installmentNumbers:
+                                account.payment?.installmentNumbers || [],
+                              paymentDate:
+                                account.payment?.paymentDate ||
+                                getNowLocalDatetimeInput(),
+                              paymentMethod:
+                                account.payment?.paymentMethod || '',
+                              reference: e.target.value,
+                            })
+                          }
+                          disabled={isDisabled}
+                          fullWidth
+                          size="small"
+                          placeholder="Número do comprovante, PIX, etc."
+                        />
+                      </Grid>
+
+                      <Grid item xs={12}>
+                        <TextField
+                          label="Observações do Pagamento (opcional)"
+                          value={account.payment?.notes || ''}
+                          onChange={e =>
+                            handleFieldChange('payment', {
+                              ...account.payment,
+                              installmentNumbers:
+                                account.payment?.installmentNumbers || [],
+                              paymentDate:
+                                account.payment?.paymentDate ||
+                                getNowLocalDatetimeInput(),
+                              paymentMethod:
+                                account.payment?.paymentMethod || '',
+                              notes: e.target.value,
+                            })
+                          }
+                          disabled={isDisabled}
+                          fullWidth
+                          size="small"
+                          multiline
+                          rows={2}
+                          placeholder="Informações adicionais sobre o pagamento..."
+                        />
+                      </Grid>
+
+                      {/* Preview do Impacto */}
+                      {account.payment?.installmentNumbers &&
+                        account.payment.installmentNumbers.length > 0 && (
+                          <Grid item xs={12}>
+                            <Alert
+                              severity="success"
+                              icon={<CheckCircleIcon />}
+                              sx={{
+                                bgcolor: 'success.lighter',
+                                '& .MuiAlert-icon': {
+                                  color: 'success.main',
+                                },
+                              }}
+                            >
+                              <Typography variant="subtitle2" fontWeight={600}>
+                                Valor total:{' '}
+                                {formatCurrency(totalPaymentAmount())}
+                              </Typography>
+                              <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                ✅ {account.payment.installmentNumbers.length}{' '}
+                                {account.payment.installmentNumbers.length === 1
+                                  ? 'parcela ficará'
+                                  : 'parcelas ficarão'}{' '}
+                                {currentPaymentLabels.statusVerb}
+                                {account.installmentCount -
+                                  account.payment.installmentNumbers.length >
+                                  0 && (
+                                  <>
+                                    {' • '}⏳{' '}
+                                    {account.installmentCount -
+                                      account.payment.installmentNumbers
+                                        .length}{' '}
+                                    permanecerão pendentes
+                                  </>
+                                )}
+                              </Typography>
+                            </Alert>
+                          </Grid>
+                        )}
+
+                      {(!account.payment?.installmentNumbers ||
+                        account.payment.installmentNumbers.length === 0) && (
+                        <Grid item xs={12}>
+                          <Alert severity="info" sx={{ fontSize: '0.875rem' }}>
+                            Selecione as parcelas que deseja{' '}
+                            {currentPaymentLabels.verb} agora. Você só pode{' '}
+                            {currentPaymentLabels.verb} parcelas completas.
+                          </Alert>
+                        </Grid>
+                      )}
+                    </Grid>
+                  </Box>
+                </Collapse>
+              </Paper>
+            </Grid>
 
             {/* Error Message */}
             {isError && account.errorMessage && (
