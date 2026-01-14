@@ -49,11 +49,7 @@ export function calculateDateRange(period: PeriodShortcut): DateRange {
       };
     }
     case 'lastMonth': {
-      const lastMonth = new Date(
-        today.getFullYear(),
-        today.getMonth() - 1,
-        1
-      );
+      const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
       const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
       return {
         startDate: lastMonth.toISOString().split('T')[0],
@@ -88,10 +84,7 @@ export function calculateDateRange(period: PeriodShortcut): DateRange {
 /**
  * Formata um resumo do período selecionado
  */
-export function getPeriodSummary(
-  startDate: string,
-  endDate: string
-): string {
+export function getPeriodSummary(startDate: string, endDate: string): string {
   const start = new Date(startDate);
   const end = new Date(endDate);
   const diffTime = Math.abs(end.getTime() - start.getTime());

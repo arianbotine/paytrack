@@ -13,6 +13,7 @@ export interface Category {
   id: string;
   name: string;
   color?: string;
+  type?: 'PAYABLE' | 'RECEIVABLE';
 }
 
 export interface Tag {

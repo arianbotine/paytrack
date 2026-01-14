@@ -80,6 +80,11 @@ const PaymentsPage = lazy(() =>
     default: m.PaymentsPage,
   }))
 );
+const BatchImportPage = lazy(() =>
+  import('./features/batch-import/pages/BatchImportPage').then(m => ({
+    default: m.default,
+  }))
+);
 const UsersPage = lazy(() =>
   import('./features/users/pages/UsersPage').then(m => ({
     default: m.UsersPage,
@@ -159,6 +164,7 @@ function App() {
             <Route path="payables" element={<PayablesPage />} />
             <Route path="receivables" element={<ReceivablesPage />} />
             <Route path="payments" element={<PaymentsPage />} />
+            <Route path="batch-import" element={<BatchImportPage />} />
             <Route path="customers" element={<CustomersPage />} />
             <Route path="vendors" element={<VendorsPage />} />
             <Route path="categories" element={<CategoriesPage />} />
