@@ -455,7 +455,6 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                           size="small"
                           color="error"
                           onClick={() => onDelete(account)}
-                          disabled={account.paidAmount > 0}
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
@@ -1032,7 +1031,6 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                     size="small"
                                     color="error"
                                     onClick={() => onDelete(account)}
-                                    disabled={account.paidAmount > 0}
                                   >
                                     <DeleteIcon fontSize="small" />
                                   </IconButton>

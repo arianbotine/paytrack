@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { ReceivablesRepository } from '../repositories';
 import { CacheService } from '../../../shared/services/cache.service';
+import { PrismaService } from '../../../infrastructure/database/prisma.service';
 
 /**
  * Use Case: Excluir Receivable
@@ -14,7 +15,8 @@ import { CacheService } from '../../../shared/services/cache.service';
 export class DeleteReceivableUseCase {
   constructor(
     private readonly repository: ReceivablesRepository,
-    private readonly cacheService: CacheService
+    private readonly cacheService: CacheService,
+    private readonly prisma: PrismaService
   ) {}
 
   async execute(id: string, organizationId: string): Promise<void> {
@@ -23,7 +25,13 @@ export class DeleteReceivableUseCase {
       { id, organizationId },
       {
         installments: {
-          include: { allocations: true },
+          include: {
+            allocations: {
+              include: {
+                payment: true,
+              },
+            },
+          },
         },
       }
     )) as any; // Prisma dynamic include
@@ -32,21 +40,48 @@ export class DeleteReceivableUseCase {
       throw new NotFoundException('Conta a receber não encontrada');
     }
 
-    // Validar se tem recebimentos
-    const hasPayments = receivable.installments.some(
-      (i: any) => i.allocations.length > 0
-    );
-
-    if (hasPayments) {
-      throw new BadRequestException(
-        'Não é possível excluir conta com recebimentos registrados'
-      );
-    }
+    // Coletar IDs únicos dos payments relacionados antes da exclusão
+    const relatedPaymentIds = new Set<string>();
+    receivable.installments.forEach((installment: any) => {
+      installment.allocations.forEach((allocation: any) => {
+        relatedPaymentIds.add(allocation.payment.id);
+      });
+    });
 
     // Excluir (cascade deleta parcelas automaticamente)
     await this.repository.delete({ id });
 
+    // Limpar payments órfãos (que não têm mais allocations)
+    if (relatedPaymentIds.size > 0) {
+      await this.cleanupOrphanedPayments(
+        Array.from(relatedPaymentIds),
+        organizationId
+      );
+    }
+
     // Invalidar cache
     this.cacheService?.del(`dashboard:summary:${organizationId}`);
+  }
+
+  /**
+   * Remove payments que não têm mais allocations após exclusão de conta
+   */
+  private async cleanupOrphanedPayments(
+    paymentIds: string[],
+    organizationId: string
+  ) {
+    for (const paymentId of paymentIds) {
+      // Verificar se o payment ainda tem allocations
+      const allocationCount = await this.prisma.paymentAllocation.count({
+        where: { paymentId },
+      });
+
+      // Se não tem mais allocations, deletar o payment
+      if (allocationCount === 0) {
+        await this.prisma.payment.delete({
+          where: { id: paymentId },
+        });
+      }
+    }
   }
 }

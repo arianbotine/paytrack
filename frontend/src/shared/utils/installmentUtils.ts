@@ -1,5 +1,5 @@
 import { addMonths } from 'date-fns';
-import { AccountStatus } from '../types/account.types';
+import { AccountStatus } from './accountUtils';
 
 /**
  * Interface para prévia de parcela

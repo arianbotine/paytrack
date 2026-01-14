@@ -52,7 +52,7 @@ export const usePayments = (params: UsePaymentsParams) => {
       if (params.paymentMethod && params.paymentMethod.length > 0) {
         queryParams.append('paymentMethod', params.paymentMethod.join(','));
       }
-      if (params.type) {
+      if (params.type && params.type !== '') {
         queryParams.append('type', params.type);
       }
       if (params.vendorId) {
@@ -75,6 +75,11 @@ export const usePayments = (params: UsePaymentsParams) => {
       const response = await api.get(`/payments?${queryParams.toString()}`);
       return response.data;
     },
+    staleTime: 0, // Dados sempre considerados stale (sem cache)
+    gcTime: 0, // Remove dados do cache imediatamente após desmontar
+    refetchOnWindowFocus: true, // Refetch quando a janela ganha foco
+    refetchOnReconnect: true, // Refetch quando reconecta
+    refetchInterval: 30000, // Refetch a cada 30 segundos para dados em tempo real
   });
 };
 
@@ -91,6 +96,10 @@ export const usePayablePayments = (payableId: string | undefined) => {
       return response.data;
     },
     enabled: !!payableId,
+    staleTime: 0, // Dados sempre considerados stale
+    gcTime: 0, // Remove dados do cache imediatamente
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 };
 
@@ -103,6 +112,10 @@ export const useReceivablePayments = (receivableId: string | undefined) => {
       return response.data;
     },
     enabled: !!receivableId,
+    staleTime: 0, // Dados sempre considerados stale
+    gcTime: 0, // Remove dados do cache imediatamente
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 };
 

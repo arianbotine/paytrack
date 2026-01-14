@@ -459,7 +459,6 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                   size="small"
                                   color="error"
                                   onClick={() => onDelete(account)}
-                                  disabled={account.receivedAmount > 0}
                                 >
                                   <DeleteIcon fontSize="small" />
                                 </IconButton>
@@ -1032,7 +1031,6 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                     size="small"
                                     color="error"
                                     onClick={() => onDelete(account)}
-                                    disabled={account.receivedAmount > 0}
                                   >
                                     <DeleteIcon fontSize="small" />
                                   </IconButton>

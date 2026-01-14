@@ -16,7 +16,7 @@ export const PaymentsPage: React.FC = () => {
 
   // Filter states
   const [methodFilter, setMethodFilter] = useState<string[]>([]);
-  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string | null>('');
   const [vendorFilter, setVendorFilter] = useState<string | null>(null);
   const [customerFilter, setCustomerFilter] = useState<string | null>(null);
   const [dateFromFilter, setDateFromFilter] = useState<string | null>(null);

@@ -342,7 +342,11 @@ export const PayablesPage: React.FC = () => {
         <ConfirmDialog
           open={deleteDialogOpen}
           title="Excluir Conta a Pagar"
-          message={`Tem certeza que deseja excluir a conta de "${selectedPayable?.vendor.name}"? Esta ação não pode ser desfeita.`}
+          message={
+            selectedPayable?.paidAmount && selectedPayable.paidAmount > 0
+              ? `ATENÇÃO: Esta conta possui pagamentos registrados. A exclusão é IRREVERSÍVEL e removerá permanentemente todos os dados relacionados, incluindo histórico de pagamentos. Tem certeza que deseja prosseguir?`
+              : `Tem certeza que deseja excluir a conta de "${selectedPayable?.vendor.name}"? Esta ação não pode ser desfeita.`
+          }
           confirmLabel="Excluir"
           onConfirm={confirmDelete}
           onCancel={handleCloseDeleteDialog}

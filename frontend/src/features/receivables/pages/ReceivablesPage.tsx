@@ -359,7 +359,12 @@ export const ReceivablesPage: React.FC = () => {
         <ConfirmDialog
           open={deleteDialogOpen}
           title="Excluir Conta a Receber"
-          message={`Tem certeza que deseja excluir a conta de "${selectedReceivable?.customer.name}"? Esta ação não pode ser desfeita.`}
+          message={
+            selectedReceivable?.receivedAmount &&
+            selectedReceivable.receivedAmount > 0
+              ? `ATENÇÃO: Esta conta possui pagamentos registrados. A exclusão é IRREVERSÍVEL e removerá permanentemente todos os dados relacionados, incluindo histórico de pagamentos. Tem certeza que deseja prosseguir?`
+              : `Tem certeza que deseja excluir a conta de "${selectedReceivable?.customer.name}"? Esta ação não pode ser desfeita.`
+          }
           confirmLabel="Excluir"
           onConfirm={confirmDelete}
           onCancel={handleCloseDeleteDialog}
