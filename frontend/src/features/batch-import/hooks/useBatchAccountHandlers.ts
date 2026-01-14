@@ -96,10 +96,11 @@ export function useBatchAccountHandlers(
         : [...current, installmentNumber].sort((a, b) => a - b);
 
       handleFieldChange('payment', {
-        ...account.payment,
         installmentNumbers: newNumbers,
         paymentDate: account.payment?.paymentDate || getNowLocalDatetimeInput(),
         paymentMethod: account.payment?.paymentMethod || '',
+        reference: account.payment?.reference,
+        notes: account.payment?.notes,
       });
     },
     [account.payment, handleFieldChange]
@@ -111,10 +112,11 @@ export function useBatchAccountHandlers(
   const handlePaymentFieldChange = useCallback(
     (field: string, value: any) => {
       handleFieldChange('payment', {
-        ...account.payment,
         installmentNumbers: account.payment?.installmentNumbers || [],
         paymentDate: account.payment?.paymentDate || getNowLocalDatetimeInput(),
         paymentMethod: account.payment?.paymentMethod || '',
+        reference: account.payment?.reference,
+        notes: account.payment?.notes,
         [field]: value,
       });
     },

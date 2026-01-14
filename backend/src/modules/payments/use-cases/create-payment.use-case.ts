@@ -204,6 +204,7 @@ export class CreatePaymentUseCase {
         amount: MoneyUtils.toDecimal(paymentData.amount),
         paymentDate: parseDatetime(paymentData.paymentDate),
         paymentMethod: paymentData.paymentMethod,
+        reference: paymentData.reference,
         notes: paymentData.notes,
         allocations: {
           create: allocations.map(a => ({

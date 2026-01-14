@@ -109,7 +109,6 @@ export const BatchAccountRow = memo<BatchAccountRowProps>(
             p: 2,
             mb: 2,
             bgcolor: state.backgroundColor,
-            opacity: state.isSuccess ? 0.7 : 1,
             transition: 'all 0.3s ease',
             position: 'relative',
             border: hasErrors ? '2px solid' : '1px solid',

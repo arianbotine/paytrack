@@ -148,4 +148,51 @@ describe('[Contas a Receber] POST /api/receivables', () => {
       })
       .expect(401);
   });
+
+  it('deve criar conta a receber com recebimento incluindo referência e observações', async () => {
+    const { organizationId, accessToken } = await createAuthenticatedUser(
+      app,
+      prisma
+    );
+    const customerFactory = new CustomerFactory(prisma);
+    const customer = await customerFactory.create({ organizationId });
+
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/receivables')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('idempotency-key', randomUUID())
+      .send({
+        notes: 'Conta recebida na criação',
+        amount: 3000,
+        dueDates: ['2026-01-31'],
+        customerId: customer.id,
+        payment: {
+          installmentNumbers: [1],
+          paymentDate: new Date().toISOString(),
+          paymentMethod: 'PIX',
+          reference: 'Comprovante Recebimento PIX 789',
+          notes: 'Recebimento realizado via transferência',
+        },
+      })
+      .expect(201);
+
+    // Verificar se a conta foi criada
+    expect(createResponse.body).toMatchObject({
+      notes: 'Conta recebida na criação',
+      amount: 3000,
+      organizationId,
+    });
+
+    // Verificar se o pagamento foi criado
+    const payments = await prisma.payment.findMany({
+      where: { organizationId },
+    });
+    expect(payments).toHaveLength(1);
+    expect(payments[0]).toMatchObject({
+      paymentMethod: 'PIX',
+      reference: 'Comprovante Recebimento PIX 789',
+      notes: 'Recebimento realizado via transferência',
+    });
+    expect(payments[0].amount.toString()).toBe('3000');
+  });
 });

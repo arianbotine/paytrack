@@ -245,11 +245,11 @@ export default function BatchImportPage() {
               {state.accounts.length === 0 ? (
                 <Typography
                   variant="body2"
-                  color="text.secondary"
+                  color="#ffffff"
                   sx={{
                     py: 1,
                     px: 2,
-                    bgcolor: 'grey.50',
+                    bgcolor: '#6b7280',
                     borderRadius: 1,
                     fontStyle: 'italic',
                   }}

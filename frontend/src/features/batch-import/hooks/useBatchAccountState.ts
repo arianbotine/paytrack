@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { BatchAccount, AccountType } from '../types';
 import type { Vendor, Category } from '../../payables/types';
 import type { Customer } from '../../receivables/types';
@@ -33,6 +33,9 @@ export function useBatchAccountState(
     action: string;
   };
 } {
+  // Estado para efeito de flash temporário
+  const [isFlashing, setIsFlashing] = useState(false);
+
   // Status flags
   const isDisabled = useMemo(
     () => account.status === 'processing' || account.status === 'success',
@@ -43,13 +46,24 @@ export function useBatchAccountState(
   const isProcessing: boolean = account.status === 'processing';
   const isSuccess: boolean = account.status === 'success';
 
-  // Background color baseado no status
+  // Efeito de flash para sucesso/erro
+  useEffect(() => {
+    if (isSuccess || isError) {
+      setIsFlashing(true);
+      const timer = setTimeout(() => setIsFlashing(false), 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setIsFlashing(false);
+    }
+  }, [isSuccess, isError]);
+
+  // Background color baseado no status com efeito de flash
   const backgroundColor = useMemo<string>(() => {
     if (isProcessing) return 'warning.light';
-    if (isSuccess) return 'success.light';
-    if (isError) return 'error.light';
+    if (isFlashing && isSuccess) return 'success.light';
+    if (isFlashing && isError) return 'error.light';
     return 'background.paper';
-  }, [isProcessing, isSuccess, isError]);
+  }, [isProcessing, isSuccess, isError, isFlashing]);
 
   // Categorias filtradas por tipo
   const filteredCategories = useMemo(
