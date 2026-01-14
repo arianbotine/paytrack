@@ -53,7 +53,6 @@ export interface Payable {
   nextUnpaidAmount: number | null;
   status: PayableStatus;
   paidAmount: number;
-  invoiceNumber?: string;
   notes?: string;
   totalInstallments: number;
   vendor: Vendor;
@@ -114,7 +113,6 @@ export const payableSchema = z.object({
   categoryId: z.string().optional(),
   tagIds: z.array(z.string()).optional(),
   notes: z.string().optional(),
-  invoiceNumber: z.string().optional(),
   // Campos de parcelas
   installmentCount: z.coerce.number().int().min(1).max(120).optional(),
   dueDates: z.array(z.string()).optional(),
@@ -150,6 +148,5 @@ export const getDefaultFormValues = (): PayableFormData => ({
   categoryId: '',
   tagIds: [],
   notes: '',
-  invoiceNumber: '',
   installmentCount: 1,
 });

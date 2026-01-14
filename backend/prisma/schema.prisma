@@ -206,7 +206,6 @@ model Payable {
   paidAmount     Decimal       @default(0) @map("paid_amount") @db.Decimal(15, 2)
   status         AccountStatus @default(PENDING)
   notes          String?
-  documentNumber String?       @map("document_number") // Invoice number, etc.
 
   // Installment metadata
   totalInstallments Int @default(1) @map("total_installments")

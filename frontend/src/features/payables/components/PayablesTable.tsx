@@ -256,11 +256,6 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                         <Typography variant="subtitle1" fontWeight="medium">
                           {account.vendor.name}
                         </Typography>
-                        {account.invoiceNumber && (
-                          <Typography variant="caption" color="text.secondary">
-                            NF: {account.invoiceNumber}
-                          </Typography>
-                        )}
                       </Box>
                     }
                     subheader={
@@ -839,19 +834,6 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                     }}
                                   />
                                 ))}
-                                {account.invoiceNumber && (
-                                  <Chip
-                                    label={`NF: ${account.invoiceNumber}`}
-                                    size="small"
-                                    variant="outlined"
-                                    sx={{
-                                      borderColor: '#9CA3AF',
-                                      color: '#6B7280',
-                                      fontSize: '0.7rem',
-                                      height: 22,
-                                    }}
-                                  />
-                                )}
                               </Box>
 
                               {/* Progresso de parcelas se houver */}

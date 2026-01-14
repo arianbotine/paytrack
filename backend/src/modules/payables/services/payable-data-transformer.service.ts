@@ -33,8 +33,6 @@ export class PayableDataTransformer {
   ): any[] {
     return payables.map(payable => ({
       ...payable,
-      invoiceNumber: payable.documentNumber,
-      documentNumber: undefined,
       nextUnpaidDueDate: nextInstallmentInfo.get(payable.id)?.dueDate || null,
       nextUnpaidAmount:
         nextInstallmentInfo.get(payable.id)?.remainingAmount || null,
@@ -54,8 +52,6 @@ export class PayableDataTransformer {
   ): any {
     return {
       ...payable,
-      invoiceNumber: payable.documentNumber,
-      documentNumber: undefined,
       nextUnpaidDueDate: nextInstallmentInfo?.dueDate || null,
       nextUnpaidAmount: nextInstallmentInfo?.remainingAmount || null,
       installments: payable.installments.map((inst: any) => ({

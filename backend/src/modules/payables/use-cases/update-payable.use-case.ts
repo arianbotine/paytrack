@@ -86,9 +86,6 @@ export class UpdatePayableUseCase {
           ...(updateData.amount && {
             amount: MoneyUtils.toDecimal(updateData.amount),
           }),
-          ...(updateData.invoiceNumber !== undefined && {
-            documentNumber: updateData.invoiceNumber,
-          }),
           ...(updateData.notes !== undefined && { notes: updateData.notes }),
         },
       });

@@ -56,7 +56,6 @@ export class CreatePayableUseCase {
           vendorId: baseData.vendorId,
           categoryId: baseData.categoryId,
           amount: MoneyUtils.toDecimal(baseData.amount),
-          documentNumber: baseData.invoiceNumber,
           notes: baseData.notes,
         },
       });

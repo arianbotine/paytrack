@@ -222,7 +222,6 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
           categoryId: payable.category?.id || '',
           tagIds: payable.tags.map(t => t.tag.id),
           notes: payable.notes || '',
-          invoiceNumber: payable.invoiceNumber || '',
           installmentCount: payable.totalInstallments,
         });
         setUserInputValue(payable.amount);

@@ -333,7 +333,6 @@ Key entities in `backend/prisma/schema.prisma`:
   - ✅ **Helper Types**: Criar tipos auxiliares em `shared/types/prisma-helpers.ts`
   - ✅ **Unknown**: Usar `unknown` e fazer type guards quando tipo é realmente desconhecido
 - **Enum Values**: Usar valores corretos do Prisma (ex: `AccountStatus.PARTIAL` não `PARTIALLY_PAID`)
-- **DTO Mapping**: `invoiceNumber` (DTO) mapeia para `documentNumber` (banco)
 - **Type Assertions**: Apenas quando absolutamente necessário e com comentário explicativo
 
 ### SonarQube/SonarLint

@@ -15,7 +15,6 @@ export interface CreatePayableData {
   categoryId?: string;
   status?: 'PENDING' | 'PARTIAL' | 'PAID' | 'CANCELLED';
   tags?: string[];
-  documentNumber?: string;
 }
 
 /**
@@ -43,7 +42,6 @@ export class PayableFactory {
         vendorId: data.vendorId,
         categoryId: data.categoryId,
         status: data.status || 'PENDING',
-        documentNumber: data.documentNumber,
         totalInstallments: installmentCount,
         tags: data.tags
           ? {
