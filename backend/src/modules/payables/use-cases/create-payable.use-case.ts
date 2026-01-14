@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import {
   PayablesRepository,
   PayableInstallmentsRepository,
@@ -90,8 +91,7 @@ export class CreatePayableUseCase {
           tx,
           organizationId,
           payable.id,
-          payment,
-          installments
+          payment
         );
       }
 
@@ -148,8 +148,7 @@ export class CreatePayableUseCase {
     tx: any,
     organizationId: string,
     payableId: string,
-    payment: NonNullable<CreatePayableDto['payment']>,
-    installments: any[]
+    payment: NonNullable<CreatePayableDto['payment']>
   ): Promise<void> {
     // Buscar parcelas criadas pelos números
     const selectedInstallments = await tx.payableInstallment.findMany({
@@ -168,7 +167,8 @@ export class CreatePayableUseCase {
 
     // Calcular valor total do pagamento (soma das parcelas selecionadas)
     const totalAmount = selectedInstallments.reduce(
-      (sum, inst) => sum + Number(inst.amount),
+      (sum: number, inst: Prisma.PayableInstallmentGetPayload<{}>) =>
+        sum + Number(inst.amount),
       0
     );
 
@@ -177,10 +177,12 @@ export class CreatePayableUseCase {
     );
 
     // Criar alocações para cada parcela selecionada
-    const allocations = selectedInstallments.map(inst => ({
-      payableInstallmentId: inst.id,
-      amount: Number(inst.amount),
-    }));
+    const allocations = selectedInstallments.map(
+      (inst: Prisma.PayableInstallmentGetPayload<{}>) => ({
+        payableInstallmentId: inst.id,
+        amount: Number(inst.amount),
+      })
+    );
 
     // Delegar para CreatePaymentUseCase com a transação
     await this.createPaymentUseCase.executeInTransaction(tx, organizationId, {

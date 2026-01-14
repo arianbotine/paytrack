@@ -1,7 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import request = require('supertest');
 import { PrismaService } from '../../../src/infrastructure/database/prisma.service';
-import { PaymentsReportsRepository } from '../../../src/modules/reports/repositories';
 import {
   setupE2ETest,
   teardownE2ETest,
@@ -67,7 +66,9 @@ describe('[Relatórios] GET /api/reports/payments', () => {
   describe('Cenários básicos', () => {
     it('deve retornar relatório vazio quando não há dados', async () => {
       const response = await request(app.getHttpServer())
-        .get(`/api/reports/payments?startDate=${PERIOD_START}&endDate=${PERIOD_END}`)
+        .get(
+          `/api/reports/payments?startDate=${PERIOD_START}&endDate=${PERIOD_END}`
+        )
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
@@ -185,7 +186,9 @@ describe('[Relatórios] GET /api/reports/payments', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(400);
 
-      expect(response.body.message).toContain('startDate e endDate são obrigatórios');
+      expect(response.body.message).toContain(
+        'startDate e endDate são obrigatórios'
+      );
     });
 
     it('deve filtrar por período customizado', async () => {
@@ -283,6 +286,18 @@ describe('[Relatórios] GET /api/reports/payments', () => {
 
   describe('Filtros de fornecedor e cliente', () => {
     it('deve filtrar por fornecedor', async () => {
+      // Limpar tudo primeiro para evitar dados de testes anteriores
+      await prisma.paymentAllocation.deleteMany();
+      await prisma.payment.deleteMany({ where: { organizationId } });
+      await prisma.payableInstallment.deleteMany({ where: { organizationId } });
+      await prisma.payable.deleteMany({ where: { organizationId } });
+      await prisma.receivableInstallment.deleteMany({
+        where: { organizationId },
+      });
+      await prisma.receivable.deleteMany({ where: { organizationId } });
+      await prisma.vendor.deleteMany({ where: { organizationId } });
+      await prisma.customer.deleteMany({ where: { organizationId } });
+
       const vendorFactory = new VendorFactory(prisma);
       const vendor = await vendorFactory.create({ organizationId });
 
@@ -294,6 +309,7 @@ describe('[Relatórios] GET /api/reports/payments', () => {
         vendorId: vendor.id,
         amount: 400,
       });
+
       await paymentFactory.create({
         amount: 400,
         paymentDate: TEST_DATE,
@@ -403,7 +419,9 @@ describe('[Relatórios] GET /api/reports/payments', () => {
   describe('Agrupamento (groupBy)', () => {
     it('deve agrupar por dia', async () => {
       const response = await request(app.getHttpServer())
-        .get(`/api/reports/payments?groupBy=day&startDate=${PERIOD_START}&endDate=${PERIOD_END}`)
+        .get(
+          `/api/reports/payments?groupBy=day&startDate=${PERIOD_START}&endDate=${PERIOD_END}`
+        )
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
@@ -412,7 +430,9 @@ describe('[Relatórios] GET /api/reports/payments', () => {
 
     it('deve agrupar por semana', async () => {
       const response = await request(app.getHttpServer())
-        .get(`/api/reports/payments?groupBy=week&startDate=${PERIOD_START}&endDate=${PERIOD_END}`)
+        .get(
+          `/api/reports/payments?groupBy=week&startDate=${PERIOD_START}&endDate=${PERIOD_END}`
+        )
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
@@ -421,7 +441,9 @@ describe('[Relatórios] GET /api/reports/payments', () => {
 
     it('deve agrupar por mês (padrão)', async () => {
       const response = await request(app.getHttpServer())
-        .get(`/api/reports/payments?groupBy=month&startDate=${PERIOD_START}&endDate=${PERIOD_END}`)
+        .get(
+          `/api/reports/payments?groupBy=month&startDate=${PERIOD_START}&endDate=${PERIOD_END}`
+        )
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 

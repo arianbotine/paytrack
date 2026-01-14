@@ -22,9 +22,7 @@ export class GetPaymentsReportUseCase {
   ): Promise<PaymentsReportResponseDto> {
     // Validar que startDate e endDate foram fornecidos
     if (!filters.startDate || !filters.endDate) {
-      throw new BadRequestException(
-        'startDate e endDate são obrigatórios'
-      );
+      throw new BadRequestException('startDate e endDate são obrigatórios');
     }
 
     const startDate = new Date(filters.startDate);

@@ -89,8 +89,7 @@ export class CreateReceivableUseCase {
           tx,
           organizationId,
           receivable.id,
-          payment,
-          installmentsData
+          payment
         );
       }
 
@@ -165,8 +164,7 @@ export class CreateReceivableUseCase {
     tx: any,
     organizationId: string,
     receivableId: string,
-    payment: NonNullable<CreateReceivableDto['payment']>,
-    installments: any[]
+    payment: NonNullable<CreateReceivableDto['payment']>
   ): Promise<void> {
     // Buscar parcelas criadas pelos números
     const selectedInstallments = await tx.receivableInstallment.findMany({
@@ -185,7 +183,8 @@ export class CreateReceivableUseCase {
 
     // Calcular valor total do pagamento (soma das parcelas selecionadas)
     const totalAmount = selectedInstallments.reduce(
-      (sum, inst) => sum + Number(inst.amount),
+      (sum: number, inst: Prisma.ReceivableInstallmentGetPayload<{}>) =>
+        sum + Number(inst.amount),
       0
     );
 
@@ -194,10 +193,12 @@ export class CreateReceivableUseCase {
     );
 
     // Criar alocações para cada parcela selecionada
-    const allocations = selectedInstallments.map(inst => ({
-      receivableInstallmentId: inst.id,
-      amount: Number(inst.amount),
-    }));
+    const allocations = selectedInstallments.map(
+      (inst: Prisma.ReceivableInstallmentGetPayload<{}>) => ({
+        receivableInstallmentId: inst.id,
+        amount: Number(inst.amount),
+      })
+    );
 
     // Delegar para CreatePaymentUseCase com a transação
     await this.createPaymentUseCase.executeInTransaction(tx, organizationId, {

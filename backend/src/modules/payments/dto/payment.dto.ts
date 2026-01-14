@@ -57,6 +57,14 @@ export class CreatePaymentDto {
   @IsOptional()
   notes?: string;
 
+  @ApiPropertyOptional({
+    example: 'Comprovante PIX 123456',
+    description: 'Referência ou comprovante do pagamento',
+  })
+  @IsString()
+  @IsOptional()
+  reference?: string;
+
   @ApiProperty({ type: [QuickPaymentAllocationDto] })
   @IsArray()
   @ValidateNested({ each: true })
