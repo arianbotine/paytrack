@@ -1,6 +1,6 @@
 import { Chip, ChipProps } from '@mui/material';
 
-type AccountStatus = 'PENDING' | 'PARTIAL' | 'PAID' | 'CANCELLED';
+type AccountStatus = 'PENDING' | 'PARTIAL' | 'PAID';
 type AccountType = 'payable' | 'receivable';
 
 interface StatusChipProps extends Omit<ChipProps, 'color'> {
@@ -16,11 +16,6 @@ const statusConfig: Record<
   PENDING: { label: 'Pendente', labelReceivable: 'Pendente', color: 'warning' },
   PARTIAL: { label: 'Parcial', labelReceivable: 'Parcial', color: 'info' },
   PAID: { label: 'Pago', labelReceivable: 'Recebido', color: 'success' },
-  CANCELLED: {
-    label: 'Cancelado',
-    labelReceivable: 'Cancelado',
-    color: 'default',
-  },
 };
 
 export function StatusChip({
@@ -35,17 +30,12 @@ export function StatusChip({
     color: 'default' as const,
   };
 
-  // Se estiver vencido e não estiver pago/cancelado, mostrar como erro
+  // Se estiver vencido e não estiver pago, mostrar como erro
   const effectiveColor =
-    isOverdue && status !== 'PAID' && status !== 'CANCELLED'
-      ? 'error'
-      : config.color;
+    isOverdue && status !== 'PAID' ? 'error' : config.color;
 
   const label = type === 'receivable' ? config.labelReceivable : config.label;
-  const effectiveLabel =
-    isOverdue && status !== 'PAID' && status !== 'CANCELLED'
-      ? 'Vencido'
-      : label;
+  const effectiveLabel = isOverdue && status !== 'PAID' ? 'Vencido' : label;
 
   return (
     <Chip

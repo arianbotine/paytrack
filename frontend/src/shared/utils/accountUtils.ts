@@ -8,14 +8,12 @@ export const ACCOUNT_STATUS_LABELS = {
   PENDING: 'Pendente',
   PARTIAL: 'Parcial',
   PAID: 'Pago',
-  CANCELLED: 'Cancelado',
 } as const;
 
 export const ACCOUNT_STATUS_COLORS = {
   PENDING: 'warning',
   PARTIAL: 'info',
   PAID: 'success',
-  CANCELLED: 'default',
 } as const;
 
 export type AccountStatus = keyof typeof ACCOUNT_STATUS_LABELS;
@@ -24,7 +22,7 @@ export type AccountStatus = keyof typeof ACCOUNT_STATUS_LABELS;
  * Check if account is due soon (within 7 days)
  */
 export const isDueSoon = (dueDate: string, status: string): boolean => {
-  if (status === 'PAID' || status === 'CANCELLED') return false;
+  if (status === 'PAID') return false;
 
   // Normalizar para início do dia para comparar apenas a data, sem horário
   const today = startOfDay(new Date());
@@ -41,7 +39,7 @@ export const isDueSoon = (dueDate: string, status: string): boolean => {
  * Agora apenas compara datas - o backend já envia o campo isOverdue calculado
  */
 export const isOverdue = (dueDate: string, status: string): boolean => {
-  if (status === 'PAID' || status === 'CANCELLED') return false;
+  if (status === 'PAID') return false;
 
   // Extrair apenas a parte da data (YYYY-MM-DD) para comparação sem timezone
   const dueDateOnly = dueDate.split('T')[0];

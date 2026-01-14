@@ -18,7 +18,6 @@ type Totals = {
   pending: number;
   partial: number;
   overdue: number;
-  cancelled: number;
   count: number;
 };
 
@@ -38,7 +37,6 @@ export class DashboardCalculator {
       pending: 0,
       partial: 0,
       overdue: 0,
-      cancelled: 0,
       count: 0,
     };
 
@@ -62,9 +60,6 @@ export class DashboardCalculator {
         case AccountStatus.PARTIAL:
           totals.partial += remaining;
           break;
-        case AccountStatus.CANCELLED:
-          totals.cancelled += amount;
-          break;
       }
     }
 
@@ -79,18 +74,18 @@ export class DashboardCalculator {
   }
 
   /**
-   * Calcula total a receber (total - cancelled)
-   * Inclui contas pagas, parciais e pendentes
+   * Calcula total a receber (pending + partial)
+   * Valor ainda a ser recebido
    */
   calculateToReceive(totals: Totals): number {
-    return totals.total - totals.cancelled;
+    return totals.pending + totals.partial;
   }
 
   /**
-   * Calcula total a pagar (total - cancelled)
-   * Inclui contas pagas, parciais e pendentes
+   * Calcula total a pagar (pending + partial)
+   * Valor ainda a ser pago
    */
   calculateToPay(totals: Totals): number {
-    return totals.total - totals.cancelled;
+    return totals.pending + totals.partial;
   }
 }

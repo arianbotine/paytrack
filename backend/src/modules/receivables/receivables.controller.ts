@@ -76,16 +76,6 @@ export class ReceivablesController {
     return this.receivablesService.remove(id, organizationId);
   }
 
-  @Patch(':id/cancel')
-  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
-  @ApiOperation({ summary: 'Cancelar conta a receber' })
-  async cancel(
-    @Param('id') id: string,
-    @CurrentUser('organizationId') organizationId: string
-  ) {
-    return this.receivablesService.cancel(id, organizationId);
-  }
-
   @Get(':id/payments')
   @ApiOperation({ summary: 'Obter histórico de pagamentos da conta a receber' })
   async getPayments(

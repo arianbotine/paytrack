@@ -76,16 +76,6 @@ export class PayablesController {
     return this.payablesService.remove(id, organizationId);
   }
 
-  @Patch(':id/cancel')
-  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
-  @ApiOperation({ summary: 'Cancelar conta a pagar' })
-  async cancel(
-    @Param('id') id: string,
-    @CurrentUser('organizationId') organizationId: string
-  ) {
-    return this.payablesService.cancel(id, organizationId);
-  }
-
   @Get(':id/payments')
   @ApiOperation({ summary: 'Obter histórico de pagamentos da conta a pagar' })
   async getPayments(

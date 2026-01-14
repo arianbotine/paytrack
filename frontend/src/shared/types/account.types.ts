@@ -2,7 +2,7 @@
  * Generic types for Payable/Receivable accounts
  */
 
-export type AccountStatus = 'PENDING' | 'PAID' | 'PARTIAL' | 'CANCELLED';
+export type AccountStatus = 'PENDING' | 'PAID' | 'PARTIAL';
 
 export interface PayableInstallment {
   id: string;

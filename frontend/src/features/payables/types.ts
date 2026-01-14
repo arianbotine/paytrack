@@ -21,7 +21,7 @@ export interface Tag {
   color?: string;
 }
 
-export type PayableStatus = 'PENDING' | 'PAID' | 'PARTIAL' | 'CANCELLED';
+export type PayableStatus = 'PENDING' | 'PAID' | 'PARTIAL';
 
 export interface PayableInstallment {
   id: string;
@@ -159,7 +159,6 @@ export const statusOptions = [
   { value: 'OVERDUE', label: 'Vencido' },
   { value: 'PARTIAL', label: 'Parcial' },
   { value: 'PAID', label: 'Pago' },
-  { value: 'CANCELLED', label: 'Cancelado' },
 ] as const;
 
 // ============================================================

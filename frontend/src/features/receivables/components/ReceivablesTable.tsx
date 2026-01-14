@@ -446,10 +446,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                         onPayment(account);
                                       }
                                     }}
-                                    disabled={
-                                      account.status === 'PAID' ||
-                                      account.status === 'CANCELLED'
-                                    }
+                                    disabled={account.status === 'PAID'}
                                   >
                                     <PaymentIcon fontSize="small" />
                                   </IconButton>
@@ -679,9 +676,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                                   }
                                                   disabled={
                                                     installment.status ===
-                                                      'PAID' ||
-                                                    installment.status ===
-                                                      'CANCELLED'
+                                                    'PAID'
                                                   }
                                                 >
                                                   <PaymentIcon fontSize="small" />
@@ -1024,7 +1019,6 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                     }}
                                     disabled={
                                       account.status === 'PAID' ||
-                                      account.status === 'CANCELLED' ||
                                       account.installments?.length > 1
                                     }
                                   >
@@ -1486,9 +1480,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                                     }
                                                     disabled={
                                                       installment.status ===
-                                                        'PAID' ||
-                                                      installment.status ===
-                                                        'CANCELLED'
+                                                      'PAID'
                                                     }
                                                   >
                                                     <PaymentIcon fontSize="small" />

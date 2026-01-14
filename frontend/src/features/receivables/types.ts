@@ -22,7 +22,7 @@ export interface Tag {
   color?: string;
 }
 
-export type ReceivableStatus = 'PENDING' | 'PAID' | 'PARTIAL' | 'CANCELLED';
+export type ReceivableStatus = 'PENDING' | 'PAID' | 'PARTIAL';
 
 export interface ReceivableInstallment {
   id: string;
@@ -154,7 +154,6 @@ export const statusOptions = [
   { value: 'OVERDUE', label: 'Vencido' },
   { value: 'PARTIAL', label: 'Parcial' },
   { value: 'PAID', label: 'Recebido' },
-  { value: 'CANCELLED', label: 'Cancelado' },
 ] as const;
 
 // ============================================================

@@ -13,7 +13,7 @@ export interface CreateReceivableData {
   organizationId: string;
   customerId: string;
   categoryId?: string;
-  status?: 'PENDING' | 'PARTIAL' | 'PAID' | 'CANCELLED';
+  status?: 'PENDING' | 'PARTIAL' | 'PAID';
   tags?: string[];
 }
 
@@ -108,7 +108,7 @@ export class ReceivableFactory {
    * Cria conta a receber com status específico
    */
   async createWithStatus(
-    status: 'PENDING' | 'PARTIAL' | 'PAID' | 'CANCELLED',
+    status: 'PENDING' | 'PARTIAL' | 'PAID',
     data: CreateReceivableData
   ) {
     return this.create({

@@ -52,7 +52,7 @@ interface AccountsTableProps<T extends AccountItem> {
 }
 
 const getDueDateAlert = (dueDate: string | null, status: string) => {
-  if (!dueDate || status === 'PAID' || status === 'CANCELLED') return null;
+  if (!dueDate || status === 'PAID') return null;
 
   // Normalizar para início do dia para comparar apenas a data, sem horário
   const today = startOfDay(new Date());
@@ -296,10 +296,7 @@ export function AccountsTable<T extends AccountItem>({
                             size="small"
                             color="success"
                             onClick={() => onPayment(account)}
-                            disabled={
-                              account.status === 'PAID' ||
-                              account.status === 'CANCELLED'
-                            }
+                            disabled={account.status === 'PAID'}
                           >
                             <PaymentIcon fontSize="small" />
                           </IconButton>

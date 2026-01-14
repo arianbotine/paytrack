@@ -93,7 +93,6 @@ describe('Dashboard - GET (e2e)', () => {
         pending: 0,
         partial: 0,
         overdue: 0,
-        cancelled: 0,
         count: 0,
       });
 
@@ -103,7 +102,6 @@ describe('Dashboard - GET (e2e)', () => {
         pending: 0,
         partial: 0,
         overdue: 0,
-        cancelled: 0,
         count: 0,
       });
 
@@ -183,11 +181,10 @@ describe('Dashboard - GET (e2e)', () => {
         pending: 3500, // PENDING agora inclui o que era overdue
         partial: 0,
         overdue: 0, // Campo mantido para compatibilidade mas sempre 0
-        cancelled: 0,
         count: 3,
       });
 
-      expect(response.body.balance.toPay).toBe(4500); // total - cancelled
+      expect(response.body.balance.toPay).toBe(3500); // pending + partial
     });
 
     it('deve calcular corretamente totais de receivables', async () => {
@@ -238,11 +235,10 @@ describe('Dashboard - GET (e2e)', () => {
         pending: 1200,
         partial: 0,
         overdue: 0,
-        cancelled: 0,
         count: 2,
       });
 
-      expect(response.body.balance.toReceive).toBe(2000); // total - cancelled
+      expect(response.body.balance.toReceive).toBe(1200); // pending + partial
     });
 
     it('deve calcular saldo líquido corretamente', async () => {

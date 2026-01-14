@@ -1019,7 +1019,6 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                     }}
                                     disabled={
                                       account.status === 'PAID' ||
-                                      account.status === 'CANCELLED' ||
                                       account.installments?.length > 1
                                     }
                                   >
@@ -1493,9 +1492,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                                     }
                                                     disabled={
                                                       installment.status ===
-                                                        'PAID' ||
-                                                      installment.status ===
-                                                        'CANCELLED'
+                                                      'PAID'
                                                     }
                                                   >
                                                     <PaymentIcon fontSize="small" />

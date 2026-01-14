@@ -50,6 +50,8 @@ export class GetDashboardSummaryUseCase {
       overdueReceivableInstallments,
       upcomingPayableInstallments,
       upcomingReceivableInstallments,
+      allPayableInstallments,
+      allReceivableInstallments,
     ] = await Promise.all([
       this.repository.getPayableInstallmentsSummary(
         organizationId,
@@ -81,6 +83,8 @@ export class GetDashboardSummaryUseCase {
         todayUTC,
         upcomingDeadline
       ),
+      this.repository.getAllPayableInstallmentsSummary(organizationId),
+      this.repository.getAllReceivableInstallmentsSummary(organizationId),
     ]);
 
     // Calcular totais usando DashboardCalculator
@@ -89,10 +93,16 @@ export class GetDashboardSummaryUseCase {
     const receivableTotals = this.dashboardCalculator.calculateTotals(
       receivableInstallments
     );
+    const allPayableTotals = this.dashboardCalculator.calculateTotals(
+      allPayableInstallments
+    );
+    const allReceivableTotals = this.dashboardCalculator.calculateTotals(
+      allReceivableInstallments
+    );
 
     const toReceive =
-      this.dashboardCalculator.calculateToReceive(receivableTotals);
-    const toPay = this.dashboardCalculator.calculateToPay(payableTotals);
+      this.dashboardCalculator.calculateToReceive(allReceivableTotals);
+    const toPay = this.dashboardCalculator.calculateToPay(allPayableTotals);
     const netBalance = this.dashboardCalculator.calculateNetBalance(
       toReceive,
       toPay

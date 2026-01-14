@@ -55,6 +55,34 @@ export class DashboardRepository {
   }
 
   /**
+   * Agrupa todos os installments de payables por status (sem filtro de data)
+   */
+  async getAllPayableInstallmentsSummary(organizationId: string) {
+    return this.prisma.payableInstallment.groupBy({
+      by: ['status'],
+      where: {
+        organizationId,
+      },
+      _sum: { amount: true, paidAmount: true },
+      _count: true,
+    });
+  }
+
+  /**
+   * Agrupa todos os installments de receivables por status (sem filtro de data)
+   */
+  async getAllReceivableInstallmentsSummary(organizationId: string) {
+    return this.prisma.receivableInstallment.groupBy({
+      by: ['status'],
+      where: {
+        organizationId,
+      },
+      _sum: { amount: true, receivedAmount: true },
+      _count: true,
+    });
+  }
+
+  /**
    * Busca payables vencidos (com installments em aberto e vencimento anterior à data de referência)
    */
   async getOverduePayableInstallments(
