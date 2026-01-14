@@ -35,6 +35,17 @@ interface Category {
   color?: string;
 }
 
+interface Installment {
+  id: string;
+  installmentNumber: number;
+  totalInstallments: number;
+  dueDate: string;
+  amount: number;
+  paidAmount?: number;
+  receivedAmount?: number;
+  tags: { tag: Tag }[];
+}
+
 interface Account {
   id: string;
   amount: number;
@@ -46,6 +57,7 @@ interface Account {
   customer?: { name: string };
   category?: Category;
   tags: { tag: Tag }[];
+  installments?: Installment[];
 }
 
 interface AccountsTableProps {
@@ -63,6 +75,80 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
   emptyMessage,
   alertColor,
 }) => {
+  const renderTags = (account: Account) => {
+    // Combine account tags with installment tags
+    const accountTags = account.tags.map(t => t.tag);
+    const installmentTags =
+      account.installments?.[0]?.tags.map(t => t.tag) || [];
+    const allTags = [...accountTags, ...installmentTags];
+
+    // Remove duplicates based on tag id
+    const uniqueTags = allTags.filter(
+      (tag, index, self) => index === self.findIndex(t => t.id === tag.id)
+    );
+
+    if (uniqueTags.length === 0) return null;
+
+    const visibleTags = uniqueTags.slice(0, 2);
+    const hiddenTags = uniqueTags.slice(2);
+
+    return (
+      <Box display="flex" alignItems="center" gap={0.5}>
+        {visibleTags.map(tag => (
+          <Chip
+            key={tag.id}
+            label={tag.name}
+            size="small"
+            sx={{
+              height: 20,
+              fontSize: '0.7rem',
+              backgroundColor: tag.color || '#e0e0e0',
+              color: tag.color ? '#fff' : '#000',
+              '& .MuiChip-label': {
+                px: 1,
+              },
+            }}
+          />
+        ))}
+        {hiddenTags.length > 0 && (
+          <Tooltip
+            title={
+              <Box>
+                {hiddenTags.map(tag => (
+                  <Box key={tag.id} display="flex" alignItems="center" gap={1}>
+                    <Box
+                      sx={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        backgroundColor: tag.color || '#e0e0e0',
+                      }}
+                    />
+                    {tag.name}
+                  </Box>
+                ))}
+              </Box>
+            }
+          >
+            <Chip
+              label={`+${hiddenTags.length}`}
+              size="small"
+              sx={{
+                height: 20,
+                fontSize: '0.7rem',
+                backgroundColor: '#f5f5f5',
+                color: '#666',
+                '& .MuiChip-label': {
+                  px: 1,
+                },
+              }}
+            />
+          </Tooltip>
+        )}
+      </Box>
+    );
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -136,21 +222,6 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                           const name =
                             account.vendor?.name || account.customer?.name;
 
-                          const tagsCount = account.tags.length;
-                          let tagsText: string | null = null;
-                          if (tagsCount === 1) {
-                            tagsText = account.tags[0].tag.name;
-                          } else if (tagsCount > 1) {
-                            tagsText = `+${tagsCount} tags`;
-                          }
-
-                          let tagsTooltip = '';
-                          if (tagsCount > 0) {
-                            tagsTooltip = account.tags
-                              .map((t: { tag: Tag }) => t.tag.name)
-                              .join(', ');
-                          }
-
                           return (
                             <Box
                               sx={{ display: 'flex', flexDirection: 'column' }}
@@ -187,25 +258,9 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                                   />
                                 )}
 
-                                {tagsText && (
-                                  <Tooltip
-                                    title={tagsTooltip}
-                                    placement="top"
-                                    arrow
-                                  >
-                                    <Chip
-                                      label={tagsText}
-                                      size="small"
-                                      variant="outlined"
-                                      sx={{
-                                        fontSize: '0.7rem',
-                                        height: 20,
-                                      }}
-                                    />
-                                  </Tooltip>
-                                )}
+                                {renderTags(account)}
 
-                                {!account.category && !tagsText && (
+                                {!account.category && !renderTags(account) && (
                                   <Typography
                                     variant="caption"
                                     color="text.secondary"

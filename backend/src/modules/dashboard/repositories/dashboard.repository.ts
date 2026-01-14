@@ -133,6 +133,23 @@ export class DashboardRepository {
             tag: { select: { id: true, name: true, color: true } },
           },
         },
+        installments: {
+          orderBy: { dueDate: 'asc' },
+          take: 1,
+          select: {
+            id: true,
+            installmentNumber: true,
+            totalInstallments: true,
+            dueDate: true,
+            amount: true,
+            paidAmount: true,
+            tags: {
+              select: {
+                tag: { select: { id: true, name: true, color: true } },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -233,6 +250,23 @@ export class DashboardRepository {
             tag: { select: { id: true, name: true, color: true } },
           },
         },
+        installments: {
+          orderBy: { dueDate: 'asc' },
+          take: 1,
+          select: {
+            id: true,
+            installmentNumber: true,
+            totalInstallments: true,
+            dueDate: true,
+            amount: true,
+            receivedAmount: true,
+            tags: {
+              select: {
+                tag: { select: { id: true, name: true, color: true } },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -331,6 +365,23 @@ export class DashboardRepository {
             tag: { select: { id: true, name: true, color: true } },
           },
         },
+        installments: {
+          orderBy: { dueDate: 'asc' },
+          take: 1,
+          select: {
+            id: true,
+            installmentNumber: true,
+            totalInstallments: true,
+            dueDate: true,
+            amount: true,
+            paidAmount: true,
+            tags: {
+              select: {
+                tag: { select: { id: true, name: true, color: true } },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -427,6 +478,23 @@ export class DashboardRepository {
         tags: {
           select: {
             tag: { select: { id: true, name: true, color: true } },
+          },
+        },
+        installments: {
+          orderBy: { dueDate: 'asc' },
+          take: 1,
+          select: {
+            id: true,
+            installmentNumber: true,
+            totalInstallments: true,
+            dueDate: true,
+            amount: true,
+            receivedAmount: true,
+            tags: {
+              select: {
+                tag: { select: { id: true, name: true, color: true } },
+              },
+            },
           },
         },
       },
