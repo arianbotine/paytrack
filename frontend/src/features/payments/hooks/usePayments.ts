@@ -133,6 +133,7 @@ export const useCreatePayment = (onSuccess?: () => void) => {
         amount: data.amount,
         paymentDate: toUTCDatetime(data.paymentDate), // Converte data/hora local para UTC
         paymentMethod: data.method,
+        reference: data.reference || undefined,
         notes: data.notes || undefined,
         allocations: [
           {

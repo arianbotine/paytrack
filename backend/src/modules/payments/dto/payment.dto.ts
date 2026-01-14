@@ -99,6 +99,14 @@ export class QuickPaymentDto {
   @IsEnum(PaymentMethod)
   paymentMethod!: PaymentMethod;
 
+  @ApiPropertyOptional({
+    example: 'Comprovante PIX 123456',
+    description: 'Referência ou comprovante do pagamento',
+  })
+  @IsString()
+  @IsOptional()
+  reference?: string;
+
   @ApiPropertyOptional({ example: 'Observações' })
   @IsOptional()
   notes?: string;

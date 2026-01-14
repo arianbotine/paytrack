@@ -23,6 +23,8 @@ import {
   KeyboardArrowDown as ExpandMoreIcon,
   KeyboardArrowUp as ExpandLessIcon,
   Receipt as ReceiptIcon,
+  ReceiptLong as ReferenceIcon,
+  Notes as NotesIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TableSkeleton, EmptyState } from '../../../shared/components';
@@ -162,9 +164,35 @@ const PaymentRow = React.forwardRef<
           </Typography>
         </TableCell>
         <TableCell>
-          <Typography variant="body2" color="text.secondary">
-            {payment.reference || '-'}
-          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            {payment.reference && (
+              <Tooltip title={`Referência: ${payment.reference}`} arrow>
+                <ReferenceIcon
+                  sx={{
+                    fontSize: 18,
+                    color: 'primary.main',
+                    cursor: 'help',
+                  }}
+                />
+              </Tooltip>
+            )}
+            {payment.notes && (
+              <Tooltip title={`Observações: ${payment.notes}`} arrow>
+                <NotesIcon
+                  sx={{
+                    fontSize: 18,
+                    color: 'text.secondary',
+                    cursor: 'help',
+                  }}
+                />
+              </Tooltip>
+            )}
+            {!payment.reference && !payment.notes && (
+              <Typography variant="body2" color="text.secondary">
+                -
+              </Typography>
+            )}
+          </Stack>
         </TableCell>
         <TableCell align="right">
           <Tooltip title="Excluir">
@@ -312,7 +340,7 @@ export const PaymentsTable: React.FC<PaymentsTableProps> = ({
               <TableCell>Descrição</TableCell>
               <TableCell>Método</TableCell>
               <TableCell align="right">Valor</TableCell>
-              <TableCell>Referência</TableCell>
+              <TableCell>Detalhes</TableCell>
               <TableCell align="right">Ações</TableCell>
             </TableRow>
           </TableHead>
