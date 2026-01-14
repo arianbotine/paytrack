@@ -222,9 +222,9 @@ export const InlinePaymentForm: React.FC<InlinePaymentFormProps> = ({
                   );
                 })}
               </Grid>
-              {errors?.payment?.installmentNumbers && (
+              {errors?.payment?.message && (
                 <FormHelperText error sx={{ mt: 1 }}>
-                  {errors.payment.installmentNumbers.message}
+                  {errors.payment.message}
                 </FormHelperText>
               )}
             </Box>
@@ -241,8 +241,9 @@ export const InlinePaymentForm: React.FC<InlinePaymentFormProps> = ({
                   <TextField
                     {...field}
                     fullWidth
-                    label={currentLabels.dateLabel}
+                    label={`${currentLabels.dateLabel}${selectedInstallmentNumbers.length === 0 ? ' (opcional)' : ''}`}
                     type="datetime-local"
+                    required={selectedInstallmentNumbers.length > 0}
                     error={
                       !!errors?.payment?.paymentDate || !isValidPaymentDate
                     }
@@ -276,9 +277,16 @@ export const InlinePaymentForm: React.FC<InlinePaymentFormProps> = ({
                   <FormControl
                     fullWidth
                     error={!!errors?.payment?.paymentMethod}
+                    required={selectedInstallmentNumbers.length > 0}
                   >
-                    <InputLabel>Método de Pagamento</InputLabel>
-                    <Select {...field} label="Método de Pagamento">
+                    <InputLabel>
+                      Método de Pagamento
+                      {selectedInstallmentNumbers.length === 0 && ' (opcional)'}
+                    </InputLabel>
+                    <Select
+                      {...field}
+                      label={`Método de Pagamento${selectedInstallmentNumbers.length === 0 ? ' (opcional)' : ''}`}
+                    >
                       {PAYMENT_METHODS.map(method => (
                         <MenuItem key={method.value} value={method.value}>
                           {method.label}

@@ -72,39 +72,66 @@ export interface PayablesResponse {
 // ============================================================
 
 // Schema de pagamento opcional durante criação
-const paymentOnAccountSchema = z.object({
-  installmentNumbers: z
-    .array(z.number().int().positive())
-    .min(1, 'Selecione pelo menos uma parcela para pagar'),
-  paymentDate: z
-    .string()
-    .min(1, 'Data do pagamento é obrigatória')
-    .refine(
-      date => {
-        if (!date) return true;
-        const selected = new Date(date);
-        const now = new Date();
-        return selected <= now;
-      },
-      { message: 'Data do pagamento não pode ser futura' }
-    ),
-  paymentMethod: z.enum(
-    [
-      'CASH',
-      'CREDIT_CARD',
-      'DEBIT_CARD',
-      'BANK_TRANSFER',
-      'PIX',
-      'BOLETO',
-      'CHECK',
-      'ACCOUNT_DEBIT',
-      'OTHER',
-    ],
-    { required_error: 'Método de pagamento é obrigatório' }
-  ),
-  reference: z.string().optional(),
-  notes: z.string().optional(),
-});
+const paymentOnAccountSchema = z
+  .object({
+    installmentNumbers: z.array(z.number().int().positive()).optional(),
+    paymentDate: z
+      .string()
+      .optional()
+      .transform(val => (val === '' ? undefined : val)),
+    paymentMethod: z
+      .enum([
+        'CASH',
+        'CREDIT_CARD',
+        'DEBIT_CARD',
+        'BANK_TRANSFER',
+        'PIX',
+        'BOLETO',
+        'CHECK',
+        'ACCOUNT_DEBIT',
+        'OTHER',
+        '',
+      ])
+      .optional()
+      .transform(val => (val === '' ? undefined : val)),
+    reference: z.string().optional(),
+    notes: z.string().optional(),
+  })
+  .refine(
+    data => {
+      // Se nenhuma parcela selecionada, retornar true (válido)
+      if (!data.installmentNumbers || data.installmentNumbers.length === 0) {
+        return true;
+      }
+      // Se parcelas selecionadas, validar campos obrigatórios
+      return !!data.paymentDate && !!data.paymentMethod;
+    },
+    {
+      message:
+        'Data e método de pagamento são obrigatórios quando parcelas são selecionadas',
+      path: ['paymentMethod'],
+    }
+  )
+  .refine(
+    data => {
+      // Validar que a data de pagamento não seja futura
+      if (!data.paymentDate) return true;
+      const selected = new Date(data.paymentDate);
+      const now = new Date();
+      return selected <= now;
+    },
+    {
+      message: 'Data do pagamento não pode ser futura',
+      path: ['paymentDate'],
+    }
+  )
+  .transform(data => {
+    // Se não há parcelas selecionadas, retornar undefined para limpar o campo
+    if (!data.installmentNumbers || data.installmentNumbers.length === 0) {
+      return undefined;
+    }
+    return data;
+  });
 
 export const payableSchema = z.object({
   amount: z.coerce.number().positive('Valor deve ser positivo'),
