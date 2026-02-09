@@ -78,6 +78,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const isEditing = !!payable;
+  const [paymentFormValid, setPaymentFormValid] = useState(true);
   const [isInstallment, setIsInstallment] = useState(false);
   const [userInputValue, setUserInputValue] = useState<number | null>(null);
   const [userInputMode, setUserInputMode] = useState<
@@ -801,6 +802,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                       errors={errors}
                       installmentPreview={installmentPreview}
                       accountType="payable"
+                      onValidationChange={setPaymentFormValid}
                     />
                   </Grid>
                 )}
@@ -813,7 +815,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
               <Button
                 type="submit"
                 variant="contained"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !paymentFormValid}
                 startIcon={isSubmitting ? <CircularProgress size={16} /> : null}
               >
                 {isEditing ? 'Salvar' : 'Criar'}

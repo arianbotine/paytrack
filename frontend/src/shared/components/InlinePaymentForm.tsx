@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Accordion,
   AccordionSummary,
@@ -39,6 +39,7 @@ interface InlinePaymentFormProps {
   errors: any;
   installmentPreview: InstallmentPreview[];
   accountType: 'payable' | 'receivable';
+  onValidationChange?: (isValid: boolean) => void;
 }
 
 export const InlinePaymentForm: React.FC<InlinePaymentFormProps> = ({
@@ -47,22 +48,25 @@ export const InlinePaymentForm: React.FC<InlinePaymentFormProps> = ({
   errors,
   installmentPreview,
   accountType,
+  onValidationChange,
 }) => {
+  // Estado para controlar se o accordion está expandido
+  const [expanded, setExpanded] = useState(false);
+
   // Watch para cálculo do valor total
   const selectedInstallmentNumbers = watch('payment.installmentNumbers') || [];
   const paymentDate = watch('payment.paymentDate');
 
   // Calcular valor total baseado nas parcelas selecionadas
   const totalPaymentAmount = useMemo(() => {
-    const selected = watch('payment.installmentNumbers') || [];
-    if (!selected.length || !installmentPreview.length) {
+    if (!selectedInstallmentNumbers.length || !installmentPreview.length) {
       return 0;
     }
-    return selected.reduce((sum: number, num: number) => {
+    return selectedInstallmentNumbers.reduce((sum: number, num: number) => {
       const installment = installmentPreview.find(p => p.number === num);
       return sum + (installment?.amount || 0);
     }, 0);
-  }, [installmentPreview, watch]);
+  }, [installmentPreview, selectedInstallmentNumbers]);
 
   // Validar se data é hoje ou anterior
   const isValidPaymentDate = useMemo(() => {
@@ -108,8 +112,22 @@ export const InlinePaymentForm: React.FC<InlinePaymentFormProps> = ({
   const paidCount = selectedInstallmentNumbers.length;
   const pendingCount = installmentPreview.length - paidCount;
 
+  // Desabilitar campos se expandido mas nenhuma parcela selecionada
+  const paymentFieldsDisabled =
+    expanded && selectedInstallmentNumbers.length === 0;
+
+  // Notificar validação para o componente pai
+  useEffect(() => {
+    if (onValidationChange) {
+      const isValid = !expanded || selectedInstallmentNumbers.length > 0;
+      onValidationChange(isValid);
+    }
+  }, [expanded, selectedInstallmentNumbers, onValidationChange]);
+
   return (
     <Accordion
+      expanded={expanded}
+      onChange={(_, isExpanded) => setExpanded(isExpanded)}
       elevation={0}
       sx={{
         border: 1,
@@ -138,6 +156,14 @@ export const InlinePaymentForm: React.FC<InlinePaymentFormProps> = ({
 
       <AccordionDetails sx={{ p: 3 }}>
         <Stack spacing={3}>
+          {/* Alerta se expandido mas nenhuma parcela selecionada */}
+          {expanded && selectedInstallmentNumbers.length === 0 && (
+            <Alert severity="warning">
+              Selecione pelo menos uma parcela para registrar o{' '}
+              {accountType === 'payable' ? 'pagamento' : 'recebimento'}.
+            </Alert>
+          )}
+
           {/* Grid de seleção de parcelas */}
           {installmentPreview.length > 0 && (
             <Box>
@@ -244,6 +270,7 @@ export const InlinePaymentForm: React.FC<InlinePaymentFormProps> = ({
                     label={`${currentLabels.dateLabel}${selectedInstallmentNumbers.length === 0 ? ' (opcional)' : ''}`}
                     type="datetime-local"
                     required={selectedInstallmentNumbers.length > 0}
+                    disabled={paymentFieldsDisabled}
                     error={
                       !!errors?.payment?.paymentDate || !isValidPaymentDate
                     }
@@ -278,6 +305,7 @@ export const InlinePaymentForm: React.FC<InlinePaymentFormProps> = ({
                     fullWidth
                     error={!!errors?.payment?.paymentMethod}
                     required={selectedInstallmentNumbers.length > 0}
+                    disabled={paymentFieldsDisabled}
                   >
                     <InputLabel>
                       Método de Pagamento
@@ -286,6 +314,7 @@ export const InlinePaymentForm: React.FC<InlinePaymentFormProps> = ({
                     <Select
                       {...field}
                       label={`Método de Pagamento${selectedInstallmentNumbers.length === 0 ? ' (opcional)' : ''}`}
+                      disabled={paymentFieldsDisabled}
                     >
                       {PAYMENT_METHODS.map(method => (
                         <MenuItem key={method.value} value={method.value}>
@@ -314,6 +343,7 @@ export const InlinePaymentForm: React.FC<InlinePaymentFormProps> = ({
                     fullWidth
                     label="Referência/Comprovante (opcional)"
                     placeholder="Número do comprovante, PIX, etc."
+                    disabled={paymentFieldsDisabled}
                   />
                 )}
               />
@@ -332,6 +362,7 @@ export const InlinePaymentForm: React.FC<InlinePaymentFormProps> = ({
                     multiline
                     rows={2}
                     placeholder="Informações adicionais sobre o pagamento..."
+                    disabled={paymentFieldsDisabled}
                   />
                 )}
               />
@@ -404,7 +435,7 @@ export const InlinePaymentForm: React.FC<InlinePaymentFormProps> = ({
             </Alert>
           )}
 
-          {selectedInstallmentNumbers.length === 0 && (
+          {selectedInstallmentNumbers.length === 0 && !expanded && (
             <Alert severity="info">
               Selecione as parcelas que deseja pagar agora. Você só pode pagar
               parcelas completas (não é permitido pagamento parcial durante a
