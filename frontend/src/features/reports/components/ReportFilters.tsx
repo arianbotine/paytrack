@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Paper,
   Box,
@@ -15,12 +15,12 @@ import {
   Badge,
   Divider,
   Tooltip,
-  Alert,
 } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import CategoryIcon from '@mui/icons-material/Category';
 import LabelIcon from '@mui/icons-material/Label';
@@ -84,6 +84,33 @@ export function ReportFilters(props: ReportFiltersProps) {
   const { filters, onFiltersChange, onRefresh } = props;
   const [expanded, setExpanded] = useState(false);
 
+  // Garantir que filters tem valores válidos
+  const validatedFilters = useMemo(() => {
+    if (!filters.startDate || !filters.endDate) {
+      const { startDate, endDate } = calculateDateRange('last30');
+      return {
+        ...filters,
+        startDate,
+        endDate,
+        groupBy: filters.groupBy || 'month',
+      };
+    }
+    return filters;
+  }, [filters]);
+
+  const [localFilters, setLocalFilters] =
+    useState<ReportFiltersType>(validatedFilters);
+
+  // Sincronizar localFilters quando filters externos mudarem
+  useEffect(() => {
+    setLocalFilters(validatedFilters);
+  }, [validatedFilters]);
+
+  // Verificar se há mudanças pendentes
+  const hasChanges = useMemo(() => {
+    return JSON.stringify(localFilters) !== JSON.stringify(filters);
+  }, [localFilters, filters]);
+
   // Fetch related data
   const { data: categories = [] } = useReportCategories();
   const { data: tags = [] } = useReportTags();
@@ -93,48 +120,56 @@ export function ReportFilters(props: ReportFiltersProps) {
   const getActiveFiltersCount = () => {
     return (
       [
-        filters.categoryIds?.length,
-        filters.tagIds?.length,
-        filters.vendorIds?.length,
-        filters.customerIds?.length,
+        localFilters.categoryIds?.length,
+        localFilters.tagIds?.length,
+        localFilters.vendorIds?.length,
+        localFilters.customerIds?.length,
       ].reduce((acc, val) => (acc || 0) + (val || 0), 0) || 0
     );
   };
 
   const activeFiltersCount = getActiveFiltersCount();
 
+  const applyFilters = () => {
+    onFiltersChange(localFilters);
+  };
+
   const applyQuickDate = (period: PeriodShortcut) => {
     const { startDate, endDate } = calculateDateRange(period);
-    const newFilters = {
-      ...filters,
+    setLocalFilters({
+      ...localFilters,
       startDate,
       endDate,
-    };
-    onFiltersChange(newFilters);
+    });
   };
 
   const handleGroupByChange = (groupBy: ReportGroupBy) => {
-    const newFilters = { ...filters, groupBy };
-    onFiltersChange(newFilters);
+    setLocalFilters({ ...localFilters, groupBy });
+  };
+
+  const handleDateChange = (field: 'startDate' | 'endDate', value: string) => {
+    setLocalFilters({
+      ...localFilters,
+      [field]: value,
+    });
   };
 
   const handleMultiSelectChange = (
     field: 'categoryIds' | 'tagIds' | 'vendorIds' | 'customerIds',
     values: string[]
   ) => {
-    const newFilters = {
-      ...filters,
+    setLocalFilters({
+      ...localFilters,
       [field]: values.length > 0 ? values : undefined,
-    };
-    onFiltersChange(newFilters);
+    });
   };
 
   const handleClearFilter = (
     field: 'categoryIds' | 'tagIds' | 'vendorIds' | 'customerIds'
   ) => {
-    const newFilters = { ...filters };
+    const newFilters = { ...localFilters };
     delete newFilters[field];
-    onFiltersChange(newFilters);
+    setLocalFilters(newFilters);
   };
 
   const handleReset = () => {
@@ -144,6 +179,7 @@ export function ReportFilters(props: ReportFiltersProps) {
       endDate,
       groupBy: 'month',
     };
+    setLocalFilters(defaultFilters);
     onFiltersChange(defaultFilters);
   };
 
@@ -153,7 +189,7 @@ export function ReportFilters(props: ReportFiltersProps) {
         display="flex"
         justifyContent="space-between"
         alignItems="center"
-        mb={expanded ? 2 : 0}
+        mb={2}
       >
         <Box display="flex" alignItems="center" gap={1}>
           <Badge badgeContent={activeFiltersCount} color="primary">
@@ -187,14 +223,35 @@ export function ReportFilters(props: ReportFiltersProps) {
           )}
         </Box>
         <Box display="flex" gap={1}>
+          <Button
+            variant="contained"
+            size="medium"
+            onClick={applyFilters}
+            disabled={!hasChanges}
+            startIcon={<SearchIcon />}
+            sx={{
+              minWidth: 140,
+              fontWeight: 600,
+              boxShadow: hasChanges ? 3 : 1,
+              animation: hasChanges ? 'pulse 2s infinite' : 'none',
+              '@keyframes pulse': {
+                '0%, 100%': {
+                  transform: 'scale(1)',
+                },
+                '50%': {
+                  transform: 'scale(1.02)',
+                },
+              },
+            }}
+          >
+            {hasChanges ? 'Aplicar Filtros' : 'Filtros Aplicados'}
+          </Button>
           {onRefresh && (
-            <IconButton
-              size="small"
-              onClick={onRefresh}
-              title="Atualizar dados"
-            >
-              <RefreshIcon />
-            </IconButton>
+            <Tooltip title="Recarregar dados com os mesmos filtros">
+              <IconButton size="small" onClick={onRefresh}>
+                <RefreshIcon />
+              </IconButton>
+            </Tooltip>
           )}
           <IconButton
             size="small"
@@ -206,9 +263,59 @@ export function ReportFilters(props: ReportFiltersProps) {
         </Box>
       </Box>
 
+      {/* Filtros de Período - Sempre Visíveis */}
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid item xs={12} sm={6} md={4}>
+          <TextField
+            fullWidth
+            label="Data Início"
+            type="date"
+            value={localFilters.startDate || ''}
+            onChange={e => handleDateChange('startDate', e.target.value)}
+            size="small"
+            InputLabelProps={{ shrink: true }}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
+          <TextField
+            fullWidth
+            label="Data Fim"
+            type="date"
+            value={localFilters.endDate || ''}
+            onChange={e => handleDateChange('endDate', e.target.value)}
+            size="small"
+            InputLabelProps={{ shrink: true }}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={4}>
+          <Tooltip
+            title="Define como os dados serão agrupados no gráfico: por dia (detalhado), por semana (médio) ou por mês (visão geral)."
+            placement="top"
+            enterDelay={500}
+          >
+            <TextField
+              fullWidth
+              select
+              label="Agrupar por"
+              value={localFilters.groupBy || 'month'}
+              onChange={e =>
+                handleGroupByChange(e.target.value as ReportGroupBy)
+              }
+              size="small"
+            >
+              {GROUP_BY_OPTIONS.map(option => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Tooltip>
+        </Grid>
+      </Grid>
+
       <Collapse in={expanded}>
         <Stack spacing={3}>
-          {/* Período */}
+          {/* Atalhos de Período */}
           <Box>
             <Typography
               variant="subtitle2"
@@ -216,7 +323,7 @@ export function ReportFilters(props: ReportFiltersProps) {
               gutterBottom
               sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}
             >
-              📅 Selecionar Período
+              📅 Atalhos de Período
             </Typography>
 
             <Grid container spacing={2}>
@@ -254,43 +361,6 @@ export function ReportFilters(props: ReportFiltersProps) {
                 </Grid>
               ))}
             </Grid>
-
-            {filters.startDate && filters.endDate && (
-              <Alert severity="info" sx={{ mt: 2 }}>
-                📅 Período selecionado:{' '}
-                {getPeriodSummary(filters.startDate, filters.endDate)}
-              </Alert>
-            )}
-          </Box>
-
-          {/* Agrupamento */}
-          <Box>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={4}>
-                <Tooltip
-                  title="Define como os dados serão agrupados no gráfico: por dia (detalhado), por semana (médio) ou por mês (visão geral)."
-                  placement="top"
-                  enterDelay={500}
-                >
-                  <TextField
-                    fullWidth
-                    select
-                    label="Agrupar por"
-                    value={filters.groupBy || 'month'}
-                    onChange={e =>
-                      handleGroupByChange(e.target.value as ReportGroupBy)
-                    }
-                    size="small"
-                  >
-                    {GROUP_BY_OPTIONS.map(option => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Tooltip>
-              </Grid>
-            </Grid>
           </Box>
 
           <Divider />
@@ -316,7 +386,7 @@ export function ReportFilters(props: ReportFiltersProps) {
                   options={categories}
                   getOptionLabel={option => option.name}
                   value={categories.filter(cat =>
-                    filters.categoryIds?.includes(cat.id)
+                    localFilters.categoryIds?.includes(cat.id)
                   )}
                   onChange={(_, newValue) =>
                     handleMultiSelectChange(
@@ -369,7 +439,9 @@ export function ReportFilters(props: ReportFiltersProps) {
                   size="small"
                   options={tags}
                   getOptionLabel={option => option.name}
-                  value={tags.filter(tag => filters.tagIds?.includes(tag.id))}
+                  value={tags.filter(tag =>
+                    localFilters.tagIds?.includes(tag.id)
+                  )}
                   onChange={(_, newValue) =>
                     handleMultiSelectChange(
                       'tagIds',
@@ -425,7 +497,7 @@ export function ReportFilters(props: ReportFiltersProps) {
                   options={vendors}
                   getOptionLabel={option => option.name}
                   value={vendors.filter(vendor =>
-                    filters.vendorIds?.includes(vendor.id)
+                    localFilters.vendorIds?.includes(vendor.id)
                   )}
                   onChange={(_, newValue) =>
                     handleMultiSelectChange(
@@ -479,7 +551,7 @@ export function ReportFilters(props: ReportFiltersProps) {
                   options={customers}
                   getOptionLabel={option => option.name}
                   value={customers.filter(customer =>
-                    filters.customerIds?.includes(customer.id)
+                    localFilters.customerIds?.includes(customer.id)
                   )}
                   onChange={(_, newValue) =>
                     handleMultiSelectChange(

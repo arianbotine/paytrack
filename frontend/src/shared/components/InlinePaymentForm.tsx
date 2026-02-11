@@ -54,7 +54,11 @@ export const InlinePaymentForm: React.FC<InlinePaymentFormProps> = ({
   const [expanded, setExpanded] = useState(false);
 
   // Watch para cálculo do valor total
-  const selectedInstallmentNumbers = watch('payment.installmentNumbers') || [];
+  const installmentNumbers = watch('payment.installmentNumbers');
+  const selectedInstallmentNumbers = useMemo(
+    () => installmentNumbers || [],
+    [installmentNumbers]
+  );
   const paymentDate = watch('payment.paymentDate');
 
   // Calcular valor total baseado nas parcelas selecionadas

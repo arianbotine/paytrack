@@ -46,8 +46,15 @@ export default function PaymentsReportPage() {
           const { startDate, endDate } = calculateDateRange('last30');
           return { startDate, endDate, groupBy: parsed.groupBy || 'month' };
         }
-        // Validar que tem startDate e endDate
-        if (parsed.startDate && parsed.endDate) {
+        // Validar que tem startDate e endDate válidos
+        if (
+          parsed.startDate &&
+          parsed.endDate &&
+          typeof parsed.startDate === 'string' &&
+          typeof parsed.endDate === 'string' &&
+          parsed.startDate.length > 0 &&
+          parsed.endDate.length > 0
+        ) {
           return parsed;
         }
       } catch {
@@ -75,7 +82,14 @@ export default function PaymentsReportPage() {
   }, [chartType]);
 
   const handleFiltersChange = (newFilters: ReportFilters) => {
-    setFilters(newFilters);
+    // Garantir que sempre temos startDate e endDate válidos
+    if (!newFilters.startDate || !newFilters.endDate) {
+      console.warn('Filtros inválidos detectados, usando padrão last30');
+      const { startDate, endDate } = calculateDateRange('last30');
+      setFilters({ ...newFilters, startDate, endDate });
+    } else {
+      setFilters(newFilters);
+    }
   };
 
   // Fetch data
