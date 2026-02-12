@@ -47,6 +47,7 @@ export const ReceivablesPage: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [showOverdueOnly, setShowOverdueOnly] = useState(false);
+  const [nextDueMonth, setNextDueMonth] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [installmentTagFilters, setInstallmentTagFilters] = useState<string[]>(
@@ -77,6 +78,7 @@ export const ReceivablesPage: React.FC = () => {
     tagIds: tagFilters,
     installmentTagIds: installmentTagFilters,
     installmentDueDateTo: showOverdueOnly ? getYesterdayDate() : undefined,
+    nextDueMonth: nextDueMonth || undefined,
     page,
     rowsPerPage,
   });
@@ -328,6 +330,8 @@ export const ReceivablesPage: React.FC = () => {
           tags={tags}
           showOverdueOnly={showOverdueOnly}
           onShowOverdueOnlyChange={setShowOverdueOnly}
+          nextDueMonth={nextDueMonth}
+          onNextDueMonthChange={setNextDueMonth}
           installmentTagFilters={installmentTagFilters}
           onInstallmentTagsChange={handleInstallmentTagsChange}
         />

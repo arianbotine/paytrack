@@ -13,6 +13,7 @@ import {
   ArrayMinSize,
   ArrayMaxSize,
   ValidateNested,
+  Matches,
 } from 'class-validator';
 import {
   ApiProperty,
@@ -203,6 +204,15 @@ export class PayableFilterDto {
   @IsDateString()
   @IsOptional()
   installmentDueDateTo?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-02',
+    description: 'Mês do próximo vencimento (YYYY-MM)',
+  })
+  @IsString()
+  @Matches(/^\d{4}-\d{2}$/, { message: 'Formato inválido. Use YYYY-MM' })
+  @IsOptional()
+  nextDueMonth?: string;
 
   @ApiPropertyOptional({ example: 0, minimum: 0 })
   @IsNumber()

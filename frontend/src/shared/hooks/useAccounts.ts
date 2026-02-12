@@ -69,6 +69,7 @@ interface UseAccountsParams {
   installmentTagIds?: string[];
   installmentDueDateFrom?: string;
   installmentDueDateTo?: string;
+  nextDueMonth?: string;
   page: number;
   rowsPerPage: number;
 }
@@ -89,6 +90,7 @@ export const useAccounts = <T>(
       installmentTagIds: params.installmentTagIds,
       installmentDueDateFrom: params.installmentDueDateFrom,
       installmentDueDateTo: params.installmentDueDateTo,
+      nextDueMonth: params.nextDueMonth,
       page: params.page,
       rowsPerPage: params.rowsPerPage,
     }),
@@ -131,6 +133,9 @@ export const useAccounts = <T>(
       }
       if (params.installmentDueDateTo) {
         queryParams.installmentDueDateTo = params.installmentDueDateTo;
+      }
+      if (params.nextDueMonth) {
+        queryParams.nextDueMonth = params.nextDueMonth;
       }
 
       const response = await api.get(config.endpoint, { params: queryParams });

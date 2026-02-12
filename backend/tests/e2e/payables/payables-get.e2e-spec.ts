@@ -382,4 +382,247 @@ describe('[Contas a Pagar] GET /api/payables', () => {
       ).toBe(true);
     });
   });
+
+  describe('Filtro de mês do próximo vencimento (nextDueMonth)', () => {
+    it('deve retornar apenas contas com primeira parcela pendente no mês especificado', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const vendorFactory = new VendorFactory(prisma);
+      const payableFactory = new PayableFactory(prisma);
+
+      const vendor = await vendorFactory.create({ organizationId });
+
+      // Parcela para fevereiro de 2026
+      const feb2026 = new Date('2026-02-15');
+      await payableFactory.create({
+        organizationId,
+        vendorId: vendor.id,
+        amount: 100,
+        dueDate: feb2026,
+        status: 'PENDING',
+      });
+
+      // Parcela para março de 2026
+      const mar2026 = new Date('2026-03-15');
+      await payableFactory.create({
+        organizationId,
+        vendorId: vendor.id,
+        amount: 200,
+        dueDate: mar2026,
+        status: 'PENDING',
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/payables?nextDueMonth=2026-02')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].amount).toBe(100);
+    });
+
+    it('não deve retornar contas que já tenham parcelas pendentes em mês anterior', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const vendorFactory = new VendorFactory(prisma);
+      const payableFactory = new PayableFactory(prisma);
+
+      const vendor = await vendorFactory.create({ organizationId });
+
+      // Conta com 3 parcelas: jan, fev, mar
+      const payable1 = await payableFactory.create({
+        organizationId,
+        vendorId: vendor.id,
+        amount: 300,
+        installmentCount: 3,
+        status: 'PENDING',
+      });
+
+      // Atualizar datas das parcelas para jan, fev, mar
+      await prisma.payableInstallment.update({
+        where: { id: payable1.installments[0].id },
+        data: { dueDate: new Date('2026-01-15') },
+      });
+      await prisma.payableInstallment.update({
+        where: { id: payable1.installments[1].id },
+        data: { dueDate: new Date('2026-02-15') },
+      });
+      await prisma.payableInstallment.update({
+        where: { id: payable1.installments[2].id },
+        data: { dueDate: new Date('2026-03-15') },
+      });
+
+      // Conta com apenas uma parcela em fevereiro
+      const feb2026 = new Date('2026-02-10');
+      await payableFactory.create({
+        organizationId,
+        vendorId: vendor.id,
+        amount: 100,
+        dueDate: feb2026,
+        status: 'PENDING',
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/payables?nextDueMonth=2026-02')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      // Deve retornar apenas a conta que tem fevereiro como primeira parcela pendente
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].amount).toBe(100);
+    });
+
+    it('deve retornar contas com parcelas pagas antes e próxima pendente no mês', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const vendorFactory = new VendorFactory(prisma);
+      const payableFactory = new PayableFactory(prisma);
+
+      const vendor = await vendorFactory.create({ organizationId });
+
+      // Conta com 3 parcelas: jan (paga), fev (pendente), mar (pendente)
+      const payable = await payableFactory.create({
+        organizationId,
+        vendorId: vendor.id,
+        amount: 300,
+        installmentCount: 3,
+        status: 'PARTIAL',
+      });
+
+      // Atualizar datas das parcelas para jan, fev, mar
+      await prisma.payableInstallment.update({
+        where: { id: payable.installments[0].id },
+        data: { dueDate: new Date('2026-01-15') },
+      });
+      await prisma.payableInstallment.update({
+        where: { id: payable.installments[1].id },
+        data: { dueDate: new Date('2026-02-15') },
+      });
+      await prisma.payableInstallment.update({
+        where: { id: payable.installments[2].id },
+        data: { dueDate: new Date('2026-03-15') },
+      });
+
+      // Marcar primeira parcela como paga
+      await prisma.payableInstallment.updateMany({
+        where: {
+          payableId: payable.id,
+          installmentNumber: 1,
+        },
+        data: {
+          status: 'PAID',
+          paidAmount: 100,
+        },
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/payables?nextDueMonth=2026-02')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      // Deve retornar a conta pois fevereiro é a próxima parcela pendente
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].id).toBe(payable.id);
+    });
+
+    it('não deve retornar contas totalmente pagas', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const vendorFactory = new VendorFactory(prisma);
+      const payableFactory = new PayableFactory(prisma);
+
+      const vendor = await vendorFactory.create({ organizationId });
+
+      const feb2026 = new Date('2026-02-15');
+      await payableFactory.create({
+        organizationId,
+        vendorId: vendor.id,
+        amount: 100,
+        dueDate: feb2026,
+        status: 'PAID',
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/payables?nextDueMonth=2026-02')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(0);
+    });
+
+    it('deve validar formato incorreto do filtro nextDueMonth', async () => {
+      const { accessToken } = await createAuthenticatedUser(app, prisma);
+
+      await request(app.getHttpServer())
+        .get('/api/payables?nextDueMonth=202602') // Formato incorreto
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(400);
+
+      await request(app.getHttpServer())
+        .get('/api/payables?nextDueMonth=2026/02') // Formato incorreto
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(400);
+
+      await request(app.getHttpServer())
+        .get('/api/payables?nextDueMonth=02-2026') // Formato incorreto
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(400);
+    });
+
+    it('deve combinar filtro nextDueMonth com outros filtros', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const vendorFactory = new VendorFactory(prisma);
+      const categoryFactory = new CategoryFactory(prisma);
+      const payableFactory = new PayableFactory(prisma);
+
+      const vendor1 = await vendorFactory.create({ organizationId });
+      const vendor2 = await vendorFactory.create({ organizationId });
+      const category = await categoryFactory.create({
+        organizationId,
+        type: 'PAYABLE',
+      });
+
+      const feb2026 = new Date('2026-02-15');
+
+      // Conta 1: vendor1, com categoria, fevereiro
+      await payableFactory.create({
+        organizationId,
+        vendorId: vendor1.id,
+        categoryId: category.id,
+        amount: 100,
+        dueDate: feb2026,
+        status: 'PENDING',
+      });
+
+      // Conta 2: vendor2, sem categoria, fevereiro
+      await payableFactory.create({
+        organizationId,
+        vendorId: vendor2.id,
+        amount: 200,
+        dueDate: feb2026,
+        status: 'PENDING',
+      });
+
+      // Filtrar por vendor1 E fevereiro
+      const response = await request(app.getHttpServer())
+        .get(`/api/payables?nextDueMonth=2026-02&vendorId=${vendor1.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].vendorId).toBe(vendor1.id);
+      expect(response.body.data[0].amount).toBe(100);
+    });
+  });
 });

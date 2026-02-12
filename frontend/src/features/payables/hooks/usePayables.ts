@@ -55,6 +55,7 @@ interface UsePayablesParams {
   installmentTagIds?: string[];
   installmentDueDateFrom?: string;
   installmentDueDateTo?: string;
+  nextDueMonth?: string;
   page: number;
   rowsPerPage: number;
 }

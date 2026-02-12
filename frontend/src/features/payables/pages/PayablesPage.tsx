@@ -47,6 +47,7 @@ export const PayablesPage: React.FC = () => {
   const [installmentTagFilters, setInstallmentTagFilters] = useState<string[]>(
     []
   );
+  const [nextDueMonth, setNextDueMonth] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -69,6 +70,7 @@ export const PayablesPage: React.FC = () => {
     tagIds: tagFilters,
     installmentTagIds: installmentTagFilters,
     installmentDueDateTo: showOverdueOnly ? getYesterdayDate() : undefined,
+    nextDueMonth: nextDueMonth || undefined,
     page,
     rowsPerPage,
   });
@@ -311,6 +313,8 @@ export const PayablesPage: React.FC = () => {
           tags={tags}
           showOverdueOnly={showOverdueOnly}
           onShowOverdueOnlyChange={setShowOverdueOnly}
+          nextDueMonth={nextDueMonth}
+          onNextDueMonthChange={setNextDueMonth}
           installmentTagFilters={installmentTagFilters}
           onInstallmentTagsChange={handleInstallmentTagsChange}
         />

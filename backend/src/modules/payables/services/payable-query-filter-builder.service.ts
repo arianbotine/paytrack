@@ -57,6 +57,27 @@ export class PayableQueryFilterBuilder {
       });
     }
 
+    // Construir filtro de próximo vencimento
+    let nextDueMonthFilter: Prisma.PayableWhereInput | undefined;
+    if (filters?.nextDueMonth) {
+      const [year, month] = filters.nextDueMonth.split('-').map(Number);
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 1);
+
+      nextDueMonthFilter = {
+        installments: {
+          some: {
+            status: { in: [PayableStatus.PENDING, PayableStatus.PARTIAL] },
+            dueDate: { gte: startDate, lt: endDate },
+          },
+          none: {
+            status: { in: [PayableStatus.PENDING, PayableStatus.PARTIAL] },
+            dueDate: { lt: startDate },
+          },
+        },
+      };
+    }
+
     return {
       organizationId,
       ...(filters?.vendorId && { vendorId: filters.vendorId }),
@@ -81,6 +102,7 @@ export class PayableQueryFilterBuilder {
             },
           }
         : {}),
+      ...nextDueMonthFilter,
     };
   }
 

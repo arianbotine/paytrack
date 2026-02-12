@@ -59,6 +59,31 @@ export class ReceivableQueryFilterBuilder {
       });
     }
 
+    // Construir filtro de próximo vencimento
+    let nextDueMonthFilter: Prisma.ReceivableWhereInput | undefined;
+    if (filters?.nextDueMonth) {
+      const [year, month] = filters.nextDueMonth.split('-').map(Number);
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 1);
+
+      nextDueMonthFilter = {
+        installments: {
+          some: {
+            status: {
+              in: [ReceivableStatus.PENDING, ReceivableStatus.PARTIAL],
+            },
+            dueDate: { gte: startDate, lt: endDate },
+          },
+          none: {
+            status: {
+              in: [ReceivableStatus.PENDING, ReceivableStatus.PARTIAL],
+            },
+            dueDate: { lt: startDate },
+          },
+        },
+      };
+    }
+
     return {
       organizationId,
       ...(filters?.customerId && { customerId: filters.customerId }),
@@ -83,6 +108,7 @@ export class ReceivableQueryFilterBuilder {
             },
           }
         : {}),
+      ...nextDueMonthFilter,
     };
   }
 

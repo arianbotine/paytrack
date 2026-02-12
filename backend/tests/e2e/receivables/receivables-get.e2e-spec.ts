@@ -396,4 +396,247 @@ describe('[Contas a Receber] GET /api/receivables', () => {
       ).toBe(true);
     });
   });
+
+  describe('Filtro de mês do próximo vencimento (nextDueMonth)', () => {
+    it('deve retornar apenas contas com primeira parcela pendente no mês especificado', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const customerFactory = new CustomerFactory(prisma);
+      const receivableFactory = new ReceivableFactory(prisma);
+
+      const customer = await customerFactory.create({ organizationId });
+
+      // Parcela para fevereiro de 2026
+      const feb2026 = new Date('2026-02-15');
+      await receivableFactory.create({
+        organizationId,
+        customerId: customer.id,
+        amount: 100,
+        dueDate: feb2026,
+        status: 'PENDING',
+      });
+
+      // Parcela para março de 2026
+      const mar2026 = new Date('2026-03-15');
+      await receivableFactory.create({
+        organizationId,
+        customerId: customer.id,
+        amount: 200,
+        dueDate: mar2026,
+        status: 'PENDING',
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/receivables?nextDueMonth=2026-02')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].amount).toBe(100);
+    });
+
+    it('não deve retornar contas que já tenham parcelas pendentes em mês anterior', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const customerFactory = new CustomerFactory(prisma);
+      const receivableFactory = new ReceivableFactory(prisma);
+
+      const customer = await customerFactory.create({ organizationId });
+
+      // Conta com 3 parcelas: jan, fev, mar
+      const receivable1 = await receivableFactory.create({
+        organizationId,
+        customerId: customer.id,
+        amount: 300,
+        installmentCount: 3,
+        status: 'PENDING',
+      });
+
+      // Atualizar datas das parcelas para jan, fev, mar
+      await prisma.receivableInstallment.update({
+        where: { id: receivable1.installments[0].id },
+        data: { dueDate: new Date('2026-01-15') },
+      });
+      await prisma.receivableInstallment.update({
+        where: { id: receivable1.installments[1].id },
+        data: { dueDate: new Date('2026-02-15') },
+      });
+      await prisma.receivableInstallment.update({
+        where: { id: receivable1.installments[2].id },
+        data: { dueDate: new Date('2026-03-15') },
+      });
+
+      // Conta com apenas uma parcela em fevereiro
+      const feb2026 = new Date('2026-02-10');
+      await receivableFactory.create({
+        organizationId,
+        customerId: customer.id,
+        amount: 100,
+        dueDate: feb2026,
+        status: 'PENDING',
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/receivables?nextDueMonth=2026-02')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      // Deve retornar apenas a conta que tem fevereiro como primeira parcela pendente
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].amount).toBe(100);
+    });
+
+    it('deve retornar contas com parcelas recebidas antes e próxima pendente no mês', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const customerFactory = new CustomerFactory(prisma);
+      const receivableFactory = new ReceivableFactory(prisma);
+
+      const customer = await customerFactory.create({ organizationId });
+
+      // Conta com 3 parcelas: jan (recebida), fev (pendente), mar (pendente)
+      const receivable = await receivableFactory.create({
+        organizationId,
+        customerId: customer.id,
+        amount: 300,
+        installmentCount: 3,
+        status: 'PARTIAL',
+      });
+
+      // Atualizar datas das parcelas para jan, fev, mar
+      await prisma.receivableInstallment.update({
+        where: { id: receivable.installments[0].id },
+        data: { dueDate: new Date('2026-01-15') },
+      });
+      await prisma.receivableInstallment.update({
+        where: { id: receivable.installments[1].id },
+        data: { dueDate: new Date('2026-02-15') },
+      });
+      await prisma.receivableInstallment.update({
+        where: { id: receivable.installments[2].id },
+        data: { dueDate: new Date('2026-03-15') },
+      });
+
+      // Marcar primeira parcela como recebida
+      await prisma.receivableInstallment.updateMany({
+        where: {
+          receivableId: receivable.id,
+          installmentNumber: 1,
+        },
+        data: {
+          status: 'PAID',
+          receivedAmount: 100,
+        },
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/receivables?nextDueMonth=2026-02')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      // Deve retornar a conta pois fevereiro é a próxima parcela pendente
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].id).toBe(receivable.id);
+    });
+
+    it('não deve retornar contas totalmente recebidas', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const customerFactory = new CustomerFactory(prisma);
+      const receivableFactory = new ReceivableFactory(prisma);
+
+      const customer = await customerFactory.create({ organizationId });
+
+      const feb2026 = new Date('2026-02-15');
+      await receivableFactory.create({
+        organizationId,
+        customerId: customer.id,
+        amount: 100,
+        dueDate: feb2026,
+        status: 'PAID',
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/api/receivables?nextDueMonth=2026-02')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(0);
+    });
+
+    it('deve validar formato incorreto do filtro nextDueMonth', async () => {
+      const { accessToken } = await createAuthenticatedUser(app, prisma);
+
+      await request(app.getHttpServer())
+        .get('/api/receivables?nextDueMonth=202602') // Formato incorreto
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(400);
+
+      await request(app.getHttpServer())
+        .get('/api/receivables?nextDueMonth=2026/02') // Formato incorreto
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(400);
+
+      await request(app.getHttpServer())
+        .get('/api/receivables?nextDueMonth=02-2026') // Formato incorreto
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(400);
+    });
+
+    it('deve combinar filtro nextDueMonth com outros filtros', async () => {
+      const { organizationId, accessToken } = await createAuthenticatedUser(
+        app,
+        prisma
+      );
+      const customerFactory = new CustomerFactory(prisma);
+      const categoryFactory = new CategoryFactory(prisma);
+      const receivableFactory = new ReceivableFactory(prisma);
+
+      const customer1 = await customerFactory.create({ organizationId });
+      const customer2 = await customerFactory.create({ organizationId });
+      const category = await categoryFactory.create({
+        organizationId,
+        type: 'RECEIVABLE',
+      });
+
+      const feb2026 = new Date('2026-02-15');
+
+      // Conta 1: customer1, com categoria, fevereiro
+      await receivableFactory.create({
+        organizationId,
+        customerId: customer1.id,
+        categoryId: category.id,
+        amount: 100,
+        dueDate: feb2026,
+        status: 'PENDING',
+      });
+
+      // Conta 2: customer2, sem categoria, fevereiro
+      await receivableFactory.create({
+        organizationId,
+        customerId: customer2.id,
+        amount: 200,
+        dueDate: feb2026,
+        status: 'PENDING',
+      });
+
+      // Filtrar por customer1 E fevereiro
+      const response = await request(app.getHttpServer())
+        .get(`/api/receivables?nextDueMonth=2026-02&customerId=${customer1.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].customerId).toBe(customer1.id);
+      expect(response.body.data[0].amount).toBe(100);
+    });
+  });
 });

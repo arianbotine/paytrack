@@ -36,7 +36,6 @@ import {
   KeyboardArrowUp as ExpandLessIcon,
   Check as CheckIcon,
   Close as CloseIcon,
-  Info as InfoIcon,
   LocalOffer as LocalOfferIcon,
   Comment as CommentIcon,
   EditNote as EditNoteIcon,
@@ -298,53 +297,24 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                   {account.nextUnpaidAmount !== null &&
                                   account.nextUnpaidAmount !==
                                     account.amount ? (
-                                    <Tooltip
-                                      title={
-                                        <Box>
-                                          <Typography
-                                            variant="caption"
-                                            display="block"
-                                          >
-                                            Valor Total:{' '}
-                                            {formatCurrency(account.amount)}
-                                          </Typography>
-                                          <Typography
-                                            variant="caption"
-                                            display="block"
-                                          >
-                                            Próxima Parcela:{' '}
-                                            {formatCurrency(
-                                              account.nextUnpaidAmount
-                                            )}
-                                          </Typography>
-                                        </Box>
-                                      }
-                                      arrow
-                                    >
-                                      <Box
+                                    <Box>
+                                      <Typography variant="h6" color="primary">
+                                        {formatCurrency(
+                                          account.nextUnpaidAmount
+                                        )}
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
                                         sx={{
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          gap: 0.5,
+                                          color: 'text.secondary',
+                                          display: 'block',
+                                          mt: -0.5,
+                                          fontWeight: 500,
                                         }}
                                       >
-                                        <Typography
-                                          variant="h6"
-                                          color="primary"
-                                        >
-                                          {formatCurrency(
-                                            account.nextUnpaidAmount
-                                          )}
-                                        </Typography>
-                                        <InfoIcon
-                                          fontSize="small"
-                                          sx={{
-                                            color: 'text.secondary',
-                                            opacity: 0.7,
-                                          }}
-                                        />
-                                      </Box>
-                                    </Tooltip>
+                                        Total: {formatCurrency(account.amount)}
+                                      </Typography>
+                                    </Box>
                                   ) : (
                                     <Typography variant="h6" color="primary">
                                       {formatCurrency(account.amount)}
@@ -880,47 +850,26 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                           <TableCell align="right">
                             {account.nextUnpaidAmount !== null &&
                             account.nextUnpaidAmount !== account.amount ? (
-                              <Tooltip
-                                title={
-                                  <Box>
-                                    <Typography
-                                      variant="caption"
-                                      display="block"
-                                    >
-                                      Valor Total:{' '}
-                                      {formatCurrency(account.amount)}
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      display="block"
-                                    >
-                                      Próxima Parcela:{' '}
-                                      {formatCurrency(account.nextUnpaidAmount)}
-                                    </Typography>
-                                  </Box>
-                                }
-                                arrow
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'flex-end',
+                                }}
                               >
-                                <Box
+                                <Typography fontWeight="medium">
+                                  {formatCurrency(account.nextUnpaidAmount)}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
                                   sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'flex-end',
-                                    gap: 0.5,
+                                    color: 'text.secondary',
+                                    fontWeight: 500,
                                   }}
                                 >
-                                  <Typography fontWeight="medium">
-                                    {formatCurrency(account.nextUnpaidAmount)}
-                                  </Typography>
-                                  <InfoIcon
-                                    fontSize="small"
-                                    sx={{
-                                      color: 'text.secondary',
-                                      opacity: 0.7,
-                                    }}
-                                  />
-                                </Box>
-                              </Tooltip>
+                                  Total: {formatCurrency(account.amount)}
+                                </Typography>
+                              </Box>
                             ) : (
                               <Typography fontWeight="medium">
                                 {formatCurrency(account.amount)}

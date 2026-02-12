@@ -18,12 +18,15 @@ import {
   FormControlLabel,
   Switch,
 } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs, { Dayjs } from 'dayjs';
 import {
   FilterList as FilterIcon,
   Clear as ClearIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   EventBusy as EventBusyIcon,
+  CalendarMonth as CalendarMonthIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { statusOptions } from '../types';
@@ -53,6 +56,10 @@ interface ReceivableFiltersProps {
   showOverdueOnly?: boolean;
   onShowOverdueOnlyChange?: (show: boolean) => void;
 
+  // Next Due Month Filter
+  nextDueMonth?: string | null;
+  onNextDueMonthChange?: (month: string | null) => void;
+
   // Filtros de parcelas
   installmentTagFilters?: string[];
   onInstallmentTagsChange?: (tagIds: string[]) => void;
@@ -72,6 +79,8 @@ export const ReceivableFilters: React.FC<ReceivableFiltersProps> = ({
   tags,
   showOverdueOnly = false,
   onShowOverdueOnlyChange,
+  nextDueMonth = null,
+  onNextDueMonthChange,
   installmentTagFilters = [],
   onInstallmentTagsChange,
 }) => {
@@ -83,7 +92,8 @@ export const ReceivableFilters: React.FC<ReceivableFiltersProps> = ({
     (categoryFilter ? 1 : 0) +
     tagFilters.length +
     installmentTagFilters.length +
-    (showOverdueOnly ? 1 : 0);
+    (showOverdueOnly ? 1 : 0) +
+    (nextDueMonth ? 1 : 0);
 
   const hasActiveFilters = activeFiltersCount > 0;
 
@@ -105,6 +115,7 @@ export const ReceivableFilters: React.FC<ReceivableFiltersProps> = ({
     onTagsChange([]);
     onInstallmentTagsChange?.([]);
     onShowOverdueOnlyChange?.(false);
+    onNextDueMonthChange?.(null);
   };
 
   const selectedCustomer = customers.find(c => c.id === customerFilter);
@@ -270,6 +281,29 @@ export const ReceivableFilters: React.FC<ReceivableFiltersProps> = ({
               </Grid>
             )}
 
+            {/* Next Due Month Filter */}
+            {onNextDueMonthChange && (
+              <Grid item xs={12} md={6}>
+                <DatePicker
+                  label="Mês do próximo vencimento"
+                  value={nextDueMonth ? dayjs(nextDueMonth + '-01') : null}
+                  onChange={(newValue: Dayjs | null) => {
+                    onNextDueMonthChange(
+                      newValue ? newValue.format('YYYY-MM') : null
+                    );
+                  }}
+                  views={['year', 'month']}
+                  format="MMMM/YYYY"
+                  slotProps={{
+                    textField: {
+                      size: 'small',
+                      fullWidth: true,
+                    },
+                  }}
+                />
+              </Grid>
+            )}
+
             {/* Customer Filter */}
             <Grid item xs={12} md={6}>
               <Autocomplete
@@ -349,7 +383,7 @@ export const ReceivableFilters: React.FC<ReceivableFiltersProps> = ({
             </Grid>
 
             {/* Tags Filter */}
-            <Grid item xs={12}>
+            <Grid item xs={12} md={6}>
               <Autocomplete
                 multiple
                 value={selectedTags}
@@ -536,6 +570,20 @@ export const ReceivableFilters: React.FC<ReceivableFiltersProps> = ({
                         color="error"
                         variant="outlined"
                         icon={<EventBusyIcon fontSize="small" />}
+                      />
+                    )}
+                    {nextDueMonth && (
+                      <Chip
+                        label={`Próximo vencimento: ${dayjs(
+                          nextDueMonth + '-01'
+                        )
+                          .format('MMMM [de] YYYY')
+                          .replace(/^\w/, c => c.toUpperCase())}`}
+                        size="small"
+                        onDelete={() => onNextDueMonthChange?.(null)}
+                        color="primary"
+                        variant="outlined"
+                        icon={<CalendarMonthIcon fontSize="small" />}
                       />
                     )}
                     {statusFilter.map(status => {
