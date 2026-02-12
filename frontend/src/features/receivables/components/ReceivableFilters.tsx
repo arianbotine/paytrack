@@ -578,7 +578,7 @@ export const ReceivableFilters: React.FC<ReceivableFiltersProps> = ({
                           nextDueMonth + '-01'
                         )
                           .format('MMMM [de] YYYY')
-                          .replace(/^\w/, c => c.toUpperCase())}`}
+                          .replace(/^\w/, (c: string) => c.toUpperCase())}`}
                         size="small"
                         onDelete={() => onNextDueMonthChange?.(null)}
                         color="primary"
