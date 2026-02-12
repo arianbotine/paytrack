@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
+  Edit as EditIcon,
   AccountBalance as PayableIcon,
   RequestQuote as ReceivableIcon,
   KeyboardArrowDown as ExpandMoreIcon,
@@ -39,6 +40,7 @@ import { getMethodLabel } from '../types';
 interface PaymentsTableProps {
   payments: Payment[];
   isLoading: boolean;
+  onEdit: (payment: Payment) => void;
   onDelete: (payment: Payment) => void;
   page: number;
   rowsPerPage: number;
@@ -54,9 +56,10 @@ const PaymentRow = React.forwardRef<
   {
     payment: Payment;
     index: number;
+    onEdit: (payment: Payment) => void;
     onDelete: (payment: Payment) => void;
   }
->(({ payment, index, onDelete }, ref) => {
+>(({ payment, index, onEdit, onDelete }, ref) => {
   const [expanded, setExpanded] = useState(false);
   const hasMultipleAllocations = payment.allocations.length > 1;
   const allocation = payment.allocations[0];
@@ -195,15 +198,26 @@ const PaymentRow = React.forwardRef<
           </Stack>
         </TableCell>
         <TableCell align="right">
-          <Tooltip title="Excluir">
-            <IconButton
-              size="small"
-              color="error"
-              onClick={() => onDelete(payment)}
-            >
-              <DeleteIcon />
-            </IconButton>
-          </Tooltip>
+          <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+            <Tooltip title="Editar">
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => onEdit(payment)}
+              >
+                <EditIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Excluir">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => onDelete(payment)}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
+          </Stack>
         </TableCell>
       </MotionTableRow>
 
@@ -289,6 +303,7 @@ PaymentRow.displayName = 'PaymentRow';
 export const PaymentsTable: React.FC<PaymentsTableProps> = ({
   payments,
   isLoading,
+  onEdit,
   onDelete,
   page,
   rowsPerPage,
@@ -322,6 +337,7 @@ export const PaymentsTable: React.FC<PaymentsTableProps> = ({
             key={payment.id}
             payment={payment}
             index={index}
+            onEdit={onEdit}
             onDelete={onDelete}
           />
         ))}

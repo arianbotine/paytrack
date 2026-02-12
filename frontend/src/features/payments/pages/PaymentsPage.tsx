@@ -3,7 +3,11 @@ import { Box } from '@mui/material';
 import { AnimatedPage } from '../../../shared/components';
 import { PageHeader } from '../../../shared/components/PageHeader';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
-import { PaymentsTable, PaymentFilters } from '../components';
+import {
+  PaymentsTable,
+  PaymentFilters,
+  EditPaymentDialog,
+} from '../components';
 import { usePayments, usePaymentOperations } from '../hooks/usePayments';
 import { useVendors } from '../../payables/hooks/usePayables';
 import { useCustomers } from '../../receivables/hooks/useReceivables';
@@ -12,6 +16,7 @@ import type { Payment } from '../types';
 export const PaymentsPage: React.FC = () => {
   // State
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
 
   // Filter states
@@ -45,11 +50,22 @@ export const PaymentsPage: React.FC = () => {
     setSelectedPayment(null);
   }, []);
 
+  const handleCloseEditDialog = useCallback(() => {
+    setEditDialogOpen(false);
+    setSelectedPayment(null);
+  }, []);
+
   const { deleteMutation, isDeleting } = usePaymentOperations({
     onDeleteSuccess: handleCloseDeleteDialog,
+    onUpdateSuccess: handleCloseEditDialog,
   });
 
   // Handlers
+  const handleEdit = useCallback((payment: Payment) => {
+    setSelectedPayment(payment);
+    setEditDialogOpen(true);
+  }, []);
+
   const handleDelete = useCallback((payment: Payment) => {
     setSelectedPayment(payment);
     setDeleteDialogOpen(true);
@@ -132,6 +148,7 @@ export const PaymentsPage: React.FC = () => {
         <PaymentsTable
           payments={payments}
           isLoading={isLoading}
+          onEdit={handleEdit}
           onDelete={handleDelete}
           page={page}
           rowsPerPage={rowsPerPage}
@@ -140,6 +157,12 @@ export const PaymentsPage: React.FC = () => {
           onRowsPerPageChange={e =>
             handleRowsPerPageChange(Number.parseInt(e.target.value, 10))
           }
+        />
+
+        <EditPaymentDialog
+          open={editDialogOpen}
+          onClose={handleCloseEditDialog}
+          payment={selectedPayment}
         />
 
         <ConfirmDialog

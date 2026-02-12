@@ -169,3 +169,27 @@ export class PaymentFilterDto {
   @Type(() => Number)
   take?: number;
 }
+
+export class UpdatePaymentDto {
+  @ApiProperty({ example: '2025-12-08T14:30:00.000Z' })
+  @IsDateString()
+  paymentDate!: string;
+
+  @ApiPropertyOptional({ enum: PaymentMethod, example: PaymentMethod.PIX })
+  @IsEnum(PaymentMethod)
+  @IsOptional()
+  paymentMethod?: PaymentMethod;
+
+  @ApiPropertyOptional({
+    example: 'Comprovante PIX 123456',
+    description: 'Referência ou comprovante do pagamento',
+  })
+  @IsString()
+  @IsOptional()
+  reference?: string;
+
+  @ApiPropertyOptional({ example: 'Observações do pagamento' })
+  @IsString()
+  @IsOptional()
+  notes?: string;
+}

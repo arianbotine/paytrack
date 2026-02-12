@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Body,
   Param,
@@ -13,6 +14,7 @@ import {
   CreatePaymentDto,
   QuickPaymentDto,
   PaymentFilterDto,
+  UpdatePaymentDto,
 } from './dto/payment.dto';
 import { CurrentUser, Roles } from '../../shared/decorators';
 import { Idempotent } from '../../shared/decorators/idempotent.decorator';
@@ -62,6 +64,19 @@ export class PaymentsController {
     @Body() dto: QuickPaymentDto
   ) {
     return this.paymentsService.quickPayment(organizationId, dto);
+  }
+
+  @Patch(':id')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
+  @ApiOperation({
+    summary: 'Atualizar data de registro e informações do pagamento',
+  })
+  async update(
+    @Param('id') id: string,
+    @CurrentUser('organizationId') organizationId: string,
+    @Body() updateDto: UpdatePaymentDto
+  ) {
+    return this.paymentsService.update(id, organizationId, updateDto);
   }
 
   @Delete(':id')

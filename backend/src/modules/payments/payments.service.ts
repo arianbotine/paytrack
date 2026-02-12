@@ -3,11 +3,13 @@ import {
   CreatePaymentDto,
   QuickPaymentDto,
   PaymentFilterDto,
+  UpdatePaymentDto,
 } from './dto/payment.dto';
 import {
   CreatePaymentUseCase,
   QuickPaymentUseCase,
   DeletePaymentUseCase,
+  UpdatePaymentUseCase,
   ListPaymentsUseCase,
   GetPaymentUseCase,
 } from './use-cases';
@@ -25,6 +27,7 @@ export class PaymentsService {
     private readonly createPaymentUseCase: CreatePaymentUseCase,
     private readonly quickPaymentUseCase: QuickPaymentUseCase,
     private readonly deletePaymentUseCase: DeletePaymentUseCase,
+    private readonly updatePaymentUseCase: UpdatePaymentUseCase,
     private readonly listPaymentsUseCase: ListPaymentsUseCase,
     private readonly getPaymentUseCase: GetPaymentUseCase
   ) {}
@@ -43,6 +46,14 @@ export class PaymentsService {
 
   async quickPayment(organizationId: string, dto: QuickPaymentDto) {
     return this.quickPaymentUseCase.execute(organizationId, dto);
+  }
+
+  async update(
+    id: string,
+    organizationId: string,
+    updateDto: UpdatePaymentDto
+  ) {
+    return this.updatePaymentUseCase.execute(id, organizationId, updateDto);
   }
 
   async remove(id: string, organizationId: string) {

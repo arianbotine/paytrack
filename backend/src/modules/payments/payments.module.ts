@@ -17,6 +17,7 @@ import {
   CreatePaymentUseCase,
   QuickPaymentUseCase,
   DeletePaymentUseCase,
+  UpdatePaymentUseCase,
   ListPaymentsUseCase,
   GetPaymentUseCase,
 } from './use-cases';
@@ -39,6 +40,7 @@ import {
     CreatePaymentUseCase,
     QuickPaymentUseCase,
     DeletePaymentUseCase,
+    UpdatePaymentUseCase,
     ListPaymentsUseCase,
     GetPaymentUseCase,
   ],

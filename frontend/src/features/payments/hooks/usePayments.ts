@@ -183,21 +183,64 @@ export const useDeletePayment = (onSuccess?: () => void) => {
   });
 };
 
+export const useUpdatePayment = (onSuccess?: () => void) => {
+  const queryClient = useQueryClient();
+  const { showNotification } = useUIStore();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: {
+        paymentDate: string;
+        paymentMethod?: string;
+        reference?: string;
+        notes?: string;
+      };
+    }) => {
+      const payload = {
+        paymentDate: toUTCDatetime(data.paymentDate),
+        ...(data.paymentMethod && { paymentMethod: data.paymentMethod }),
+        ...(data.reference !== undefined && { reference: data.reference }),
+        ...(data.notes !== undefined && { notes: data.notes }),
+      };
+      return api.patch(`/payments/${id}`, payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: paymentKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['payables'] });
+      queryClient.invalidateQueries({ queryKey: ['receivables'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showNotification('Pagamento atualizado com sucesso!', 'success');
+      onSuccess?.();
+    },
+    onError: () => {
+      showNotification('Erro ao atualizar pagamento', 'error');
+    },
+  });
+};
+
 // ============================================================
 // Combined Hook for Payment Operations
 // ============================================================
 
 export const usePaymentOperations = (callbacks?: {
   onCreateSuccess?: () => void;
+  onUpdateSuccess?: () => void;
   onDeleteSuccess?: () => void;
 }) => {
   const createMutation = useCreatePayment(callbacks?.onCreateSuccess);
+  const updateMutation = useUpdatePayment(callbacks?.onUpdateSuccess);
   const deleteMutation = useDeletePayment(callbacks?.onDeleteSuccess);
 
   return {
     createMutation,
+    updateMutation,
     deleteMutation,
     isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
   };
 };
