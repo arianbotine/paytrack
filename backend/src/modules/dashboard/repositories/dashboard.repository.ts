@@ -89,7 +89,7 @@ export class DashboardRepository {
     organizationId: string,
     _startDate: Date,
     referenceDate: Date,
-    limit = 10
+    limit = 1000
   ) {
     const referenceDateStr = referenceDate.toISOString().split('T')[0];
 
@@ -206,7 +206,7 @@ export class DashboardRepository {
     organizationId: string,
     _startDate: Date,
     referenceDate: Date,
-    limit = 10
+    limit = 1000
   ) {
     const referenceDateStr = referenceDate.toISOString().split('T')[0];
 
@@ -323,7 +323,7 @@ export class DashboardRepository {
     organizationId: string,
     startDate: Date,
     endDate: Date,
-    limit = 10
+    limit = 1000
   ) {
     // Primeiro buscar os payables que têm installments próximos
     const payableIds = await this.prisma.payableInstallment.findMany({
@@ -438,7 +438,7 @@ export class DashboardRepository {
     organizationId: string,
     startDate: Date,
     endDate: Date,
-    limit = 10
+    limit = 1000
   ) {
     // Primeiro buscar os receivables que têm installments próximos
     const receivableIds = await this.prisma.receivableInstallment.findMany({

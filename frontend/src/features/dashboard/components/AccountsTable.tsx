@@ -199,7 +199,7 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
             <TableContainer
               component={Paper}
               variant="outlined"
-              sx={{ borderRadius: 2 }}
+              sx={{ borderRadius: 2, maxHeight: 400, overflow: 'auto' }}
             >
               <Table size="small">
                 <TableHead>
@@ -209,7 +209,7 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {accounts.slice(0, 5).map((account, index) => (
+                  {accounts.map((account, index) => (
                     <motion.tr
                       key={account.id}
                       initial={{ opacity: 0, x: -10 }}

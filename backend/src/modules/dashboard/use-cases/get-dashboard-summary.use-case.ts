@@ -100,29 +100,36 @@ export class GetDashboardSummaryUseCase {
       allReceivableInstallments
     );
 
-    const toReceive =
+    const currentToReceive =
+      this.dashboardCalculator.calculateToReceive(receivableTotals);
+    const currentToPay = this.dashboardCalculator.calculateToPay(payableTotals);
+
+    const totalToReceive =
       this.dashboardCalculator.calculateToReceive(allReceivableTotals);
-    const toPay = this.dashboardCalculator.calculateToPay(allPayableTotals);
-    const netBalance = this.dashboardCalculator.calculateNetBalance(
-      toReceive,
-      toPay
+    const totalToPay =
+      this.dashboardCalculator.calculateToPay(allPayableTotals);
+    const totalNetBalance = this.dashboardCalculator.calculateNetBalance(
+      totalToReceive,
+      totalToPay
     );
 
     return {
       payableInstallments: {
         totals: payableTotals,
+        toPay: currentToPay,
         overdue: overduePayableInstallments,
         upcoming: upcomingPayableInstallments,
       },
       receivableInstallments: {
         totals: receivableTotals,
+        toReceive: currentToReceive,
         overdue: overdueReceivableInstallments,
         upcoming: upcomingReceivableInstallments,
       },
       balance: {
-        toReceive,
-        toPay,
-        net: netBalance,
+        toReceive: totalToReceive,
+        toPay: totalToPay,
+        net: totalNetBalance,
       },
     };
   }

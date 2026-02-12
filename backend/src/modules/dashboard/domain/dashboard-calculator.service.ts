@@ -41,9 +41,9 @@ export class DashboardCalculator {
     };
 
     for (const group of grouped) {
-      const amount = Number(group._sum.amount || 0);
-      const paidAmount = Number(
-        group._sum.paidAmount || group._sum.receivedAmount || 0
+      const amount = this.safeNumber(group._sum.amount);
+      const paidAmount = this.safeNumber(
+        group._sum.paidAmount || group._sum.receivedAmount
       );
       const remaining = amount - paidAmount;
 
@@ -64,6 +64,12 @@ export class DashboardCalculator {
     }
 
     return totals;
+  }
+
+  private safeNumber(value: Decimal | null | undefined): number {
+    if (value == null) return 0;
+    const num = Number(value);
+    return isNaN(num) ? 0 : num;
   }
 
   /**

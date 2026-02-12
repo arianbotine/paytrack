@@ -1,11 +1,22 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Grid, Typography, Skeleton, Button } from '@mui/material';
+import {
+  Box,
+  Grid,
+  Typography,
+  Skeleton,
+  Button,
+  Chip,
+  Divider,
+} from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
   Refresh as RefreshIcon,
+  CalendarToday as CalendarTodayIcon,
+  Timeline as TimelineIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { AxiosError } from 'axios';
 import { api } from '@/lib/api';
@@ -27,6 +38,7 @@ interface DashboardData {
       overdue: number;
       count: number;
     };
+    toPay: number;
     overdue: any[];
     upcoming: any[];
   };
@@ -39,6 +51,7 @@ interface DashboardData {
       overdue: number;
       count: number;
     };
+    toReceive: number;
     overdue: any[];
     upcoming: any[];
   };
@@ -51,7 +64,12 @@ interface DashboardData {
 
 // Generate mock cash flow data based on current balance
 function generateCashFlowData(balance: DashboardData['balance']) {
-  const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
+  const months = [];
+  const now = new Date();
+  for (let i = 0; i < 6; i++) {
+    const date = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    months.push(date.toLocaleDateString('pt-BR', { month: 'short' }));
+  }
   const baseReceivables = balance.toReceive / 3;
   const basePayables = balance.toPay / 3;
 
@@ -174,54 +192,122 @@ export function DashboardPage() {
               Atualizar
             </Button>
           </Box>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Visão geral das finanças do mês vigente (
-            {new Date().toLocaleDateString('pt-BR', {
-              month: 'long',
-              year: 'numeric',
-            })}
-            )
-          </Typography>
-
-          {/* Summary Cards */}
-          <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={6} md={3}>
-              <SummaryCard
-                title="A Receber"
-                value={data.balance.toReceive}
-                subtitle={`${data.receivableInstallments.totals.count} contas`}
-                color="#16a34a"
-                icon={<TrendingUpIcon />}
+          {/* Resumo do Mês Vigente */}
+          <Box sx={{ mb: 4 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                mb: 2,
+              }}
+            >
+              <CalendarTodayIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+              <Typography variant="h6" fontWeight="bold">
+                Resumo do Mês Vigente
+              </Typography>
+              <Chip
+                label={new Date().toLocaleDateString('pt-BR', {
+                  month: 'long',
+                  year: 'numeric',
+                })}
+                size="small"
+                color="primary"
+                sx={{ fontWeight: 600 }}
               />
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Valores de contas a receber e a pagar apenas do período atual
+            </Typography>
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6} md={3}>
+                <SummaryCard
+                  title="A Receber"
+                  value={data.receivableInstallments.toReceive || 0}
+                  subtitle={`${data.receivableInstallments.totals.count} contas`}
+                  color="#16a34a"
+                  icon={<TrendingUpIcon />}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <SummaryCard
+                  title="A Pagar"
+                  value={data.payableInstallments.toPay || 0}
+                  subtitle={`${data.payableInstallments.totals.count} contas`}
+                  color="#dc2626"
+                  icon={<TrendingDownIcon />}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <SummaryCard
+                  title="Recebido"
+                  value={data.receivableInstallments.totals.paid || 0}
+                  subtitle="No período"
+                  color="#10b981"
+                  icon={<CheckCircleIcon />}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <SummaryCard
+                  title="Pago"
+                  value={data.payableInstallments.totals.paid || 0}
+                  subtitle="No período"
+                  color="#ef4444"
+                  icon={<CheckCircleIcon />}
+                />
+              </Grid>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <SummaryCard
-                title="A Pagar"
-                value={data.balance.toPay}
-                subtitle={`${data.payableInstallments.totals.count} contas`}
-                color="#dc2626"
-                icon={<TrendingDownIcon />}
-              />
-            </Grid>
-          </Grid>
+          </Box>
 
-          {/* Balance Card */}
-          <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12}>
-              <BalanceCard
-                toReceive={data.balance.toReceive}
-                toPay={data.balance.toPay}
-                net={data.balance.net}
-              />
-            </Grid>
-          </Grid>
+          <Divider sx={{ my: 4 }} />
 
-          {/* Charts Row */}
-          <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12}>
-              <CashFlowChart data={cashFlowData} />
+          {/* Visão Projetada */}
+          <Box sx={{ mb: 4 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                mb: 2,
+              }}
+            >
+              <TimelineIcon sx={{ color: 'info.main', fontSize: 20 }} />
+              <Typography variant="h6" fontWeight="bold">
+                Visão Projetada
+              </Typography>
+              <Chip
+                label="Todos os períodos"
+                size="small"
+                color="info"
+                variant="outlined"
+                sx={{ fontWeight: 600 }}
+              />
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Saldo e fluxo de caixa considerando todos os períodos (passado,
+              presente e futuro)
+            </Typography>
+
+            {/* Balance Card */}
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+              <Grid item xs={12}>
+                <BalanceCard
+                  toReceive={data.balance.toReceive || 0}
+                  toPay={data.balance.toPay || 0}
+                  net={data.balance.net || 0}
+                />
+              </Grid>
             </Grid>
-          </Grid>
+
+            {/* Charts Row */}
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <CashFlowChart data={cashFlowData} />
+              </Grid>
+            </Grid>
+          </Box>
+
+          <Divider sx={{ my: 4 }} />
 
           {/* Overdue Tables */}
           <Grid container spacing={3} sx={{ mb: 3 }}>
