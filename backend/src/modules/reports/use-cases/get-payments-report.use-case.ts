@@ -25,8 +25,12 @@ export class GetPaymentsReportUseCase {
       throw new BadRequestException('startDate e endDate são obrigatórios');
     }
 
+    // Normalizar datas para início e fim do dia
     const startDate = new Date(filters.startDate);
+    startDate.setHours(0, 0, 0, 0);
+
     const endDate = new Date(filters.endDate);
+    endDate.setHours(23, 59, 59, 999);
 
     // Validate max period (365 days)
     this.periodCalculator.validateMaxPeriod(startDate, endDate);

@@ -32,6 +32,11 @@ export class PaymentsReportsRepository {
     groupBy: string,
     filters?: PaymentsReportFilterDto
   ): Promise<TimeSeriesData[]> {
+    // Validar e normalizar groupBy
+    const validGroupBy = ['day', 'week', 'month'].includes(groupBy)
+      ? groupBy
+      : 'month';
+
     // Build dynamic WHERE conditions using Prisma.sql
     const categoryFilter =
       filters?.categoryIds && filters.categoryIds.length > 0
@@ -89,7 +94,7 @@ export class PaymentsReportsRepository {
 
     const result = await this.prisma.$queryRaw<TimeSeriesData[]>`
       SELECT
-        DATE_TRUNC('month', p.payment_date) as period,
+        DATE_TRUNC(${validGroupBy}::text, p.payment_date) as period,
         COALESCE(SUM(CASE WHEN pa.payable_installment_id IS NOT NULL THEN pa.amount ELSE 0 END), 0)::DECIMAL as payables,
         COALESCE(SUM(CASE WHEN pa.receivable_installment_id IS NOT NULL THEN pa.amount ELSE 0 END), 0)::DECIMAL as receivables,
         COUNT(DISTINCT p.id) as count

@@ -5,3 +5,4 @@ export { ReportCard } from './components/ReportCard';
 export { ReportSkeleton } from './components/ReportSkeleton';
 export { PaymentsAreaChart } from './components/PaymentsAreaChart';
 export { PaymentsBarChart } from './components/PaymentsBarChart';
+export { exportPaymentsReportToCSV } from './utils/export-report';

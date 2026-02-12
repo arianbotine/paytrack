@@ -19,7 +19,13 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import { useTheme } from '@mui/material/styles';
-import { usePaymentsReport } from '../hooks/useReports';
+import {
+  usePaymentsReport,
+  useReportCategories,
+  useReportTags,
+  useReportVendors,
+  useReportCustomers,
+} from '../hooks/useReports';
 import { ReportCard } from '../components/ReportCard';
 import { ReportSkeleton } from '../components/ReportSkeleton';
 import { PaymentsAreaChart } from '../components/PaymentsAreaChart';
@@ -27,6 +33,7 @@ import { PaymentsBarChart } from '../components/PaymentsBarChart';
 import { ReportFilters as ReportFiltersComponent } from '../components/ReportFilters';
 import { EmptyState } from '../../../shared/components/EmptyState';
 import { calculateDateRange } from '../utils/period-calculator';
+import { exportPaymentsReportToCSV } from '../utils/export-report';
 import type { ReportFilters, ChartType } from '../types';
 
 export default function PaymentsReportPage() {
@@ -92,6 +99,34 @@ export default function PaymentsReportPage() {
     }
   };
 
+  // Buscar dados dos filtros para labels na exportação
+  const { data: categories = [] } = useReportCategories();
+  const { data: tags = [] } = useReportTags();
+  const { data: vendors = [] } = useReportVendors();
+  const { data: customers = [] } = useReportCustomers();
+
+  const handleExport = () => {
+    if (!data) return;
+
+    // Obter nomes dos filtros aplicados
+    const filterLabels = {
+      categories: categories
+        .filter(cat => filters.categoryIds?.includes(cat.id))
+        .map(cat => cat.name),
+      tags: tags
+        .filter(tag => filters.tagIds?.includes(tag.id))
+        .map(tag => tag.name),
+      vendors: vendors
+        .filter(vendor => filters.vendorIds?.includes(vendor.id))
+        .map(vendor => vendor.name),
+      customers: customers
+        .filter(customer => filters.customerIds?.includes(customer.id))
+        .map(customer => customer.name),
+    };
+
+    exportPaymentsReportToCSV(data, filters, filterLabels);
+  };
+
   // Fetch data
   const { data, isLoading, error, refetch } = usePaymentsReport({
     ...filters,
@@ -153,12 +188,13 @@ export default function PaymentsReportPage() {
               identifique tendências para melhor tomada de decisão.
             </Typography>
           </Box>
-          <Tooltip title="Em breve">
+          <Tooltip title="Exportar relatório em formato CSV">
             <span>
               <Button
                 variant="outlined"
                 startIcon={<FileDownloadIcon />}
-                disabled
+                onClick={handleExport}
+                disabled={isLoading || !data || hasNoData}
               >
                 Exportar
               </Button>
