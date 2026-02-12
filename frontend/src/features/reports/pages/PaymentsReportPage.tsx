@@ -19,6 +19,12 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import { useTheme } from '@mui/material/styles';
+import { useAuthStore } from '@/lib/stores/authStore';
+import {
+  getOrganizationStorage,
+  setOrganizationStorage,
+  migrateToOrganizationStorage,
+} from '@/shared/utils/organization-storage';
 import {
   usePaymentsReport,
   useReportCategories,
@@ -38,55 +44,85 @@ import type { ReportFilters, ChartType } from '../types';
 
 export default function PaymentsReportPage() {
   const theme = useTheme();
+  const user = useAuthStore(state => state.user);
+  const organizationId = user?.currentOrganization?.id;
 
   // Estado de filtros com valores padrões adequados
   const [filters, setFilters] = useState<ReportFilters>(() => {
-    const stored = localStorage.getItem('paymentsReportFilters');
+    if (!organizationId) {
+      const { startDate, endDate } = calculateDateRange('last30');
+      return { startDate, endDate, groupBy: 'month' };
+    }
+
+    // Migrar dados antigos (sem organizationId) para novo formato
+    migrateToOrganizationStorage(
+      organizationId,
+      'paymentsReportFilters',
+      'reports:payments:filters'
+    );
+
+    // Buscar filtros salvos com escopo de organização
+    const stored = getOrganizationStorage<ReportFilters>(
+      organizationId,
+      'reports:payments:filters'
+    );
+
     if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        // Migrar filtros antigos que usavam 'period'
-        if ('period' in parsed) {
-          // Limpar localStorage antigo
-          localStorage.removeItem('paymentsReportFilters');
-          // Usar padrão
-          const { startDate, endDate } = calculateDateRange('last30');
-          return { startDate, endDate, groupBy: parsed.groupBy || 'month' };
-        }
-        // Validar que tem startDate e endDate válidos
-        if (
-          parsed.startDate &&
-          parsed.endDate &&
-          typeof parsed.startDate === 'string' &&
-          typeof parsed.endDate === 'string' &&
-          parsed.startDate.length > 0 &&
-          parsed.endDate.length > 0
-        ) {
-          return parsed;
-        }
-      } catch {
-        // Se houver erro ao parsear, limpar localStorage
-        localStorage.removeItem('paymentsReportFilters');
+      // Validar que tem startDate e endDate válidos
+      if (
+        stored.startDate &&
+        stored.endDate &&
+        typeof stored.startDate === 'string' &&
+        typeof stored.endDate === 'string' &&
+        stored.startDate.length > 0 &&
+        stored.endDate.length > 0
+      ) {
+        return stored;
       }
     }
+
     // Padrão: últimos 30 dias
     const { startDate, endDate } = calculateDateRange('last30');
     return { startDate, endDate, groupBy: 'month' };
   });
 
   const [chartType, setChartType] = useState<ChartType>(() => {
-    const stored = localStorage.getItem('paymentsReportChartType');
-    return (stored as ChartType) || 'area';
+    if (!organizationId) return 'area';
+
+    // Migrar dados antigos
+    migrateToOrganizationStorage(
+      organizationId,
+      'paymentsReportChartType',
+      'reports:payments:chartType'
+    );
+
+    const stored = getOrganizationStorage<ChartType>(
+      organizationId,
+      'reports:payments:chartType'
+    );
+    return stored || 'area';
   });
 
-  // Persist filters and chart type
+  // Persist filters and chart type com escopo de organização
   useEffect(() => {
-    localStorage.setItem('paymentsReportFilters', JSON.stringify(filters));
-  }, [filters]);
+    if (organizationId) {
+      setOrganizationStorage(
+        organizationId,
+        'reports:payments:filters',
+        filters
+      );
+    }
+  }, [filters, organizationId]);
 
   useEffect(() => {
-    localStorage.setItem('paymentsReportChartType', chartType);
-  }, [chartType]);
+    if (organizationId) {
+      setOrganizationStorage(
+        organizationId,
+        'reports:payments:chartType',
+        chartType
+      );
+    }
+  }, [chartType, organizationId]);
 
   const handleFiltersChange = (newFilters: ReportFilters) => {
     // Garantir que sempre temos startDate e endDate válidos

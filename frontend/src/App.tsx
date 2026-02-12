@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore, isAuthenticated } from './lib/stores/authStore';
 import { useServerKeepAlive } from './lib/hooks/useServerKeepAlive';
+import { useOrganizationChangeHandler } from './lib/hooks/useOrganizationChangeHandler';
 import { MainLayout } from './shared/components/Layout/MainLayout';
 import { AdminLayout } from './shared/components/Layout/AdminLayout';
 import { GlobalNotification } from './shared/components/GlobalNotification';
@@ -124,6 +125,10 @@ function AdminRoute({ children }: Readonly<{ children: React.ReactNode }>) {
 function App() {
   // Hook global para manter servidor ativo (ping a cada 5 minutos)
   useServerKeepAlive();
+
+  // CRÍTICO: Hook para detectar troca de organização e limpar todos os caches
+  // Previne vazamento de dados entre organizações
+  useOrganizationChangeHandler();
 
   return (
     <ErrorBoundary>

@@ -22,6 +22,7 @@ import { Business, SwapHoriz } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useQueryClient } from '@tanstack/react-query';
+import { clearOrganizationStorage } from '@/shared/utils/organization-storage';
 
 interface OrganizationSwitcherProps {
   readonly onClose: () => void;
@@ -38,20 +39,42 @@ export function OrganizationSwitcher({ onClose }: OrganizationSwitcherProps) {
     setLoading(true);
     setError('');
 
+    // Organização atual (antes da troca)
+    const previousOrgId = user?.currentOrganization?.id;
+
     try {
       const response = await api.post('/auth/select-organization', {
         organizationId,
       });
       const { user: updatedUser, accessToken } = response.data;
-      setAuth(updatedUser, accessToken);
 
-      // Clear all cached queries to refresh data for the new organization
+      console.log(
+        `[SECURITY] Trocando organização: ${previousOrgId} -> ${organizationId}`
+      );
+
+      // 1. Limpar TODOS os caches do TanStack Query
+      // CRÍTICO: Deve ser ANTES de atualizar o auth para evitar race conditions
       queryClient.clear();
 
-      // Navigate to dashboard
-      navigate('/dashboard');
+      // 2. Limpar localStorage da organização ANTERIOR
+      if (previousOrgId) {
+        clearOrganizationStorage(previousOrgId);
+      }
+
+      // 3. Atualizar autenticação com nova organização
+      setAuth(updatedUser, accessToken);
+
+      // 4. Resetar scroll
+      window.scrollTo(0, 0);
+
+      // 5. Navegar para dashboard
+      navigate('/dashboard', { replace: true });
+
+      console.log('[SECURITY] Troca de organização concluída com sucesso');
+
       onClose();
     } catch (err: any) {
+      console.error('[SECURITY] Erro ao trocar organização:', err);
       setError(err.response?.data?.message || 'Erro ao trocar organização');
     } finally {
       setLoading(false);
