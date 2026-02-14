@@ -55,6 +55,9 @@ model Organization {
   phone     String?
   address   String?
   isActive  Boolean  @default(true)
+  notificationLeadDays      Int      @default(7) @map("notification_lead_days")
+  notificationPollingSeconds Int      @default(60) @map("notification_polling_seconds")
+  showOverdueNotifications  Boolean  @default(true) @map("show_overdue_notifications")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

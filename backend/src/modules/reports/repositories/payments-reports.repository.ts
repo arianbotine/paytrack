@@ -213,22 +213,28 @@ export class PaymentsReportsRepository {
     `;
 
     const totalResult = await this.prisma.$queryRaw<{ count: bigint }[]>`
-      SELECT COUNT(DISTINCT c.id) as count
-      FROM payments p
-      JOIN payment_allocations pa ON p.id = pa.payment_id
-      LEFT JOIN payable_installments pi ON pa.payable_installment_id = pi.id
-      LEFT JOIN payables pay ON pi.payable_id = pay.id
-      LEFT JOIN receivable_installments ri ON pa.receivable_installment_id = ri.id
-      LEFT JOIN receivables rec ON ri.receivable_id = rec.id
-      LEFT JOIN categories c ON (c.id = pay.category_id OR c.id = rec.category_id)
-      WHERE p.organization_id = ${organizationId}
-        AND p.payment_date >= ${startDate}
-        AND p.payment_date <= ${endDate}
-        AND c.id IS NOT NULL
-        ${categoryFilter}
-        ${vendorFilter}
-        ${customerFilter}
-        ${tagFilter}
+      WITH category_data AS (
+        SELECT
+          c.id
+        FROM payments p
+        JOIN payment_allocations pa ON p.id = pa.payment_id
+        LEFT JOIN payable_installments pi ON pa.payable_installment_id = pi.id
+        LEFT JOIN payables pay ON pi.payable_id = pay.id
+        LEFT JOIN receivable_installments ri ON pa.receivable_installment_id = ri.id
+        LEFT JOIN receivables rec ON ri.receivable_id = rec.id
+        LEFT JOIN categories c ON (c.id = pay.category_id OR c.id = rec.category_id)
+        WHERE p.organization_id = ${organizationId}
+          AND p.payment_date >= ${startDate}
+          AND p.payment_date <= ${endDate}
+          AND c.id IS NOT NULL
+          ${categoryFilter}
+          ${vendorFilter}
+          ${customerFilter}
+          ${tagFilter}
+        GROUP BY c.id
+      )
+      SELECT COUNT(*)::bigint as count
+      FROM category_data
     `;
 
     return {

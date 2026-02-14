@@ -17,6 +17,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HealthModule } from './modules/health/health.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SerializationInterceptor } from './shared/interceptors/serialization.interceptor';
 import { IdempotencyInterceptor } from './shared/interceptors/idempotency.interceptor';
 import { CacheModule } from './shared/modules/cache.module';
@@ -48,6 +49,7 @@ import { CacheModule } from './shared/modules/cache.module';
     DashboardModule,
     HealthModule,
     ReportsModule,
+    NotificationsModule,
   ],
   providers: [
     {

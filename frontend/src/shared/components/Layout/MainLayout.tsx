@@ -41,11 +41,13 @@ import {
   AdminPanelSettings as AdminIcon,
   Business as BusinessIcon,
   Lock as LockIcon,
+  Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useUIStore } from '@/lib/stores/uiStore';
 import { api } from '@/lib/api';
 import { OrganizationSwitcher } from '../OrganizationSwitcher';
+import { NotificationCenter } from '@/features/notifications/components/NotificationCenter';
 
 const drawerWidth = 260;
 const miniWidth = 64;
@@ -71,6 +73,12 @@ const menuItems = [
     text: 'Usuários',
     icon: <UsersIcon />,
     path: '/users',
+    roles: ['OWNER', 'ADMIN'],
+  },
+  {
+    text: 'Configurações',
+    icon: <SettingsIcon />,
+    path: '/organization-settings',
     roles: ['OWNER', 'ADMIN'],
   },
 ];
@@ -121,6 +129,11 @@ export function MainLayout() {
   const handleChangePassword = () => {
     handleCloseMenu();
     navigate('/change-password');
+  };
+
+  const handleOrganizationSettings = () => {
+    handleCloseMenu();
+    navigate('/organization-settings');
   };
 
   const handleOrganizationSwitcher = () => {
@@ -272,6 +285,8 @@ export function MainLayout() {
 
           <Box sx={{ flexGrow: 1 }} />
 
+          <NotificationCenter />
+
           <Tooltip title={themeMode === 'dark' ? 'Modo claro' : 'Modo escuro'}>
             <IconButton
               onClick={toggleThemeMode}
@@ -330,6 +345,12 @@ export function MainLayout() {
                 <LockIcon fontSize="small" />
               </ListItemIcon>
               Alterar Senha
+            </MenuItem>
+            <MenuItem onClick={handleOrganizationSettings}>
+              <ListItemIcon>
+                <BusinessIcon fontSize="small" />
+              </ListItemIcon>
+              Config. Organização
             </MenuItem>
             <Divider />
             <MenuItem onClick={handleLogout}>

@@ -4,6 +4,10 @@ import {
   IsEmail,
   IsNotEmpty,
   ValidateIf,
+  IsInt,
+  Min,
+  Max,
+  IsBoolean,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
@@ -35,6 +39,38 @@ export class CreateOrganizationDto {
   @IsString()
   @IsOptional()
   address?: string;
+
+  @ApiPropertyOptional({
+    example: 7,
+    minimum: 1,
+    maximum: 60,
+    description: 'Dias de antecedência para alertas de vencimento',
+  })
+  @IsInt()
+  @Min(1)
+  @Max(60)
+  @IsOptional()
+  notificationLeadDays?: number;
+
+  @ApiPropertyOptional({
+    example: 60,
+    minimum: 15,
+    maximum: 300,
+    description: 'Intervalo de polling das notificações (segundos)',
+  })
+  @IsInt()
+  @Min(15)
+  @Max(300)
+  @IsOptional()
+  notificationPollingSeconds?: number;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Se deve incluir contas vencidas nas notificações',
+  })
+  @IsBoolean()
+  @IsOptional()
+  showOverdueNotifications?: boolean;
 }
 
 export class UpdateOrganizationDto extends PartialType(CreateOrganizationDto) {}

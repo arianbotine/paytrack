@@ -154,6 +154,7 @@ export const useCreatePayment = (onSuccess?: () => void) => {
       queryClient.invalidateQueries({ queryKey: ['payables'] });
       queryClient.invalidateQueries({ queryKey: ['receivables'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       showNotification('Pagamento registrado com sucesso!', 'success');
       onSuccess?.();
     },
@@ -174,6 +175,7 @@ export const useDeletePayment = (onSuccess?: () => void) => {
       queryClient.invalidateQueries({ queryKey: ['payables'] });
       queryClient.invalidateQueries({ queryKey: ['receivables'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       showNotification('Pagamento excluído com sucesso!', 'success');
       onSuccess?.();
     },
@@ -213,6 +215,7 @@ export const useUpdatePayment = (onSuccess?: () => void) => {
       queryClient.invalidateQueries({ queryKey: ['payables'] });
       queryClient.invalidateQueries({ queryKey: ['receivables'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       showNotification('Pagamento atualizado com sucesso!', 'success');
       onSuccess?.();
     },

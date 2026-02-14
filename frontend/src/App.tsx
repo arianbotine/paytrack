@@ -101,6 +101,11 @@ const PaymentsReportPage = lazy(() =>
     default: m.default,
   }))
 );
+const OrganizationSettingsPage = lazy(() =>
+  import('./features/organization/pages/OrganizationSettingsPage').then(m => ({
+    default: m.OrganizationSettingsPage,
+  }))
+);
 
 function PrivateRoute({ children }: Readonly<{ children: React.ReactNode }>) {
   const authenticated = useAuthStore(isAuthenticated);
@@ -164,6 +169,10 @@ function App() {
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="change-password" element={<ChangePasswordPage />} />
+            <Route
+              path="organization-settings"
+              element={<OrganizationSettingsPage />}
+            />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="reports/payments" element={<PaymentsReportPage />} />
             <Route path="payables" element={<PayablesPage />} />

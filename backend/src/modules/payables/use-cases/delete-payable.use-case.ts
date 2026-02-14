@@ -1,11 +1,6 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PayablesRepository } from '../repositories';
 import { CacheService } from '../../../shared/services/cache.service';
-import { AccountStatus } from '@prisma/client';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
 
 /**
@@ -53,10 +48,7 @@ export class DeletePayableUseCase {
 
     // Limpar payments órfãos (que não têm mais allocations)
     if (relatedPaymentIds.size > 0) {
-      await this.cleanupOrphanedPayments(
-        Array.from(relatedPaymentIds),
-        organizationId
-      );
+      await this.cleanupOrphanedPayments(Array.from(relatedPaymentIds));
     }
 
     // Invalidar cache
@@ -68,10 +60,7 @@ export class DeletePayableUseCase {
   /**
    * Remove payments que não têm mais allocations após exclusão de conta
    */
-  private async cleanupOrphanedPayments(
-    paymentIds: string[],
-    organizationId: string
-  ) {
+  private async cleanupOrphanedPayments(paymentIds: string[]) {
     for (const paymentId of paymentIds) {
       // Verificar se o payment ainda tem allocations
       const allocationCount = await this.prisma.paymentAllocation.count({

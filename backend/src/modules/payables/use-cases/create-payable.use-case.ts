@@ -1,5 +1,4 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import {
   PayablesRepository,
   PayableInstallmentsRepository,
@@ -167,7 +166,7 @@ export class CreatePayableUseCase {
 
     // Calcular valor total do pagamento (soma das parcelas selecionadas)
     const totalAmount = selectedInstallments.reduce(
-      (sum: number, inst: Prisma.PayableInstallmentGetPayload<{}>) =>
+      (sum: number, inst: (typeof selectedInstallments)[number]) =>
         sum + Number(inst.amount),
       0
     );
@@ -178,7 +177,7 @@ export class CreatePayableUseCase {
 
     // Criar alocações para cada parcela selecionada
     const allocations = selectedInstallments.map(
-      (inst: Prisma.PayableInstallmentGetPayload<{}>) => ({
+      (inst: (typeof selectedInstallments)[number]) => ({
         payableInstallmentId: inst.id,
         amount: Number(inst.amount),
       })

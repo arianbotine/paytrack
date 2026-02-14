@@ -43,6 +43,9 @@ describe('Organization - GET (e2e)', () => {
       expect(response.body).toHaveProperty('email');
       expect(response.body).toHaveProperty('phone');
       expect(response.body).toHaveProperty('address');
+      expect(response.body).toHaveProperty('notificationLeadDays');
+      expect(response.body).toHaveProperty('notificationPollingSeconds');
+      expect(response.body).toHaveProperty('showOverdueNotifications');
     });
 
     it('deve retornar 401 sem autenticação', () => {
