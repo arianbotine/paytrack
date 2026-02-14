@@ -15,6 +15,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import {
   Notifications as NotificationsIcon,
   Payments as PayableIcon,
@@ -37,6 +38,24 @@ import { useDueAlerts } from '../hooks/useDueAlerts';
 import type { DueAlertItem } from '../types';
 
 const DISMISSED_STORAGE_KEY = 'notifications:dismissed';
+
+const getTagChipStyles = (
+  color: string | null | undefined
+): Record<string, unknown> => {
+  if (!color) {
+    return {
+      bgcolor: 'action.hover',
+      color: 'text.secondary',
+      borderColor: 'divider',
+    };
+  }
+
+  return {
+    bgcolor: alpha(color, 0.14),
+    color,
+    borderColor: alpha(color, 0.34),
+  };
+};
 
 export function NotificationCenter() {
   const navigate = useNavigate();
@@ -168,9 +187,10 @@ export function NotificationCenter() {
       sx={{
         border: 1,
         borderColor: alert.isOverdue ? 'error.light' : 'warning.light',
-        borderRadius: 1,
+        borderRadius: 1.5,
         mb: 1,
         bgcolor: alert.isOverdue ? 'error.50' : 'warning.50',
+        pr: 10,
       }}
       secondaryAction={
         <Button
@@ -184,21 +204,81 @@ export function NotificationCenter() {
     >
       <ListItemText
         primary={
-          <Stack direction="row" spacing={1} alignItems="center">
-            {alert.accountType === 'PAYABLE' ? (
-              <PayableIcon fontSize="small" color="error" />
-            ) : (
-              <ReceivableIcon fontSize="small" color="success" />
-            )}
-            <Typography variant="body2" fontWeight={600}>
-              {alert.counterpartyName}
-            </Typography>
-            <Chip
-              label={alert.isOverdue ? 'Vencida' : 'A vencer'}
-              size="small"
-              color={alert.isOverdue ? 'error' : 'warning'}
-              variant="outlined"
-            />
+          <Stack spacing={1}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              {alert.accountType === 'PAYABLE' ? (
+                <PayableIcon fontSize="small" color="error" />
+              ) : (
+                <ReceivableIcon fontSize="small" color="success" />
+              )}
+              <Typography variant="body2" fontWeight={700}>
+                {alert.counterpartyName}
+              </Typography>
+              <Chip
+                label={alert.isOverdue ? 'Vencida' : 'A vencer'}
+                size="small"
+                color={alert.isOverdue ? 'error' : 'warning'}
+                variant="outlined"
+                sx={{
+                  height: 22,
+                  '& .MuiChip-label': { px: 1, fontWeight: 600 },
+                }}
+              />
+            </Stack>
+
+            <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
+              <Chip
+                size="small"
+                variant="outlined"
+                label={
+                  alert.accountType === 'PAYABLE'
+                    ? 'Conta a pagar'
+                    : 'Conta a receber'
+                }
+                sx={{
+                  height: 20,
+                  bgcolor: 'background.paper',
+                  '& .MuiChip-label': { px: 0.9, fontSize: '0.7rem' },
+                }}
+              />
+              {alert.categoryName && (
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={`Categoria: ${alert.categoryName}`}
+                  sx={{
+                    height: 20,
+                    bgcolor: 'background.paper',
+                    '& .MuiChip-label': { px: 0.9, fontSize: '0.7rem' },
+                  }}
+                />
+              )}
+              {alert.tags.slice(0, 3).map(tag => (
+                <Chip
+                  key={tag.id}
+                  size="small"
+                  variant="outlined"
+                  label={tag.name}
+                  sx={{
+                    height: 20,
+                    '& .MuiChip-label': { px: 0.9, fontSize: '0.7rem' },
+                    ...getTagChipStyles(tag.color),
+                  }}
+                />
+              ))}
+              {alert.tags.length > 3 && (
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={`+${alert.tags.length - 3}`}
+                  sx={{
+                    height: 20,
+                    bgcolor: 'background.paper',
+                    '& .MuiChip-label': { px: 0.9, fontSize: '0.7rem' },
+                  }}
+                />
+              )}
+            </Stack>
           </Stack>
         }
         secondary={
