@@ -119,49 +119,55 @@ export function setupRefreshInterceptor(instance: AxiosInstance) {
 /**
  * Interceptor de Server Wakeup
  * Gerencia retry automático quando servidor está em cold start (Render free tier).
- * Usa healthcheck para detectar se servidor está realmente fora do ar vs apenas lento.
+ *
+ * FLUXO:
+ * 1. Qualquer requisição que demorar mais de 10s → testa healthcheck
+ * 2. Se healthcheck demorar mais de 5s (timeout) → exibe modal "servidor acordando"
+ * 3. Erros de rede (ERR_NETWORK, 502, 503, 504) → testa healthcheck + retry automático
+ * 4. A modal é sempre baseada no resultado do healthcheck, nunca diretamente no erro da rota
  */
 export function setupServerWakeupInterceptor(instance: AxiosInstance) {
   const MAX_WAKEUP_RETRIES = 15;
   const WAKEUP_RETRY_DELAY = 5000;
+  /** Timeout do healthcheck: se demorar mais que isso, servidor está lento */
   const HEALTH_CHECK_TIMEOUT = 5000;
+  /** Limiar para considerar uma requisição lenta e acionar o healthcheck */
+  const SLOW_REQUEST_THRESHOLD = 10000;
+
   let wakeupRetryCount = 0;
-  let isCheckingHealth = false;
+  /** Promise em andamento para evitar health checks simultâneos */
+  let healthCheckPromise: Promise<boolean> | null = null;
 
   const isColdServerError = (error: any): boolean => {
-    if (!error.response && error.code === 'ERR_NETWORK') {
-      return true;
-    }
+    if (!error.response && error.code === 'ERR_NETWORK') return true;
     const status = error.response?.status;
     return status === 502 || status === 503 || status === 504;
   };
 
   /**
-   * Verifica se o servidor está realmente fora do ar usando healthcheck.
-   * Como healthcheck não processa nada, se falhar é porque servidor está frio.
+   * Sonda o /health com timeout de 5s.
+   * Retorna true  → servidor saudável e rápido.
+   * Retorna false → servidor lento (timeout) ou fora do ar.
+   * Chamadas concorrentes reutilizam a mesma promise.
    */
-  const checkServerHealth = async (): Promise<boolean> => {
-    // Evita múltiplas verificações simultâneas
-    if (isCheckingHealth) {
-      return false;
-    }
+  const checkServerHealth = (): Promise<boolean> => {
+    if (healthCheckPromise) return healthCheckPromise;
 
-    isCheckingHealth = true;
-    try {
-      await instance.get('/health', {
+    healthCheckPromise = instance
+      .get('/health', {
         timeout: HEALTH_CHECK_TIMEOUT,
         headers: { 'X-Health-Check': 'true' },
+      })
+      .then(() => true)
+      .catch(() => false)
+      .finally(() => {
+        healthCheckPromise = null;
       });
-      return true;
-    } catch {
-      return false;
-    } finally {
-      isCheckingHealth = false;
-    }
+
+    return healthCheckPromise;
   };
 
   const retryWithWakeup = async (originalRequest: any): Promise<any> => {
-    // Mostra modal na primeira tentativa
     if (wakeupRetryCount === 0) {
       useUIStore.getState().setServerWaking(true);
     }
@@ -169,7 +175,6 @@ export function setupServerWakeupInterceptor(instance: AxiosInstance) {
     wakeupRetryCount++;
     useUIStore.getState().incrementRetryAttempt();
 
-    // Limita tentativas
     if (wakeupRetryCount >= MAX_WAKEUP_RETRIES) {
       wakeupRetryCount = 0;
       useUIStore.getState().setServerWaking(false);
@@ -182,22 +187,18 @@ export function setupServerWakeupInterceptor(instance: AxiosInstance) {
       throw new Error('Server wakeup timeout');
     }
 
-    // Aguarda antes de tentar novamente
     await new Promise(resolve => setTimeout(resolve, WAKEUP_RETRY_DELAY));
 
     try {
       const response = await instance(originalRequest);
-      // Sucesso - reseta estado e fecha modal
       wakeupRetryCount = 0;
       useUIStore.getState().setServerWaking(false);
       useUIStore.getState().resetRetryAttempt();
       return response;
     } catch (retryError: any) {
-      // Se continua com erro de servidor frio, tenta novamente
       if (isColdServerError(retryError)) {
         return retryWithWakeup(originalRequest);
       }
-      // Outro tipo de erro - reseta estado e propaga
       wakeupRetryCount = 0;
       useUIStore.getState().setServerWaking(false);
       useUIStore.getState().resetRetryAttempt();
@@ -205,9 +206,29 @@ export function setupServerWakeupInterceptor(instance: AxiosInstance) {
     }
   };
 
-  // Interceptor de response: detecta erros e verifica saúde do servidor
+  // Request interceptor: registra o timestamp de início de cada requisição
+  instance.interceptors.request.use(
+    (config: InternalAxiosRequestConfig) => {
+      if (!config.headers['X-Health-Check']) {
+        (config as any)._requestStartTime = Date.now();
+      }
+      return config;
+    },
+    error => Promise.reject(error)
+  );
+
+  // Response interceptor: detecta requisições lentas e erros de servidor frio
   instance.interceptors.response.use(
-    response => response,
+    response => {
+      // Requisição bem-sucedida, mas lenta → testa healthcheck em background
+      const startTime = (response.config as any)?._requestStartTime;
+      if (startTime && Date.now() - startTime > SLOW_REQUEST_THRESHOLD) {
+        checkServerHealth().then(healthy => {
+          if (!healthy) useUIStore.getState().setServerWaking(true);
+        });
+      }
+      return response;
+    },
     async error => {
       const originalRequest = error.config;
 
@@ -216,18 +237,26 @@ export function setupServerWakeupInterceptor(instance: AxiosInstance) {
         throw error;
       }
 
-      // Detecta erro de servidor frio e valida com healthcheck
-      if (isColdServerError(error) && !originalRequest._wakeupRetry) {
+      const startTime = originalRequest?._requestStartTime as
+        | number
+        | undefined;
+      const elapsed = startTime ? Date.now() - startTime : 0;
+      const isColdError = isColdServerError(error);
+      const isSlowRequest = elapsed > SLOW_REQUEST_THRESHOLD;
+
+      // Aciona healthcheck se for erro de servidor frio OU requisição lenta
+      if ((isColdError || isSlowRequest) && !originalRequest?._wakeupRetry) {
         const isServerHealthy = await checkServerHealth();
 
         if (!isServerHealthy) {
-          // Servidor está realmente frio - inicia wakeup com modal
-          originalRequest._wakeupRetry = true;
-          return retryWithWakeup(originalRequest);
+          if (isColdError) {
+            // Servidor frio → mostra modal e retenta automaticamente
+            originalRequest._wakeupRetry = true;
+            return retryWithWakeup(originalRequest);
+          }
+          // Requisição lenta mas sem erro de cold start → apenas exibe modal
+          useUIStore.getState().setServerWaking(true);
         }
-
-        // Servidor respondendo - erro específico da rota
-        throw error;
       }
 
       throw error;
