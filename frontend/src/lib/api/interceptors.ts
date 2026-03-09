@@ -107,12 +107,18 @@ export function setupRefreshInterceptor(instance: AxiosInstance) {
 /**
  * Interceptor de Server Wakeup
  * Gerencia retry automático quando servidor está em cold start (Render free tier)
+ * e mostra modal quando requisições demoram mais de 10 segundos
  */
 export function setupServerWakeupInterceptor(instance: AxiosInstance) {
   const MAX_WAKEUP_RETRIES = 15;
   const WAKEUP_RETRY_DELAY = 5000;
+  const SLOW_REQUEST_THRESHOLD = 10000; // 10 segundos
   let wakeupRetryCount = 0;
   let wakeupRetryTimeout: number | null = null;
+
+  // Map para rastrear timers de requisições lentas
+  const slowRequestTimers = new Map<string, number>();
+  let requestCounter = 0;
 
   const isColdServerError = (error: any): boolean => {
     if (!error.response && error.code === 'ERR_NETWORK') {
@@ -167,14 +173,69 @@ export function setupServerWakeupInterceptor(instance: AxiosInstance) {
     }
   };
 
+  // Interceptor de request: inicia timer para detectar requisições lentas
+  instance.interceptors.request.use(
+    (config: InternalAxiosRequestConfig) => {
+      // Gera ID único para esta requisição
+      const requestId = `req_${++requestCounter}_${Date.now()}`;
+      (config as any)._requestId = requestId;
+
+      // Inicia timer de 10 segundos
+      const timerId = setTimeout(() => {
+        // Se após 10 segundos a requisição ainda não terminou, mostra modal
+        useUIStore.getState().setServerWaking(true);
+        slowRequestTimers.delete(requestId);
+      }, SLOW_REQUEST_THRESHOLD);
+
+      slowRequestTimers.set(requestId, timerId);
+
+      return config;
+    },
+    error => Promise.reject(error)
+  );
+
+  // Interceptor de response: limpa timer e esconde modal se necessário
   instance.interceptors.response.use(
-    response => response,
+    response => {
+      // Limpa timer de requisição lenta
+      const requestId = (response.config as any)._requestId;
+      if (requestId && slowRequestTimers.has(requestId)) {
+        const timerId = slowRequestTimers.get(requestId);
+        if (timerId !== undefined) {
+          clearTimeout(timerId);
+        }
+        slowRequestTimers.delete(requestId);
+      }
+
+      // Se não há mais requisições pendentes e não estamos em retry, esconde modal
+      if (slowRequestTimers.size === 0 && wakeupRetryCount === 0) {
+        useUIStore.getState().setServerWaking(false);
+      }
+
+      return response;
+    },
     async error => {
       const originalRequest = error.config;
 
+      // Limpa timer de requisição lenta
+      const requestId = originalRequest?._requestId;
+      if (requestId && slowRequestTimers.has(requestId)) {
+        const timerId = slowRequestTimers.get(requestId);
+        if (timerId !== undefined) {
+          clearTimeout(timerId);
+        }
+        slowRequestTimers.delete(requestId);
+      }
+
+      // Se é erro de servidor frio, inicia retry
       if (isColdServerError(error) && !originalRequest._wakeupRetry) {
         originalRequest._wakeupRetry = true;
         return retryWithWakeup(originalRequest);
+      }
+
+      // Se não há mais requisições pendentes e não estamos em retry, esconde modal
+      if (slowRequestTimers.size === 0 && wakeupRetryCount === 0) {
+        useUIStore.getState().setServerWaking(false);
       }
 
       throw error;
