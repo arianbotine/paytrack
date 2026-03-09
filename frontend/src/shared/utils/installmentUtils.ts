@@ -61,8 +61,9 @@ export function calculateInstallmentAmounts(
   totalAmount: number,
   count: number
 ): number[] {
-  // Usar a mesma lógica do backend: dividir e arredondar para baixo
-  const baseValue = Math.floor((totalAmount / count) * 100) / 100;
+  // Usar Math.round ao invés de Math.floor para evitar problemas de precisão
+  // de ponto flutuante (ex: 75.6 * 100 = 7559.999999999999)
+  const baseValue = Math.round((totalAmount / count) * 100) / 100;
   // Calcular resto para a última parcela
   const remainder = Math.round((totalAmount - baseValue * count) * 100) / 100;
 

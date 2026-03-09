@@ -21,6 +21,7 @@ import { CurrencyField } from '../../../shared/components/CurrencyField';
 import { BatchAccount, AccountType } from '../types';
 import type { Vendor, Category, Tag } from '../../payables/types';
 import type { Customer } from '../../receivables/types';
+import { calculateInstallmentAmounts } from '../../../shared/utils/installmentUtils';
 
 interface BatchAccountFormFieldsProps {
   account: BatchAccount;
@@ -174,20 +175,29 @@ export const BatchAccountFormFields: React.FC<BatchAccountFormFieldsProps> = ({
           required
           size="small"
         />
-        {account.amount > 0 && account.installmentCount > 1 && (
-          <Box
-            component="span"
-            sx={{
-              display: 'block',
-              mt: 0.5,
-              fontSize: '0.75rem',
-              color: 'text.secondary',
-            }}
-          >
-            {account.installmentCount}x de{' '}
-            {formatCurrency(account.amount / account.installmentCount)}
-          </Box>
-        )}
+        {account.amount > 0 &&
+          account.installmentCount > 1 &&
+          (() => {
+            const amounts = calculateInstallmentAmounts(
+              account.amount,
+              account.installmentCount
+            );
+            const average =
+              amounts.reduce((sum, val) => sum + val, 0) / amounts.length;
+            return (
+              <Box
+                component="span"
+                sx={{
+                  display: 'block',
+                  mt: 0.5,
+                  fontSize: '0.75rem',
+                  color: 'text.secondary',
+                }}
+              >
+                {account.installmentCount}x de {formatCurrency(average)}
+              </Box>
+            );
+          })()}
       </Grid>
 
       {/* Installment Count */}

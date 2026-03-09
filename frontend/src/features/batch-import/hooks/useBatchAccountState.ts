@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { BatchAccount, AccountType } from '../types';
 import type { Vendor, Category } from '../../payables/types';
 import type { Customer } from '../../receivables/types';
+import { calculateInstallmentAmounts } from '../../../shared/utils/installmentUtils';
 
 /**
  * Hook customizado que encapsula toda a lógica de estado derivado e computações.
@@ -115,8 +116,15 @@ export function useBatchAccountState(
     const selected = account.payment?.installmentNumbers || [];
     if (!selected.length) return 0;
 
-    const installmentAmount = account.amount / account.installmentCount;
-    return selected.length * installmentAmount;
+    // Usar cálculo exato das parcelas (considera resto na última parcela)
+    const installmentAmounts = calculateInstallmentAmounts(
+      account.amount,
+      account.installmentCount
+    );
+
+    return selected.reduce((total, installmentNum) => {
+      return total + installmentAmounts[installmentNum - 1];
+    }, 0);
   }, [
     account.payment?.installmentNumbers,
     account.amount,

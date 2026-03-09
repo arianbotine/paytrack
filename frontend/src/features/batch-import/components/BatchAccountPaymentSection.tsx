@@ -23,6 +23,7 @@ import {
 import { BatchAccount } from '../types';
 import { PAYMENT_METHODS } from '../../payments/types';
 import { getNowLocalDatetimeInput } from '../../../shared/utils/dateUtils';
+import { calculateInstallmentAmounts } from '../../../shared/utils/installmentUtils';
 
 interface BatchAccountPaymentSectionProps {
   account: BatchAccount;
@@ -126,110 +127,118 @@ export const BatchAccountPaymentSection: React.FC<
                   Selecione as parcelas a {paymentLabels.verb}
                 </Typography>
                 <Grid container spacing={1} sx={{ mt: 0.5 }}>
-                  {Array.from(
-                    { length: account.installmentCount },
-                    (_, i) => i + 1
-                  ).map(installmentNum => {
-                    const isSelected =
-                      account.payment?.installmentNumbers?.includes(
-                        installmentNum
-                      ) || false;
-                    const installmentAmount =
-                      account.amount / account.installmentCount;
-                    const dueDate = account.dueDates[installmentNum - 1];
+                  {(() => {
+                    // Calcular valores corretos das parcelas uma vez
+                    const installmentAmounts = calculateInstallmentAmounts(
+                      account.amount,
+                      account.installmentCount
+                    );
 
-                    return (
-                      <Grid
-                        item
-                        xs={6}
-                        sm={4}
-                        md={3}
-                        key={`payment-${installmentNum}`}
-                      >
-                        <Paper
-                          onClick={() =>
-                            !isDisabled &&
-                            onTogglePaymentInstallment(installmentNum)
-                          }
-                          sx={{
-                            p: 1.5,
-                            cursor: isDisabled ? 'default' : 'pointer',
-                            border: 2,
-                            borderColor: isSelected
-                              ? 'primary.main'
-                              : 'divider',
-                            bgcolor: isSelected
-                              ? 'primary.lighter'
-                              : 'background.paper',
-                            transition: 'all 0.2s',
-                            opacity: isDisabled ? 0.5 : 1,
-                            '&:hover': {
-                              borderColor: isDisabled
-                                ? 'divider'
-                                : 'primary.main',
-                              bgcolor: isDisabled
-                                ? undefined
-                                : isSelected
-                                  ? 'primary.lighter'
-                                  : 'action.hover',
-                              transform: isDisabled
-                                ? 'none'
-                                : 'translateY(-2px)',
-                              boxShadow: isDisabled ? undefined : 2,
-                            },
-                          }}
+                    return Array.from(
+                      { length: account.installmentCount },
+                      (_, i) => i + 1
+                    ).map(installmentNum => {
+                      const isSelected =
+                        account.payment?.installmentNumbers?.includes(
+                          installmentNum
+                        ) || false;
+                      const installmentAmount =
+                        installmentAmounts[installmentNum - 1];
+                      const dueDate = account.dueDates[installmentNum - 1];
+
+                      return (
+                        <Grid
+                          item
+                          xs={6}
+                          sm={4}
+                          md={3}
+                          key={`payment-${installmentNum}`}
                         >
-                          <Box
+                          <Paper
+                            onClick={() =>
+                              !isDisabled &&
+                              onTogglePaymentInstallment(installmentNum)
+                            }
                             sx={{
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              gap: 0.5,
+                              p: 1.5,
+                              cursor: isDisabled ? 'default' : 'pointer',
+                              border: 2,
+                              borderColor: isSelected
+                                ? 'primary.main'
+                                : 'divider',
+                              bgcolor: isSelected
+                                ? 'primary.lighter'
+                                : 'background.paper',
+                              transition: 'all 0.2s',
+                              opacity: isDisabled ? 0.5 : 1,
+                              '&:hover': {
+                                borderColor: isDisabled
+                                  ? 'divider'
+                                  : 'primary.main',
+                                bgcolor: isDisabled
+                                  ? undefined
+                                  : isSelected
+                                    ? 'primary.lighter'
+                                    : 'action.hover',
+                                transform: isDisabled
+                                  ? 'none'
+                                  : 'translateY(-2px)',
+                                boxShadow: isDisabled ? undefined : 2,
+                              },
                             }}
                           >
                             <Box
                               sx={{
                                 display: 'flex',
+                                flexDirection: 'column',
                                 alignItems: 'center',
                                 gap: 0.5,
                               }}
                             >
-                              {isSelected && (
-                                <CheckCircleIcon
-                                  fontSize="small"
-                                  color="primary"
-                                />
-                              )}
-                              <Chip
-                                label={`${installmentNum}/${account.installmentCount}`}
-                                size="small"
-                                color={isSelected ? 'primary' : 'default'}
-                              />
-                            </Box>
-                            <Typography
-                              variant="body2"
-                              fontWeight={isSelected ? 600 : 400}
-                            >
-                              {formatCurrency(installmentAmount)}
-                            </Typography>
-                            {dueDate && (
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 0.5,
+                                }}
                               >
-                                {new Date(
-                                  dueDate + 'T00:00:00'
-                                ).toLocaleDateString('pt-BR', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                })}
+                                {isSelected && (
+                                  <CheckCircleIcon
+                                    fontSize="small"
+                                    color="primary"
+                                  />
+                                )}
+                                <Chip
+                                  label={`${installmentNum}/${account.installmentCount}`}
+                                  size="small"
+                                  color={isSelected ? 'primary' : 'default'}
+                                />
+                              </Box>
+                              <Typography
+                                variant="body2"
+                                fontWeight={isSelected ? 600 : 400}
+                              >
+                                {formatCurrency(installmentAmount)}
                               </Typography>
-                            )}
-                          </Box>
-                        </Paper>
-                      </Grid>
-                    );
-                  })}
+                              {dueDate && (
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  {new Date(
+                                    dueDate + 'T00:00:00'
+                                  ).toLocaleDateString('pt-BR', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                  })}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Paper>
+                        </Grid>
+                      );
+                    });
+                  })()}
                 </Grid>
               </Grid>
 

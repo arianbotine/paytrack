@@ -9,6 +9,7 @@ import {
   Chip,
 } from '@mui/material';
 import { BatchAccount } from '../types';
+import { calculateInstallmentAmounts } from '../../../shared/utils/installmentUtils';
 
 interface BatchAccountInstallmentsPreviewProps {
   account: BatchAccount;
@@ -26,6 +27,12 @@ export const BatchAccountInstallmentsPreview: React.FC<
   if (account.installmentCount <= 1) {
     return null;
   }
+
+  // Calcular valores corretos das parcelas (última parcela absorve o resto)
+  const installmentAmounts = calculateInstallmentAmounts(
+    account.amount,
+    account.installmentCount
+  );
 
   return (
     <Grid item xs={12}>
@@ -63,7 +70,7 @@ export const BatchAccountInstallmentsPreview: React.FC<
                     fontWeight="medium"
                     sx={{ mt: 0.5 }}
                   >
-                    {formatCurrency(account.amount / account.installmentCount)}
+                    {formatCurrency(installmentAmounts[idx])}
                   </Typography>
                   <Typography variant="caption" color="primary">
                     {new Date(date + 'T00:00:00').toLocaleDateString('pt-BR')}

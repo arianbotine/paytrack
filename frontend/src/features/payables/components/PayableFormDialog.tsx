@@ -632,7 +632,19 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                                   >
                                     Média:{' '}
                                     {formatCurrency(
-                                      amount / (installmentCount || 1)
+                                      (() => {
+                                        const amounts =
+                                          calculateInstallmentAmounts(
+                                            amount,
+                                            installmentCount || 1
+                                          );
+                                        return (
+                                          amounts.reduce(
+                                            (sum, val) => sum + val,
+                                            0
+                                          ) / amounts.length
+                                        );
+                                      })()
                                     )}
                                   </Typography>
                                 </Stack>

@@ -638,7 +638,21 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                                     color="text.secondary"
                                   >
                                     Média:{' '}
-                                    {formatCurrency(amount / installmentCount)}
+                                    {formatCurrency(
+                                      (() => {
+                                        const amounts =
+                                          calculateInstallmentAmounts(
+                                            amount,
+                                            installmentCount
+                                          );
+                                        return (
+                                          amounts.reduce(
+                                            (sum, val) => sum + val,
+                                            0
+                                          ) / amounts.length
+                                        );
+                                      })()
+                                    )}
                                   </Typography>
                                 </Stack>
                                 <Stack
