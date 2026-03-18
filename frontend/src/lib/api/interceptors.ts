@@ -137,6 +137,8 @@ export function setupServerWakeupInterceptor(instance: AxiosInstance) {
   let wakeupRetryCount = 0;
   /** Promise em andamento para evitar health checks simultâneos */
   let healthCheckPromise: Promise<boolean> | null = null;
+  /** Flag para evitar polling simultâneo do /health */
+  let pollingHealth = false;
 
   const isColdServerError = (error: any): boolean => {
     if (!error.response && error.code === 'ERR_NETWORK') return true;
@@ -145,10 +147,39 @@ export function setupServerWakeupInterceptor(instance: AxiosInstance) {
   };
 
   /**
+   * Exibe a modal de "servidor acordando" e faz polling no /health
+   * a cada WAKEUP_RETRY_DELAY ms até que o servidor responda com sucesso.
+   * Chamadas concorrentes são ignoradas enquanto polling já estiver ativo.
+   */
+  const pollHealthUntilReady = (): void => {
+    if (pollingHealth) return;
+    pollingHealth = true;
+    useUIStore.getState().setServerWaking(true);
+
+    const poll = async () => {
+      useUIStore.getState().incrementRetryAttempt();
+      await new Promise(resolve => setTimeout(resolve, WAKEUP_RETRY_DELAY));
+      const healthy = await checkServerHealth();
+      if (healthy) {
+        pollingHealth = false;
+        useUIStore.getState().setServerWaking(false);
+        useUIStore.getState().resetRetryAttempt();
+      } else {
+        poll();
+      }
+    };
+
+    poll();
+  };
+
+  /**
    * Sonda o /health com timeout de 5s.
    * Retorna true  → servidor saudável e rápido.
    * Retorna false → servidor lento (timeout) ou fora do ar.
    * Chamadas concorrentes reutilizam a mesma promise.
+   *
+   * Se o health ultrapassar o timeout (5s), ativa pollHealthUntilReady
+   * para exibir a modal e continuar sondando até o servidor recuperar.
    */
   const checkServerHealth = (): Promise<boolean> => {
     if (healthCheckPromise) return healthCheckPromise;
@@ -159,7 +190,13 @@ export function setupServerWakeupInterceptor(instance: AxiosInstance) {
         headers: { 'X-Health-Check': 'true' },
       })
       .then(() => true)
-      .catch(() => false)
+      .catch(error => {
+        // Timeout do /health indica servidor lento → exibe modal e inicia polling
+        if (error.code === 'ECONNABORTED') {
+          pollHealthUntilReady();
+        }
+        return false;
+      })
       .finally(() => {
         healthCheckPromise = null;
       });
