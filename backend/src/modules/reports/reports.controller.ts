@@ -7,7 +7,11 @@ import {
 } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
-import { PaymentsReportFilterDto, PaymentsReportResponseDto } from './dto';
+import {
+  PaymentsReportFilterDto,
+  PaymentsReportResponseDto,
+  PaymentsReportDetailsResponseDto,
+} from './dto';
 
 @ApiTags('Relatórios')
 @ApiBearerAuth()
@@ -28,5 +32,25 @@ export class ReportsController {
     @Query() filters: PaymentsReportFilterDto
   ): Promise<PaymentsReportResponseDto> {
     return this.reportsService.getPaymentsReport(organizationId, filters);
+  }
+
+  @Get('payments/details')
+  @ApiOperation({
+    summary: 'Lista detalhada de transações do relatório de pagamentos',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de transações gerada com sucesso',
+    type: PaymentsReportDetailsResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Parâmetros inválidos' })
+  async getPaymentsReportDetails(
+    @CurrentUser('organizationId') organizationId: string,
+    @Query() filters: PaymentsReportFilterDto
+  ): Promise<PaymentsReportDetailsResponseDto> {
+    return this.reportsService.getPaymentsReportDetails(
+      organizationId,
+      filters
+    );
   }
 }

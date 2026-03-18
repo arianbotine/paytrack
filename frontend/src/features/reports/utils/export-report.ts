@@ -1,4 +1,8 @@
-import type { PaymentsReportResponse, ReportFilters } from '../types';
+import type {
+  PaymentsReportResponse,
+  PaymentsReportDetailsResponse,
+  ReportFilters,
+} from '../types';
 
 /**
  * Formata um número como moeda brasileira
@@ -271,5 +275,126 @@ export function exportPaymentsReportToCSV(
   // Converter para CSV e fazer download
   const csvContent = convertToCSV(csvData);
   const filename = `relatorio-pagamentos_${filters.startDate}_${filters.endDate}.csv`;
+  downloadCSV(csvContent, filename);
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  payable: 'Pagamento',
+  receivable: 'Recebimento',
+  mixed: 'Misto',
+};
+
+const METHOD_LABELS: Record<string, string> = {
+  CASH: 'Dinheiro',
+  CREDIT_CARD: 'Cartão de Crédito',
+  DEBIT_CARD: 'Cartão de Débito',
+  BANK_TRANSFER: 'Transferência Bancária',
+  PIX: 'PIX',
+  BOLETO: 'Boleto',
+  CHECK: 'Cheque',
+  ACCOUNT_DEBIT: 'Débito em Conta',
+  OTHER: 'Outro',
+};
+
+function buildFilterRows(
+  filters: ReportFilters,
+  filterLabels?: {
+    categories?: string[];
+    tags?: string[];
+    vendors?: string[];
+    customers?: string[];
+  }
+): string[][] {
+  const rows: string[][] = [];
+  const hasFilters =
+    (filters.categoryIds && filters.categoryIds.length > 0) ||
+    (filters.tagIds && filters.tagIds.length > 0) ||
+    (filters.vendorIds && filters.vendorIds.length > 0) ||
+    (filters.customerIds && filters.customerIds.length > 0);
+
+  if (!hasFilters) return rows;
+
+  rows.push(['FILTROS APLICADOS']);
+  if (filters.categoryIds && filters.categoryIds.length > 0) {
+    rows.push([
+      'Categorias:',
+      filterLabels?.categories?.join(', ') ||
+        `${filters.categoryIds.length} selecionada(s)`,
+    ]);
+  }
+  if (filters.tagIds && filters.tagIds.length > 0) {
+    rows.push([
+      'Tags:',
+      filterLabels?.tags?.join(', ') ||
+        `${filters.tagIds.length} selecionada(s)`,
+    ]);
+  }
+  if (filters.vendorIds && filters.vendorIds.length > 0) {
+    rows.push([
+      'Fornecedores:',
+      filterLabels?.vendors?.join(', ') ||
+        `${filters.vendorIds.length} selecionado(s)`,
+    ]);
+  }
+  if (filters.customerIds && filters.customerIds.length > 0) {
+    rows.push([
+      'Clientes:',
+      filterLabels?.customers?.join(', ') ||
+        `${filters.customerIds.length} selecionado(s)`,
+    ]);
+  }
+  rows.push(['']);
+  return rows;
+}
+
+/**
+ * Exporta a lista detalhada de transações do relatório de pagamentos para CSV
+ */
+export function exportPaymentsReportDetailsToCSV(
+  data: PaymentsReportDetailsResponse,
+  filters: ReportFilters,
+  filterLabels?: {
+    categories?: string[];
+    tags?: string[];
+    vendors?: string[];
+    customers?: string[];
+  }
+): void {
+  const header: string[][] = [
+    ['RELATÓRIO DE PAGAMENTOS - DETALHAMENTO DE TRANSAÇÕES'],
+    [
+      'Período:',
+      `${formatDate(filters.startDate)} a ${formatDate(filters.endDate)}`,
+    ],
+    ['Gerado em:', new Date().toLocaleString('pt-BR')],
+    [''],
+    ...buildFilterRows(filters, filterLabels),
+    [
+      'Data',
+      'Tipo',
+      'Fornecedor / Cliente',
+      'Tags',
+      'Categoria',
+      'Método',
+      'Valor',
+      'Referência',
+      'Observações',
+    ],
+  ];
+
+  const rows = data.data.map(item => [
+    formatDate(item.paymentDate),
+    TYPE_LABELS[item.type] || item.type,
+    item.vendorName || item.customerName || '',
+    item.tags.map(t => t.name).join(', '),
+    item.categoryName || '',
+    METHOD_LABELS[item.paymentMethod] || item.paymentMethod,
+    formatCurrency(item.amount),
+    item.reference || '',
+    item.notes || '',
+  ]);
+
+  const csvContent = convertToCSV([...header, ...rows]);
+  const filename = `detalhamento-pagamentos_${filters.startDate}_${filters.endDate}.csv`;
   downloadCSV(csvContent, filename);
 }

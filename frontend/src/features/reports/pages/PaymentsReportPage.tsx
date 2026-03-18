@@ -10,6 +10,8 @@ import {
   Tooltip,
   Stack,
   Typography,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -18,6 +20,8 @@ import PaymentIcon from '@mui/icons-material/Payment';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import ReceiptIcon from '@mui/icons-material/Receipt';
+import TableRowsIcon from '@mui/icons-material/TableRows';
+import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import { useTheme } from '@mui/material/styles';
 import { useAuthStore } from '@/lib/stores/authStore';
 import {
@@ -27,6 +31,7 @@ import {
 } from '@/shared/utils/organization-storage';
 import {
   usePaymentsReport,
+  usePaymentsReportDetails,
   useReportCategories,
   useReportTags,
   useReportVendors,
@@ -37,9 +42,13 @@ import { ReportSkeleton } from '../components/ReportSkeleton';
 import { PaymentsAreaChart } from '../components/PaymentsAreaChart';
 import { PaymentsBarChart } from '../components/PaymentsBarChart';
 import { ReportFilters as ReportFiltersComponent } from '../components/ReportFilters';
+import { PaymentsReportDetailsTable } from '../components/PaymentsReportDetailsTable';
 import { EmptyState } from '../../../shared/components/EmptyState';
 import { calculateDateRange } from '../utils/period-calculator';
-import { exportPaymentsReportToCSV } from '../utils/export-report';
+import {
+  exportPaymentsReportToCSV,
+  exportPaymentsReportDetailsToCSV,
+} from '../utils/export-report';
 import type { ReportFilters, ChartType } from '../types';
 
 export default function PaymentsReportPage() {
@@ -103,6 +112,20 @@ export default function PaymentsReportPage() {
     return stored || 'area';
   });
 
+  const [activeTab, setActiveTab] = useState<number>(() => {
+    if (!organizationId) return 0;
+    return (
+      getOrganizationStorage<number>(
+        organizationId,
+        'reports:payments:activeTab'
+      ) ?? 0
+    );
+  });
+
+  // Paginação da aba de detalhes — não persistida, reseta ao trocar filtros
+  const [detailsPage, setDetailsPage] = useState(0);
+  const [detailsRowsPerPage, setDetailsRowsPerPage] = useState(10);
+
   // Persist filters and chart type com escopo de organização
   useEffect(() => {
     if (organizationId) {
@@ -124,6 +147,21 @@ export default function PaymentsReportPage() {
     }
   }, [chartType, organizationId]);
 
+  useEffect(() => {
+    if (organizationId) {
+      setOrganizationStorage(
+        organizationId,
+        'reports:payments:activeTab',
+        activeTab
+      );
+    }
+  }, [activeTab, organizationId]);
+
+  // Resetar paginação de detalhes ao trocar filtros
+  useEffect(() => {
+    setDetailsPage(0);
+  }, [filters]);
+
   const handleFiltersChange = (newFilters: ReportFilters) => {
     // Garantir que sempre temos startDate e endDate válidos
     if (!newFilters.startDate || !newFilters.endDate) {
@@ -141,36 +179,54 @@ export default function PaymentsReportPage() {
   const { data: vendors = [] } = useReportVendors();
   const { data: customers = [] } = useReportCustomers();
 
+  const buildFilterLabels = () => ({
+    categories: categories
+      .filter(cat => filters.categoryIds?.includes(cat.id))
+      .map(cat => cat.name),
+    tags: tags
+      .filter(tag => filters.tagIds?.includes(tag.id))
+      .map(tag => tag.name),
+    vendors: vendors
+      .filter(vendor => filters.vendorIds?.includes(vendor.id))
+      .map(vendor => vendor.name),
+    customers: customers
+      .filter(customer => filters.customerIds?.includes(customer.id))
+      .map(customer => customer.name),
+  });
+
   const handleExport = () => {
     if (!data) return;
-
-    // Obter nomes dos filtros aplicados
-    const filterLabels = {
-      categories: categories
-        .filter(cat => filters.categoryIds?.includes(cat.id))
-        .map(cat => cat.name),
-      tags: tags
-        .filter(tag => filters.tagIds?.includes(tag.id))
-        .map(tag => tag.name),
-      vendors: vendors
-        .filter(vendor => filters.vendorIds?.includes(vendor.id))
-        .map(vendor => vendor.name),
-      customers: customers
-        .filter(customer => filters.customerIds?.includes(customer.id))
-        .map(customer => customer.name),
-    };
-
-    exportPaymentsReportToCSV(data, filters, filterLabels);
+    exportPaymentsReportToCSV(data, filters, buildFilterLabels());
   };
 
-  // Fetch data
+  const handleExportDetails = () => {
+    if (!detailsData) return;
+    exportPaymentsReportDetailsToCSV(detailsData, filters, buildFilterLabels());
+  };
+
+  // Fetch data — visão geral
   const { data, isLoading, error, refetch } = usePaymentsReport({
     ...filters,
     skip: 0,
     take: 10,
   });
 
-  // Loading state
+  // Fetch data — detalhes (lazy: só ativo na aba 1)
+  const {
+    data: detailsData,
+    isLoading: detailsLoading,
+    error: detailsError,
+    refetch: detailsRefetch,
+  } = usePaymentsReportDetails(
+    {
+      ...filters,
+      skip: detailsPage * detailsRowsPerPage,
+      take: detailsRowsPerPage,
+    },
+    activeTab === 1
+  );
+
+  // Loading state (apenas aba visão geral bloqueia renderização completa)
   if (isLoading) {
     return (
       <Container maxWidth="xl" sx={{ py: 3 }}>
@@ -199,7 +255,7 @@ export default function PaymentsReportPage() {
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
       <Stack spacing={3}>
-        {/* Header com botão de exportação */}
+        {/* Header */}
         <Box
           display="flex"
           justifyContent="space-between"
@@ -224,129 +280,207 @@ export default function PaymentsReportPage() {
               identifique tendências para melhor tomada de decisão.
             </Typography>
           </Box>
-          <Tooltip title="Exportar relatório em formato CSV">
-            <span>
-              <Button
-                variant="outlined"
-                startIcon={<FileDownloadIcon />}
-                onClick={handleExport}
-                disabled={isLoading || !data || hasNoData}
-              >
-                Exportar
-              </Button>
-            </span>
-          </Tooltip>
+          {/* Export button muda conforme a aba ativa */}
+          {activeTab === 0 ? (
+            <Tooltip title="Exportar resumo em formato CSV">
+              <span>
+                <Button
+                  variant="outlined"
+                  startIcon={<FileDownloadIcon />}
+                  onClick={handleExport}
+                  disabled={isLoading || !data || hasNoData}
+                >
+                  Exportar
+                </Button>
+              </span>
+            </Tooltip>
+          ) : (
+            <Tooltip title="Exportar detalhes em formato CSV">
+              <span>
+                <Button
+                  variant="outlined"
+                  startIcon={<FileDownloadIcon />}
+                  onClick={handleExportDetails}
+                  disabled={
+                    detailsLoading ||
+                    !detailsData ||
+                    detailsData.data.length === 0
+                  }
+                >
+                  Exportar Detalhes
+                </Button>
+              </span>
+            </Tooltip>
+          )}
         </Box>
 
         {/* Filtros sempre visíveis */}
         <ReportFiltersComponent
           filters={filters}
           onFiltersChange={handleFiltersChange}
-          onRefresh={() => refetch()}
+          onRefresh={() => {
+            refetch();
+            if (activeTab === 1) detailsRefetch();
+          }}
         />
 
-        {/* Empty state se não houver dados */}
-        {hasNoData && (
-          <EmptyState
-            title="Sem dados disponíveis"
-            description="Não há transações financeiras para o período selecionado. Tente ajustar os filtros acima (período, categorias, tags) ou adicionar novos pagamentos e recebimentos no sistema."
-            icon={<PaymentIcon fontSize="large" />}
-          />
-        )}
+        {/* Tabs */}
+        <Box>
+          <Tabs
+            value={activeTab}
+            onChange={(_, value: number) => setActiveTab(value)}
+            sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
+          >
+            <Tab
+              icon={<BarChartOutlinedIcon />}
+              iconPosition="start"
+              label="Visão Geral"
+              value={0}
+            />
+            <Tab
+              icon={<TableRowsIcon />}
+              iconPosition="start"
+              label="Detalhes"
+              value={1}
+            />
+          </Tabs>
 
-        {/* KPI Cards - só renderiza se tiver dados */}
-        {!hasNoData && (
-          <>
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={3}>
-                <ReportCard
-                  title="Total Pago"
-                  value={data.totals.payables.current}
-                  color={theme.palette.error.main}
-                  icon={<PaymentIcon />}
-                  helpText="Soma de todos os pagamentos realizados (contas a pagar) no período selecionado."
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <ReportCard
-                  title="Total Recebido"
-                  value={data.totals.receivables.current}
-                  color={theme.palette.success.main}
-                  icon={<AccountBalanceIcon />}
-                  helpText="Soma de todos os recebimentos (contas a receber) efetivados no período selecionado."
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <ReportCard
-                  title="Saldo Líquido"
-                  value={data.totals.netBalance.current}
-                  color={theme.palette.info.main}
-                  icon={<TrendingUpIcon />}
-                  helpText="Diferença entre o total recebido e o total pago no período. Valores positivos indicam superávit, negativos indicam déficit."
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <ReportCard
-                  title="Transações"
-                  value={data.totals.transactions.current}
-                  color={theme.palette.primary.main}
-                  icon={<ReceiptIcon />}
-                  helpText="Quantidade total de transações financeiras (pagamentos + recebimentos) processadas no período. Útil para acompanhar o volume operacional."
-                  valueType="number"
-                />
-              </Grid>
-            </Grid>
-
-            {/* Chart Controls */}
-            <Paper sx={{ p: 2 }}>
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={2}
-              >
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    Evolução Financeira
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Visualize a evolução temporal dos pagamentos e recebimentos.
-                    Vermelho indica saídas (contas a pagar), verde indica
-                    entradas (contas a receber).
-                  </Typography>
-                </Box>
-                <ToggleButtonGroup
-                  value={chartType}
-                  exclusive
-                  onChange={(_, value) => value && setChartType(value)}
-                  size="small"
-                >
-                  <ToggleButton value="area">
-                    <ShowChartIcon sx={{ mr: 1 }} />
-                    Área
-                  </ToggleButton>
-                  <ToggleButton value="bar">
-                    <BarChartIcon sx={{ mr: 1 }} />
-                    Barras
-                  </ToggleButton>
-                </ToggleButtonGroup>
-              </Box>
-
-              {/* Chart */}
-              {chartType === 'area' ? (
-                <PaymentsAreaChart
-                  data={data.timeSeries}
-                  groupBy={filters.groupBy || 'month'}
-                />
-              ) : (
-                <PaymentsBarChart
-                  data={data.timeSeries}
-                  groupBy={filters.groupBy || 'month'}
+          {/* Aba 0 — Visão Geral */}
+          {activeTab === 0 && (
+            <Stack spacing={3}>
+              {/* Empty state se não houver dados */}
+              {hasNoData && (
+                <EmptyState
+                  title="Sem dados disponíveis"
+                  description="Não há transações financeiras para o período selecionado. Tente ajustar os filtros acima (período, categorias, tags) ou adicionar novos pagamentos e recebimentos no sistema."
+                  icon={<PaymentIcon fontSize="large" />}
                 />
               )}
-            </Paper>
-          </>
-        )}
+
+              {/* KPI Cards - só renderiza se tiver dados */}
+              {!hasNoData && (
+                <>
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <ReportCard
+                        title="Total Pago"
+                        value={data.totals.payables.current}
+                        color={theme.palette.error.main}
+                        icon={<PaymentIcon />}
+                        helpText="Soma de todos os pagamentos realizados (contas a pagar) no período selecionado."
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <ReportCard
+                        title="Total Recebido"
+                        value={data.totals.receivables.current}
+                        color={theme.palette.success.main}
+                        icon={<AccountBalanceIcon />}
+                        helpText="Soma de todos os recebimentos (contas a receber) efetivados no período selecionado."
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <ReportCard
+                        title="Saldo Líquido"
+                        value={data.totals.netBalance.current}
+                        color={theme.palette.info.main}
+                        icon={<TrendingUpIcon />}
+                        helpText="Diferença entre o total recebido e o total pago no período. Valores positivos indicam superávit, negativos indicam déficit."
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <ReportCard
+                        title="Transações"
+                        value={data.totals.transactions.current}
+                        color={theme.palette.primary.main}
+                        icon={<ReceiptIcon />}
+                        helpText="Quantidade total de transações financeiras (pagamentos + recebimentos) processadas no período. Útil para acompanhar o volume operacional."
+                        valueType="number"
+                      />
+                    </Grid>
+                  </Grid>
+
+                  {/* Chart Controls */}
+                  <Paper sx={{ p: 2 }}>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      mb={2}
+                    >
+                      <Box>
+                        <Typography variant="h6" gutterBottom>
+                          Evolução Financeira
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Visualize a evolução temporal dos pagamentos e
+                          recebimentos. Vermelho indica saídas (contas a pagar),
+                          verde indica entradas (contas a receber).
+                        </Typography>
+                      </Box>
+                      <ToggleButtonGroup
+                        value={chartType}
+                        exclusive
+                        onChange={(_, value) => value && setChartType(value)}
+                        size="small"
+                      >
+                        <ToggleButton value="area">
+                          <ShowChartIcon sx={{ mr: 1 }} />
+                          Área
+                        </ToggleButton>
+                        <ToggleButton value="bar">
+                          <BarChartIcon sx={{ mr: 1 }} />
+                          Barras
+                        </ToggleButton>
+                      </ToggleButtonGroup>
+                    </Box>
+
+                    {/* Chart */}
+                    {chartType === 'area' ? (
+                      <PaymentsAreaChart
+                        data={data.timeSeries}
+                        groupBy={filters.groupBy || 'month'}
+                      />
+                    ) : (
+                      <PaymentsBarChart
+                        data={data.timeSeries}
+                        groupBy={filters.groupBy || 'month'}
+                      />
+                    )}
+                  </Paper>
+                </>
+              )}
+            </Stack>
+          )}
+
+          {/* Aba 1 — Detalhes */}
+          {activeTab === 1 && (
+            <Stack spacing={2}>
+              {detailsError ? (
+                <EmptyState
+                  variant="error"
+                  title="Erro ao carregar detalhes"
+                  description="Não foi possível carregar as transações. Tente novamente."
+                  actionLabel="Recarregar"
+                  onAction={() => detailsRefetch()}
+                />
+              ) : (
+                <PaymentsReportDetailsTable
+                  items={detailsData?.data ?? []}
+                  total={detailsData?.total ?? 0}
+                  page={detailsPage}
+                  rowsPerPage={detailsRowsPerPage}
+                  isLoading={detailsLoading}
+                  onPageChange={(_, newPage) => setDetailsPage(newPage)}
+                  onRowsPerPageChange={e => {
+                    setDetailsRowsPerPage(Number.parseInt(e.target.value, 10));
+                    setDetailsPage(0);
+                  }}
+                />
+              )}
+            </Stack>
+          )}
+        </Box>
       </Stack>
     </Container>
   );

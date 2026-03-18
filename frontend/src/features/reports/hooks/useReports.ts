@@ -1,6 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '../../../lib/api';
-import type { PaymentsReportResponse, ReportFilters } from '../types';
+import type {
+  PaymentsReportResponse,
+  PaymentsReportDetailsResponse,
+  ReportFilters,
+} from '../types';
 
 interface UsePaymentsReportParams extends ReportFilters {
   skip?: number;
@@ -41,6 +45,29 @@ export const usePaymentsReport = (params: UsePaymentsReportParams) => {
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
     gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+};
+
+export const usePaymentsReportDetails = (
+  params: UsePaymentsReportParams,
+  enabled = true
+) => {
+  return useQuery<
+    PaymentsReportDetailsResponse,
+    Error,
+    PaymentsReportDetailsResponse
+  >({
+    queryKey: ['reports', 'payments', 'details', params],
+    queryFn: async (): Promise<PaymentsReportDetailsResponse> => {
+      const { data } = await api.get<PaymentsReportDetailsResponse>(
+        '/reports/payments/details',
+        { params }
+      );
+      return data;
+    },
+    enabled,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };
 

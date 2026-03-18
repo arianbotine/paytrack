@@ -3,7 +3,10 @@ import { ReportsController } from './reports.controller';
 import { ReportsService } from './reports.service';
 import { PaymentsReportsRepository } from './repositories';
 import { PeriodCalculator, ReportCalculator } from './domain';
-import { GetPaymentsReportUseCase } from './use-cases';
+import {
+  GetPaymentsReportUseCase,
+  GetPaymentsReportDetailsUseCase,
+} from './use-cases';
 import { DatabaseModule } from '../../infrastructure/database/database.module';
 
 @Module({
@@ -15,6 +18,7 @@ import { DatabaseModule } from '../../infrastructure/database/database.module';
     PeriodCalculator,
     ReportCalculator,
     GetPaymentsReportUseCase,
+    GetPaymentsReportDetailsUseCase,
   ],
   exports: [ReportsService],
 })

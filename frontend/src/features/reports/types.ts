@@ -54,3 +54,30 @@ export interface ReportFilters {
   vendorIds?: string[];
   customerIds?: string[];
 }
+
+export type PaymentsReportDetailType = 'payable' | 'receivable' | 'mixed';
+
+export interface ReportTag {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
+export interface PaymentsReportDetailItem {
+  id: string;
+  paymentDate: string;
+  amount: number;
+  paymentMethod: string;
+  type: PaymentsReportDetailType;
+  vendorName: string | null;
+  customerName: string | null;
+  categoryName: string | null;
+  reference: string | null;
+  notes: string | null;
+  tags: ReportTag[];
+}
+
+export interface PaymentsReportDetailsResponse {
+  data: PaymentsReportDetailItem[];
+  total: number;
+}
