@@ -84,6 +84,256 @@ interface PayablesTableProps {
 
 const MotionTableRow = motion.create(TableRow);
 
+function getInstallmentTextColor(
+  installmentNumber: number,
+  totalInstallments: number
+): string {
+  if (installmentNumber === 1) return 'primary.main';
+  if (installmentNumber === totalInstallments) return 'success.main';
+  return 'text.primary';
+}
+
+function getBorderColor(index: number, totalLength: number): string {
+  if (index === 0) return 'primary.main';
+  if (index === totalLength - 1) return 'success.main';
+  return 'divider';
+}
+
+function getHoverBorderColor(index: number, totalLength: number): string {
+  if (index === 0) return 'primary.dark';
+  if (index === totalLength - 1) return 'success.dark';
+  return 'primary.light';
+}
+
+function getBackgroundColor(
+  idx: number,
+  totalLength: number
+): (theme: Theme) => string {
+  return (theme: Theme) => {
+    if (idx === 0) return theme.palette.primary.main + '08';
+    if (idx === totalLength - 1) return theme.palette.success.main + '08';
+    return 'background.paper';
+  };
+}
+
+interface MobileInstallmentItemProps {
+  account: Payable;
+  installment: PayableInstallment;
+  idx: number;
+  totalInstallments: number;
+  editingInstallment: string | null;
+  editAmount: number | null;
+  setEditAmount: (v: number | null) => void;
+  onStartEdit: (inst: PayableInstallment) => void;
+  onSaveEdit: (acc: Payable, inst: PayableInstallment) => void;
+  onCancelEdit: () => void;
+  onPayment: (inst: PayableInstallment) => void;
+  onEditInstallment?: (acc: Payable, inst: PayableInstallment) => void;
+  onDeleteInstallment?: (acc: Payable, inst: PayableInstallment) => void;
+  hasUpdateInstallment: boolean;
+}
+
+const MobileInstallmentItem: React.FC<MobileInstallmentItemProps> = ({
+  account,
+  installment,
+  idx,
+  totalInstallments,
+  editingInstallment,
+  editAmount,
+  setEditAmount,
+  onStartEdit,
+  onSaveEdit,
+  onCancelEdit,
+  onPayment,
+  onEditInstallment,
+  onDeleteInstallment,
+  hasUpdateInstallment,
+}) => (
+  <Box
+    sx={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      py: 1,
+      px: 2,
+      mb: 1,
+      borderRadius: 1,
+      border: 1,
+      borderColor: getBorderColor(idx, totalInstallments),
+      backgroundColor: getBackgroundColor(idx, totalInstallments),
+      '&:hover': {
+        borderColor: getHoverBorderColor(idx, totalInstallments),
+      },
+    }}
+  >
+    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Typography
+        variant="body2"
+        fontWeight="medium"
+        color={getInstallmentTextColor(
+          installment.installmentNumber,
+          totalInstallments
+        )}
+      >
+        {installment.installmentNumber}ª parcela
+      </Typography>
+      <Chip
+        label={formatLocalDate(installment.dueDate)}
+        size="small"
+        color={
+          installment.isOverdue && installment.status !== 'PAID'
+            ? 'error'
+            : 'default'
+        }
+        sx={{
+          ml: 1,
+          ...(installment.isOverdue &&
+            installment.status !== 'PAID' && {
+              fontWeight: 600,
+              animation: 'pulse 2s ease-in-out infinite',
+              '@keyframes pulse': {
+                '0%, 100%': { opacity: 1 },
+                '50%': { opacity: 0.7 },
+              },
+            }),
+        }}
+      />
+    </Box>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Typography variant="body2" fontWeight="medium">
+        {editingInstallment === installment.id ? (
+          <CurrencyField
+            size="small"
+            value={editAmount}
+            onChange={setEditAmount}
+            sx={{
+              width: '140px',
+              display: 'inline-flex',
+              verticalAlign: 'middle',
+              '& input': {
+                fontSize: '0.75rem',
+                padding: '4px 8px',
+              },
+            }}
+            autoFocus
+          />
+        ) : (
+          formatCurrency(installment.amount)
+        )}
+      </Typography>
+      <StatusChip status={installment.status} />
+      {installment.tags && installment.tags.length > 0 && (
+        <Tooltip
+          title={
+            <Box>
+              {installment.tags.slice(0, 10).map(t => (
+                <Chip
+                  key={t.tag.id}
+                  label={t.tag.name}
+                  size="small"
+                  sx={{
+                    m: 0.25,
+                    bgcolor: t.tag.color || '#e0e0e0',
+                    color: '#fff',
+                  }}
+                />
+              ))}
+              {installment.tags.length > 10 && (
+                <Typography
+                  variant="caption"
+                  sx={{ mt: 0.5, display: 'block' }}
+                >
+                  ...e mais {installment.tags.length - 10} tags
+                </Typography>
+              )}
+            </Box>
+          }
+        >
+          <Chip
+            icon={<LocalOfferIcon />}
+            label={`+${installment.tags.length}`}
+            size="small"
+            color="primary"
+            variant="outlined"
+          />
+        </Tooltip>
+      )}
+      {installment.notes && (
+        <Tooltip title={installment.notes}>
+          <CommentIcon fontSize="small" color="action" />
+        </Tooltip>
+      )}
+      {editingInstallment === installment.id ? (
+        <>
+          <Tooltip title="Salvar">
+            <IconButton
+              size="small"
+              color="success"
+              onClick={() => onSaveEdit(account, installment)}
+            >
+              <CheckIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Cancelar">
+            <IconButton size="small" color="error" onClick={onCancelEdit}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </>
+      ) : (
+        <>
+          {hasUpdateInstallment && installment.status === 'PENDING' && (
+            <Tooltip title="Editar valor">
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => onStartEdit(installment)}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {onEditInstallment && (
+            <Tooltip title="Editar parcela completa">
+              <IconButton
+                size="small"
+                onClick={() => onEditInstallment(account, installment)}
+              >
+                <EditNoteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          <Tooltip title="Registrar pagamento">
+            <span>
+              <IconButton
+                size="small"
+                color="success"
+                onClick={() => onPayment(installment)}
+                disabled={installment.status === 'PAID'}
+              >
+                <PaymentIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          {onDeleteInstallment &&
+            installment.status === 'PENDING' &&
+            totalInstallments > 1 && (
+              <Tooltip title="Excluir parcela">
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => onDeleteInstallment(account, installment)}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+        </>
+      )}
+    </Box>
+  </Box>
+);
+
 export const PayablesTable: React.FC<PayablesTableProps> = ({
   payables,
   totalCount,
@@ -174,44 +424,12 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
     }
   };
 
-  // Helper function to determine text color based on installment number
-  const getInstallmentTextColor = (
-    installmentNumber: number,
-    totalInstallments: number
-  ) => {
-    if (installmentNumber === 1) return 'primary.main';
-    if (installmentNumber === totalInstallments) return 'success.main';
-    return 'text.primary';
-  };
-
-  // Helper function to determine border color based on index
-  const getBorderColor = (index: number, totalLength: number) => {
-    if (index === 0) return 'primary.main';
-    if (index === totalLength - 1) return 'success.main';
-    return 'divider';
-  };
-
-  // Helper function to determine hover border color based on index
-  const getHoverBorderColor = (index: number, totalLength: number) => {
-    if (index === 0) return 'primary.dark';
-    if (index === totalLength - 1) return 'success.dark';
-    return 'primary.light';
-  };
-
-  // Helper function to determine background color based on index
-  const getBackgroundColor =
-    (idx: number, totalLength: number) => (theme: Theme) => {
-      if (idx === 0) return theme.palette.primary.main + '08';
-      if (idx === totalLength - 1) return theme.palette.success.main + '08';
-      return 'background.paper';
-    };
-
   const renderMobileContent = () => {
     if (isLoading) {
       return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {new Array(3).fill(null).map((_, i) => (
-            <Card key={i}>
+          {(['skeleton-1', 'skeleton-2', 'skeleton-3'] as const).map(id => (
+            <Card key={id}>
               <CardContent>
                 <Typography variant="h6">Carregando...</Typography>
               </CardContent>
@@ -456,236 +674,23 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                       </AccordionSummary>
                       <AccordionDetails>
                         {installments.map((installment, idx) => (
-                          <Box
+                          <MobileInstallmentItem
                             key={installment.id}
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              py: 1,
-                              px: 2,
-                              mb: 1,
-                              borderRadius: 1,
-                              border: 1,
-                              borderColor: getBorderColor(
-                                idx,
-                                installments.length
-                              ),
-                              backgroundColor: getBackgroundColor(
-                                idx,
-                                installments.length
-                              ),
-                              '&:hover': {
-                                borderColor: getHoverBorderColor(
-                                  idx,
-                                  installments.length
-                                ),
-                              },
-                            }}
-                          >
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <Typography
-                                variant="body2"
-                                fontWeight="medium"
-                                color={getInstallmentTextColor(
-                                  installment.installmentNumber,
-                                  installments.length
-                                )}
-                              >
-                                {installment.installmentNumber}ª parcela
-                              </Typography>
-                              <Chip
-                                label={formatLocalDate(installment.dueDate)}
-                                size="small"
-                                color={
-                                  installment.isOverdue &&
-                                  installment.status !== 'PAID'
-                                    ? 'error'
-                                    : 'default'
-                                }
-                                sx={{
-                                  ml: 1,
-                                  ...(installment.isOverdue &&
-                                    installment.status !== 'PAID' && {
-                                      fontWeight: 600,
-                                      animation:
-                                        'pulse 2s ease-in-out infinite',
-                                      '@keyframes pulse': {
-                                        '0%, 100%': { opacity: 1 },
-                                        '50%': { opacity: 0.7 },
-                                      },
-                                    }),
-                                }}
-                              />
-                            </Box>
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 1,
-                              }}
-                            >
-                              <Typography variant="body2" fontWeight="medium">
-                                {editingInstallment === installment.id ? (
-                                  <CurrencyField
-                                    size="small"
-                                    value={editAmount}
-                                    onChange={setEditAmount}
-                                    sx={{
-                                      width: '140px',
-                                      display: 'inline-flex',
-                                      verticalAlign: 'middle',
-                                      '& input': {
-                                        fontSize: '0.75rem',
-                                        padding: '4px 8px',
-                                      },
-                                    }}
-                                    autoFocus
-                                  />
-                                ) : (
-                                  formatCurrency(installment.amount)
-                                )}
-                              </Typography>
-                              <StatusChip status={installment.status} />
-                              {/* Tags Badge (Mobile) */}
-                              {installment.tags &&
-                                installment.tags.length > 0 && (
-                                  <Tooltip
-                                    title={
-                                      <Box>
-                                        {installment.tags
-                                          .slice(0, 10)
-                                          .map(t => (
-                                            <Chip
-                                              key={t.tag.id}
-                                              label={t.tag.name}
-                                              size="small"
-                                              sx={{
-                                                m: 0.25,
-                                                bgcolor:
-                                                  t.tag.color || '#e0e0e0',
-                                                color: '#fff',
-                                              }}
-                                            />
-                                          ))}
-                                        {installment.tags.length > 10 && (
-                                          <Typography
-                                            variant="caption"
-                                            sx={{ mt: 0.5, display: 'block' }}
-                                          >
-                                            ...e mais{' '}
-                                            {installment.tags.length - 10} tags
-                                          </Typography>
-                                        )}
-                                      </Box>
-                                    }
-                                  >
-                                    <Chip
-                                      icon={<LocalOfferIcon />}
-                                      label={`+${installment.tags.length}`}
-                                      size="small"
-                                      color="primary"
-                                      variant="outlined"
-                                    />
-                                  </Tooltip>
-                                )}
-                              {/* Notes Icon (Mobile) */}
-                              {installment.notes && (
-                                <Tooltip title={installment.notes}>
-                                  <CommentIcon
-                                    fontSize="small"
-                                    color="action"
-                                  />
-                                </Tooltip>
-                              )}
-                              {editingInstallment === installment.id ? (
-                                <>
-                                  <Tooltip title="Salvar">
-                                    <IconButton
-                                      size="small"
-                                      color="success"
-                                      onClick={() =>
-                                        handleSaveEdit(account, installment)
-                                      }
-                                    >
-                                      <CheckIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
-                                  <Tooltip title="Cancelar">
-                                    <IconButton
-                                      size="small"
-                                      color="error"
-                                      onClick={handleCancelEdit}
-                                    >
-                                      <CloseIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
-                                </>
-                              ) : (
-                                <>
-                                  {onUpdateInstallment &&
-                                    installment.status === 'PENDING' && (
-                                      <Tooltip title="Editar valor">
-                                        <IconButton
-                                          size="small"
-                                          color="primary"
-                                          onClick={() =>
-                                            handleStartEdit(installment)
-                                          }
-                                        >
-                                          <EditIcon fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                    )}
-                                  {onEditInstallment && (
-                                    <Tooltip title="Editar parcela completa">
-                                      <IconButton
-                                        size="small"
-                                        onClick={() =>
-                                          onEditInstallment(
-                                            account,
-                                            installment
-                                          )
-                                        }
-                                      >
-                                        <EditNoteIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                  )}
-                                  <Tooltip title="Registrar pagamento">
-                                    <span>
-                                      <IconButton
-                                        size="small"
-                                        color="success"
-                                        onClick={() => onPayment(installment)}
-                                        disabled={installment.status === 'PAID'}
-                                      >
-                                        <PaymentIcon fontSize="small" />
-                                      </IconButton>
-                                    </span>
-                                  </Tooltip>
-                                  {onDeleteInstallment &&
-                                    installment.status === 'PENDING' &&
-                                    installments.length > 1 && (
-                                      <Tooltip title="Excluir parcela">
-                                        <IconButton
-                                          size="small"
-                                          color="error"
-                                          onClick={() =>
-                                            onDeleteInstallment(
-                                              account,
-                                              installment
-                                            )
-                                          }
-                                        >
-                                          <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                    )}
-                                </>
-                              )}
-                            </Box>
-                          </Box>
+                            account={account}
+                            installment={installment}
+                            idx={idx}
+                            totalInstallments={installments.length}
+                            editingInstallment={editingInstallment}
+                            editAmount={editAmount}
+                            setEditAmount={setEditAmount}
+                            onStartEdit={handleStartEdit}
+                            onSaveEdit={handleSaveEdit}
+                            onCancelEdit={handleCancelEdit}
+                            onPayment={onPayment}
+                            onEditInstallment={onEditInstallment}
+                            onDeleteInstallment={onDeleteInstallment}
+                            hasUpdateInstallment={!!onUpdateInstallment}
+                          />
                         ))}
                       </AccordionDetails>
                     </Accordion>

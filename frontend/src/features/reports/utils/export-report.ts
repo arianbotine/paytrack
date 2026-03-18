@@ -22,7 +22,11 @@ function formatDate(dateString: string): string {
   // Se a string está no formato YYYY-MM-DD, parsear como data local
   if (/^\d{4}-\d{2}-\d{2}/.test(dateString)) {
     const [year, month, day] = dateString.split('T')[0].split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    const date = new Date(
+      Number.parseInt(year),
+      Number.parseInt(month) - 1,
+      Number.parseInt(day)
+    );
     return date.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
@@ -66,7 +70,7 @@ function convertToCSV(data: string[][]): string {
             cellStr.includes('\n') ||
             cellStr.includes('"')
           ) {
-            return `"${cellStr.replace(/"/g, '""')}"`;
+            return `"${cellStr.replaceAll('"', '""')}"`;
           }
           return cellStr;
         })
@@ -92,8 +96,105 @@ function downloadCSV(content: string, filename: string): void {
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
+  link.remove();
   URL.revokeObjectURL(url);
+}
+
+function buildSummaryRows(data: PaymentsReportResponse): string[][] {
+  return [
+    ['RESUMO DO PERÍODO SELECIONADO'],
+    ['Métrica', 'Valor'],
+    ['Total Pago', formatCurrency(data.totals.payables.current)],
+    ['Total Recebido', formatCurrency(data.totals.receivables.current)],
+    ['Saldo Líquido', formatCurrency(data.totals.netBalance.current)],
+    ['Total de Transações', data.totals.transactions.current.toString()],
+    [''],
+  ];
+}
+
+function buildComparisonRows(data: PaymentsReportResponse): string[][] {
+  return [
+    ['COMPARAÇÃO COM PERÍODO ANTERIOR'],
+    ['Métrica', 'Período Atual', 'Período Anterior', 'Variação (%)'],
+    [
+      'Total Pago',
+      formatCurrency(data.totals.payables.current),
+      formatCurrency(data.totals.payables.previous),
+      `${data.totals.payables.variance.toFixed(2)}%`,
+    ],
+    [
+      'Total Recebido',
+      formatCurrency(data.totals.receivables.current),
+      formatCurrency(data.totals.receivables.previous),
+      `${data.totals.receivables.variance.toFixed(2)}%`,
+    ],
+    [
+      'Saldo Líquido',
+      formatCurrency(data.totals.netBalance.current),
+      formatCurrency(data.totals.netBalance.previous),
+      `${data.totals.netBalance.variance.toFixed(2)}%`,
+    ],
+    [
+      'Total de Transações',
+      data.totals.transactions.current.toString(),
+      data.totals.transactions.previous.toString(),
+      `${data.totals.transactions.variance.toFixed(2)}%`,
+    ],
+    [''],
+  ];
+}
+
+function buildTimeSeriesRows(
+  data: PaymentsReportResponse,
+  groupBy?: string
+): string[][] {
+  if (!data.timeSeries || data.timeSeries.length === 0) return [];
+  return [
+    [`EVOLUÇÃO TEMPORAL (${formatGroupBy(groupBy).toUpperCase()})`],
+    ['Período', 'Pagamentos', 'Recebimentos', 'Saldo Líquido', 'Transações'],
+    ...data.timeSeries.map(item => {
+      const netBalance = item.receivables - item.payables;
+      return [
+        formatDate(item.period),
+        formatCurrency(item.payables),
+        formatCurrency(item.receivables),
+        formatCurrency(netBalance),
+        item.count.toString(),
+      ];
+    }),
+    [''],
+  ];
+}
+
+function buildCategoryBreakdownRows(data: PaymentsReportResponse): string[][] {
+  if (data.breakdown.byCategory.data.length === 0) return [];
+  return [
+    ['DETALHAMENTO POR CATEGORIA'],
+    ['Categoria', 'Valor', 'Percentual', 'Transações'],
+    ...data.breakdown.byCategory.data.map(item => [
+      item.name,
+      formatCurrency(item.amount),
+      `${item.percentage.toFixed(2)}%`,
+      item.count.toString(),
+    ]),
+    [''],
+  ];
+}
+
+function buildPaymentMethodBreakdownRows(
+  data: PaymentsReportResponse
+): string[][] {
+  if (data.breakdown.byPaymentMethod.data.length === 0) return [];
+  return [
+    ['DETALHAMENTO POR MÉTODO DE PAGAMENTO'],
+    ['Método', 'Valor', 'Percentual', 'Transações'],
+    ...data.breakdown.byPaymentMethod.data.map(item => [
+      item.name,
+      formatCurrency(item.amount),
+      `${item.percentage.toFixed(2)}%`,
+      item.count.toString(),
+    ]),
+  ];
 }
 
 /**
@@ -109,170 +210,23 @@ export function exportPaymentsReportToCSV(
     customers?: string[];
   }
 ): void {
-  const csvData: string[][] = [];
+  const csvData: string[][] = [
+    ['RELATÓRIO DE PAGAMENTOS - DADOS DO PERÍODO SELECIONADO'],
+    [
+      'Período:',
+      `${formatDate(filters.startDate)} a ${formatDate(filters.endDate)}`,
+    ],
+    ['Agrupamento:', formatGroupBy(filters.groupBy)],
+    ['Gerado em:', new Date().toLocaleString('pt-BR')],
+    [''],
+    ...buildFilterRows(filters, filterLabels),
+    ...buildSummaryRows(data),
+    ...buildComparisonRows(data),
+    ...buildTimeSeriesRows(data, filters.groupBy),
+    ...buildCategoryBreakdownRows(data),
+    ...buildPaymentMethodBreakdownRows(data),
+  ];
 
-  // Cabeçalho do relatório
-  csvData.push(['RELATÓRIO DE PAGAMENTOS - DADOS DO PERÍODO SELECIONADO']);
-  csvData.push([
-    'Período:',
-    `${formatDate(filters.startDate)} a ${formatDate(filters.endDate)}`,
-  ]);
-  csvData.push(['Agrupamento:', formatGroupBy(filters.groupBy)]);
-  csvData.push(['Gerado em:', new Date().toLocaleString('pt-BR')]);
-  csvData.push(['']); // Linha vazia
-
-  // Filtros aplicados (se houver)
-  const hasFilters =
-    (filters.categoryIds && filters.categoryIds.length > 0) ||
-    (filters.tagIds && filters.tagIds.length > 0) ||
-    (filters.vendorIds && filters.vendorIds.length > 0) ||
-    (filters.customerIds && filters.customerIds.length > 0);
-
-  if (hasFilters) {
-    csvData.push(['FILTROS APLICADOS']);
-
-    if (filters.categoryIds && filters.categoryIds.length > 0) {
-      csvData.push([
-        'Categorias:',
-        filterLabels?.categories?.join(', ') ||
-          `${filters.categoryIds.length} selecionada(s)`,
-      ]);
-    }
-
-    if (filters.tagIds && filters.tagIds.length > 0) {
-      csvData.push([
-        'Tags:',
-        filterLabels?.tags?.join(', ') ||
-          `${filters.tagIds.length} selecionada(s)`,
-      ]);
-    }
-
-    if (filters.vendorIds && filters.vendorIds.length > 0) {
-      csvData.push([
-        'Fornecedores:',
-        filterLabels?.vendors?.join(', ') ||
-          `${filters.vendorIds.length} selecionado(s)`,
-      ]);
-    }
-
-    if (filters.customerIds && filters.customerIds.length > 0) {
-      csvData.push([
-        'Clientes:',
-        filterLabels?.customers?.join(', ') ||
-          `${filters.customerIds.length} selecionado(s)`,
-      ]);
-    }
-
-    csvData.push(['']); // Linha vazia
-  }
-
-  // Resumo - Totais (apenas período atual - dados exibidos na tela)
-  csvData.push(['RESUMO DO PERÍODO SELECIONADO']);
-  csvData.push(['Métrica', 'Valor']);
-  csvData.push(['Total Pago', formatCurrency(data.totals.payables.current)]);
-  csvData.push([
-    'Total Recebido',
-    formatCurrency(data.totals.receivables.current),
-  ]);
-  csvData.push([
-    'Saldo Líquido',
-    formatCurrency(data.totals.netBalance.current),
-  ]);
-  csvData.push([
-    'Total de Transações',
-    data.totals.transactions.current.toString(),
-  ]);
-  csvData.push(['']); // Linha vazia
-
-  // Comparação com período anterior
-  csvData.push(['COMPARAÇÃO COM PERÍODO ANTERIOR']);
-  csvData.push([
-    'Métrica',
-    'Período Atual',
-    'Período Anterior',
-    'Variação (%)',
-  ]);
-  csvData.push([
-    'Total Pago',
-    formatCurrency(data.totals.payables.current),
-    formatCurrency(data.totals.payables.previous),
-    `${data.totals.payables.variance.toFixed(2)}%`,
-  ]);
-  csvData.push([
-    'Total Recebido',
-    formatCurrency(data.totals.receivables.current),
-    formatCurrency(data.totals.receivables.previous),
-    `${data.totals.receivables.variance.toFixed(2)}%`,
-  ]);
-  csvData.push([
-    'Saldo Líquido',
-    formatCurrency(data.totals.netBalance.current),
-    formatCurrency(data.totals.netBalance.previous),
-    `${data.totals.netBalance.variance.toFixed(2)}%`,
-  ]);
-  csvData.push([
-    'Total de Transações',
-    data.totals.transactions.current.toString(),
-    data.totals.transactions.previous.toString(),
-    `${data.totals.transactions.variance.toFixed(2)}%`,
-  ]);
-  csvData.push(['']); // Linha vazia
-
-  // Série Temporal
-  if (data.timeSeries && data.timeSeries.length > 0) {
-    csvData.push([
-      `EVOLUÇÃO TEMPORAL (${formatGroupBy(filters.groupBy).toUpperCase()})`,
-    ]);
-    csvData.push([
-      'Período',
-      'Pagamentos',
-      'Recebimentos',
-      'Saldo Líquido',
-      'Transações',
-    ]);
-    data.timeSeries.forEach(item => {
-      const netBalance = item.receivables - item.payables;
-      csvData.push([
-        formatDate(item.period),
-        formatCurrency(item.payables),
-        formatCurrency(item.receivables),
-        formatCurrency(netBalance),
-        item.count.toString(),
-      ]);
-    });
-    csvData.push(['']); // Linha vazia
-  }
-
-  // Breakdown por Categoria
-  if (data.breakdown.byCategory.data.length > 0) {
-    csvData.push(['DETALHAMENTO POR CATEGORIA']);
-    csvData.push(['Categoria', 'Valor', 'Percentual', 'Transações']);
-    data.breakdown.byCategory.data.forEach(item => {
-      csvData.push([
-        item.name,
-        formatCurrency(item.amount),
-        `${item.percentage.toFixed(2)}%`,
-        item.count.toString(),
-      ]);
-    });
-    csvData.push(['']); // Linha vazia
-  }
-
-  // Breakdown por Método de Pagamento
-  if (data.breakdown.byPaymentMethod.data.length > 0) {
-    csvData.push(['DETALHAMENTO POR MÉTODO DE PAGAMENTO']);
-    csvData.push(['Método', 'Valor', 'Percentual', 'Transações']);
-    data.breakdown.byPaymentMethod.data.forEach(item => {
-      csvData.push([
-        item.name,
-        formatCurrency(item.amount),
-        `${item.percentage.toFixed(2)}%`,
-        item.count.toString(),
-      ]);
-    });
-  }
-
-  // Converter para CSV e fazer download
   const csvContent = convertToCSV(csvData);
   const filename = `relatorio-pagamentos_${filters.startDate}_${filters.endDate}.csv`;
   downloadCSV(csvContent, filename);
