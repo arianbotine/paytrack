@@ -85,8 +85,8 @@ export function calculateDateRange(period: PeriodShortcut): DateRange {
  * Formata um resumo do período selecionado
  */
 export function getPeriodSummary(startDate: string, endDate: string): string {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  const start = new Date(startDate + 'T00:00:00');
+  const end = new Date(endDate + 'T00:00:00');
   const diffTime = Math.abs(end.getTime() - start.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
