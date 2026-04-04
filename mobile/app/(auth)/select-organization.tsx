@@ -8,7 +8,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, useAuthStore, AuthResponse } from '../../src/lib';
 import { Text } from '../../src/shared/components/Text';
 import { translateRole } from '../../src/lib/formatters';
@@ -17,6 +17,7 @@ export default function SelectOrganizationScreen() {
   const user = useAuthStore(state => state.user);
   const setAuth = useAuthStore(state => state.setAuth);
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
 
   const selectOrgMutation = useMutation({
     mutationFn: async (organizationId: string) => {
@@ -30,6 +31,7 @@ export default function SelectOrganizationScreen() {
     },
     onSuccess: async data => {
       await setAuth(data.user, data.accessToken, data.refreshToken);
+      queryClient.clear();
       router.replace('/(tabs)');
     },
   });

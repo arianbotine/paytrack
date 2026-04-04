@@ -3,7 +3,7 @@
 
 SHELL := /bin/bash
 
-.PHONY: help setup setup-force db-up db-sync up down restart clean reset studio logs tests mobile-setup mobile-start mobile-dev
+.PHONY: help setup setup-force db-up db-sync up down restart clean reset studio logs tests mobile-setup mobile-start mobile-start-prod mobile-dev
 
 # Variáveis
 DOCKER_COMPOSE := docker compose
@@ -45,9 +45,10 @@ help:
 	@echo "  tests       - Executar testes e2e do backend"
 	@echo ""
 	@echo "Comandos Mobile:"
-	@echo "  mobile-setup - Instalar dependências do app mobile"
-	@echo "  mobile-start - Iniciar Expo (app mobile)"
-	@echo "  mobile-dev  - Iniciar ambiente completo (backend + BFF + frontend)"
+	@echo "  mobile-setup      - Instalar dependências do app mobile"
+	@echo "  mobile-start      - Iniciar Expo apontando para BFF local"
+	@echo "  mobile-start-prod - Iniciar Expo sem alterar o .env (usa URL atual)"
+	@echo "  mobile-dev        - Iniciar ambiente completo (backend + BFF + frontend)"
 
 # Instalar dependências
 setup:
@@ -251,10 +252,22 @@ mobile-setup:
 		echo "Dependências do app mobile já instaladas."; \
 	fi
 
-# Iniciar Expo (app mobile)
+# Iniciar Expo (app mobile) - aponta para BFF local
 mobile-start: mobile-setup
 	@if [ ! -f .env ]; then cp .env.example .env; fi
 	@set -a && . ./.env && set +a && echo "EXPO_PUBLIC_BFF_URL=http://$$MOBILE_HOST_IP:$(BFF_PORT)" > $(MOBILE_DIR)/.env
+	@echo "Encerrando instâncias anteriores do Expo/Metro..."
+	@-pkill -f "expo start" 2>/dev/null || true
+	@-pkill -f "metro" 2>/dev/null || true
+	@-lsof -ti:8081 | xargs kill -9 2>/dev/null || true
+	@-lsof -ti:8082 | xargs kill -9 2>/dev/null || true
+	@sleep 1
+	@echo "Iniciando Expo..."
+	@set -a && . ./.env && set +a && cd $(MOBILE_DIR) && REACT_NATIVE_PACKAGER_HOSTNAME=$$MOBILE_HOST_IP npx expo start --lan --clear
+
+# Iniciar Expo sem alterar o .env (usa a URL configurada manualmente)
+mobile-start-prod: mobile-setup
+	@echo "Usando EXPO_PUBLIC_BFF_URL=$(shell grep EXPO_PUBLIC_BFF_URL $(MOBILE_DIR)/.env 2>/dev/null || echo '(não definida)')"
 	@echo "Encerrando instâncias anteriores do Expo/Metro..."
 	@-pkill -f "expo start" 2>/dev/null || true
 	@-pkill -f "metro" 2>/dev/null || true

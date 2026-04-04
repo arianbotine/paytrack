@@ -1,5 +1,6 @@
 import { View, Alert } from 'react-native';
 import { router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/lib/auth-store';
 import { translateRole } from '../../src/lib/formatters';
@@ -37,6 +38,7 @@ function InfoRow({
 
 export default function ProfileScreen() {
   const { user, logout } = useAuthStore();
+  const queryClient = useQueryClient();
 
   const handleLogout = () => {
     Alert.alert('Sair', 'Deseja realmente sair da sua conta?', [
@@ -46,6 +48,7 @@ export default function ProfileScreen() {
         style: 'destructive',
         onPress: async () => {
           await logout();
+          queryClient.clear();
           router.replace('/(auth)/login');
         },
       },

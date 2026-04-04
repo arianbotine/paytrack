@@ -6,11 +6,23 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { api } from '../../src/lib';
-import type { PayableListItem, ListResponse, PaymentMethod } from '../../src/lib/types';
-import { formatCurrency, formatDate, STATUS_LABELS } from '../../src/lib/formatters';
+import { api, useAuthStore } from '../../src/lib';
+import type {
+  PayableListItem,
+  ListResponse,
+  PaymentMethod,
+} from '../../src/lib/types';
+import {
+  formatCurrency,
+  formatDate,
+  STATUS_LABELS,
+} from '../../src/lib/formatters';
 import { ScreenContainer } from '../../src/shared/components/ScreenContainer';
 import { Text } from '../../src/shared/components/Text';
 import { Card } from '../../src/shared/components/Card';
@@ -75,7 +87,12 @@ function PayableCard({
         {/* Top row */}
         <View className="flex-row items-start justify-between mb-3">
           <View className="flex-1 mr-3">
-            <Text variant="title" weight="semibold" className="text-neutral-900" numberOfLines={1}>
+            <Text
+              variant="title"
+              weight="semibold"
+              className="text-neutral-900"
+              numberOfLines={1}
+            >
               {item.vendorName || 'Sem fornecedor'}
             </Text>
             {item.categoryName && (
@@ -120,7 +137,11 @@ function PayableCard({
           <View className="flex-row items-center gap-3">
             {/* Installment progress */}
             <View className="flex-row items-center">
-              <MaterialCommunityIcons name="layers-outline" size={14} color="#9e9e9e" />
+              <MaterialCommunityIcons
+                name="layers-outline"
+                size={14}
+                color="#9e9e9e"
+              />
               <Text variant="caption" className="text-neutral-500 ml-1">
                 {item.paidInstallments}/{item.installmentsCount} parcelas
               </Text>
@@ -128,7 +149,11 @@ function PayableCard({
             {/* Due date */}
             {item.nextDueDate && !isPaid && (
               <View className="flex-row items-center">
-                <MaterialCommunityIcons name="calendar-outline" size={14} color="#9e9e9e" />
+                <MaterialCommunityIcons
+                  name="calendar-outline"
+                  size={14}
+                  color="#9e9e9e"
+                />
                 <Text variant="caption" className="text-neutral-500 ml-1">
                   {formatDate(item.nextDueDate)}
                 </Text>
@@ -142,8 +167,16 @@ function PayableCard({
               activeOpacity={0.75}
               className="flex-row items-center bg-primary-700 px-3 py-1.5 rounded-lg"
             >
-              <MaterialCommunityIcons name="cash-check" size={14} color="#ffffff" />
-              <Text variant="label" weight="semibold" className="text-white ml-1">
+              <MaterialCommunityIcons
+                name="cash-check"
+                size={14}
+                color="#ffffff"
+              />
+              <Text
+                variant="label"
+                weight="semibold"
+                className="text-white ml-1"
+              >
                 Pagar
               </Text>
             </TouchableOpacity>
@@ -156,7 +189,9 @@ function PayableCard({
         <View className="h-1 bg-neutral-100">
           <View
             className="h-1 bg-primary-400"
-            style={{ width: `${(item.paidInstallments / item.installmentsCount) * 100}%` }}
+            style={{
+              width: `${(item.paidInstallments / item.installmentsCount) * 100}%`,
+            }}
           />
         </View>
       )}
@@ -166,8 +201,12 @@ function PayableCard({
 
 export default function PayablesScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
-  const [selectedPayable, setSelectedPayable] = useState<PayableListItem | null>(null);
+  const [selectedPayable, setSelectedPayable] =
+    useState<PayableListItem | null>(null);
   const queryClient = useQueryClient();
+  const organizationId = useAuthStore(
+    state => state.user?.currentOrganization?.id
+  );
 
   const buildQueryParams = useCallback(
     (skip: number) => {
@@ -181,7 +220,7 @@ export default function PayablesScreen() {
   );
 
   const query = useInfiniteQuery<ListResponse<PayableListItem>>({
-    queryKey: ['payables', statusFilter],
+    queryKey: ['payables', organizationId, statusFilter],
     queryFn: async ({ pageParam = 0 }) => {
       const response = await api.get<ListResponse<PayableListItem>>(
         `/payables?${buildQueryParams(pageParam as number)}`
@@ -193,6 +232,7 @@ export default function PayablesScreen() {
       const loaded = allPages.reduce((sum, p) => sum + p.items.length, 0);
       return loaded < lastPage.total ? loaded : undefined;
     },
+    enabled: !!organizationId,
   });
 
   const payMutation = useMutation({
@@ -219,11 +259,16 @@ export default function PayablesScreen() {
     },
     onSuccess: () => {
       setSelectedPayable(null);
-      queryClient.invalidateQueries({ queryKey: ['payables'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['payables', organizationId] });
+      queryClient.invalidateQueries({
+        queryKey: ['dashboard', organizationId],
+      });
     },
     onError: (err: Error) => {
-      Alert.alert('Erro', err.message || 'Não foi possível registrar o pagamento.');
+      Alert.alert(
+        'Erro',
+        err.message || 'Não foi possível registrar o pagamento.'
+      );
     },
   });
 
@@ -312,7 +357,9 @@ export default function PayablesScreen() {
             }}
             onEndReachedThreshold={0.3}
             ListFooterComponent={
-              query.isFetchingNextPage ? <LoadingState message="Carregando mais..." /> : null
+              query.isFetchingNextPage ? (
+                <LoadingState message="Carregando mais..." />
+              ) : null
             }
           />
         )}

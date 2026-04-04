@@ -89,13 +89,15 @@ function SectionCard({
 
 export default function DashboardScreen() {
   const user = useAuthStore(state => state.user);
+  const organizationId = user?.currentOrganization?.id;
 
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
-    queryKey: ['dashboard'],
+    queryKey: ['dashboard', organizationId],
     queryFn: async () => {
       const response = await api.get<DashboardData>('/dashboard');
       return response.data;
     },
+    enabled: !!organizationId,
   });
 
   if (isLoading) {

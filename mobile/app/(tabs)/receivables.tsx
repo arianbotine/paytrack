@@ -6,11 +6,23 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { api } from '../../src/lib';
-import type { ReceivableListItem, ListResponse, PaymentMethod } from '../../src/lib/types';
-import { formatCurrency, formatDate, STATUS_LABELS_RECEIVABLE } from '../../src/lib/formatters';
+import { api, useAuthStore } from '../../src/lib';
+import type {
+  ReceivableListItem,
+  ListResponse,
+  PaymentMethod,
+} from '../../src/lib/types';
+import {
+  formatCurrency,
+  formatDate,
+  STATUS_LABELS_RECEIVABLE,
+} from '../../src/lib/formatters';
 import { ScreenContainer } from '../../src/shared/components/ScreenContainer';
 import { Text } from '../../src/shared/components/Text';
 import { Card } from '../../src/shared/components/Card';
@@ -75,7 +87,12 @@ function ReceivableCard({
         {/* Top row */}
         <View className="flex-row items-start justify-between mb-3">
           <View className="flex-1 mr-3">
-            <Text variant="title" weight="semibold" className="text-neutral-900" numberOfLines={1}>
+            <Text
+              variant="title"
+              weight="semibold"
+              className="text-neutral-900"
+              numberOfLines={1}
+            >
               {item.customerName || 'Sem cliente'}
             </Text>
             {item.categoryName && (
@@ -119,14 +136,22 @@ function ReceivableCard({
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center gap-3">
             <View className="flex-row items-center">
-              <MaterialCommunityIcons name="layers-outline" size={14} color="#9e9e9e" />
+              <MaterialCommunityIcons
+                name="layers-outline"
+                size={14}
+                color="#9e9e9e"
+              />
               <Text variant="caption" className="text-neutral-500 ml-1">
                 {item.receivedInstallments}/{item.installmentsCount} parcelas
               </Text>
             </View>
             {item.nextDueDate && !isPaid && (
               <View className="flex-row items-center">
-                <MaterialCommunityIcons name="calendar-outline" size={14} color="#9e9e9e" />
+                <MaterialCommunityIcons
+                  name="calendar-outline"
+                  size={14}
+                  color="#9e9e9e"
+                />
                 <Text variant="caption" className="text-neutral-500 ml-1">
                   {formatDate(item.nextDueDate)}
                 </Text>
@@ -140,8 +165,16 @@ function ReceivableCard({
               activeOpacity={0.75}
               className="flex-row items-center bg-success-700 px-3 py-1.5 rounded-lg"
             >
-              <MaterialCommunityIcons name="cash-check" size={14} color="#ffffff" />
-              <Text variant="label" weight="semibold" className="text-white ml-1">
+              <MaterialCommunityIcons
+                name="cash-check"
+                size={14}
+                color="#ffffff"
+              />
+              <Text
+                variant="label"
+                weight="semibold"
+                className="text-white ml-1"
+              >
                 Receber
               </Text>
             </TouchableOpacity>
@@ -154,7 +187,9 @@ function ReceivableCard({
         <View className="h-1 bg-neutral-100">
           <View
             className="h-1 bg-success-500"
-            style={{ width: `${(item.receivedInstallments / item.installmentsCount) * 100}%` }}
+            style={{
+              width: `${(item.receivedInstallments / item.installmentsCount) * 100}%`,
+            }}
           />
         </View>
       )}
@@ -164,8 +199,12 @@ function ReceivableCard({
 
 export default function ReceivablesScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
-  const [selectedReceivable, setSelectedReceivable] = useState<ReceivableListItem | null>(null);
+  const [selectedReceivable, setSelectedReceivable] =
+    useState<ReceivableListItem | null>(null);
   const queryClient = useQueryClient();
+  const organizationId = useAuthStore(
+    state => state.user?.currentOrganization?.id
+  );
 
   const buildQueryParams = useCallback(
     (skip: number) => {
@@ -179,7 +218,7 @@ export default function ReceivablesScreen() {
   );
 
   const query = useInfiniteQuery<ListResponse<ReceivableListItem>>({
-    queryKey: ['receivables', statusFilter],
+    queryKey: ['receivables', organizationId, statusFilter],
     queryFn: async ({ pageParam = 0 }) => {
       const response = await api.get<ListResponse<ReceivableListItem>>(
         `/receivables?${buildQueryParams(pageParam as number)}`
@@ -191,6 +230,7 @@ export default function ReceivablesScreen() {
       const loaded = allPages.reduce((sum, p) => sum + p.items.length, 0);
       return loaded < lastPage.total ? loaded : undefined;
     },
+    enabled: !!organizationId,
   });
 
   const receiveMutation = useMutation({
@@ -217,11 +257,18 @@ export default function ReceivablesScreen() {
     },
     onSuccess: () => {
       setSelectedReceivable(null);
-      queryClient.invalidateQueries({ queryKey: ['receivables'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({
+        queryKey: ['receivables', organizationId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['dashboard', organizationId],
+      });
     },
     onError: (err: Error) => {
-      Alert.alert('Erro', err.message || 'Não foi possível registrar o recebimento.');
+      Alert.alert(
+        'Erro',
+        err.message || 'Não foi possível registrar o recebimento.'
+      );
     },
   });
 
@@ -310,7 +357,9 @@ export default function ReceivablesScreen() {
             }}
             onEndReachedThreshold={0.3}
             ListFooterComponent={
-              query.isFetchingNextPage ? <LoadingState message="Carregando mais..." /> : null
+              query.isFetchingNextPage ? (
+                <LoadingState message="Carregando mais..." />
+              ) : null
             }
           />
         )}
