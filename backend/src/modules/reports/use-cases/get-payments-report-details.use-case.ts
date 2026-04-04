@@ -19,11 +19,9 @@ export class GetPaymentsReportDetailsUseCase {
       throw new BadRequestException('startDate e endDate são obrigatórios');
     }
 
+    // Frontend envia datas já convertidas para UTC ISO (início e fim do dia local)
     const startDate = new Date(filters.startDate);
-    startDate.setHours(0, 0, 0, 0);
-
     const endDate = new Date(filters.endDate);
-    endDate.setHours(23, 59, 59, 999);
 
     const { data, total } = await this.repository.getPaymentsDetails(
       organizationId,

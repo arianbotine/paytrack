@@ -1,5 +1,10 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Query } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
 import { CurrentUser } from '../../shared/decorators';
 
@@ -11,7 +16,21 @@ export class DashboardController {
 
   @Get()
   @ApiOperation({ summary: 'Obter resumo do dashboard' })
-  async getSummary(@CurrentUser('organizationId') organizationId: string) {
-    return this.dashboardService.getSummary(organizationId);
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Início do período em UTC ISO (para cards Pago/Recebido)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'Fim do período em UTC ISO (para cards Pago/Recebido)',
+  })
+  async getSummary(
+    @CurrentUser('organizationId') organizationId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string
+  ) {
+    return this.dashboardService.getSummary(organizationId, startDate, endDate);
   }
 }

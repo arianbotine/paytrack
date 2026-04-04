@@ -16,8 +16,8 @@ export class GetDashboardSummaryUseCase {
     private readonly cacheService: CacheService
   ) {}
 
-  async execute(organizationId: string) {
-    const cacheKey = `dashboard:summary:${organizationId}`;
+  async execute(organizationId: string, startDate?: string, endDate?: string) {
+    const cacheKey = `dashboard:summary:${organizationId}:${startDate || 'default'}:${endDate || 'default'}`;
     const cacheTTL = Number.parseInt(
       process.env.CACHE_TTL_DASHBOARD || '300',
       10
@@ -25,12 +25,16 @@ export class GetDashboardSummaryUseCase {
 
     return this.cacheService.getOrSet(
       cacheKey,
-      async () => this.generateSummary(organizationId),
+      async () => this.generateSummary(organizationId, startDate, endDate),
       cacheTTL
     );
   }
 
-  private async generateSummary(organizationId: string) {
+  private async generateSummary(
+    organizationId: string,
+    startDateStr?: string,
+    endDateStr?: string
+  ) {
     // Calcular datas usando DateRangeCalculator
     const todayUTC = this.dateRangeCalculator.getTodayUTC();
     const startOfCurrentMonth =
@@ -42,6 +46,14 @@ export class GetDashboardSummaryUseCase {
       endOfCurrentMonth
     );
 
+    // Período para "Pago no período" / "Recebido no período":
+    // usa as datas enviadas pelo frontend (já em UTC, convertidas do fuso local),
+    // ou o mês vigente UTC como fallback.
+    const paidPeriodStart = startDateStr
+      ? new Date(startDateStr)
+      : startOfCurrentMonth;
+    const paidPeriodEnd = endDateStr ? new Date(endDateStr) : endOfCurrentMonth;
+
     // Executar queries em paralelo através do repository
     const [
       payableInstallments,
@@ -52,6 +64,7 @@ export class GetDashboardSummaryUseCase {
       upcomingReceivableInstallments,
       allPayableInstallments,
       allReceivableInstallments,
+      paidAmounts,
     ] = await Promise.all([
       this.repository.getPayableInstallmentsSummary(
         organizationId,
@@ -85,6 +98,11 @@ export class GetDashboardSummaryUseCase {
       ),
       this.repository.getAllPayableInstallmentsSummary(organizationId),
       this.repository.getAllReceivableInstallmentsSummary(organizationId),
+      this.repository.getPaidAmountsByPeriod(
+        organizationId,
+        paidPeriodStart,
+        paidPeriodEnd
+      ),
     ]);
 
     // Calcular totais usando DashboardCalculator
@@ -131,6 +149,8 @@ export class GetDashboardSummaryUseCase {
         toPay: totalToPay,
         net: totalNetBalance,
       },
+      paidInPeriod: paidAmounts.paid,
+      receivedInPeriod: paidAmounts.received,
     };
   }
 }

@@ -545,4 +545,33 @@ export class DashboardRepository {
       return a.nextUnpaidDueDate.localeCompare(b.nextUnpaidDueDate);
     });
   }
+
+  /**
+   * Retorna o total efetivamente pago/recebido no período, baseado nos registros
+   * de Payment filtrados por paymentDate (não por dueDate das parcelas).
+   * Segue a mesma lógica do relatório de pagamentos.
+   */
+  async getPaidAmountsByPeriod(
+    organizationId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<{ paid: number; received: number }> {
+    const result = await this.prisma.$queryRaw<
+      Array<{ paid_amount: unknown; received_amount: unknown }>
+    >`
+      SELECT
+        COALESCE(SUM(CASE WHEN pa.payable_installment_id IS NOT NULL THEN pa.amount ELSE 0 END), 0)::DECIMAL as paid_amount,
+        COALESCE(SUM(CASE WHEN pa.receivable_installment_id IS NOT NULL THEN pa.amount ELSE 0 END), 0)::DECIMAL as received_amount
+      FROM payments p
+      JOIN payment_allocations pa ON p.id = pa.payment_id
+      WHERE p.organization_id = ${organizationId}
+        AND p.payment_date >= ${startDate}
+        AND p.payment_date <= ${endDate}
+    `;
+
+    return {
+      paid: Number(result[0]?.paid_amount || 0),
+      received: Number(result[0]?.received_amount || 0),
+    };
+  }
 }

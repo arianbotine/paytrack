@@ -60,6 +60,30 @@ interface DashboardData {
     toPay: number;
     net: number;
   };
+  paidInPeriod: number;
+  receivedInPeriod: number;
+}
+
+/**
+ * Calcula o range do mês atual no fuso local do navegador, convertido para UTC ISO.
+ * Segue o mesmo padrão do relatório de pagamentos.
+ */
+function getCurrentMonthUTCRange(): { startDate: string; endDate: string } {
+  const now = new Date();
+  const startLocal = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+  const endLocal = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0,
+    23,
+    59,
+    59,
+    999
+  );
+  return {
+    startDate: startLocal.toISOString(),
+    endDate: endLocal.toISOString(),
+  };
 }
 
 // Generate mock cash flow data based on current balance
@@ -127,10 +151,14 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  const { startDate, endDate } = getCurrentMonthUTCRange();
+
   const { data, isLoading, error } = useQuery<DashboardData>({
-    queryKey: ['dashboard'],
+    queryKey: ['dashboard', startDate, endDate],
     queryFn: async () => {
-      const response = await api.get('/dashboard');
+      const response = await api.get('/dashboard', {
+        params: { startDate, endDate },
+      });
       return response.data;
     },
     refetchOnMount: 'always',
@@ -241,7 +269,7 @@ export function DashboardPage() {
               <Grid item xs={12} sm={6} md={3}>
                 <SummaryCard
                   title="Recebido"
-                  value={data.receivableInstallments.totals.paid || 0}
+                  value={data.receivedInPeriod || 0}
                   subtitle="No período"
                   color="#10b981"
                   icon={<CheckCircleIcon />}
@@ -250,7 +278,7 @@ export function DashboardPage() {
               <Grid item xs={12} sm={6} md={3}>
                 <SummaryCard
                   title="Pago"
-                  value={data.payableInstallments.totals.paid || 0}
+                  value={data.paidInPeriod || 0}
                   subtitle="No período"
                   color="#ef4444"
                   icon={<CheckCircleIcon />}

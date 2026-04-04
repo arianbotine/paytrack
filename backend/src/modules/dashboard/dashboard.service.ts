@@ -15,8 +15,16 @@ export class DashboardService {
     private readonly cacheService: CacheService
   ) {}
 
-  async getSummary(organizationId: string) {
-    return this.getDashboardSummaryUseCase.execute(organizationId);
+  async getSummary(
+    organizationId: string,
+    startDate?: string,
+    endDate?: string
+  ) {
+    return this.getDashboardSummaryUseCase.execute(
+      organizationId,
+      startDate,
+      endDate
+    );
   }
 
   invalidateDashboardCache(organizationId: string) {

@@ -33,13 +33,47 @@ interface Customer {
   name: string;
 }
 
+/**
+ * Converte uma data local (YYYY-MM-DD) para UTC ISO representando o início do dia
+ * no fuso horário do navegador do usuário.
+ */
+function localDateToUTCStartOfDay(dateStr: string): string {
+  return new Date(dateStr + 'T00:00:00').toISOString();
+}
+
+/**
+ * Converte uma data local (YYYY-MM-DD) para UTC ISO representando o fim do dia
+ * no fuso horário do navegador do usuário.
+ */
+function localDateToUTCEndOfDay(dateStr: string): string {
+  return new Date(dateStr + 'T23:59:59.999').toISOString();
+}
+
+/**
+ * Converte os filtros de data local para UTC antes de enviar ao backend.
+ * O backend não conhece o fuso do usuário, portanto deve receber UTC.
+ */
+function toUTCDateParams(
+  params: UsePaymentsReportParams
+): UsePaymentsReportParams {
+  return {
+    ...params,
+    startDate: params.startDate
+      ? localDateToUTCStartOfDay(params.startDate)
+      : params.startDate,
+    endDate: params.endDate
+      ? localDateToUTCEndOfDay(params.endDate)
+      : params.endDate,
+  };
+}
+
 export const usePaymentsReport = (params: UsePaymentsReportParams) => {
   return useQuery<PaymentsReportResponse, Error, PaymentsReportResponse>({
     queryKey: ['reports', 'payments', params],
     queryFn: async (): Promise<PaymentsReportResponse> => {
       const { data } = await api.get<PaymentsReportResponse>(
         '/reports/payments',
-        { params }
+        { params: toUTCDateParams(params) }
       );
       return data;
     },
@@ -61,7 +95,7 @@ export const usePaymentsReportDetails = (
     queryFn: async (): Promise<PaymentsReportDetailsResponse> => {
       const { data } = await api.get<PaymentsReportDetailsResponse>(
         '/reports/payments/details',
-        { params }
+        { params: toUTCDateParams(params) }
       );
       return data;
     },
