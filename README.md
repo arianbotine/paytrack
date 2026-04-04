@@ -152,7 +152,6 @@ O projeto está configurado para **formatar automaticamente** o código ao salva
 #### Como Funciona
 
 1. **Ao salvar** um arquivo (Ctrl/Cmd + S), o VS Code automaticamente:
-
    - Formata o código com Prettier
    - Corrige problemas simples de ESLint
    - Adiciona ponto e vírgula quando necessário
@@ -177,6 +176,124 @@ O projeto está configurado para **formatar automaticamente** o código ao salva
 - **EditorConfig** (`editorconfig.editorconfig`)
 
 Para mais detalhes, consulte [`FORMATTING.md`](FORMATTING.md).
+
+## 📱 Desenvolvimento Mobile
+
+O PayTrack inclui um **aplicativo mobile** (React Native + Expo) e um **BFF** (Backend for Frontend) que atua como intermediário entre o app e o backend principal.
+
+### Arquitetura
+
+```
+┌─────────────┐    ┌──────────────┐    ┌──────────────┐
+│   Mobile    │───▶│     BFF      │───▶│   Backend    │
+│   (Expo)    │    │  (NestJS)    │    │   (NestJS)   │
+│  :8081      │    │    :3001     │    │    :3000     │
+└─────────────┘    └──────────────┘    └──────────────┘
+```
+
+- **Mobile**: React Native + Expo + React Native Paper
+- **BFF**: NestJS na porta 3001, proxy/agregador para o backend
+- **Backend**: API existente na porta 3000
+
+### Pré-requisitos Mobile
+
+- **Node.js 18+**
+- **Expo CLI**: `npm install -g expo-cli` (opcional)
+- **Expo Go** no celular ou emulador Android/iOS
+
+### Iniciar Ambiente Mobile
+
+```bash
+# 1. Iniciar backend + frontend web (se ainda não estiver rodando)
+make up
+
+# 2. Iniciar BFF (em outro terminal)
+make bff-up
+
+# 3. Iniciar Expo (em outro terminal)
+make mobile-start
+
+# Ou tudo de uma vez (exceto Expo):
+make mobile-dev
+# Depois: make mobile-start
+```
+
+### Estrutura Mobile
+
+```
+bff-mobile/           # BFF - Backend for Frontend
+├── src/
+│   ├── modules/
+│   │   ├── auth/         # Proxy de autenticação
+│   │   ├── dashboard/    # Dashboard agregado
+│   │   ├── payables/     # Contas a pagar
+│   │   ├── receivables/  # Contas a receber
+│   │   └── shared/       # Guards, decorators
+│   └── infrastructure/   # HTTP client para backend
+
+mobile/               # App React Native + Expo
+├── app/
+│   ├── (auth)/           # Telas de autenticação
+│   │   ├── login.tsx
+│   │   └── select-organization.tsx
+│   └── (tabs)/           # Telas principais
+│       ├── index.tsx     # Dashboard
+│       ├── payables.tsx  # Contas a pagar
+│       ├── receivables.tsx
+│       └── profile.tsx
+└── src/
+    └── lib/              # API, stores, types
+```
+
+### Comandos Mobile (Makefile)
+
+```bash
+make bff-setup     # Instalar dependências do BFF
+make bff-up        # Iniciar BFF (:3001)
+make bff-down      # Parar BFF
+make logs-bff      # Logs do BFF
+
+make mobile-setup  # Instalar dependências do app
+make mobile-start  # Iniciar Expo
+make mobile-dev    # Iniciar backend + BFF (depois: make mobile-start)
+```
+
+### Endpoints do BFF
+
+| Método | Endpoint                                                   | Descrição                 |
+| ------ | ---------------------------------------------------------- | ------------------------- |
+| POST   | `/bff/auth/login`                                          | Login                     |
+| POST   | `/bff/auth/refresh`                                        | Refresh token             |
+| POST   | `/bff/auth/select-organization`                            | Trocar organização        |
+| GET    | `/bff/auth/me`                                             | Perfil do usuário         |
+| GET    | `/bff/dashboard`                                           | Dashboard agregado        |
+| GET    | `/bff/payables`                                            | Lista de contas a pagar   |
+| GET    | `/bff/payables/:id`                                        | Detalhe de conta a pagar  |
+| POST   | `/bff/payables/:id/installments/:installmentId/pay`        | Pagar parcela             |
+| GET    | `/bff/receivables`                                         | Lista de contas a receber |
+| POST   | `/bff/receivables/:id/installments/:installmentId/receive` | Receber parcela           |
+| GET    | `/bff/health`                                              | Health check              |
+
+### Testando o BFF
+
+```bash
+# Health check
+curl http://localhost:3001/bff/health
+
+# Login
+curl -X POST http://localhost:3001/bff/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@paytrack.com","password":"admin123"}'
+```
+
+### Variáveis de Ambiente Mobile
+
+| Variável              | Descrição             | Padrão                  |
+| --------------------- | --------------------- | ----------------------- |
+| `BFF_PORT`            | Porta do BFF          | `3001`                  |
+| `BACKEND_URL`         | URL do backend        | `http://localhost:3000` |
+| `BFF_JWT_SECRET`      | Secret JWT do BFF     | (usa JWT_SECRET)        |
+| `EXPO_PUBLIC_BFF_URL` | URL do BFF para o app | `http://localhost:3001` |
 
 ## ⚙️ Variáveis de Ambiente
 

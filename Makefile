@@ -3,18 +3,21 @@
 
 SHELL := /bin/bash
 
-.PHONY: help setup setup-force db-up db-sync up down restart clean reset studio logs tests
+.PHONY: help setup setup-force db-up db-sync up down restart clean reset studio logs tests mobile-setup mobile-start mobile-dev
 
 # Variáveis
 DOCKER_COMPOSE := docker compose
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
+BFF_DIR := bff-mobile
+MOBILE_DIR := mobile
 LOGS_DIR := logs
 DB_CONTAINER := db
 DB_USER := paytrack
 DB_NAME := paytrack
 BACKEND_PORT := 3000
 FRONTEND_PORT := 5173
+BFF_PORT := 3001
 PRISMA_STUDIO_PORT := 5555
 
 # Comando padrão
@@ -34,11 +37,17 @@ help:
 	@echo "  logs-backend - Mostrar últimas 300 linhas dos logs do backend"
 	@echo "  logs-frontend - Mostrar últimas 300 linhas dos logs do frontend"
 	@echo "  logs-db     - Mostrar últimas 300 linhas dos logs do banco"
+	@echo "  logs-bff    - Mostrar últimas 300 linhas dos logs do BFF"
 	@echo "  status      - Mostrar status dos serviços"
 	@echo "  migrate     - Reset banco + sincronizar schema + executar migrações completas"
 	@echo "  migrate-deploy - Aplicar migrações pendentes (produção)"
 	@echo "  generate    - Regenerar Prisma Client"
 	@echo "  tests       - Executar testes e2e do backend"
+	@echo ""
+	@echo "Comandos Mobile:"
+	@echo "  mobile-setup - Instalar dependências do app mobile"
+	@echo "  mobile-start - Iniciar Expo (app mobile)"
+	@echo "  mobile-dev  - Iniciar ambiente completo (backend + BFF + frontend)"
 
 # Instalar dependências
 setup:
@@ -54,6 +63,12 @@ setup:
 	else \
 		echo "Dependências do frontend já instaladas."; \
 	fi
+	@if [ ! -d "$(BFF_DIR)/node_modules" ]; then \
+		echo "Instalando dependências do BFF..."; \
+		cd $(BFF_DIR) && npm install; \
+	else \
+		echo "Dependências do BFF já instaladas."; \
+	fi
 	@echo "Setup concluído."
 
 # Forçar instalação de dependências
@@ -62,6 +77,8 @@ setup-force:
 	@cd $(BACKEND_DIR) && rm -rf node_modules package-lock.json && npm install
 	@echo "Forçando instalação de dependências do frontend..."
 	@cd $(FRONTEND_DIR) && rm -rf node_modules package-lock.json && npm install
+	@echo "Forçando instalação de dependências do BFF..."
+	@cd $(BFF_DIR) && rm -rf node_modules package-lock.json && npm install
 	@echo "Setup forçado concluído."
 
 # Iniciar PostgreSQL
@@ -94,11 +111,18 @@ up: setup db-up db-sync
 	@echo "Iniciando frontend..."
 	@cd $(FRONTEND_DIR) && (npm run dev > ../$(LOGS_DIR)/frontend.log 2>&1 & echo $$! > ../$(LOGS_DIR)/.pids.frontend)
 	@echo "Frontend iniciado (PID: $$(cat $(LOGS_DIR)/.pids.frontend))"
+	@echo "Iniciando BFF Mobile..."
+	@cp .env $(BFF_DIR)/.env
+	@cd $(BFF_DIR) && (npm run start:dev > ../$(LOGS_DIR)/bff.log 2>&1 & echo $$! > ../$(LOGS_DIR)/.pids.bff)
+	@echo "BFF iniciado (PID: $$(cat $(LOGS_DIR)/.pids.bff))"
 	@echo "Aplicações iniciadas. Use 'make logs' para acompanhar logs."
 	@echo ""
 	@echo "🌐 Links de acesso:"
 	@echo "  📡 API Backend:    http://localhost:$(BACKEND_PORT)"
+	@echo "  📄 API Docs:       http://localhost:$(BACKEND_PORT)/api/docs"
 	@echo "  🖥️  Frontend:       http://localhost:$(FRONTEND_PORT)"
+	@echo "  📱 BFF Mobile:     http://localhost:$(BFF_PORT)/bff"
+	@echo "  📚 BFF Swagger:    http://localhost:$(BFF_PORT)/bff/docs"
 	@echo "  🗄️  Prisma Studio:  http://localhost:$(PRISMA_STUDIO_PORT)"
 
 # Parar aplicações e banco
@@ -106,11 +130,13 @@ down:
 	@echo "Parando aplicações..."
 	@-if [ -f $(LOGS_DIR)/.pids.backend ]; then kill $$(cat $(LOGS_DIR)/.pids.backend) 2>/dev/null || true; rm -f $(LOGS_DIR)/.pids.backend; fi
 	@-if [ -f $(LOGS_DIR)/.pids.frontend ]; then kill $$(cat $(LOGS_DIR)/.pids.frontend) 2>/dev/null || true; rm -f $(LOGS_DIR)/.pids.frontend; fi
+	@-if [ -f $(LOGS_DIR)/.pids.bff ]; then kill $$(cat $(LOGS_DIR)/.pids.bff) 2>/dev/null || true; rm -f $(LOGS_DIR)/.pids.bff; fi
 	@-pkill -9 -f "nest start" || true
 	@-pkill -9 -f "vite" || true
 	@sleep 2
 	@-lsof -ti:$(BACKEND_PORT) | xargs kill -9 2>/dev/null || true
 	@-lsof -ti:$(FRONTEND_PORT) | xargs kill -9 2>/dev/null || true
+	@-lsof -ti:$(BFF_PORT) | xargs kill -9 2>/dev/null || true
 	@echo "Parando PostgreSQL..."
 	@$(DOCKER_COMPOSE) down
 	@echo "Limpando logs antigos..."
@@ -127,9 +153,9 @@ clean:
 	@echo "Limpando arquivos PID..."
 	@rm -f $(LOGS_DIR)/.pids.*
 	@echo "Limpando node_modules..."
-	@rm -rf $(BACKEND_DIR)/node_modules $(FRONTEND_DIR)/node_modules
+	@rm -rf $(BACKEND_DIR)/node_modules $(FRONTEND_DIR)/node_modules $(BFF_DIR)/node_modules $(MOBILE_DIR)/node_modules
 	@echo "Limpando builds..."
-	@rm -rf $(BACKEND_DIR)/dist $(FRONTEND_DIR)/dist
+	@rm -rf $(BACKEND_DIR)/dist $(FRONTEND_DIR)/dist $(BFF_DIR)/dist
 	@echo "Limpeza concluída."
 
 # Resetar banco completamente
@@ -181,6 +207,13 @@ status:
 	else \
 		echo "  Não está rodando"; \
 	fi
+	@echo ""
+	@echo "BFF Mobile:"
+	@if [ -f $(LOGS_DIR)/.pids.bff ] && kill -0 $$(cat $(LOGS_DIR)/.pids.bff) 2>/dev/null; then \
+		echo "  Rodando (PID: $$(cat $(LOGS_DIR)/.pids.bff))"; \
+	else \
+		echo "  Não está rodando"; \
+	fi
 
 # Banco de dados
 migrate: reset db-up migrate-deploy generate
@@ -197,3 +230,41 @@ generate:
 tests:
 	@echo "Executando testes e2e do backend..."
 	@cd $(BACKEND_DIR) && npm run test:e2e
+
+# ==============================================================================
+# Comandos Mobile (Expo) - Logs BFF
+# ==============================================================================
+
+logs-bff:
+	@tail -n 300 $(LOGS_DIR)/bff.log
+
+# ==============================================================================
+# Comandos Mobile (Expo)
+# ==============================================================================
+
+# Instalar dependências do app mobile
+mobile-setup:
+	@if [ ! -d "$(MOBILE_DIR)/node_modules" ]; then \
+		echo "Instalando dependências do app mobile..."; \
+		cd $(MOBILE_DIR) && npm install; \
+	else \
+		echo "Dependências do app mobile já instaladas."; \
+	fi
+
+# Iniciar Expo (app mobile)
+mobile-start: mobile-setup
+	@if [ ! -f .env ]; then cp .env.example .env; fi
+	@set -a && . ./.env && set +a && echo "EXPO_PUBLIC_BFF_URL=http://$$MOBILE_HOST_IP:$(BFF_PORT)" > $(MOBILE_DIR)/.env
+	@echo "Encerrando instâncias anteriores do Expo/Metro..."
+	@-pkill -f "expo start" 2>/dev/null || true
+	@-pkill -f "metro" 2>/dev/null || true
+	@-lsof -ti:8081 | xargs kill -9 2>/dev/null || true
+	@-lsof -ti:8082 | xargs kill -9 2>/dev/null || true
+	@sleep 1
+	@echo "Iniciando Expo..."
+	@set -a && . ./.env && set +a && cd $(MOBILE_DIR) && REACT_NATIVE_PACKAGER_HOSTNAME=$$MOBILE_HOST_IP npx expo start --lan --clear
+
+# Iniciar ambiente completo para mobile (backend + bff + frontend)
+mobile-dev: up
+	@echo ""
+	@echo "Execute 'make mobile-start' em outro terminal para iniciar o Expo."
