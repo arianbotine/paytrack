@@ -15,7 +15,7 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
-import { useAuthStore } from '../src/lib/auth-store';
+import { useAuthStore, api } from '../src/lib';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,6 +37,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     loadStoredAuth();
+    // Warm-up: acorda o BFF e, em cascata, o backend no Render logo que o app abre.
+    // É fire-and-forget — erros são silenciados para não interferir com nada.
+    api.get('/health').catch(() => {});
   }, []);
 
   if (!fontsLoaded) return null;
