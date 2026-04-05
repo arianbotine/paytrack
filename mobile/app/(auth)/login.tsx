@@ -11,25 +11,21 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { router } from 'expo-router';
-import { useMutation } from '@tanstack/react-query';
-import { api, useAuthStore, AuthResponse } from '../../src/lib';
 import { Text } from '../../src/shared/components/Text';
 import { Button } from '../../src/shared/components/Button';
-
-const loginSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(1, 'Senha é obrigatória'),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
+import { WakingUpBanner } from '../../src/shared/components/WakingUpBanner';
+import {
+  useLogin,
+  loginSchema,
+  LoginForm,
+  getLoginErrorMessage,
+} from '../../src/features/auth/use-login';
 
 export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
-  const setAuth = useAuthStore(state => state.setAuth);
   const insets = useSafeAreaInsets();
+  const { loginMutation, isSlowRequest, retryCount } = useLogin();
 
   const {
     control,
@@ -38,24 +34,6 @@ export default function LoginScreen() {
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
-  });
-
-  const loginMutation = useMutation({
-    mutationFn: async (data: LoginForm) => {
-      const response = await api.post<AuthResponse>('/auth/login', data);
-      return response.data;
-    },
-    onSuccess: async data => {
-      await setAuth(data.user, data.accessToken, data.refreshToken);
-      if (
-        !data.user.currentOrganization &&
-        data.user.availableOrganizations.length > 1
-      ) {
-        router.replace('/(auth)/select-organization');
-      } else {
-        router.replace('/(tabs)');
-      }
-    },
   });
 
   return (
@@ -230,11 +208,14 @@ export default function LoginScreen() {
                 )}
               />
 
+              {loginMutation.isPending && isSlowRequest && (
+                <WakingUpBanner retryCount={retryCount} />
+              )}
+
               {loginMutation.isError && (
                 <View className="bg-danger-50 border border-danger-100 rounded-xl px-4 py-3 mb-4">
                   <Text variant="body" className="text-danger-700 text-center">
-                    {(loginMutation.error as Error)?.message ||
-                      'Email ou senha inválidos'}
+                    {getLoginErrorMessage(loginMutation.error)}
                   </Text>
                 </View>
               )}

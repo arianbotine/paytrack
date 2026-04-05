@@ -8,3 +8,4 @@ export { LoadingState } from './LoadingState';
 export { ScreenContainer } from './ScreenContainer';
 export { PaymentModal } from './PaymentModal';
 export { PaymentMethodPicker } from './PaymentMethodPicker';
+export { WakingUpBanner } from './WakingUpBanner';
