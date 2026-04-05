@@ -1,14 +1,31 @@
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
+import axios, {
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosError,
+  InternalAxiosRequestConfig,
+} from 'axios';
+
+interface RetryConfig extends InternalAxiosRequestConfig {
+  _retryCount?: number;
+}
 
 // Número máximo de tentativas ao backend antes de desistir
-const BACKEND_MAX_RETRIES = 4;
-// Intervalo entre tentativas (ms) — dá tempo ao backend acordar
-const BACKEND_RETRY_DELAY_MS = 5_000;
+// 10 tentativas × 6s = 60s — cobre o cold start do Render (~50s)
+const BACKEND_MAX_RETRIES = 10;
+// Intervalo entre tentativas (ms)
+const BACKEND_RETRY_DELAY_MS = 6_000;
 
-function isConnectionError(error: AxiosError): boolean {
-  if (error.response) return false; // tem resposta HTTP → não é erro de conexão
+// Status HTTP que indicam cold start em cascata (Render proxy / backend acordando)
+const RETRIABLE_HTTP_STATUSES = new Set([502, 503, 504]);
+
+function isRetriableBackendError(error: AxiosError): boolean {
+  // HTTP 502/503/504 = Render retornou erro enquanto o backend acorda
+  if (error.response) {
+    return RETRIABLE_HTTP_STATUSES.has(error.response.status);
+  }
+  // Erros de conexão = backend ainda não está acessível
   return (
     error.code === 'ECONNREFUSED' ||
     error.code === 'ECONNABORTED' ||
@@ -40,44 +57,55 @@ export class HttpClientService {
       },
     });
 
-    // Interceptor de retry: tenta novamente em erros de conexão (backend acordando)
+    // Interceptor de retry: tenta novamente tanto em erros de conexão quanto
+    // em respostas HTTP 502/503/504 (Render proxy devolvendo erro enquanto
+    // o backend acorda — cold start em cascata BFF → backend).
     this.client.interceptors.response.use(
       response => response,
-      async (error: AxiosError & { _retryCount?: number }) => {
-        if (error.response) {
-          // Resposta HTTP com status de erro — encaminha diretamente ao app
-          throw new HttpException(
-            error.response.data || 'Backend error',
-            error.response.status
-          );
-        }
-
-        if (!isConnectionError(error)) {
+      async (error: AxiosError) => {
+        if (!isRetriableBackendError(error)) {
+          // Erro não-retriável (400, 401, 403, 500…) — encaminha ao app
+          if (error.response) {
+            throw new HttpException(
+              error.response.data || 'Backend error',
+              error.response.status
+            );
+          }
           throw new HttpException(
             'Network error',
             HttpStatus.INTERNAL_SERVER_ERROR
           );
         }
 
-        // Erro de conexão — backend pode estar acordando
-        const retryCount = error.config?._retryCount ?? 0;
+        // Erro retriável — backend pode estar acordando no Render
+        const config = error.config as RetryConfig | undefined;
+        const retryCount = config?._retryCount ?? 0;
 
-        if (retryCount < BACKEND_MAX_RETRIES && error.config) {
-          error.config._retryCount = retryCount + 1;
+        if (retryCount < BACKEND_MAX_RETRIES && config) {
+          config._retryCount = retryCount + 1;
+          const cause = error.response
+            ? `HTTP ${error.response.status}`
+            : error.code;
           this.logger.warn(
-            `Backend connection error (${error.code}). ` +
-              `Retrying ${error.config._retryCount}/${BACKEND_MAX_RETRIES} ` +
-              `in ${BACKEND_RETRY_DELAY_MS}ms...`
+            `Backend indisponível (${cause}). ` +
+              `Retry ${config._retryCount}/${BACKEND_MAX_RETRIES} ` +
+              `em ${BACKEND_RETRY_DELAY_MS}ms...`
           );
           await new Promise(resolve =>
             setTimeout(resolve, BACKEND_RETRY_DELAY_MS)
           );
-          return this.client(error.config);
+          return this.client(config);
         }
 
         this.logger.error(
-          `Backend unreachable after ${BACKEND_MAX_RETRIES} retries.`
+          `Backend inacessível após ${BACKEND_MAX_RETRIES} tentativas.`
         );
+        if (error.response) {
+          throw new HttpException(
+            error.response.data || 'Backend service unavailable',
+            error.response.status
+          );
+        }
         throw new HttpException(
           'Backend service unavailable',
           HttpStatus.SERVICE_UNAVAILABLE

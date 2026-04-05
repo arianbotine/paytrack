@@ -10,7 +10,9 @@ const BFF_URL = process.env.EXPO_PUBLIC_BFF_URL || 'http://localhost:3001';
  */
 export const api = axios.create({
   baseURL: `${BFF_URL}/bff`,
-  timeout: 70000, // 70s para suportar cold start do Render (~50s de inatividade)
+  // 120s: BFF pode gastar até ~60s em retries internos ao backend (cold start)
+  // mais margem para o próprio cold start do BFF (~50s)
+  timeout: 120_000,
   headers: {
     'Content-Type': 'application/json',
   },
