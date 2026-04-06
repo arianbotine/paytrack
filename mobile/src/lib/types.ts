@@ -30,10 +30,11 @@ export interface AuthResponse {
 
 // Dashboard
 export interface DashboardData {
-  balance: {
-    toReceive: number;
-    toPay: number;
-    net: number;
+  monthSummary: {
+    toPayThisMonth: number;
+    toReceiveThisMonth: number;
+    paidThisMonth: number;
+    receivedThisMonth: number;
   };
   payables: {
     pendingCount: number;

@@ -1,27 +1,40 @@
-import { View, ScrollView, RefreshControl } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import {
+  View,
+  ScrollView,
+  RefreshControl,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { api, useAuthStore } from '../../src/lib';
 import type {
   DashboardData,
   DashboardInstallmentItem,
+  PaymentMethod,
 } from '../../src/lib/types';
-import { formatCurrency, formatDate } from '../../src/lib/formatters';
+import { formatDate } from '../../src/lib/formatters';
 import { ScreenContainer } from '../../src/shared/components/ScreenContainer';
 import { Text } from '../../src/shared/components/Text';
 import { Card } from '../../src/shared/components/Card';
 import { LoadingState } from '../../src/shared/components/LoadingState';
 import { EmptyState } from '../../src/shared/components/EmptyState';
 import { CurrencyDisplay } from '../../src/shared/components/CurrencyDisplay';
+import { PaymentModal } from '../../src/shared/components/PaymentModal';
 
 function InstallmentRow({
   item,
   nameKey,
   amountColor,
+  onPay,
+  actionLabel,
 }: {
   item: DashboardInstallmentItem;
   nameKey: 'vendorName' | 'customerName';
   amountColor: 'expense' | 'income' | 'warning';
+  onPay?: () => void;
+  actionLabel?: string;
 }) {
   const name =
     item[nameKey] ||
@@ -48,13 +61,37 @@ function InstallmentRow({
           </Text>
         )}
       </View>
-      <CurrencyDisplay
-        value={item.remaining}
-        variant={amountColor === 'warning' ? 'default' : amountColor}
-        textVariant="body"
-        weight="bold"
-        className={amountColor === 'warning' ? 'text-warning-700' : undefined}
-      />
+      <View className="items-end gap-2">
+        <CurrencyDisplay
+          value={item.remaining}
+          variant={amountColor === 'warning' ? 'default' : amountColor}
+          textVariant="body"
+          weight="bold"
+          className={amountColor === 'warning' ? 'text-warning-700' : undefined}
+        />
+        {onPay && item.installmentId && (
+          <TouchableOpacity
+            onPress={onPay}
+            activeOpacity={0.75}
+            className={`flex-row items-center px-2.5 py-1 rounded-lg ${
+              actionLabel === 'Receber' ? 'bg-success-700' : 'bg-primary-700'
+            }`}
+          >
+            <MaterialCommunityIcons
+              name={actionLabel === 'Receber' ? 'cash-plus' : 'cash-check'}
+              size={13}
+              color="#ffffff"
+            />
+            <Text
+              variant="caption"
+              weight="semibold"
+              className="text-white ml-1"
+            >
+              {actionLabel ?? 'Pagar'}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
@@ -90,6 +127,13 @@ function SectionCard({
 export default function DashboardScreen() {
   const user = useAuthStore(state => state.user);
   const organizationId = user?.currentOrganization?.id;
+  const queryClient = useQueryClient();
+
+  const [selectedItem, setSelectedItem] =
+    useState<DashboardInstallmentItem | null>(null);
+  const [selectedType, setSelectedType] = useState<'payable' | 'receivable'>(
+    'payable'
+  );
 
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ['dashboard', organizationId],
@@ -98,6 +142,82 @@ export default function DashboardScreen() {
       return response.data;
     },
     enabled: !!organizationId,
+  });
+
+  const payMutation = useMutation({
+    mutationFn: async ({
+      payableId,
+      installmentId,
+      amount,
+      paymentMethod,
+    }: {
+      payableId: string;
+      installmentId: string;
+      amount: number;
+      paymentMethod: PaymentMethod;
+    }) => {
+      const response = await api.post(
+        `/payables/${payableId}/installments/${installmentId}/pay`,
+        {
+          amount,
+          paymentMethod,
+          paymentDate: new Date().toISOString().split('T')[0],
+        }
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      setSelectedItem(null);
+      queryClient.invalidateQueries({
+        queryKey: ['dashboard', organizationId],
+      });
+      queryClient.invalidateQueries({ queryKey: ['payables', organizationId] });
+    },
+    onError: (err: Error) => {
+      Alert.alert(
+        'Erro',
+        err.message || 'Não foi possível registrar o pagamento.'
+      );
+    },
+  });
+
+  const receiveMutation = useMutation({
+    mutationFn: async ({
+      receivableId,
+      installmentId,
+      amount,
+      paymentMethod,
+    }: {
+      receivableId: string;
+      installmentId: string;
+      amount: number;
+      paymentMethod: PaymentMethod;
+    }) => {
+      const response = await api.post(
+        `/receivables/${receivableId}/installments/${installmentId}/receive`,
+        {
+          amount,
+          paymentMethod,
+          paymentDate: new Date().toISOString().split('T')[0],
+        }
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      setSelectedItem(null);
+      queryClient.invalidateQueries({
+        queryKey: ['dashboard', organizationId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['receivables', organizationId],
+      });
+    },
+    onError: (err: Error) => {
+      Alert.alert(
+        'Erro',
+        err.message || 'Não foi possível registrar o recebimento.'
+      );
+    },
   });
 
   if (isLoading) {
@@ -152,79 +272,108 @@ export default function DashboardScreen() {
           )}
         </View>
 
-        {/* Balance Cards */}
-        <View className="flex-row gap-3 mb-3">
-          <Card
-            variant="elevated"
-            padding="md"
-            className="flex-1 bg-primary-50"
-          >
-            <Text
-              variant="label"
-              weight="semibold"
-              className="text-primary-700 uppercase tracking-wider mb-2"
+        {/* Month Summary */}
+        {(() => {
+          const now = new Date();
+          const monthLabel = now.toLocaleDateString('pt-BR', {
+            month: 'long',
+            year: 'numeric',
+          });
+          const s = data.monthSummary ?? {
+            toPayThisMonth: 0,
+            toReceiveThisMonth: 0,
+            paidThisMonth: 0,
+            receivedThisMonth: 0,
+          };
+          return (
+            <Card
+              variant="elevated"
+              padding="none"
+              className="mb-5 overflow-hidden"
             >
-              A Receber
-            </Text>
-            <CurrencyDisplay
-              value={data.balance.toReceive}
-              variant="income"
-              textVariant="subheading"
-              weight="bold"
-            />
-          </Card>
-          <Card variant="elevated" padding="md" className="flex-1 bg-danger-50">
-            <Text
-              variant="label"
-              weight="semibold"
-              className="text-danger-700 uppercase tracking-wider mb-2"
-            >
-              A Pagar
-            </Text>
-            <CurrencyDisplay
-              value={data.balance.toPay}
-              variant="expense"
-              textVariant="subheading"
-              weight="bold"
-            />
-          </Card>
-        </View>
-
-        {/* Net Balance */}
-        <Card
-          variant="elevated"
-          padding="md"
-          className={`mb-5 ${data.balance.net >= 0 ? 'bg-success-50' : 'bg-danger-50'}`}
-        >
-          <View className="flex-row items-center justify-between">
-            <View>
-              <Text
-                variant="label"
-                weight="semibold"
-                className="text-neutral-500 uppercase tracking-wider mb-1"
-              >
-                Saldo Líquido
-              </Text>
-              <CurrencyDisplay
-                value={data.balance.net}
-                variant="auto"
-                textVariant="heading"
-                weight="bold"
-              />
-            </View>
-            <View
-              className={`w-12 h-12 rounded-full items-center justify-center ${
-                data.balance.net >= 0 ? 'bg-success-100' : 'bg-danger-100'
-              }`}
-            >
-              <MaterialCommunityIcons
-                name={data.balance.net >= 0 ? 'trending-up' : 'trending-down'}
-                size={24}
-                color={data.balance.net >= 0 ? '#2e7d32' : '#d32f2f'}
-              />
-            </View>
-          </View>
-        </Card>
+              <View className="flex-row items-center px-4 py-3 border-b border-neutral-100">
+                <MaterialCommunityIcons
+                  name="calendar-month-outline"
+                  size={18}
+                  color="#1976d2"
+                />
+                <Text
+                  variant="label"
+                  weight="semibold"
+                  className="ml-2 text-neutral-700 tracking-wider capitalize"
+                >
+                  {monthLabel}
+                </Text>
+              </View>
+              <View className="flex-row px-4 py-4 gap-4">
+                {/* Left column */}
+                <View className="flex-1 gap-4">
+                  <View>
+                    <Text
+                      variant="caption"
+                      className="text-neutral-400 mb-1 uppercase tracking-wide"
+                    >
+                      A Pagar
+                    </Text>
+                    <CurrencyDisplay
+                      value={s.toPayThisMonth}
+                      variant="expense"
+                      textVariant="title"
+                      weight="bold"
+                    />
+                  </View>
+                  <View>
+                    <Text
+                      variant="caption"
+                      className="text-success-700 mb-1 uppercase tracking-wide"
+                    >
+                      Pago
+                    </Text>
+                    <CurrencyDisplay
+                      value={s.paidThisMonth}
+                      variant="income"
+                      textVariant="title"
+                      weight="bold"
+                    />
+                  </View>
+                </View>
+                {/* Divider */}
+                <View className="w-px bg-neutral-100" />
+                {/* Right column */}
+                <View className="flex-1 gap-4">
+                  <View>
+                    <Text
+                      variant="caption"
+                      className="text-primary-700 mb-1 uppercase tracking-wide"
+                    >
+                      A Receber
+                    </Text>
+                    <CurrencyDisplay
+                      value={s.toReceiveThisMonth}
+                      variant="income"
+                      textVariant="title"
+                      weight="bold"
+                    />
+                  </View>
+                  <View>
+                    <Text
+                      variant="caption"
+                      className="text-success-700 mb-1 uppercase tracking-wide"
+                    >
+                      Recebido
+                    </Text>
+                    <CurrencyDisplay
+                      value={s.receivedThisMonth}
+                      variant="income"
+                      textVariant="title"
+                      weight="bold"
+                    />
+                  </View>
+                </View>
+              </View>
+            </Card>
+          );
+        })()}
 
         {/* Overdue Payables */}
         {data.payables.overdueItems.length > 0 && (
@@ -239,6 +388,11 @@ export default function DashboardScreen() {
                 item={item}
                 nameKey="vendorName"
                 amountColor="expense"
+                actionLabel="Pagar"
+                onPay={() => {
+                  setSelectedType('payable');
+                  setSelectedItem(item);
+                }}
               />
             ))}
           </SectionCard>
@@ -257,6 +411,11 @@ export default function DashboardScreen() {
                 item={item}
                 nameKey="vendorName"
                 amountColor="warning"
+                actionLabel="Pagar"
+                onPay={() => {
+                  setSelectedType('payable');
+                  setSelectedItem(item);
+                }}
               />
             ))}
           </SectionCard>
@@ -275,6 +434,11 @@ export default function DashboardScreen() {
                 item={item}
                 nameKey="customerName"
                 amountColor="income"
+                actionLabel="Receber"
+                onPay={() => {
+                  setSelectedType('receivable');
+                  setSelectedItem(item);
+                }}
               />
             ))}
           </SectionCard>
@@ -293,6 +457,11 @@ export default function DashboardScreen() {
                 item={item}
                 nameKey="customerName"
                 amountColor="income"
+                actionLabel="Receber"
+                onPay={() => {
+                  setSelectedType('receivable');
+                  setSelectedItem(item);
+                }}
               />
             ))}
           </SectionCard>
@@ -318,6 +487,41 @@ export default function DashboardScreen() {
             </View>
           )}
       </ScrollView>
+
+      <PaymentModal
+        visible={selectedItem !== null}
+        title={
+          selectedType === 'payable'
+            ? 'Registrar Pagamento'
+            : 'Registrar Recebimento'
+        }
+        defaultAmount={selectedItem?.remaining}
+        confirmLabel={
+          selectedType === 'payable'
+            ? 'Confirmar Pagamento'
+            : 'Confirmar Recebimento'
+        }
+        loading={payMutation.isPending || receiveMutation.isPending}
+        onClose={() => setSelectedItem(null)}
+        onConfirm={(amount, method) => {
+          if (!selectedItem?.installmentId) return;
+          if (selectedType === 'payable') {
+            payMutation.mutate({
+              payableId: selectedItem.id,
+              installmentId: selectedItem.installmentId,
+              amount,
+              paymentMethod: method,
+            });
+          } else {
+            receiveMutation.mutate({
+              receivableId: selectedItem.id,
+              installmentId: selectedItem.installmentId,
+              amount,
+              paymentMethod: method,
+            });
+          }
+        }}
+      />
     </ScreenContainer>
   );
 }

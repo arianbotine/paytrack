@@ -55,6 +55,8 @@ interface BackendDashboardResponse {
     toPay: number;
     net: number;
   };
+  paidInPeriod: number;
+  receivedInPeriod: number;
 }
 
 export interface MobileDashboardResponse {
@@ -62,6 +64,12 @@ export interface MobileDashboardResponse {
     toReceive: number;
     toPay: number;
     net: number;
+  };
+  monthSummary: {
+    toPayThisMonth: number;
+    toReceiveThisMonth: number;
+    paidThisMonth: number;
+    receivedThisMonth: number;
   };
   payables: {
     pendingCount: number;
@@ -132,6 +140,12 @@ export class DashboardService {
     // Transform for mobile: flatten and limit to 5 items per list
     return {
       balance: data.balance,
+      monthSummary: {
+        toPayThisMonth: data.payableInstallments.toPay,
+        toReceiveThisMonth: data.receivableInstallments.toReceive,
+        paidThisMonth: data.paidInPeriod,
+        receivedThisMonth: data.receivedInPeriod,
+      },
       payables: {
         pendingCount: data.payableInstallments.totals.count,
         partialCount: data.payableInstallments.totals.partial,
