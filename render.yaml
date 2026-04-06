@@ -83,8 +83,7 @@ services:
   - type: web
     name: paytrack-bff-mobile
     runtime: docker
-    rootDir: bff-mobile
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./bff-mobile/Dockerfile
     region: oregon
     plan: starter
 
