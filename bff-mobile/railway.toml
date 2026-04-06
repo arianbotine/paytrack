@@ -1,6 +1,7 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "bff-mobile/Dockerfile"
+dockerContext = "bff-mobile"
 
 [deploy]
 healthcheckPath = "/bff/health"

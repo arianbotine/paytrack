@@ -239,18 +239,20 @@ export default function ReceivablesScreen() {
       installmentId,
       amount,
       paymentMethod,
+      paymentDate,
     }: {
       receivableId: string;
       installmentId: string;
       amount: number;
       paymentMethod: PaymentMethod;
+      paymentDate: string;
     }) => {
       const response = await api.post(
         `/receivables/${receivableId}/installments/${installmentId}/receive`,
         {
           amount,
           paymentMethod,
-          paymentDate: new Date().toISOString().split('T')[0],
+          paymentDate,
         }
       );
       return response.data;
@@ -372,13 +374,14 @@ export default function ReceivablesScreen() {
         defaultAmount={selectedReceivable?.nextDueAmount ?? undefined}
         loading={receiveMutation.isPending}
         onClose={() => setSelectedReceivable(null)}
-        onConfirm={(amount, method) => {
+        onConfirm={(amount, method, paymentDate) => {
           if (!selectedReceivable?.nextInstallmentId) return;
           receiveMutation.mutate({
             receivableId: selectedReceivable.id,
             installmentId: selectedReceivable.nextInstallmentId,
             amount,
             paymentMethod: method,
+            paymentDate,
           });
         }}
         confirmLabel="Registrar Recebimento"

@@ -15,12 +15,27 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from './Text';
 import { Button } from './Button';
 import { PaymentMethodPicker } from './PaymentMethodPicker';
+import { CalendarPicker } from './CalendarPicker';
 import type { PaymentMethod } from '@lib/types';
+
+function todayIso(): string {
+  const t = new Date();
+  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+}
+
+function isoToDisplay(iso: string): string {
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
 
 interface PaymentModalProps {
   visible: boolean;
   onClose: () => void;
-  onConfirm: (amount: number, method: PaymentMethod) => void;
+  onConfirm: (
+    amount: number,
+    method: PaymentMethod,
+    paymentDate: string
+  ) => void;
   loading?: boolean;
   title: string;
   defaultAmount?: number;
@@ -40,6 +55,8 @@ export function PaymentModal({
     defaultAmount != null ? String(defaultAmount.toFixed(2)) : ''
   );
   const [method, setMethod] = useState<PaymentMethod>('PIX');
+  const [paymentDate, setPaymentDate] = useState(todayIso);
+  const [showCalendar, setShowCalendar] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const hasOpened = useRef(false);
 
@@ -52,6 +69,8 @@ export function PaymentModal({
       hasOpened.current = true;
       setAmount(defaultAmount != null ? String(defaultAmount.toFixed(2)) : '');
       setMethod('PIX');
+      setPaymentDate(todayIso());
+      setShowCalendar(false);
     } else if (hasOpened.current) {
       Animated.timing(slideAnim, {
         toValue: 0,
@@ -85,7 +104,7 @@ export function PaymentModal({
       Alert.alert('Valor inválido', 'Informe um valor maior que zero.');
       return;
     }
-    onConfirm(parsed, method);
+    onConfirm(parsed, method, paymentDate);
   };
 
   return (
@@ -186,6 +205,57 @@ export function PaymentModal({
                       placeholderTextColor="#9e9e9e"
                     />
                   </View>
+
+                  {/* Payment date */}
+                  <Text
+                    variant="label"
+                    weight="semibold"
+                    className="text-neutral-500 uppercase tracking-wider mb-2"
+                  >
+                    Data
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => setShowCalendar(v => !v)}
+                    activeOpacity={0.7}
+                    className={`flex-row items-center bg-neutral-50 border rounded-xl px-4 py-3 mb-3 ${
+                      showCalendar ? 'border-primary-700' : 'border-neutral-200'
+                    }`}
+                  >
+                    <MaterialCommunityIcons
+                      name="calendar-outline"
+                      size={20}
+                      color={showCalendar ? '#1976d2' : '#9e9e9e'}
+                      style={{ marginRight: 8 }}
+                    />
+                    <Text
+                      variant="body"
+                      weight="semibold"
+                      className={
+                        showCalendar
+                          ? 'text-primary-700 flex-1'
+                          : 'text-neutral-900 flex-1'
+                      }
+                    >
+                      {isoToDisplay(paymentDate)}
+                    </Text>
+                    <MaterialCommunityIcons
+                      name={showCalendar ? 'chevron-up' : 'chevron-down'}
+                      size={18}
+                      color={showCalendar ? '#1976d2' : '#9e9e9e'}
+                    />
+                  </TouchableOpacity>
+                  {showCalendar && (
+                    <View className="mb-5">
+                      <CalendarPicker
+                        value={paymentDate}
+                        onChange={iso => {
+                          setPaymentDate(iso);
+                          setShowCalendar(false);
+                        }}
+                      />
+                    </View>
+                  )}
+                  {!showCalendar && <View className="mb-2" />}
 
                   {/* Payment method */}
                   <Text

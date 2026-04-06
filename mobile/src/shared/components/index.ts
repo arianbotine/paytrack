@@ -9,3 +9,4 @@ export { ScreenContainer } from './ScreenContainer';
 export { PaymentModal } from './PaymentModal';
 export { PaymentMethodPicker } from './PaymentMethodPicker';
 export { WakingUpBanner } from './WakingUpBanner';
+export { CalendarPicker } from './CalendarPicker';

@@ -241,18 +241,20 @@ export default function PayablesScreen() {
       installmentId,
       amount,
       paymentMethod,
+      paymentDate,
     }: {
       payableId: string;
       installmentId: string;
       amount: number;
       paymentMethod: PaymentMethod;
+      paymentDate: string;
     }) => {
       const response = await api.post(
         `/payables/${payableId}/installments/${installmentId}/pay`,
         {
           amount,
           paymentMethod,
-          paymentDate: new Date().toISOString().split('T')[0],
+          paymentDate,
         }
       );
       return response.data;
@@ -372,13 +374,14 @@ export default function PayablesScreen() {
         defaultAmount={selectedPayable?.nextDueAmount ?? undefined}
         loading={payMutation.isPending}
         onClose={() => setSelectedPayable(null)}
-        onConfirm={(amount, method) => {
+        onConfirm={(amount, method, paymentDate) => {
           if (!selectedPayable?.nextInstallmentId) return;
           payMutation.mutate({
             payableId: selectedPayable.id,
             installmentId: selectedPayable.nextInstallmentId,
             amount,
             paymentMethod: method,
+            paymentDate,
           });
         }}
         confirmLabel="Registrar Pagamento"
