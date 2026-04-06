@@ -41,18 +41,29 @@ export function PaymentModal({
   );
   const [method, setMethod] = useState<PaymentMethod>('PIX');
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const hasOpened = useRef(false);
 
   useEffect(() => {
     if (visible) {
-      setAmount(defaultAmount != null ? String(defaultAmount.toFixed(2)) : '');
-      setMethod('PIX');
-      Animated.spring(slideAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11,
-      }).start();
-    } else {
+      hasOpened.current = true;
+      // Stop any running animation and reset to off-screen before sliding in.
+      // This prevents the native-thread conflict that causes the black-screen
+      // bug on the very first open (timing close animation from mount vs. spring).
+      slideAnim.stopAnimation(() => {
+        slideAnim.setValue(0);
+        setAmount(
+          defaultAmount != null ? String(defaultAmount.toFixed(2)) : ''
+        );
+        setMethod('PIX');
+        Animated.spring(slideAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }).start();
+      });
+    } else if (hasOpened.current) {
+      // Only run the close animation after the modal has been opened at least once
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 200,

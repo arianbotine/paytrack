@@ -21,6 +21,7 @@ interface BackendDashboardItem {
   }>;
   nextUnpaidDueDate: string | null;
   nextUnpaidAmount: string | null;
+  nextUnpaidInstallmentId: string | null;
 }
 
 interface BackendDashboardResponse {
@@ -173,22 +174,22 @@ export class DashboardService {
 
   private mapPayableItem(item: BackendDashboardItem) {
     const nextAmount = parseFloat(item.nextUnpaidAmount ?? '0');
-    // Backend returns the first installment ordered by dueDate (may be paid).
-    // Match by date first; fall back to the first installment that still has
-    // an outstanding balance.
+    // Use the installment id provided directly by the backend
     const nextInstallment =
+      item.installments?.find(i => i.id === item.nextUnpaidInstallmentId) ??
       item.installments?.find(i =>
         i.dueDate?.startsWith(item.nextUnpaidDueDate ?? '')
       ) ??
-      item.installments?.find(i => (i.paidAmount ?? 0) < i.amount) ??
       null;
+    const paidAmount = nextInstallment?.paidAmount ?? 0;
     return {
       id: item.id,
-      installmentId: nextInstallment?.id ?? null,
+      installmentId:
+        item.nextUnpaidInstallmentId ?? nextInstallment?.id ?? null,
       dueDate: item.nextUnpaidDueDate,
       amount: nextAmount,
-      paidAmount: nextInstallment?.paidAmount ?? 0,
-      remaining: nextAmount - (nextInstallment?.paidAmount ?? 0),
+      paidAmount,
+      remaining: nextAmount - paidAmount,
       vendorName: item.vendor?.name ?? null,
       categoryName: item.category?.name ?? null,
     };
@@ -196,18 +197,18 @@ export class DashboardService {
 
   private mapReceivableItem(item: BackendDashboardItem) {
     const nextAmount = parseFloat(item.nextUnpaidAmount ?? '0');
-    // Same matching strategy as payables; backend uses receivedAmount for
-    // receivable installments.
+    // Use the installment id provided directly by the backend
     const nextInstallment =
+      item.installments?.find(i => i.id === item.nextUnpaidInstallmentId) ??
       item.installments?.find(i =>
         i.dueDate?.startsWith(item.nextUnpaidDueDate ?? '')
       ) ??
-      item.installments?.find(i => (i.receivedAmount ?? 0) < i.amount) ??
       null;
     const paidAmount = nextInstallment?.receivedAmount ?? 0;
     return {
       id: item.id,
-      installmentId: nextInstallment?.id ?? null,
+      installmentId:
+        item.nextUnpaidInstallmentId ?? nextInstallment?.id ?? null,
       dueDate: item.nextUnpaidDueDate,
       amount: nextAmount,
       paidAmount,

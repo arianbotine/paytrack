@@ -153,18 +153,20 @@ export class DashboardRepository {
       },
     });
 
-    // Buscar próxima data não paga + valor do próximo vencimento para cada payable usando raw query otimizada
+    // Buscar próxima data não paga + valor + id do installment para cada payable usando raw query otimizada
     const nextDueDatesRaw =
       ids.length > 0
         ? await this.prisma.$queryRaw<
             Array<{
               payable_id: string;
+              installment_id: string;
               next_due_date: Date;
               next_due_amount: unknown;
             }>
           >`
           SELECT DISTINCT ON (payable_id)
             payable_id,
+            id as installment_id,
             due_date::date as next_due_date,
             (amount - COALESCE(paid_amount, 0)) as next_due_amount
           FROM payable_installments
@@ -174,20 +176,26 @@ export class DashboardRepository {
         `
         : [];
 
-    // Criar map de IDs para (data, valor)
-    const dueInfoMap = new Map<string, { dueDate: string; amount: string }>();
+    // Criar map de IDs para (data, valor, installmentId)
+    const dueInfoMap = new Map<
+      string,
+      { dueDate: string; amount: string; installmentId: string }
+    >();
     for (const row of nextDueDatesRaw) {
       dueInfoMap.set(row.payable_id, {
         dueDate: row.next_due_date.toISOString().split('T')[0],
         amount: String(row.next_due_amount),
+        installmentId: row.installment_id,
       });
     }
 
-    // Retornar payables com nextUnpaidDueDate
+    // Retornar payables com nextUnpaidDueDate e nextUnpaidInstallmentId
     const result = payables.map(payable => ({
       ...payable,
       nextUnpaidDueDate: dueInfoMap.get(payable.id)?.dueDate || null,
       nextUnpaidAmount: dueInfoMap.get(payable.id)?.amount || null,
+      nextUnpaidInstallmentId:
+        dueInfoMap.get(payable.id)?.installmentId || null,
     }));
 
     // Ordenar por nextUnpaidDueDate (mais próximo primeiro)
@@ -270,18 +278,20 @@ export class DashboardRepository {
       },
     });
 
-    // Buscar próxima data não paga + valor do próximo vencimento para cada receivable usando raw query otimizada
+    // Buscar próxima data não paga + valor + id do installment para cada receivable usando raw query otimizada
     const nextDueDatesRaw =
       ids.length > 0
         ? await this.prisma.$queryRaw<
             Array<{
               receivable_id: string;
+              installment_id: string;
               next_due_date: Date;
               next_due_amount: unknown;
             }>
           >`
           SELECT DISTINCT ON (receivable_id)
             receivable_id,
+            id as installment_id,
             due_date::date as next_due_date,
             (amount - COALESCE(received_amount, 0)) as next_due_amount
           FROM receivable_installments
@@ -291,20 +301,26 @@ export class DashboardRepository {
         `
         : [];
 
-    // Criar map de IDs para (data, valor)
-    const dueInfoMap = new Map<string, { dueDate: string; amount: string }>();
+    // Criar map de IDs para (data, valor, installmentId)
+    const dueInfoMap = new Map<
+      string,
+      { dueDate: string; amount: string; installmentId: string }
+    >();
     for (const row of nextDueDatesRaw) {
       dueInfoMap.set(row.receivable_id, {
         dueDate: row.next_due_date.toISOString().split('T')[0],
         amount: String(row.next_due_amount),
+        installmentId: row.installment_id,
       });
     }
 
-    // Retornar receivables com nextUnpaidDueDate
+    // Retornar receivables com nextUnpaidDueDate e nextUnpaidInstallmentId
     const result = receivables.map(receivable => ({
       ...receivable,
       nextUnpaidDueDate: dueInfoMap.get(receivable.id)?.dueDate || null,
       nextUnpaidAmount: dueInfoMap.get(receivable.id)?.amount || null,
+      nextUnpaidInstallmentId:
+        dueInfoMap.get(receivable.id)?.installmentId || null,
     }));
 
     // Ordenar por nextUnpaidDueDate (mais próximo primeiro)
@@ -385,18 +401,20 @@ export class DashboardRepository {
       },
     });
 
-    // Buscar próxima data não paga + valor do próximo vencimento para cada payable usando raw query otimizada
+    // Buscar próxima data não paga + valor + id do installment para cada payable usando raw query otimizada
     const nextDueDatesRaw =
       ids.length > 0
         ? await this.prisma.$queryRaw<
             Array<{
               payable_id: string;
+              installment_id: string;
               next_due_date: Date;
               next_due_amount: unknown;
             }>
           >`
           SELECT DISTINCT ON (payable_id)
             payable_id,
+            id as installment_id,
             due_date::date as next_due_date,
             (amount - COALESCE(paid_amount, 0)) as next_due_amount
           FROM payable_installments
@@ -406,20 +424,26 @@ export class DashboardRepository {
         `
         : [];
 
-    // Criar map de IDs para (data, valor)
-    const dueInfoMap = new Map<string, { dueDate: string; amount: string }>();
+    // Criar map de IDs para (data, valor, installmentId)
+    const dueInfoMap = new Map<
+      string,
+      { dueDate: string; amount: string; installmentId: string }
+    >();
     for (const row of nextDueDatesRaw) {
       dueInfoMap.set(row.payable_id, {
         dueDate: row.next_due_date.toISOString().split('T')[0],
         amount: String(row.next_due_amount),
+        installmentId: row.installment_id,
       });
     }
 
-    // Retornar payables com nextUnpaidDueDate
+    // Retornar payables com nextUnpaidDueDate e nextUnpaidInstallmentId
     const result = payables.map(payable => ({
       ...payable,
       nextUnpaidDueDate: dueInfoMap.get(payable.id)?.dueDate || null,
       nextUnpaidAmount: dueInfoMap.get(payable.id)?.amount || null,
+      nextUnpaidInstallmentId:
+        dueInfoMap.get(payable.id)?.installmentId || null,
     }));
 
     // Ordenar por nextUnpaidDueDate (mais próximo primeiro)
@@ -500,18 +524,20 @@ export class DashboardRepository {
       },
     });
 
-    // Buscar próxima data não paga + valor do próximo vencimento para cada receivable usando raw query otimizada
+    // Buscar próxima data não paga + valor + id do installment para cada receivable usando raw query otimizada
     const nextDueDatesRaw =
       ids.length > 0
         ? await this.prisma.$queryRaw<
             Array<{
               receivable_id: string;
+              installment_id: string;
               next_due_date: Date;
               next_due_amount: unknown;
             }>
           >`
           SELECT DISTINCT ON (receivable_id)
             receivable_id,
+            id as installment_id,
             due_date::date as next_due_date,
             (amount - COALESCE(received_amount, 0)) as next_due_amount
           FROM receivable_installments
@@ -521,20 +547,26 @@ export class DashboardRepository {
         `
         : [];
 
-    // Criar map de IDs para (data, valor)
-    const dueInfoMap = new Map<string, { dueDate: string; amount: string }>();
+    // Criar map de IDs para (data, valor, installmentId)
+    const dueInfoMap = new Map<
+      string,
+      { dueDate: string; amount: string; installmentId: string }
+    >();
     for (const row of nextDueDatesRaw) {
       dueInfoMap.set(row.receivable_id, {
         dueDate: row.next_due_date.toISOString().split('T')[0],
         amount: String(row.next_due_amount),
+        installmentId: row.installment_id,
       });
     }
 
-    // Retornar receivables com nextUnpaidDueDate
+    // Retornar receivables com nextUnpaidDueDate e nextUnpaidInstallmentId
     const result = receivables.map(receivable => ({
       ...receivable,
       nextUnpaidDueDate: dueInfoMap.get(receivable.id)?.dueDate || null,
       nextUnpaidAmount: dueInfoMap.get(receivable.id)?.amount || null,
+      nextUnpaidInstallmentId:
+        dueInfoMap.get(receivable.id)?.installmentId || null,
     }));
 
     // Ordenar por nextUnpaidDueDate (mais próximo primeiro)
