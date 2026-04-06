@@ -43,27 +43,16 @@ export function PaymentModal({
   const slideAnim = useRef(new Animated.Value(0)).current;
   const hasOpened = useRef(false);
 
+  // Reset form state when opening; run close animation when closing.
+  // Animations are NOT started here to avoid the race condition where the
+  // spring fires before the Animated.View native node is registered (which
+  // only happens on the first ever open). Use Modal.onShow instead.
   useEffect(() => {
     if (visible) {
       hasOpened.current = true;
-      // Stop any running animation and reset to off-screen before sliding in.
-      // This prevents the native-thread conflict that causes the black-screen
-      // bug on the very first open (timing close animation from mount vs. spring).
-      slideAnim.stopAnimation(() => {
-        slideAnim.setValue(0);
-        setAmount(
-          defaultAmount != null ? String(defaultAmount.toFixed(2)) : ''
-        );
-        setMethod('PIX');
-        Animated.spring(slideAnim, {
-          toValue: 1,
-          useNativeDriver: true,
-          tension: 65,
-          friction: 11,
-        }).start();
-      });
+      setAmount(defaultAmount != null ? String(defaultAmount.toFixed(2)) : '');
+      setMethod('PIX');
     } else if (hasOpened.current) {
-      // Only run the close animation after the modal has been opened at least once
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 200,
@@ -71,6 +60,19 @@ export function PaymentModal({
       }).start();
     }
   }, [visible, defaultAmount]);
+
+  // Called by Modal once the native view hierarchy is fully mounted.
+  // At this point the Animated.View native node is guaranteed to exist,
+  // making it safe to start the entrance animation without any race condition.
+  const handleShow = () => {
+    slideAnim.setValue(0);
+    Animated.spring(slideAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11,
+    }).start();
+  };
 
   const translateY = slideAnim.interpolate({
     inputRange: [0, 1],
@@ -91,6 +93,7 @@ export function PaymentModal({
       visible={visible}
       transparent
       animationType="none"
+      onShow={handleShow}
       onRequestClose={onClose}
       statusBarTranslucent
     >
