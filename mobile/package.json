@@ -8,7 +8,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "eslint .",
-    "ts:check": "tsc --noEmit"
+    "ts:check": "tsc --noEmit",
+    "update:preview": "dotenv -e .env.preview -- eas update --branch preview",
+    "update:production": "dotenv -e .env.production -- eas update --branch production"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -47,6 +49,7 @@
     "@types/react": "~19.1.10",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^8.42.0",
     "sharp": "^0.34.5",
     "typescript": "~5.9.2"

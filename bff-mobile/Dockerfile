@@ -9,11 +9,11 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY bff-mobile/package.json bff-mobile/package-lock.json ./
 
 RUN npm ci
 
-COPY . .
+COPY bff-mobile/ .
 
 RUN npm run build
 

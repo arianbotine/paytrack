@@ -5,3 +5,9 @@
 expo-env.d.ts
 .expo/
 # @end expo-cli
+
+# Environment files — nunca commitar
+.env
+.env.local
+.env.preview
+.env.production
