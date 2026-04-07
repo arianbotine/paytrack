@@ -4,6 +4,7 @@ import type { DashboardInstallmentItem } from '@lib/types';
 import { formatDate } from '@lib/formatters';
 import { Text } from '@shared/components/Text';
 import { CurrencyDisplay } from '@shared/components/CurrencyDisplay';
+import { TagChip } from '@shared/components/TagChip';
 
 interface InstallmentRowProps {
   item: DashboardInstallmentItem;
@@ -39,6 +40,25 @@ export function InstallmentRow({
           <Text variant="caption" className="text-neutral-500 mt-0.5">
             {item.categoryName}
           </Text>
+        )}
+        {item.tags && item.tags.length > 0 && (
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              gap: 4,
+              marginTop: 4,
+            }}
+          >
+            {item.tags.slice(0, 3).map(tag => (
+              <TagChip key={tag.id} tag={tag} size="sm" />
+            ))}
+            {item.tags.length > 3 && (
+              <Text variant="caption" className="text-neutral-400 self-center">
+                +{item.tags.length - 3}
+              </Text>
+            )}
+          </View>
         )}
         {item.dueDate && (
           <Text variant="caption" className="text-neutral-400 mt-0.5">

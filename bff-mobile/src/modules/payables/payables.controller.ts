@@ -18,7 +18,11 @@ import {
 import { PayablesService } from './payables.service';
 import { CurrentUser } from '../shared/current-user.decorator';
 import { JwtGuard } from '../shared/jwt.guard';
-import { PayableFilterDto, QuickPayDto } from './payables.dto';
+import {
+  PayableFilterDto,
+  QuickPayDto,
+  CreatePayableBffDto,
+} from './payables.dto';
 
 @ApiTags('Payables')
 @ApiBearerAuth('JWT')
@@ -26,6 +30,21 @@ import { PayableFilterDto, QuickPayDto } from './payables.dto';
 @UseGuards(JwtGuard)
 export class PayablesController {
   constructor(private readonly payablesService: PayablesService) {}
+
+  /**
+   * Create a new payable.
+   */
+  @Post()
+  @ApiOperation({ summary: 'Criar conta a pagar' })
+  @ApiResponse({ status: 201, description: 'Conta criada com sucesso.' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos.' })
+  @ApiResponse({ status: 401, description: 'Token inválido ou expirado.' })
+  async create(
+    @CurrentUser('accessToken') accessToken: string,
+    @Body() dto: CreatePayableBffDto
+  ) {
+    return this.payablesService.create(accessToken, dto);
+  }
 
   /**
    * List payables with mobile-optimized response.

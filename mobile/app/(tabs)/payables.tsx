@@ -13,6 +13,7 @@ import {
 } from '@tanstack/react-query';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { api, useAuthStore } from '../../src/lib';
+import { CreatePayableSheet } from '../../src/features/payables/components/CreatePayableSheet';
 import type {
   PayableListItem,
   ListResponse,
@@ -31,6 +32,7 @@ import { CurrencyDisplay } from '../../src/shared/components/CurrencyDisplay';
 import { EmptyState } from '../../src/shared/components/EmptyState';
 import { LoadingState } from '../../src/shared/components/LoadingState';
 import { PaymentModal } from '../../src/shared/components/PaymentModal';
+import { TagChip } from '../../src/shared/components/TagChip';
 
 type StatusFilter = 'ALL' | 'PENDING' | 'PARTIAL' | 'PAID';
 
@@ -99,6 +101,28 @@ function PayableCard({
               <Text variant="caption" className="text-neutral-500 mt-0.5">
                 {item.categoryName}
               </Text>
+            )}
+            {item.tags && item.tags.length > 0 && (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: 4,
+                  marginTop: 4,
+                }}
+              >
+                {item.tags.slice(0, 3).map(tag => (
+                  <TagChip key={tag.id} tag={tag} size="sm" />
+                ))}
+                {item.tags.length > 3 && (
+                  <Text
+                    variant="caption"
+                    className="text-neutral-400 self-center"
+                  >
+                    +{item.tags.length - 3}
+                  </Text>
+                )}
+              </View>
             )}
           </View>
           <StatusBadge status={item.status} variant="payable" />
@@ -203,6 +227,7 @@ export default function PayablesScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [selectedPayable, setSelectedPayable] =
     useState<PayableListItem | null>(null);
+  const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const queryClient = useQueryClient();
   const organizationId = useAuthStore(
     state => state.user?.currentOrganization?.id
@@ -385,6 +410,36 @@ export default function PayablesScreen() {
           });
         }}
         confirmLabel="Registrar Pagamento"
+      />
+
+      {/* FAB - Nova conta */}
+      <TouchableOpacity
+        onPress={() => setCreateSheetOpen(true)}
+        activeOpacity={0.85}
+        style={{
+          position: 'absolute',
+          bottom: 28,
+          right: 20,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: '#1976d2',
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: '#1976d2',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.35,
+          shadowRadius: 8,
+          elevation: 8,
+        }}
+      >
+        <MaterialCommunityIcons name="plus" size={28} color="#fff" />
+      </TouchableOpacity>
+
+      {/* Create Payable Sheet */}
+      <CreatePayableSheet
+        visible={createSheetOpen}
+        onClose={() => setCreateSheetOpen(false)}
       />
     </ScreenContainer>
   );

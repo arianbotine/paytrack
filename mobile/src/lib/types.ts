@@ -62,6 +62,7 @@ export interface DashboardInstallmentItem {
   vendorName?: string | null;
   customerName?: string | null;
   categoryName: string | null;
+  tags?: Tag[];
 }
 
 // Payables
@@ -71,6 +72,7 @@ export interface PayableListItem {
   status: AccountStatus;
   vendorName: string | null;
   categoryName: string | null;
+  tags: Tag[];
   nextDueDate: string | null;
   nextDueAmount: number | null;
   nextInstallmentId: string | null;
@@ -85,6 +87,7 @@ export interface ReceivableListItem {
   status: AccountStatus;
   customerName: string | null;
   categoryName: string | null;
+  tags: Tag[];
   nextDueDate: string | null;
   nextDueAmount: number | null;
   nextInstallmentId: string | null;
@@ -110,4 +113,79 @@ export type PaymentMethod =
 export interface ListResponse<T> {
   items: T[];
   total: number;
+}
+
+// Vendors
+export interface Vendor {
+  id: string;
+  name: string;
+  document: string | null;
+  email: string | null;
+  phone: string | null;
+}
+
+export interface CreateVendorInput {
+  name: string;
+  document?: string;
+  email?: string;
+  phone?: string;
+}
+
+// Customers
+export interface Customer {
+  id: string;
+  name: string;
+  document: string | null;
+  email: string | null;
+  phone: string | null;
+}
+
+export interface CreateCustomerInput {
+  name: string;
+  document?: string;
+  email?: string;
+  phone?: string;
+}
+
+// Categories
+export type CategoryType = 'PAYABLE' | 'RECEIVABLE';
+
+export interface Category {
+  id: string;
+  name: string;
+  type: CategoryType;
+  color: string;
+}
+
+// Tags
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface CreateTagInput {
+  name: string;
+  color: string;
+}
+
+// Create account inputs
+export interface CreatePayableInput {
+  vendorId: string;
+  amount: number;
+  firstDueDate: string;
+  installmentCount?: number;
+  categoryId?: string;
+  notes?: string;
+  tagIds?: string[];
+}
+
+export interface CreateReceivableInput {
+  customerId: string;
+  amount: number;
+  firstDueDate: string;
+  installmentCount?: number;
+  categoryId?: string;
+  notes?: string;
+  tagIds?: string[];
 }

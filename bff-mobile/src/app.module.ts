@@ -6,6 +6,10 @@ import { AuthModule } from './modules/auth/auth.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { PayablesModule } from './modules/payables/payables.module';
 import { ReceivablesModule } from './modules/receivables/receivables.module';
+import { VendorsModule } from './modules/vendors/vendors.module';
+import { CustomersModule } from './modules/customers/customers.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { TagsModule } from './modules/tags/tags.module';
 import { SharedModule } from './modules/shared/shared.module';
 
 @Module({
@@ -24,6 +28,10 @@ import { SharedModule } from './modules/shared/shared.module';
     DashboardModule,
     PayablesModule,
     ReceivablesModule,
+    VendorsModule,
+    CustomersModule,
+    CategoriesModule,
+    TagsModule,
   ],
 })
 export class AppModule {}

@@ -3,10 +3,12 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import {
   SafeAreaProvider,
   initialWindowMetrics,
 } from 'react-native-safe-area-context';
+import * as Updates from 'expo-updates';
 
 import {
   useFonts,
@@ -26,6 +28,19 @@ const queryClient = new QueryClient({
   },
 });
 
+async function checkAndApplyUpdate() {
+  if (!Updates.isEnabled) return;
+  try {
+    const result = await Updates.checkForUpdateAsync();
+    if (result.isAvailable) {
+      await Updates.fetchUpdateAsync();
+      await Updates.reloadAsync();
+    }
+  } catch {
+    // silenciar erros de OTA para não impactar a UX
+  }
+}
+
 export default function RootLayout() {
   const loadStoredAuth = useAuthStore(state => state.loadStoredAuth);
   const [fontsLoaded] = useFonts({
@@ -37,6 +52,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     loadStoredAuth();
+    checkAndApplyUpdate();
     // Warm-up: acorda o BFF e, em cascata, o backend no Render logo que o app abre.
     // É fire-and-forget — erros são silenciados para não interferir com nada.
     api.get('/health').catch(() => {});
@@ -48,10 +64,12 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <QueryClientProvider client={queryClient}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(tabs)" />
-          </Stack>
+          <BottomSheetModalProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(tabs)" />
+            </Stack>
+          </BottomSheetModalProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

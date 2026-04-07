@@ -1,6 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { HttpClientService } from '../../infrastructure/http-client.service';
 
+function flattenTags(
+  tags?: Array<
+    | { id: string; name: string; color?: string }
+    | { tag: { id: string; name: string; color?: string } }
+  >
+): Array<{ id: string; name: string; color: string }> {
+  if (!tags) return [];
+  return tags.map(t => {
+    if ('tag' in t)
+      return {
+        id: t.tag.id,
+        name: t.tag.name,
+        color: t.tag.color ?? '#3B82F6',
+      };
+    return { id: t.id, name: t.name, color: t.color ?? '#3B82F6' };
+  });
+}
+
 interface BackendDashboardItem {
   id: string;
   amount: number;
@@ -9,7 +27,10 @@ interface BackendDashboardItem {
   vendor?: { id: string; name: string };
   customer?: { id: string; name: string };
   category?: { id: string; name: string; color?: string };
-  tags: unknown[];
+  tags?: Array<
+    | { id: string; name: string; color?: string }
+    | { tag: { id: string; name: string; color?: string } }
+  >;
   installments: Array<{
     id: string;
     dueDate: string;
@@ -85,6 +106,7 @@ export interface MobileDashboardResponse {
       remaining: number;
       vendorName: string | null;
       categoryName: string | null;
+      tags: Array<{ id: string; name: string; color: string }>;
     }>;
     upcomingItems: Array<{
       id: string;
@@ -95,6 +117,7 @@ export interface MobileDashboardResponse {
       remaining: number;
       vendorName: string | null;
       categoryName: string | null;
+      tags: Array<{ id: string; name: string; color: string }>;
     }>;
   };
   receivables: {
@@ -110,6 +133,7 @@ export interface MobileDashboardResponse {
       remaining: number;
       customerName: string | null;
       categoryName: string | null;
+      tags: Array<{ id: string; name: string; color: string }>;
     }>;
     upcomingItems: Array<{
       id: string;
@@ -120,6 +144,7 @@ export interface MobileDashboardResponse {
       remaining: number;
       customerName: string | null;
       categoryName: string | null;
+      tags: Array<{ id: string; name: string; color: string }>;
     }>;
   };
 }
@@ -192,6 +217,7 @@ export class DashboardService {
       remaining: nextAmount - paidAmount,
       vendorName: item.vendor?.name ?? null,
       categoryName: item.category?.name ?? null,
+      tags: flattenTags(item.tags),
     };
   }
 
@@ -215,6 +241,7 @@ export class DashboardService {
       remaining: nextAmount - paidAmount,
       customerName: item.customer?.name ?? null,
       categoryName: item.category?.name ?? null,
+      tags: flattenTags(item.tags),
     };
   }
 }

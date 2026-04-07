@@ -18,7 +18,11 @@ import {
 import { ReceivablesService } from './receivables.service';
 import { CurrentUser } from '../shared/current-user.decorator';
 import { JwtGuard } from '../shared/jwt.guard';
-import { ReceivableFilterDto, QuickReceiveDto } from './receivables.dto';
+import {
+  ReceivableFilterDto,
+  QuickReceiveDto,
+  CreateReceivableBffDto,
+} from './receivables.dto';
 
 @ApiTags('Receivables')
 @ApiBearerAuth('JWT')
@@ -26,6 +30,21 @@ import { ReceivableFilterDto, QuickReceiveDto } from './receivables.dto';
 @UseGuards(JwtGuard)
 export class ReceivablesController {
   constructor(private readonly receivablesService: ReceivablesService) {}
+
+  /**
+   * Create a new receivable.
+   */
+  @Post()
+  @ApiOperation({ summary: 'Criar conta a receber' })
+  @ApiResponse({ status: 201, description: 'Conta criada com sucesso.' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos.' })
+  @ApiResponse({ status: 401, description: 'Token inválido ou expirado.' })
+  async create(
+    @CurrentUser('accessToken') accessToken: string,
+    @Body() dto: CreateReceivableBffDto
+  ) {
+    return this.receivablesService.create(accessToken, dto);
+  }
 
   /**
    * List receivables with mobile-optimized response.

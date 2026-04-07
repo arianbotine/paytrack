@@ -5,6 +5,8 @@ import {
   IsEnum,
   IsDateString,
   IsArray,
+  IsNotEmpty,
+  IsInt,
   Min,
   Max,
 } from 'class-validator';
@@ -142,4 +144,68 @@ export class QuickReceiveDto {
   @IsOptional()
   @IsString()
   notes?: string;
+}
+
+export class CreateReceivableBffDto {
+  @ApiProperty({
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    description: 'UUID do cliente',
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'Cliente é obrigatório' })
+  customerId!: string;
+
+  @ApiProperty({
+    example: 2500.0,
+    description: 'Valor total da conta',
+    minimum: 0.01,
+  })
+  @IsNumber()
+  @Min(0.01)
+  @Type(() => Number)
+  amount!: number;
+
+  @ApiProperty({
+    example: '2026-05-10',
+    description: 'Data do primeiro vencimento (YYYY-MM-DD)',
+  })
+  @IsDateString()
+  firstDueDate!: string;
+
+  @ApiPropertyOptional({
+    example: 3,
+    description: 'Número de parcelas (1-120)',
+    minimum: 1,
+    maximum: 120,
+    default: 1,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(120)
+  @Type(() => Number)
+  installmentCount?: number;
+
+  @ApiPropertyOptional({
+    example: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
+    description: 'UUID da categoria',
+  })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiPropertyOptional({ example: 'Observações sobre a conta' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @ApiPropertyOptional({
+    example: ['uuid-tag-1', 'uuid-tag-2'],
+    description: 'IDs das tags a associar',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tagIds?: string[];
 }

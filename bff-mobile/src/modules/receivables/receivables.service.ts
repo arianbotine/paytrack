@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { HttpClientService } from '../../infrastructure/http-client.service';
-import { ReceivableFilterDto, QuickReceiveDto } from './receivables.dto';
+import {
+  ReceivableFilterDto,
+  QuickReceiveDto,
+  CreateReceivableBffDto,
+} from './receivables.dto';
 
 /**
  * Backend returns tags as join-table objects: { tag: {id, name, color} }
@@ -9,14 +13,19 @@ import { ReceivableFilterDto, QuickReceiveDto } from './receivables.dto';
  */
 function flattenTags(
   tags?: Array<
-    | { id: string; name: string }
+    | { id: string; name: string; color?: string }
     | { tag: { id: string; name: string; color?: string } }
   >
-): Array<{ id: string; name: string }> {
+): Array<{ id: string; name: string; color: string }> {
   if (!tags) return [];
   return tags.map(t => {
-    if ('tag' in t) return { id: t.tag.id, name: t.tag.name };
-    return { id: t.id, name: t.name };
+    if ('tag' in t)
+      return {
+        id: t.tag.id,
+        name: t.tag.name,
+        color: t.tag.color ?? '#3B82F6',
+      };
+    return { id: t.id, name: t.name, color: t.color ?? '#3B82F6' };
   });
 }
 
@@ -52,6 +61,7 @@ export interface MobileReceivableListItem {
   status: string;
   customerName: string | null;
   categoryName: string | null;
+  tags: Array<{ id: string; name: string; color: string }>;
   nextDueDate: string | null;
   nextDueAmount: number | null;
   nextInstallmentId: string | null;
@@ -77,6 +87,22 @@ export interface MobileReceivableDetail {
     status: string;
     notes: string | null;
   }>;
+}
+
+function buildMonthlyDueDates(firstDueDate: string, count: number): string[] {
+  const [y, m, d] = firstDueDate.split('-').map(Number);
+  const dates: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const month = m - 1 + i;
+    const year = y + Math.floor(month / 12);
+    const monthInYear = month % 12;
+    const maxDay = new Date(year, monthInYear + 1, 0).getDate();
+    const day = Math.min(d, maxDay);
+    dates.push(
+      `${year}-${String(monthInYear + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    );
+  }
+  return dates;
 }
 
 @Injectable()
@@ -163,6 +189,34 @@ export class ReceivablesService {
   }
 
   /**
+   * Create a new receivable.
+   */
+  async create(
+    accessToken: string,
+    dto: CreateReceivableBffDto
+  ): Promise<{ id: string }> {
+    const count = dto.installmentCount ?? 1;
+    const dueDates = buildMonthlyDueDates(dto.firstDueDate, count);
+
+    const payload: Record<string, unknown> = {
+      customerId: dto.customerId,
+      amount: dto.amount,
+      installmentCount: count,
+      dueDates,
+    };
+    if (dto.categoryId) payload.categoryId = dto.categoryId;
+    if (dto.notes) payload.notes = dto.notes;
+    if (dto.tagIds && dto.tagIds.length > 0) payload.tagIds = dto.tagIds;
+
+    return this.httpClient.post<{ id: string }>(
+      '/receivables',
+      payload,
+      accessToken,
+      { headers: { 'idempotency-key': randomUUID() } }
+    );
+  }
+
+  /**
    * Get payment history for a receivable.
    */
   async getPayments(accessToken: string, id: string) {
@@ -196,6 +250,7 @@ export class ReceivablesService {
       status: receivable.status,
       customerName: receivable.customer?.name || null,
       categoryName: receivable.category?.name || null,
+      tags: flattenTags(receivable.tags),
       nextDueDate: nextInstallment?.dueDate
         ? nextInstallment.dueDate.split('T')[0]
         : null,

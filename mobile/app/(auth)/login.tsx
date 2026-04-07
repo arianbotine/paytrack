@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Text } from '../../src/shared/components/Text';
@@ -26,6 +28,18 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const insets = useSafeAreaInsets();
   const { loginMutation, isSlowRequest, retryCount } = useLogin();
+
+  const appVersion = Constants.expoConfig?.version ?? '1.0.0';
+  const updateStamp = Updates.createdAt
+    ? Updates.createdAt.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : 'dev';
+  const versionLabel = `v${appVersion} · ${updateStamp}`;
 
   const {
     control,
@@ -228,6 +242,14 @@ export default function LoginScreen() {
                 loading={loginMutation.isPending}
                 onPress={handleSubmit(d => loginMutation.mutate(d))}
               />
+
+              <Text
+                variant="caption"
+                className="text-center mt-6"
+                style={{ color: '#bdbdbd' }}
+              >
+                {versionLabel}
+              </Text>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
