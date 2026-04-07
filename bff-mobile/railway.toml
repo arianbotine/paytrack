@@ -1,6 +1,6 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "bff-mobile/Dockerfile"
+dockerfilePath = "bff-mobile/Dockerfile.railway"
 
 [deploy]
 healthcheckPath = "/bff/health"
