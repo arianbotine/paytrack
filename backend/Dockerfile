@@ -43,7 +43,7 @@ RUN apk add --no-cache dumb-init openssl && \
 COPY --from=builder /app/package*.json ./
 
 # Instalar apenas dependências de produção
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copiar Prisma schema e client gerado
 COPY --from=builder /app/prisma ./prisma

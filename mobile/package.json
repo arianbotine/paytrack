@@ -2,6 +2,10 @@
   "name": "paytrack-mobile",
   "version": "1.0.0",
   "main": "expo-router/entry",
+  "engines": {
+    "node": ">=20.17.0",
+    "npm": ">=11.0.0"
+  },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
