@@ -1,3 +1,10 @@
+import * as dns from 'dns';
+// Força preferência por IPv4 em todas as resoluções DNS da aplicação.
+// Necessário porque algumas infraestruturas (Railway, ambientes locais sem
+// IPv6 roteável) retornam endereços IPv6 que resultam em ETIMEDOUT,
+// enquanto os endereços IPv4 dos mesmos hosts funcionam corretamente.
+dns.setDefaultResultOrder('ipv4first');
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
