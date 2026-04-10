@@ -179,10 +179,11 @@ async function handleCallback(req: Request, res: Response): Promise<void> {
           ? [authResponse.headers.get('set-cookie') as string]
           : [];
 
-    const sessionToken = extractCookieValue(
-      setCookies,
-      'better-auth.session_token'
-    );
+    // Em produção (HTTPS) better-auth usa o prefixo __Secure- no cookie.
+    // Tenta o nome seguro primeiro; fallback para desenvolvimento (HTTP).
+    const sessionToken =
+      extractCookieValue(setCookies, '__Secure-better-auth.session_token') ??
+      extractCookieValue(setCookies, 'better-auth.session_token');
     const location = authResponse.headers.get('location') ?? FRONTEND_ORIGIN;
 
     if (sessionToken) {

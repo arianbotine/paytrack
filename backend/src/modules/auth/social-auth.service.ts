@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { socialAuth } from './better-auth.config';
 
+// Em produção (HTTPS) better-auth usa o prefixo __Secure- no cookie.
 const SESSION_COOKIE = 'better-auth.session_token';
+const SESSION_COOKIE_SECURE = '__Secure-better-auth.session_token';
 
 @Injectable()
 export class SocialAuthService {
@@ -53,10 +55,11 @@ export class SocialAuthService {
     }
 
     const isProduction = process.env.NODE_ENV === 'production';
-    res.clearCookie(SESSION_COOKIE, {
+    const cookieName = isProduction ? SESSION_COOKIE_SECURE : SESSION_COOKIE;
+    res.clearCookie(cookieName, {
       path: '/',
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: isProduction ? 'none' : 'lax',
       secure: isProduction,
     });
   }
