@@ -22,7 +22,6 @@ import {
   Login as LoginIcon,
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
-import { socialAuthClient } from '@/lib/social-auth';
 import { useAuthStore } from '@/lib/stores/authStore';
 
 const loginSchema = z.object({
@@ -100,18 +99,18 @@ export function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = () => {
     setGoogleLoading(true);
     setError('');
-    try {
-      await socialAuthClient.signIn.social({
-        provider: 'google',
-        callbackURL: `${window.location.origin}/auth/google/callback`,
-      });
-    } catch {
-      setError('Erro ao iniciar login com Google. Tente novamente.');
-      setGoogleLoading(false);
-    }
+    // Navega diretamente para o backend em vez de usar fetch/CORS.
+    // CDNs como o Fastly do Railway suprimem Set-Cookie de respostas CORS,
+    // impedindo que o cookie de estado OAuth chegue ao browser.
+    // Com navegação top-level o cookie é recebido e armazenado corretamente.
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const callbackURL = encodeURIComponent(
+      `${window.location.origin}/auth/google/callback`
+    );
+    window.location.href = `${API_URL}/api/auth-social/initiate?provider=google&callbackURL=${callbackURL}`;
   };
 
   return (
