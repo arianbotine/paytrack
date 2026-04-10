@@ -326,6 +326,13 @@ export class UsersService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
+    // Usuários criados via Google OAuth não possuem senha definida
+    if (!user.password) {
+      throw new BadRequestException(
+        'Sua conta foi criada via Google. Defina uma senha através do suporte.'
+      );
+    }
+
     // Verify current password
     const isPasswordValid = await bcrypt.compare(
       changePasswordDto.currentPassword,

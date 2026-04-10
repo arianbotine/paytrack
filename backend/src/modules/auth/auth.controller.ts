@@ -8,6 +8,7 @@ import {
   Res,
   Req,
   HttpException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import {
@@ -18,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
+import { SocialAuthService } from './social-auth.service';
 import {
   LoginDto,
   AuthResponseDto,
@@ -36,7 +38,10 @@ import {
 @ApiTags('Autenticação')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly socialAuthService: SocialAuthService
+  ) {}
 
   @Public()
   @SkipOrganizationCheck()
@@ -135,8 +140,9 @@ export class AuthController {
   @SkipOrganizationCheck()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Logout do usuário' })
-  async logout(@Res({ passthrough: true }) res: Response) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     clearRefreshTokenCookie(res);
+    await this.socialAuthService.signOut(req, res);
     return { message: 'Logout realizado com sucesso' };
   }
 
@@ -148,5 +154,37 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Não autorizado' })
   async getProfile(@CurrentUser('sub') userId: string) {
     return this.authService.getProfile(userId);
+  }
+
+  @Public()
+  @SkipOrganizationCheck()
+  @Post('google/token')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Trocar sessão OAuth do Google por JWT da aplicação',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Login social realizado com sucesso',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Sessão OAuth inválida ou expirada',
+  })
+  async googleToken(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const session = await this.socialAuthService.getSession(req);
+
+    if (!session?.user?.email) {
+      throw new UnauthorizedException('Sessão OAuth inválida ou expirada');
+    }
+
+    const result = await this.authService.loginWithGoogle(session.user.email);
+    setRefreshTokenCookie(res, result.refreshToken);
+    return { user: result.user, accessToken: result.accessToken };
   }
 }

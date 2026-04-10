@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthService } from './auth.service';
+import { SocialAuthService } from './social-auth.service';
 import { AuthController } from './auth.controller';
 import {
   JwtAuthGuard,
@@ -25,6 +26,7 @@ import {
   controllers: [AuthController],
   providers: [
     AuthService,
+    SocialAuthService,
     // IMPORTANTE: Guards executam na ordem de declaração
     // 1. JwtAuthGuard - valida token, seta request.user
     // 2. RolesGuard - valida roles usando request.user
@@ -42,6 +44,6 @@ import {
       useClass: OrganizationGuard,
     },
   ],
-  exports: [AuthService, JwtModule],
+  exports: [AuthService, SocialAuthService, JwtModule],
 })
 export class AuthModule {}

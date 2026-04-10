@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
+import { socialAuthMiddleware } from './modules/auth/social-auth.middleware';
 import { PerformanceInterceptor } from './shared/interceptors/performance.interceptor';
 import { TimeoutMiddleware } from './shared/middleware/timeout.middleware';
 import { logInfo, logError } from './shared/utils';
@@ -15,6 +16,10 @@ async function bootstrap() {
 
   // Enable graceful shutdown hooks for Prisma
   app.enableShutdownHooks();
+
+  // Montar better-auth ANTES dos body parsers para que o handler
+  // possa ler o corpo bruto das requisições OAuth.
+  app.use(socialAuthMiddleware);
 
   // Body size limits (before other middleware)
   app.use(json({ limit: '1mb' }));

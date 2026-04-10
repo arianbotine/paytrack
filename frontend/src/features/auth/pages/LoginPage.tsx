@@ -14,6 +14,7 @@ import {
   InputAdornment,
   IconButton,
   CircularProgress,
+  Divider,
 } from '@mui/material';
 import {
   Visibility,
@@ -21,6 +22,7 @@ import {
   Login as LoginIcon,
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
+import { socialAuthClient } from '@/lib/social-auth';
 import { useAuthStore } from '@/lib/stores/authStore';
 
 const loginSchema = z.object({
@@ -37,6 +39,7 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const {
     register,
@@ -94,6 +97,20 @@ export function LoginPage() {
       setError(err.response?.data?.message || 'Erro ao fazer login');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    setError('');
+    try {
+      await socialAuthClient.signIn.social({
+        provider: 'google',
+        callbackURL: `${window.location.origin}/auth/google/callback`,
+      });
+    } catch {
+      setError('Erro ao iniciar login com Google. Tente novamente.');
+      setGoogleLoading(false);
     }
   };
 
@@ -171,7 +188,7 @@ export function LoginPage() {
               fullWidth
               variant="contained"
               size="large"
-              disabled={loading}
+              disabled={loading || googleLoading}
               sx={{ mt: 3, mb: 2 }}
               startIcon={
                 loading ? (
@@ -184,6 +201,35 @@ export function LoginPage() {
               {loading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
+
+          <Divider sx={{ my: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              ou
+            </Typography>
+          </Divider>
+
+          <Button
+            fullWidth
+            variant="outlined"
+            size="large"
+            disabled={loading || googleLoading}
+            onClick={handleGoogleLogin}
+            startIcon={
+              googleLoading ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : (
+                <Box
+                  component="img"
+                  src="https://www.google.com/favicon.ico"
+                  alt="Google"
+                  sx={{ width: 20, height: 20 }}
+                />
+              )
+            }
+            sx={{ mb: 1 }}
+          >
+            {googleLoading ? 'Redirecionando...' : 'Entrar com Google'}
+          </Button>
         </CardContent>
       </Card>
     </Box>

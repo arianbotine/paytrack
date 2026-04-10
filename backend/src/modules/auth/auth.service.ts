@@ -61,6 +61,11 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas');
     }
 
+    // Usuários criados via Google OAuth não possuem senha definida
+    if (!user.password) {
+      throw new UnauthorizedException('Credenciais inválidas');
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
@@ -291,6 +296,78 @@ export class AuthService {
     const tokens = await this.generateTokens(
       user,
       payload.organizationId,
+      role,
+      user.isSystemAdmin
+    );
+
+    return {
+      ...tokens,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isSystemAdmin: user.isSystemAdmin,
+        currentOrganization,
+        availableOrganizations,
+      },
+    };
+  }
+
+  /**
+   * Autentica um usuário pelo e-mail após validação OAuth via better-auth.
+   * Não verifica senha — a identidade já foi confirmada pelo Google.
+   */
+  async loginWithGoogle(email: string): Promise<AuthResponseDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: {
+        organizations: {
+          where: { isActive: true },
+          include: {
+            organization: {
+              select: {
+                id: true,
+                name: true,
+                isActive: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Usuário não encontrado ou inativo');
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    const activeOrgs = user.organizations.filter(
+      uo => uo.organization.isActive
+    );
+    const availableOrganizations = await this.getAvailableOrganizations(user);
+
+    let currentOrganization = undefined;
+    let organizationId = undefined;
+    let role = undefined;
+
+    if (activeOrgs.length === 1) {
+      const selectedOrg = activeOrgs[0];
+      currentOrganization = {
+        id: selectedOrg.organization.id,
+        name: selectedOrg.organization.name,
+        role: selectedOrg.role,
+      };
+      organizationId = selectedOrg.organization.id;
+      role = selectedOrg.role;
+    }
+
+    const tokens = await this.generateTokens(
+      user,
+      organizationId,
       role,
       user.isSystemAdmin
     );

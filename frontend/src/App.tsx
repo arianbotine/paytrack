@@ -16,6 +16,11 @@ const LoginPage = lazy(() =>
     default: m.LoginPage,
   }))
 );
+const GoogleCallbackPage = lazy(() =>
+  import('./features/auth/pages/GoogleCallbackPage').then(m => ({
+    default: m.GoogleCallbackPage,
+  }))
+);
 const SelectOrganizationPage = lazy(() =>
   import('./features/auth/pages/SelectOrganizationPage').then(m => ({
     default: m.SelectOrganizationPage,
@@ -142,6 +147,10 @@ function App() {
       <Suspense fallback={<LoadingOverlay open />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/auth/google/callback"
+            element={<GoogleCallbackPage />}
+          />
           <Route
             path="/select-organization"
             element={<SelectOrganizationPage />}

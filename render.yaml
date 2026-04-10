@@ -39,11 +39,29 @@ services:
       # URL do frontend para CORS (Vercel)
       # IMPORTANTE: Atualize com a URL real do frontend em produção
       - key: FRONTEND_URL
-        value: https://paytrack.vercel.app
+        value: https://paytrack-five.vercel.app
 
       # CORS Origins - Lista de origens permitidas separadas por vírgula
       - key: CORS_ORIGINS
         value: https://paytrack-five.vercel.app,https://paytrack-six.vercel.app,http://localhost:5173,http://localhost:3000
+
+      # URL pública da própria API (usada pelo better-auth para montar redirect_uri)
+      # IMPORTANTE: Atualize com a URL real do backend no Render
+      - key: API_URL
+        value: https://paytrack-backend.onrender.com
+
+      # Google OAuth - Login social via better-auth
+      # IMPORTANTE: Configure estes valores manualmente no dashboard do Render
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
+      # Chave de assinatura das sessões do better-auth
+      # Gere com: openssl rand -base64 32
+      - key: BETTER_AUTH_SECRET
+        sync: false
 
       # JWT Configuration
       # IMPORTANTE: Gere uma chave segura de 256 bits para produção

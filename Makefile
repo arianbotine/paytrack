@@ -134,10 +134,14 @@ down:
 	@-if [ -f $(LOGS_DIR)/.pids.bff ]; then kill $$(cat $(LOGS_DIR)/.pids.bff) 2>/dev/null || true; rm -f $(LOGS_DIR)/.pids.bff; fi
 	@-pkill -9 -f "nest start" || true
 	@-pkill -9 -f "vite" || true
+	@-pkill -f "expo start" || true
+	@-pkill -f "metro" || true
 	@sleep 2
 	@-lsof -ti:$(BACKEND_PORT) | xargs kill -9 2>/dev/null || true
 	@-lsof -ti:$(FRONTEND_PORT) | xargs kill -9 2>/dev/null || true
 	@-lsof -ti:$(BFF_PORT) | xargs kill -9 2>/dev/null || true
+	@-lsof -ti:8081 | xargs kill -9 2>/dev/null || true
+	@-lsof -ti:8082 | xargs kill -9 2>/dev/null || true
 	@echo "Parando PostgreSQL..."
 	@$(DOCKER_COMPOSE) down
 	@echo "Limpando logs antigos..."

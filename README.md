@@ -299,17 +299,21 @@ curl -X POST http://localhost:3001/bff/auth/login \
 
 Edite o arquivo `.env` na raiz do projeto:
 
-| Variável       | Descrição                | Padrão                  |
-| -------------- | ------------------------ | ----------------------- |
-| `DB_USER`      | Usuário do PostgreSQL    | `paytrack`              |
-| `DB_PASSWORD`  | Senha do PostgreSQL      | `paytrack123`           |
-| `DB_NAME`      | Nome do banco            | `paytrack`              |
-| `DB_PORT`      | Porta do PostgreSQL      | `5433`                  |
-| `DATABASE_URL` | URL de conexão Prisma    | `postgresql://...`      |
-| `API_PORT`     | Porta do backend         | `3000`                  |
-| `WEB_PORT`     | Porta do frontend        | `5173`                  |
-| `JWT_SECRET`   | Secret para JWT          | `super-secret-...`      |
-| `VITE_API_URL` | URL da API para frontend | `http://localhost:3000` |
+| Variável               | Descrição                                         | Padrão                  |
+| ---------------------- | ------------------------------------------------- | ----------------------- |
+| `DB_USER`              | Usuário do PostgreSQL                             | `paytrack`              |
+| `DB_PASSWORD`          | Senha do PostgreSQL                               | `paytrack123`           |
+| `DB_NAME`              | Nome do banco                                     | `paytrack`              |
+| `DB_PORT`              | Porta do PostgreSQL                               | `5433`                  |
+| `DATABASE_URL`         | URL de conexão Prisma                             | `postgresql://...`      |
+| `API_PORT`             | Porta do backend                                  | `3000`                  |
+| `WEB_PORT`             | Porta do frontend                                 | `5173`                  |
+| `JWT_SECRET`           | Secret para JWT                                   | `super-secret-...`      |
+| `VITE_API_URL`         | URL da API para frontend                          | `http://localhost:3000` |
+| `API_URL`              | URL base da API (Google OAuth redirect URI)       | `http://localhost:3000` |
+| `GOOGLE_CLIENT_ID`     | Client ID do Google OAuth 2.0                     | —                       |
+| `GOOGLE_CLIENT_SECRET` | Client Secret do Google OAuth 2.0                 | —                       |
+| `BETTER_AUTH_SECRET`   | Chave de assinatura das sessões OAuth (≥32 chars) | —                       |
 
 ## 🗄️ Banco de Dados
 
@@ -361,4 +365,108 @@ make studio
 ```bash
 # Parar todos os serviços graciosamente
 make down
+```
+
+## 🔐 Login Social com Google
+
+O PayTrack suporta login via conta Google. O fluxo usa [better-auth](https://better-auth.com) como handler OAuth no backend e mantém o sistema JWT existente intacto.
+
+### Como funciona
+
+```
+[Usuário clica "Entrar com Google"]
+  → Redirect para Google OAuth
+    → Callback em /api/auth-social/callback/google (better-auth)
+      → Frontend chama POST /api/auth/google/token
+        → JWT da aplicação gerado
+          → Dashboard ou Seleção de Organização
+```
+
+Usuários com conta cadastrada por e-mail/senha continuam funcionando normalmente. Se um usuário com Google usar o mesmo e-mail de uma conta já existente, as duas formas de login ficam vinculadas automaticamente.
+
+### Passo 1 — Criar credenciais no Google Cloud Console
+
+1. Acesse [console.cloud.google.com](https://console.cloud.google.com)
+2. Selecione ou crie um projeto
+3. No menu lateral: **APIs e serviços → Credenciais**
+4. Clique em **Criar credenciais → ID do cliente OAuth**
+5. Tipo de aplicativo: **Aplicativo da Web**
+6. Em **URIs de redirecionamento autorizados**, adicione:
+
+   | Ambiente        | URI                                                       |
+   | --------------- | --------------------------------------------------------- |
+   | Desenvolvimento | `http://localhost:3000/api/auth-social/callback/google`   |
+   | Produção        | `https://seu-dominio.com/api/auth-social/callback/google` |
+
+7. Clique em **Criar** e copie o **Client ID** e o **Client Secret**
+
+> **Tela de consentimento OAuth**: se solicitado, configure a tela de consentimento com o nome do app, e-mail de suporte e logo. Para testes, o status "Teste" é suficiente.
+
+### Passo 2 — Configurar as variáveis de ambiente
+
+Edite `backend/.env` e adicione as variáveis abaixo (ou descomente se já existirem):
+
+```env
+# URL base da API (usada pelo better-auth para montar o redirect URI)
+API_URL=http://localhost:3000
+
+# Credenciais do Google OAuth 2.0
+GOOGLE_CLIENT_ID=seu-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=seu-client-secret
+
+# Segredo do better-auth (mínimo 32 caracteres — gere com o comando abaixo)
+BETTER_AUTH_SECRET=cole-aqui-o-segredo-gerado
+```
+
+Para gerar um `BETTER_AUTH_SECRET` seguro:
+
+```bash
+openssl rand -base64 32
+```
+
+### Passo 3 — Reiniciar o backend
+
+```bash
+make restart
+```
+
+Ao iniciar, o backend exibirá um aviso caso as credenciais não estejam configuradas:
+
+```
+WARN [Better Auth]: Social provider google is missing clientId or clientSecret
+```
+
+Com as credenciais corretas, o aviso desaparece e o botão **Entrar com Google** na tela de login estará funcional.
+
+### Variáveis de ambiente do Google OAuth
+
+| Variável               | Descrição                                               | Onde obter                      |
+| ---------------------- | ------------------------------------------------------- | ------------------------------- |
+| `API_URL`              | URL base do backend (define o redirect URI OAuth)       | `http://localhost:3000` (local) |
+| `GOOGLE_CLIENT_ID`     | Client ID do OAuth 2.0                                  | Google Cloud Console            |
+| `GOOGLE_CLIENT_SECRET` | Client Secret do OAuth 2.0                              | Google Cloud Console            |
+| `BETTER_AUTH_SECRET`   | Chave de assinatura das sessões better-auth (≥32 chars) | `openssl rand -base64 32`       |
+
+### Comportamento com novos usuários
+
+| Situação                                  | Comportamento                                                                                                                             |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| E-mail **não existe** no sistema          | Conta criada automaticamente sem senha e sem organização. Um administrador precisa associar o usuário a uma organização via painel admin. |
+| E-mail **já existe** (conta e-mail/senha) | As duas formas de login ficam vinculadas. O usuário pode entrar tanto por e-mail/senha quanto por Google.                                 |
+
+### Configuração para produção
+
+Em produção, ajuste as variáveis no ambiente de deploy:
+
+```env
+API_URL=https://seu-dominio.com
+GOOGLE_CLIENT_ID=seu-client-id-de-producao.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=seu-client-secret-de-producao
+BETTER_AUTH_SECRET=segredo-longo-e-aleatorio-de-producao
+```
+
+E adicione o URI de produção na lista de redirecionamentos autorizados no Google Cloud Console:
+
+```
+https://seu-dominio.com/api/auth-social/callback/google
 ```
