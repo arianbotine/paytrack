@@ -27,6 +27,16 @@ export class SelectOrganizationDto {
   organizationId!: string;
 }
 
+export class GoogleTokenDto {
+  @ApiProperty({
+    required: false,
+    description: 'Token de sessão better-auth (cross-origin)',
+  })
+  @IsString()
+  @IsNotEmpty()
+  session?: string;
+}
+
 export class AuthResponseDto {
   @ApiProperty()
   accessToken!: string;

@@ -39,8 +39,13 @@ export function GoogleCallbackPage() {
     if (error) return;
     const exchangeSession = async () => {
       try {
-        // Troca a sessão OAuth (cookie better-auth) pelo JWT da aplicação
-        const response = await api.post('/auth/google/token');
+        // Em produção (cross-origin), o backend inclui o token de sessão
+        // na URL (?session=TOKEN) porque o CDN do Railway suprime Set-Cookie.
+        // Em desenvolvimento, o token vem por cookie (same-origin).
+        const sessionToken = searchParams.get('session');
+        const body = sessionToken ? { session: sessionToken } : {};
+
+        const response = await api.post('/auth/google/token', body);
         const { user, accessToken } = response.data;
         setAuth(user, accessToken);
 
@@ -61,7 +66,7 @@ export function GoogleCallbackPage() {
     };
 
     exchangeSession();
-  }, [navigate, setAuth, error]);
+  }, [navigate, setAuth, error, searchParams]);
 
   if (error) {
     return (

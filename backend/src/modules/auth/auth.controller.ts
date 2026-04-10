@@ -24,6 +24,7 @@ import {
   LoginDto,
   AuthResponseDto,
   SelectOrganizationDto,
+  GoogleTokenDto,
 } from './dto/auth.dto';
 import {
   Public,
@@ -174,10 +175,16 @@ export class AuthController {
     description: 'Sessão OAuth inválida ou expirada',
   })
   async googleToken(
+    @Body() body: GoogleTokenDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response
   ) {
-    const session = await this.socialAuthService.getSession(req);
+    // Tenta obter sessão pelo token passado no body (produção cross-origin:
+    // CDN Railway suprime Set-Cookie → token enviado via URL → body).
+    // Fallback: cookie (funciona em desenvolvimento local same-origin).
+    const session = body.session
+      ? await this.socialAuthService.getSessionByToken(body.session)
+      : await this.socialAuthService.getSession(req);
 
     if (!session?.user?.email) {
       throw new UnauthorizedException('Sessão OAuth inválida ou expirada');

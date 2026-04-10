@@ -64,6 +64,21 @@ export function socialAuthMiddleware(
     return;
   }
 
+  // Intercepta o callback do OAuth ANTES do toNodeHandler.
+  // O Fastly (Railway CDN) suprime Set-Cookie em respostas 302 cross-origin,
+  // portanto o cookie better-auth.session_token nunca chega ao browser.
+  // A solução: extrair o token da sessão do Set-Cookie da resposta interna
+  // do better-auth e passá-lo na URL de redirecionamento para o frontend
+  // (?session=TOKEN). O frontend envia o token no body do POST /auth/google/token
+  // — sem depender de cookies cross-origin.
+  if (
+    req.method === 'GET' &&
+    req.url.startsWith('/api/auth-social/callback/')
+  ) {
+    void handleCallback(req, res);
+    return;
+  }
+
   if (req.url.startsWith('/api/auth-social/error')) {
     const qs = req.url.split('?')[1] ?? '';
     const error = new URLSearchParams(qs).get('error') ?? 'oauth_error';
@@ -134,4 +149,70 @@ async function handleInitiate(req: Request, res: Response): Promise<void> {
     console.error('[SocialAuth] initiate failed:', msg);
     res.writeHead(500).end('OAuth initiation failed');
   }
+}
+
+/**
+ * Processa o callback do Google interceptando a resposta interna do better-auth.
+ *
+ * Problema: Railway/Fastly suprime Set-Cookie em respostas 302 cross-origin,
+ * então o cookie better-auth.session_token nunca chega ao browser.
+ *
+ * Solução: chamar socialAuth.handler internamente, extrair o token de sessão
+ * do Set-Cookie da resposta e incluí-lo na URL de redirecionamento para o
+ * frontend (?session=TOKEN). O frontend então envia o token no body do POST
+ * /api/auth/google/token — sem cookies cross-origin.
+ */
+async function handleCallback(req: Request, res: Response): Promise<void> {
+  try {
+    const apiUrl = process.env.API_URL ?? 'http://localhost:3000';
+    const internalReq = new globalThis.Request(`${apiUrl}${req.url}`, {
+      method: 'GET',
+      headers: new globalThis.Headers({ cookie: req.headers.cookie ?? '' }),
+    });
+
+    const authResponse = await socialAuth.handler(internalReq);
+
+    const setCookies: string[] =
+      typeof authResponse.headers.getSetCookie === 'function'
+        ? authResponse.headers.getSetCookie()
+        : authResponse.headers.get('set-cookie')
+          ? [authResponse.headers.get('set-cookie') as string]
+          : [];
+
+    const sessionToken = extractCookieValue(
+      setCookies,
+      'better-auth.session_token'
+    );
+    const location = authResponse.headers.get('location') ?? FRONTEND_ORIGIN;
+
+    if (sessionToken) {
+      const sep = location.includes('?') ? '&' : '?';
+      res
+        .writeHead(302, {
+          Location: `${location}${sep}session=${encodeURIComponent(sessionToken)}`,
+        })
+        .end();
+    } else {
+      // Sem token = erro no callback (ex: state_mismatch) — redireciona como está
+      res.writeHead(302, { Location: location }).end();
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // eslint-disable-next-line no-console
+    console.error('[SocialAuth] callback failed:', msg);
+    const sep = FRONTEND_ORIGIN.includes('?') ? '&' : '?';
+    res
+      .writeHead(302, {
+        Location: `${FRONTEND_ORIGIN}/auth/google/callback${sep}error=oauth_error`,
+      })
+      .end();
+  }
+}
+
+/** Extrai o valor de um cookie específico de um array de strings Set-Cookie. */
+function extractCookieValue(setCookies: string[], name: string): string | null {
+  const prefix = `${name}=`;
+  const entry = setCookies.find(c => c.startsWith(prefix));
+  if (!entry) return null;
+  return entry.slice(prefix.length).split(';')[0] ?? null;
 }
