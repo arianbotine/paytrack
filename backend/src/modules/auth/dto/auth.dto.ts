@@ -1,6 +1,7 @@
 import {
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
   MinLength,
   IsUUID,
@@ -32,6 +33,7 @@ export class GoogleTokenDto {
     required: false,
     description: 'Token de sessão better-auth (cross-origin)',
   })
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   session?: string;
