@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { HttpClientService } from '../../infrastructure/http-client.service';
-import { CategoryQueryDto } from './categories.dto';
+import { CategoryQueryDto, CreateCategoryBffDto } from './categories.dto';
 
 export interface MobileCategoryItem {
   id: string;
@@ -28,5 +28,16 @@ export class CategoriesService {
       return { items: response, total: response.length };
     }
     return { items: response.data, total: response.total };
+  }
+
+  async create(
+    accessToken: string,
+    dto: CreateCategoryBffDto
+  ): Promise<MobileCategoryItem> {
+    return this.httpClient.post<MobileCategoryItem>(
+      '/categories',
+      dto,
+      accessToken
+    );
   }
 }

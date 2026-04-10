@@ -3,7 +3,13 @@ import { isAxiosError } from 'axios';
 import { z } from 'zod';
 import { router } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
-import { api, useAuthStore, AuthResponse } from '../../lib';
+import {
+  api,
+  useAuthStore,
+  AuthResponse,
+  saveCredentials,
+  clearCredentials,
+} from '../../lib';
 
 // ---------------------------------------------------------------------------
 // Schema & types
@@ -63,7 +69,9 @@ export function getLoginErrorMessage(error: unknown): string {
 // ---------------------------------------------------------------------------
 
 export interface UseLoginState {
-  loginMutation: ReturnType<typeof useMutation<AuthResponse, Error, LoginForm>>;
+  loginMutation: ReturnType<
+    typeof useMutation<AuthResponse, Error, LoginForm & { rememberMe: boolean }>
+  >;
   isSlowRequest: boolean;
   retryCount: number;
 }
@@ -84,8 +92,12 @@ export function useLogin(): UseLoginState {
     setRetryCount(0);
   }
 
-  const loginMutation = useMutation<AuthResponse, Error, LoginForm>({
-    mutationFn: async (data: LoginForm) => {
+  const loginMutation = useMutation<
+    AuthResponse,
+    Error,
+    LoginForm & { rememberMe: boolean }
+  >({
+    mutationFn: async data => {
       abortedRef.current = false;
       setRetryCount(0);
 
@@ -99,7 +111,10 @@ export function useLogin(): UseLoginState {
       // eslint-disable-next-line no-constant-condition
       while (true) {
         try {
-          const response = await api.post<AuthResponse>('/auth/login', data);
+          const response = await api.post<AuthResponse>('/auth/login', {
+            email: data.email,
+            password: data.password,
+          });
           return response.data;
         } catch (error) {
           if (abortedRef.current) throw error;
@@ -119,8 +134,18 @@ export function useLogin(): UseLoginState {
       }
     },
 
-    onSuccess: async data => {
+    onSuccess: async (data, variables) => {
       clearSlowState();
+
+      if (variables.rememberMe) {
+        await saveCredentials({
+          email: variables.email,
+          password: variables.password,
+        });
+      } else {
+        await clearCredentials();
+      }
+
       await setAuth(data.user, data.accessToken, data.refreshToken);
       if (
         !data.user.currentOrganization &&

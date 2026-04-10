@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -8,7 +8,7 @@ import {
 import { CategoriesService } from './categories.service';
 import { CurrentUser } from '../shared/current-user.decorator';
 import { JwtGuard } from '../shared/jwt.guard';
-import { CategoryQueryDto } from './categories.dto';
+import { CategoryQueryDto, CreateCategoryBffDto } from './categories.dto';
 
 @ApiTags('Categories')
 @ApiBearerAuth('JWT')
@@ -26,5 +26,17 @@ export class CategoriesController {
     @Query() query: CategoryQueryDto
   ) {
     return this.categoriesService.findAll(accessToken, query);
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Criar categoria' })
+  @ApiResponse({ status: 201, description: 'Categoria criada com sucesso.' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos.' })
+  @ApiResponse({ status: 401, description: 'Token inválido ou expirado.' })
+  async create(
+    @CurrentUser('accessToken') accessToken: string,
+    @Body() dto: CreateCategoryBffDto
+  ) {
+    return this.categoriesService.create(accessToken, dto);
   }
 }

@@ -1,10 +1,18 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { View, TextInput, TouchableOpacity, Alert } from 'react-native';
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from 'react';
 import {
-  BottomSheetModal,
-  BottomSheetScrollView,
-  BottomSheetBackdrop,
-} from '@gorhom/bottom-sheet';
+  View,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+} from 'react-native';
+import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from './Text';
@@ -47,6 +55,7 @@ export function PaymentModal({
   confirmLabel = 'Confirmar',
 }: PaymentModalProps) {
   const sheetRef = useRef<BottomSheetModal>(null);
+  const snapPoints = useMemo(() => ['75%'], []);
   const [amount, setAmount] = useState(
     defaultAmount != null ? String(defaultAmount.toFixed(2)) : ''
   );
@@ -91,13 +100,14 @@ export function PaymentModal({
     <BottomSheetModal
       ref={sheetRef}
       onDismiss={onClose}
-      enableDynamicSizing
+      enableDynamicSizing={false}
+      snapPoints={snapPoints}
       backdropComponent={renderBackdrop}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       handleIndicatorStyle={{ backgroundColor: '#e0e0e0', width: 40 }}
     >
-      <BottomSheetScrollView
+      <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           paddingHorizontal: 20,
@@ -220,7 +230,7 @@ export function PaymentModal({
             onPress={handleConfirm}
           />
         </View>
-      </BottomSheetScrollView>
+      </ScrollView>
     </BottomSheetModal>
   );
 }

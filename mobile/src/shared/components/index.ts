@@ -1,5 +1,6 @@
 export { Text } from './Text';
 export { Button } from './Button';
+export { FilterChip, AdvancedFilterChip, formatMonthYear } from './FilterChip';
 export { Card } from './Card';
 export { StatusBadge } from './StatusBadge';
 export { CurrencyDisplay } from './CurrencyDisplay';
@@ -10,3 +11,4 @@ export { PaymentModal } from './PaymentModal';
 export { PaymentMethodPicker } from './PaymentMethodPicker';
 export { WakingUpBanner } from './WakingUpBanner';
 export { CalendarPicker } from './CalendarPicker';
+export { AppVersionLabel } from './AppVersionLabel';

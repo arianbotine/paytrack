@@ -169,6 +169,12 @@ export interface CreateTagInput {
   color: string;
 }
 
+export interface CreateCategoryInput {
+  name: string;
+  type: CategoryType;
+  color?: string;
+}
+
 // Create account inputs
 export interface CreatePayableInput {
   vendorId: string;

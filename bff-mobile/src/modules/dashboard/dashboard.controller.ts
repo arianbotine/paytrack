@@ -24,7 +24,7 @@ export class DashboardController {
   @ApiOperation({
     summary: 'Dados da tela inicial',
     description:
-      'Endpoint único que retorna todos os dados necessários para a tela home do app mobile: saldo líquido, resumo de contas a pagar e a receber com os próximos vencimentos e itens em atraso. Limitado a 5 itens por lista para performance.',
+      'Endpoint único que retorna todos os dados necessários para a tela home do app mobile: saldo líquido, resumo de contas a pagar e a receber. Os itens vencidos e próximos ao vencimento são obtidos via /notifications/due-alerts, respeitando a configuração notificationLeadDays da organização — sem limite artificial de registros.',
   })
   @ApiResponse({
     status: 200,

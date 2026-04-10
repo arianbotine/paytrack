@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   KeyboardAvoidingView,
@@ -10,13 +10,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Constants from 'expo-constants';
-import * as Updates from 'expo-updates';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Text } from '../../src/shared/components/Text';
 import { Button } from '../../src/shared/components/Button';
 import { WakingUpBanner } from '../../src/shared/components/WakingUpBanner';
+import { AppVersionLabel } from '../../src/shared/components/AppVersionLabel';
+import { loadCredentials } from '../../src/lib';
 import {
   useLogin,
   loginSchema,
@@ -26,29 +26,30 @@ import {
 
 export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const insets = useSafeAreaInsets();
   const { loginMutation, isSlowRequest, retryCount } = useLogin();
-
-  const appVersion = Constants.expoConfig?.version ?? '1.0.0';
-  const updateStamp = Updates.createdAt
-    ? Updates.createdAt.toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : 'dev';
-  const versionLabel = `v${appVersion} · ${updateStamp}`;
 
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   });
+
+  // Load saved credentials on mount
+  useEffect(() => {
+    loadCredentials().then(credentials => {
+      if (credentials) {
+        setValue('email', credentials.email);
+        setValue('password', credentials.password);
+        setRememberMe(true);
+      }
+    });
+  }, [setValue]);
 
   return (
     // Outer view fills full screen including behind rounded corners
@@ -234,22 +235,44 @@ export default function LoginScreen() {
                 </View>
               )}
 
+              {/* Remember me */}
+              <TouchableOpacity
+                className="flex-row items-center mb-6"
+                onPress={() => setRememberMe(v => !v)}
+                activeOpacity={0.7}
+              >
+                <View
+                  className={`w-5 h-5 rounded border-2 items-center justify-center mr-3 ${
+                    rememberMe
+                      ? 'bg-primary-600 border-primary-600'
+                      : 'bg-white border-neutral-300'
+                  }`}
+                >
+                  {rememberMe && (
+                    <MaterialCommunityIcons
+                      name="check"
+                      size={13}
+                      color="#ffffff"
+                    />
+                  )}
+                </View>
+                <Text variant="body" className="text-neutral-600">
+                  Lembrar acesso
+                </Text>
+              </TouchableOpacity>
+
               <Button
                 label="Entrar"
                 variant="primary"
                 size="lg"
                 fullWidth
                 loading={loginMutation.isPending}
-                onPress={handleSubmit(d => loginMutation.mutate(d))}
+                onPress={handleSubmit(d =>
+                  loginMutation.mutate({ ...d, rememberMe })
+                )}
               />
 
-              <Text
-                variant="caption"
-                className="text-center mt-6"
-                style={{ color: '#bdbdbd' }}
-              >
-                {versionLabel}
-              </Text>
+              <AppVersionLabel />
             </View>
           </ScrollView>
         </KeyboardAvoidingView>

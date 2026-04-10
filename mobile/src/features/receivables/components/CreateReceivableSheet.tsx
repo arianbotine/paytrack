@@ -5,12 +5,14 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
-import { View, TextInput, TouchableOpacity, Alert } from 'react-native';
 import {
-  BottomSheetModal,
-  BottomSheetScrollView,
-  BottomSheetBackdrop,
-} from '@gorhom/bottom-sheet';
+  View,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+} from 'react-native';
+import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,6 +26,7 @@ import { TagPickerSheet } from '@shared/components/TagPickerSheet';
 import { TagChip } from '@shared/components/TagChip';
 import { CreateTagSheet } from '@shared/components/CreateTagSheet';
 import { CreateCustomerSheet } from '../../customers/components/CreateCustomerSheet';
+import { CreateCategorySheet } from '../../categories/components/CreateCategorySheet';
 import { useCustomers } from '../../customers/use-customers';
 import { useCategories } from '../../categories/use-categories';
 import { useTags } from '../../tags/use-tags';
@@ -82,6 +85,8 @@ export function CreateReceivableSheet({
 
   // Category picker
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
+  const [pendingCategoryName, setPendingCategoryName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null
   );
@@ -89,6 +94,7 @@ export function CreateReceivableSheet({
   // Tag picker
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [createTagOpen, setCreateTagOpen] = useState(false);
+  const [pendingTagName, setPendingTagName] = useState('');
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
 
   // Due date
@@ -192,13 +198,14 @@ export function CreateReceivableSheet({
       <BottomSheetModal
         ref={sheetRef}
         onDismiss={onClose}
+        enableDynamicSizing={false}
         snapPoints={snapPoints}
         backdropComponent={renderBackdrop}
         keyboardBehavior="interactive"
         keyboardBlurBehavior="restore"
         handleIndicatorStyle={{ backgroundColor: '#e0e0e0', width: 40 }}
       >
-        <BottomSheetScrollView
+        <ScrollView
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{
             paddingHorizontal: 20,
@@ -575,7 +582,7 @@ export function CreateReceivableSheet({
             loading={isPending}
             onPress={handleSubmit(onSubmit)}
           />
-        </BottomSheetScrollView>
+        </ScrollView>
       </BottomSheetModal>
 
       {/* Customer Picker */}
@@ -633,7 +640,23 @@ export function CreateReceivableSheet({
             }
           );
         }}
+        onCreateNew={name => {
+          setCategoryPickerOpen(false);
+          setPendingCategoryName(name);
+          setCreateCategoryOpen(true);
+        }}
         onClose={() => setCategoryPickerOpen(false)}
+      />
+
+      {/* Create Category */}
+      <CreateCategorySheet
+        visible={createCategoryOpen}
+        initialName={pendingCategoryName}
+        type="RECEIVABLE"
+        onCreated={category => {
+          setSelectedCategory(category);
+        }}
+        onClose={() => setCreateCategoryOpen(false)}
       />
 
       {/* Tag Picker */}
@@ -646,13 +669,18 @@ export function CreateReceivableSheet({
           const allTags = tagsData?.items ?? [];
           setSelectedTags(allTags.filter(t => ids.includes(t.id)));
         }}
-        onCreateNew={() => setCreateTagOpen(true)}
+        onCreateNew={name => {
+          setTagPickerOpen(false);
+          setPendingTagName(name);
+          setCreateTagOpen(true);
+        }}
         onClose={() => setTagPickerOpen(false)}
       />
 
       {/* Create Tag */}
       <CreateTagSheet
         visible={createTagOpen}
+        initialName={pendingTagName}
         onCreated={tag => {
           setSelectedTags(prev =>
             prev.some(t => t.id === tag.id) ? prev : [...prev, tag]

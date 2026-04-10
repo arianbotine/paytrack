@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { Text } from './Text';
 
@@ -13,7 +12,7 @@ export function LoadingState({
 }: LoadingStateProps) {
   return (
     <View
-      className={`items-center justify-center py-12${fullScreen ? ' flex-1' : ''}`}
+      className={`items-center justify-center${fullScreen ? ' flex-1 py-12' : ' py-4'}`}
     >
       <ActivityIndicator size="large" color="#1976d2" />
       {message && (

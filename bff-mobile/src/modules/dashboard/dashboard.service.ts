@@ -3,8 +3,8 @@ import { HttpClientService } from '../../infrastructure/http-client.service';
 
 function flattenTags(
   tags?: Array<
-    | { id: string; name: string; color?: string }
-    | { tag: { id: string; name: string; color?: string } }
+    | { id: string; name: string; color?: string | null }
+    | { tag: { id: string; name: string; color?: string | null } }
   >
 ): Array<{ id: string; name: string; color: string }> {
   if (!tags) return [];
@@ -17,6 +17,36 @@ function flattenTags(
       };
     return { id: t.id, name: t.name, color: t.color ?? '#3B82F6' };
   });
+}
+
+interface BackendNotificationItem {
+  notificationId: string;
+  accountType: 'PAYABLE' | 'RECEIVABLE';
+  installmentId: string;
+  accountId: string;
+  counterpartyName: string;
+  categoryName: string | null;
+  tags: Array<{ id: string; name: string; color?: string | null }>;
+  dueDate: string;
+  daysUntilDue: number;
+  isOverdue: boolean;
+  pendingAmount: number;
+  amount: number;
+  paidAmount: number | null;
+  receivedAmount: number | null;
+  installmentNumber: number;
+  totalInstallments: number;
+  status: string;
+}
+
+interface BackendNotificationsResponse {
+  data: BackendNotificationItem[];
+  total: number;
+  settings: {
+    notificationLeadDays: number;
+    notificationPollingSeconds: number;
+    showOverdueNotifications: boolean;
+  };
 }
 
 interface BackendDashboardItem {
@@ -155,15 +185,42 @@ export class DashboardService {
 
   /**
    * Get dashboard data from backend and transform for mobile.
-   * Flattens nested structures and limits list sizes.
+   * Summary numbers come from /dashboard; overdue and upcoming items come from
+   * /notifications/due-alerts so that all records are returned respecting the
+   * organization's notificationLeadDays setting (same as the web app).
    */
   async getDashboard(accessToken: string): Promise<MobileDashboardResponse> {
-    const data = await this.httpClient.get<BackendDashboardResponse>(
-      '/dashboard',
-      accessToken
-    );
+    const [data, notifications] = await Promise.all([
+      this.httpClient.get<BackendDashboardResponse>('/dashboard', accessToken),
+      this.httpClient.get<BackendNotificationsResponse>(
+        '/notifications/due-alerts?limit=200',
+        accessToken
+      ),
+    ]);
 
-    // Transform for mobile: flatten and limit to 5 items per list
+    const sort = (a: BackendNotificationItem, b: BackendNotificationItem) =>
+      (a.dueDate ?? '').localeCompare(b.dueDate ?? '');
+
+    const payableOverdue = notifications.data
+      .filter(n => n.accountType === 'PAYABLE' && n.isOverdue)
+      .sort(sort)
+      .map(n => this.mapNotificationToPayableItem(n));
+
+    const payableUpcoming = notifications.data
+      .filter(n => n.accountType === 'PAYABLE' && !n.isOverdue)
+      .sort(sort)
+      .map(n => this.mapNotificationToPayableItem(n));
+
+    const receivableOverdue = notifications.data
+      .filter(n => n.accountType === 'RECEIVABLE' && n.isOverdue)
+      .sort(sort)
+      .map(n => this.mapNotificationToReceivableItem(n));
+
+    const receivableUpcoming = notifications.data
+      .filter(n => n.accountType === 'RECEIVABLE' && !n.isOverdue)
+      .sort(sort)
+      .map(n => this.mapNotificationToReceivableItem(n));
+
     return {
       balance: data.balance,
       monthSummary: {
@@ -176,72 +233,44 @@ export class DashboardService {
         pendingCount: data.payableInstallments.totals.count,
         partialCount: data.payableInstallments.totals.partial,
         totalToPay: data.payableInstallments.toPay,
-        overdueItems: data.payableInstallments.overdue
-          .slice(0, 5)
-          .map(item => this.mapPayableItem(item)),
-        upcomingItems: data.payableInstallments.upcoming
-          .slice(0, 5)
-          .map(item => this.mapPayableItem(item)),
+        overdueItems: payableOverdue,
+        upcomingItems: payableUpcoming,
       },
       receivables: {
         pendingCount: data.receivableInstallments.totals.count,
         partialCount: data.receivableInstallments.totals.partial,
         totalToReceive: data.receivableInstallments.toReceive,
-        overdueItems: data.receivableInstallments.overdue
-          .slice(0, 5)
-          .map(item => this.mapReceivableItem(item)),
-        upcomingItems: data.receivableInstallments.upcoming
-          .slice(0, 5)
-          .map(item => this.mapReceivableItem(item)),
+        overdueItems: receivableOverdue,
+        upcomingItems: receivableUpcoming,
       },
     };
   }
 
-  private mapPayableItem(item: BackendDashboardItem) {
-    const nextAmount = parseFloat(item.nextUnpaidAmount ?? '0');
-    // Use the installment id provided directly by the backend
-    const nextInstallment =
-      item.installments?.find(i => i.id === item.nextUnpaidInstallmentId) ??
-      item.installments?.find(i =>
-        i.dueDate?.startsWith(item.nextUnpaidDueDate ?? '')
-      ) ??
-      null;
-    const paidAmount = nextInstallment?.paidAmount ?? 0;
+  private mapNotificationToPayableItem(n: BackendNotificationItem) {
     return {
-      id: item.id,
-      installmentId:
-        item.nextUnpaidInstallmentId ?? nextInstallment?.id ?? null,
-      dueDate: item.nextUnpaidDueDate,
-      amount: nextAmount,
-      paidAmount,
-      remaining: nextAmount - paidAmount,
-      vendorName: item.vendor?.name ?? null,
-      categoryName: item.category?.name ?? null,
-      tags: flattenTags(item.tags),
+      id: n.accountId,
+      installmentId: n.installmentId,
+      dueDate: n.dueDate,
+      amount: n.amount,
+      paidAmount: n.paidAmount ?? 0,
+      remaining: n.pendingAmount,
+      vendorName: n.counterpartyName,
+      categoryName: n.categoryName,
+      tags: flattenTags(n.tags),
     };
   }
 
-  private mapReceivableItem(item: BackendDashboardItem) {
-    const nextAmount = parseFloat(item.nextUnpaidAmount ?? '0');
-    // Use the installment id provided directly by the backend
-    const nextInstallment =
-      item.installments?.find(i => i.id === item.nextUnpaidInstallmentId) ??
-      item.installments?.find(i =>
-        i.dueDate?.startsWith(item.nextUnpaidDueDate ?? '')
-      ) ??
-      null;
-    const paidAmount = nextInstallment?.receivedAmount ?? 0;
+  private mapNotificationToReceivableItem(n: BackendNotificationItem) {
     return {
-      id: item.id,
-      installmentId:
-        item.nextUnpaidInstallmentId ?? nextInstallment?.id ?? null,
-      dueDate: item.nextUnpaidDueDate,
-      amount: nextAmount,
-      paidAmount,
-      remaining: nextAmount - paidAmount,
-      customerName: item.customer?.name ?? null,
-      categoryName: item.category?.name ?? null,
-      tags: flattenTags(item.tags),
+      id: n.accountId,
+      installmentId: n.installmentId,
+      dueDate: n.dueDate,
+      amount: n.amount,
+      paidAmount: n.receivedAmount ?? 0,
+      remaining: n.pendingAmount,
+      customerName: n.counterpartyName,
+      categoryName: n.categoryName,
+      tags: flattenTags(n.tags),
     };
   }
 }

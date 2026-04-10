@@ -7,6 +7,7 @@ interface SectionCardProps {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
   iconColor: string;
   title: string;
+  count?: number;
   children: React.ReactNode;
 }
 
@@ -14,6 +15,7 @@ export function SectionCard({
   icon,
   iconColor,
   title,
+  count,
   children,
 }: SectionCardProps) {
   return (
@@ -23,10 +25,20 @@ export function SectionCard({
         <Text
           variant="label"
           weight="semibold"
-          className="ml-2 text-neutral-700 uppercase tracking-wider"
+          className="ml-2 text-neutral-700 uppercase tracking-wider flex-1"
         >
           {title}
         </Text>
+        {count !== undefined && (
+          <View
+            className="rounded-full px-2 py-0.5"
+            style={{ backgroundColor: iconColor + '20' }}
+          >
+            <Text variant="caption" weight="bold" style={{ color: iconColor }}>
+              {count}
+            </Text>
+          </View>
+        )}
       </View>
       <View className="px-4">{children}</View>
     </Card>

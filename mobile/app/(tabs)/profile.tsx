@@ -2,6 +2,7 @@ import { View, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { AppVersionLabel } from '../../src/shared/components/AppVersionLabel';
 import { useAuthStore } from '../../src/lib/auth-store';
 import { translateRole } from '../../src/lib/formatters';
 import { ScreenContainer } from '../../src/shared/components/ScreenContainer';
@@ -192,6 +193,8 @@ export default function ProfileScreen() {
           <MaterialCommunityIcons name="logout" size={18} color="#ffffff" />
         }
       />
+
+      <AppVersionLabel />
     </ScreenContainer>
   );
 }

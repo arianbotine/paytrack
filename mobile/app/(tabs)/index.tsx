@@ -106,6 +106,7 @@ export default function DashboardScreen() {
             icon="calendar-clock-outline"
             iconColor="#e65100"
             title="A Pagar — Próximos"
+            count={data.payables.upcomingItems.length}
           >
             {data.payables.upcomingItems.map(item => (
               <InstallmentRow
@@ -146,6 +147,7 @@ export default function DashboardScreen() {
             icon="calendar-clock-outline"
             iconColor="#1976d2"
             title="A Receber — Próximos"
+            count={data.receivables.upcomingItems.length}
           >
             {data.receivables.upcomingItems.map(item => (
               <InstallmentRow

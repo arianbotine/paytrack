@@ -15,10 +15,10 @@ import {
 import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Text } from './Text';
-import { Button } from './Button';
-import { useCreateTag } from '../../features/tags/use-create-tag';
-import type { Tag } from '@lib/types';
+import { Text } from '@shared/components/Text';
+import { Button } from '@shared/components/Button';
+import { useCreateCategory } from '../use-categories';
+import type { Category, CategoryType } from '@lib/types';
 
 const PRESET_COLORS = [
   { hex: '#3B82F6', label: 'Azul' },
@@ -31,31 +31,28 @@ const PRESET_COLORS = [
   { hex: '#84CC16', label: 'Lima' },
 ];
 
-interface CreateTagSheetProps {
+interface CreateCategorySheetProps {
   visible: boolean;
   initialName?: string;
+  type: CategoryType;
+  onCreated: (category: Category) => void;
   onClose: () => void;
-  onCreated: (tag: Tag) => void;
 }
 
-/**
- * Inline bottom sheet for creating a new tag.
- * Has a name text input and 8 preset color swatches.
- * On success calls onCreated with the new tag.
- */
-export function CreateTagSheet({
+export function CreateCategorySheet({
   visible,
   initialName = '',
-  onClose,
+  type,
   onCreated,
-}: CreateTagSheetProps) {
+  onClose,
+}: CreateCategorySheetProps) {
   const sheetRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ['60%'], []);
+  const snapPoints = useMemo(() => ['55%'], []);
   const [name, setName] = useState(initialName);
   const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0].hex);
   const [nameError, setNameError] = useState('');
 
-  const { mutate, isPending } = useCreateTag();
+  const { mutate, isPending } = useCreateCategory();
 
   useEffect(() => {
     if (visible) {
@@ -89,14 +86,17 @@ export function CreateTagSheet({
     setNameError('');
 
     mutate(
-      { name: trimmed, color: selectedColor },
+      { name: trimmed, type, color: selectedColor },
       {
-        onSuccess: tag => {
-          onCreated(tag);
+        onSuccess: category => {
+          onCreated(category);
           onClose();
         },
         onError: () => {
-          Alert.alert('Erro', 'Não foi possível criar a tag. Tente novamente.');
+          Alert.alert(
+            'Erro',
+            'Não foi possível criar a categoria. Tente novamente.'
+          );
         },
       }
     );
@@ -126,7 +126,7 @@ export function CreateTagSheet({
           <View className="flex-row items-center">
             <View className="w-9 h-9 rounded-xl bg-primary-50 items-center justify-center mr-3">
               <MaterialCommunityIcons
-                name="label-outline"
+                name="tag-outline"
                 size={20}
                 color="#4F46E5"
               />
@@ -136,7 +136,7 @@ export function CreateTagSheet({
               weight="bold"
               className="text-neutral-900"
             >
-              Nova Tag
+              Nova Categoria
             </Text>
           </View>
           <TouchableOpacity
@@ -171,7 +171,7 @@ export function CreateTagSheet({
           />
           <TextInput
             className="flex-1 text-base text-neutral-900"
-            placeholder="Ex: Urgente, Recorrente..."
+            placeholder="Ex: Aluguel, Salário..."
             placeholderTextColor="#9E9E9E"
             value={name}
             onChangeText={v => {
@@ -179,7 +179,7 @@ export function CreateTagSheet({
               if (nameError) setNameError('');
             }}
             autoCapitalize="words"
-            maxLength={50}
+            maxLength={100}
             autoFocus
           />
         </View>
@@ -200,40 +200,35 @@ export function CreateTagSheet({
           Cor
         </Text>
         <View className="flex-row flex-wrap gap-3 mb-6">
-          {PRESET_COLORS.map(({ hex }) => (
+          {PRESET_COLORS.map(color => (
             <TouchableOpacity
-              key={hex}
-              onPress={() => setSelectedColor(hex)}
-              activeOpacity={0.8}
+              key={color.hex}
+              onPress={() => setSelectedColor(color.hex)}
               style={{
                 width: 36,
                 height: 36,
                 borderRadius: 18,
-                backgroundColor: hex,
-                borderWidth: selectedColor === hex ? 3 : 0,
-                borderColor: '#ffffff',
-                shadowColor: selectedColor === hex ? hex : 'transparent',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: selectedColor === hex ? 0.5 : 0,
-                shadowRadius: 4,
-                elevation: selectedColor === hex ? 4 : 0,
+                backgroundColor: color.hex,
                 alignItems: 'center',
                 justifyContent: 'center',
+                borderWidth: selectedColor === color.hex ? 3 : 0,
+                borderColor: '#fff',
+                shadowColor:
+                  selectedColor === color.hex ? color.hex : 'transparent',
+                shadowOpacity: 0.5,
+                shadowRadius: 4,
+                elevation: selectedColor === color.hex ? 4 : 0,
               }}
             >
-              {selectedColor === hex && (
-                <MaterialCommunityIcons
-                  name="check"
-                  size={18}
-                  color="#ffffff"
-                />
+              {selectedColor === color.hex && (
+                <MaterialCommunityIcons name="check" size={16} color="#fff" />
               )}
             </TouchableOpacity>
           ))}
         </View>
 
         <Button
-          label={isPending ? 'Criando...' : 'Criar Tag'}
+          label={isPending ? 'Salvando...' : 'Criar Categoria'}
           variant="primary"
           size="lg"
           fullWidth

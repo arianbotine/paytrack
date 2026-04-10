@@ -161,7 +161,10 @@ export function DashboardPage() {
       });
       return response.data;
     },
+    staleTime: 0,
+    gcTime: 0,
     refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {

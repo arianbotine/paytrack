@@ -132,6 +132,7 @@ export class PayablesService {
       params.set('installmentDueDateFrom', filters.dueDateFrom);
     if (filters.dueDateTo)
       params.set('installmentDueDateTo', filters.dueDateTo);
+    if (filters.nextDueMonth) params.set('nextDueMonth', filters.nextDueMonth);
 
     // Mobile defaults: smaller page size
     params.set('take', String(filters.take || 15));

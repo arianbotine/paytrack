@@ -1,6 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@lib/api';
-import type { ListResponse, Category, CategoryType } from '@lib/types';
+import type {
+  ListResponse,
+  Category,
+  CategoryType,
+  CreateCategoryInput,
+} from '@lib/types';
 import { useAuthStore } from '@lib/auth-store';
 
 export function useCategories(type: CategoryType) {
@@ -15,5 +20,20 @@ export function useCategories(type: CategoryType) {
     },
     enabled: !!accessToken,
     staleTime: 5 * 60_000,
+  });
+}
+
+export function useCreateCategory() {
+  const queryClient = useQueryClient();
+  return useMutation<Category, Error, CreateCategoryInput>({
+    mutationFn: async data => {
+      const res = await api.post<Category>('/categories', data);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['categories', variables.type],
+      });
+    },
   });
 }

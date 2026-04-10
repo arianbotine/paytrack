@@ -9,6 +9,7 @@ import {
   IsInt,
   Min,
   Max,
+  Matches,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -75,6 +76,15 @@ export class ReceivableFilterDto {
   @IsOptional()
   @IsDateString()
   dueDateTo?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-04',
+    description: 'Mês do próximo vencimento (YYYY-MM)',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}-\d{2}$/, { message: 'Formato inválido. Use YYYY-MM' })
+  nextDueMonth?: string;
 
   @ApiPropertyOptional({
     example: 0,

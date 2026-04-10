@@ -77,12 +77,18 @@ export function SearchablePickerSheet({
   };
 
   const trimmed = search.trim();
+  const filteredItems = trimmed
+    ? items.filter(item =>
+        item.name.toLowerCase().includes(trimmed.toLowerCase())
+      )
+    : items;
   const showCreateNew = !!onCreateNew && trimmed.length > 0 && !isLoading;
 
   return (
     <BottomSheetModal
       ref={sheetRef}
       onDismiss={onClose}
+      enableDynamicSizing={false}
       snapPoints={snapPoints}
       backdropComponent={renderBackdrop}
       keyboardBehavior="interactive"
@@ -132,7 +138,7 @@ export function SearchablePickerSheet({
 
         {/* List */}
         <FlatList<PickerItem>
-          data={items}
+          data={filteredItems}
           keyExtractor={(item: PickerItem) => item.id}
           keyboardShouldPersistTaps="handled"
           style={{ flex: 1 }}

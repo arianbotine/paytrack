@@ -1,396 +1,221 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import {
   View,
   FlatList,
+  ScrollView,
   RefreshControl,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { api, useAuthStore } from '../../src/lib';
-import { CreatePayableSheet } from '../../src/features/payables/components/CreatePayableSheet';
-import type {
-  PayableListItem,
-  ListResponse,
-  PaymentMethod,
-} from '../../src/lib/types';
+import { STATUS_LABELS } from '../../src/lib/formatters';
 import {
-  formatCurrency,
-  formatDate,
-  STATUS_LABELS,
-} from '../../src/lib/formatters';
+  FilterChip,
+  AdvancedFilterChip,
+  formatMonthYear,
+} from '../../src/shared/components/FilterChip';
 import { ScreenContainer } from '../../src/shared/components/ScreenContainer';
 import { Text } from '../../src/shared/components/Text';
-import { Card } from '../../src/shared/components/Card';
-import { StatusBadge } from '../../src/shared/components/StatusBadge';
-import { CurrencyDisplay } from '../../src/shared/components/CurrencyDisplay';
 import { EmptyState } from '../../src/shared/components/EmptyState';
 import { LoadingState } from '../../src/shared/components/LoadingState';
 import { PaymentModal } from '../../src/shared/components/PaymentModal';
-import { TagChip } from '../../src/shared/components/TagChip';
+import { MonthPickerSheet } from '../../src/shared/components/MonthPickerSheet';
+import { SearchablePickerSheet } from '../../src/shared/components/SearchablePickerSheet';
+import { CreatePayableSheet } from '../../src/features/payables/components/CreatePayableSheet';
+import { PayableCard } from '../../src/features/payables/components/PayableCard';
+import {
+  usePayables,
+  type PayableStatusFilter,
+} from '../../src/features/payables/use-payables';
+import { usePayInstallment } from '../../src/features/payables/use-pay-installment';
+import { useVendors } from '../../src/features/vendors/use-vendors';
+import type { PayableListItem } from '../../src/lib/types';
 
-type StatusFilter = 'ALL' | 'PENDING' | 'PARTIAL' | 'PAID';
-
-const PAGE_SIZE = 15;
-
-const FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
+const FILTER_OPTIONS: { value: PayableStatusFilter; label: string }[] = [
   { value: 'ALL', label: 'Todos' },
   { value: 'PENDING', label: STATUS_LABELS.PENDING },
   { value: 'PARTIAL', label: STATUS_LABELS.PARTIAL },
   { value: 'PAID', label: STATUS_LABELS.PAID },
 ];
 
-function FilterChip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.7}
-      className={`px-4 py-2 rounded-full mr-2 border ${
-        active
-          ? 'bg-primary-700 border-primary-700'
-          : 'bg-white border-neutral-200'
-      }`}
-    >
-      <Text
-        variant="label"
-        weight="semibold"
-        className={active ? 'text-white' : 'text-neutral-600'}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-function PayableCard({
-  item,
-  onPay,
-}: {
-  item: PayableListItem;
-  onPay: (item: PayableListItem) => void;
-}) {
-  const isPaid = item.status === 'PAID';
-  return (
-    <Card variant="elevated" padding="none" className="mb-3 overflow-hidden">
-      <View className="px-4 pt-4 pb-3">
-        {/* Top row */}
-        <View className="flex-row items-start justify-between mb-3">
-          <View className="flex-1 mr-3">
-            <Text
-              variant="title"
-              weight="semibold"
-              className="text-neutral-900"
-              numberOfLines={1}
-            >
-              {item.vendorName || 'Sem fornecedor'}
-            </Text>
-            {item.categoryName && (
-              <Text variant="caption" className="text-neutral-500 mt-0.5">
-                {item.categoryName}
-              </Text>
-            )}
-            {item.tags && item.tags.length > 0 && (
-              <View
-                style={{
-                  flexDirection: 'row',
-                  flexWrap: 'wrap',
-                  gap: 4,
-                  marginTop: 4,
-                }}
-              >
-                {item.tags.slice(0, 3).map(tag => (
-                  <TagChip key={tag.id} tag={tag} size="sm" />
-                ))}
-                {item.tags.length > 3 && (
-                  <Text
-                    variant="caption"
-                    className="text-neutral-400 self-center"
-                  >
-                    +{item.tags.length - 3}
-                  </Text>
-                )}
-              </View>
-            )}
-          </View>
-          <StatusBadge status={item.status} variant="payable" />
-        </View>
-
-        {/* Amount row */}
-        <View className="flex-row items-center justify-between mb-3">
-          <View>
-            <Text variant="label" className="text-neutral-400 mb-0.5">
-              Total
-            </Text>
-            <CurrencyDisplay
-              value={item.amount}
-              variant="default"
-              textVariant="subheading"
-              weight="bold"
-            />
-          </View>
-          {item.nextDueAmount != null && !isPaid && (
-            <View className="items-end">
-              <Text variant="label" className="text-neutral-400 mb-0.5">
-                Próximo
-              </Text>
-              <CurrencyDisplay
-                value={item.nextDueAmount}
-                variant={item.status === 'PENDING' ? 'expense' : 'default'}
-                textVariant="body"
-                weight="bold"
-              />
-            </View>
-          )}
-        </View>
-
-        {/* Footer row */}
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center gap-3">
-            {/* Installment progress */}
-            <View className="flex-row items-center">
-              <MaterialCommunityIcons
-                name="layers-outline"
-                size={14}
-                color="#9e9e9e"
-              />
-              <Text variant="caption" className="text-neutral-500 ml-1">
-                {item.paidInstallments}/{item.installmentsCount} parcelas
-              </Text>
-            </View>
-            {/* Due date */}
-            {item.nextDueDate && !isPaid && (
-              <View className="flex-row items-center">
-                <MaterialCommunityIcons
-                  name="calendar-outline"
-                  size={14}
-                  color="#9e9e9e"
-                />
-                <Text variant="caption" className="text-neutral-500 ml-1">
-                  {formatDate(item.nextDueDate)}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {!isPaid && item.nextInstallmentId && (
-            <TouchableOpacity
-              onPress={() => onPay(item)}
-              activeOpacity={0.75}
-              className="flex-row items-center bg-primary-700 px-3 py-1.5 rounded-lg"
-            >
-              <MaterialCommunityIcons
-                name="cash-check"
-                size={14}
-                color="#ffffff"
-              />
-              <Text
-                variant="label"
-                weight="semibold"
-                className="text-white ml-1"
-              >
-                Pagar
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Progress bar */}
-      {item.installmentsCount > 1 && (
-        <View className="h-1 bg-neutral-100">
-          <View
-            className="h-1 bg-primary-400"
-            style={{
-              width: `${(item.paidInstallments / item.installmentsCount) * 100}%`,
-            }}
-          />
-        </View>
-      )}
-    </Card>
-  );
-}
-
 export default function PayablesScreen() {
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [statusFilter, setStatusFilter] = useState<PayableStatusFilter>('ALL');
+  const [nextDueMonth, setNextDueMonth] = useState<string | null>(null);
+  const [vendorFilter, setVendorFilter] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const [vendorPickerOpen, setVendorPickerOpen] = useState(false);
+  const [vendorSearch, setVendorSearch] = useState('');
   const [selectedPayable, setSelectedPayable] =
     useState<PayableListItem | null>(null);
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
-  const queryClient = useQueryClient();
-  const organizationId = useAuthStore(
-    state => state.user?.currentOrganization?.id
-  );
 
-  const buildQueryParams = useCallback(
-    (skip: number) => {
-      const params = new URLSearchParams();
-      if (statusFilter !== 'ALL') params.set('status', statusFilter);
-      params.set('take', String(PAGE_SIZE));
-      params.set('skip', String(skip));
-      return params.toString();
-    },
-    [statusFilter]
-  );
-
-  const query = useInfiniteQuery<ListResponse<PayableListItem>>({
-    queryKey: ['payables', organizationId, statusFilter],
-    queryFn: async ({ pageParam = 0 }) => {
-      const response = await api.get<ListResponse<PayableListItem>>(
-        `/payables?${buildQueryParams(pageParam as number)}`
-      );
-      return response.data;
-    },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => {
-      const loaded = allPages.reduce((sum, p) => sum + p.items.length, 0);
-      return loaded < lastPage.total ? loaded : undefined;
-    },
-    enabled: !!organizationId,
+  const vendorsQuery = useVendors(vendorSearch || undefined);
+  const query = usePayables({
+    status: statusFilter,
+    nextDueMonth,
+    vendorId: vendorFilter?.id ?? null,
   });
-
-  const payMutation = useMutation({
-    mutationFn: async ({
-      payableId,
-      installmentId,
-      amount,
-      paymentMethod,
-      paymentDate,
-    }: {
-      payableId: string;
-      installmentId: string;
-      amount: number;
-      paymentMethod: PaymentMethod;
-      paymentDate: string;
-    }) => {
-      const response = await api.post(
-        `/payables/${payableId}/installments/${installmentId}/pay`,
-        {
-          amount,
-          paymentMethod,
-          paymentDate,
-        }
-      );
-      return response.data;
-    },
-    onSuccess: () => {
-      setSelectedPayable(null);
-      queryClient.invalidateQueries({ queryKey: ['payables', organizationId] });
-      queryClient.invalidateQueries({
-        queryKey: ['dashboard', organizationId],
-      });
-    },
-    onError: (err: Error) => {
-      Alert.alert(
-        'Erro',
-        err.message || 'Não foi possível registrar o pagamento.'
-      );
-    },
-  });
+  const payMutation = usePayInstallment(() => setSelectedPayable(null));
 
   const allItems = query.data?.pages.flatMap(p => p.items) ?? [];
   const total = query.data?.pages[0]?.total ?? 0;
+  const isFiltered = statusFilter !== 'ALL' || !!nextDueMonth || !!vendorFilter;
 
   return (
     <ScreenContainer withoutPadding>
-      <View className="flex-1">
-        {/* Header */}
-        <View className="px-4 pt-4 pb-2">
-          <Text variant="heading" weight="bold" className="text-neutral-900">
-            A Pagar
-          </Text>
-          {!query.isLoading && (
-            <Text variant="caption" className="text-neutral-500 mt-0.5">
-              {total} {total === 1 ? 'conta' : 'contas'}
-            </Text>
-          )}
-        </View>
+      <FlatList
+        style={{ flex: 1 }}
+        automaticallyAdjustContentInsets={false}
+        automaticallyAdjustsScrollIndicatorInsets={false}
+        data={query.isLoading || query.isError ? [] : allItems}
+        keyExtractor={item => item.id}
+        ListHeaderComponent={
+          <View>
+            {/* Header */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 16,
+                paddingTop: 16,
+                paddingBottom: 8,
+              }}
+            >
+              <Text
+                variant="heading"
+                weight="bold"
+                className="text-neutral-900"
+              >
+                A Pagar
+              </Text>
+              {!query.isLoading && (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: isFiltered ? '#e3f2fd' : '#f5f5f5',
+                    borderRadius: 12,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    gap: 4,
+                  }}
+                >
+                  {isFiltered && (
+                    <MaterialCommunityIcons
+                      name="filter-check"
+                      size={12}
+                      color="#1976d2"
+                    />
+                  )}
+                  <Text
+                    variant="label"
+                    weight="semibold"
+                    style={{ color: isFiltered ? '#1976d2' : '#757575' }}
+                  >
+                    {total} {total === 1 ? 'conta' : 'contas'}
+                  </Text>
+                </View>
+              )}
+            </View>
 
-        {/* Filters */}
-        <View className="px-4 mb-2">
-          <FlatList
-            data={FILTER_OPTIONS}
-            keyExtractor={item => item.value}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <FilterChip
-                label={item.label}
-                active={statusFilter === item.value}
-                onPress={() => setStatusFilter(item.value)}
+            {/* Filters */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ height: 50 }}
+              contentContainerStyle={{
+                paddingHorizontal: 16,
+                paddingTop: 8,
+                paddingBottom: 8,
+              }}
+            >
+              {FILTER_OPTIONS.map(option => (
+                <FilterChip
+                  key={option.value}
+                  label={option.label}
+                  active={statusFilter === option.value}
+                  onPress={() => setStatusFilter(option.value)}
+                />
+              ))}
+              <View
+                style={{
+                  width: 1,
+                  height: 18,
+                  backgroundColor: '#e0e0e0',
+                  marginHorizontal: 6,
+                  alignSelf: 'center',
+                }}
               />
-            )}
-          />
-        </View>
-
-        {/* List */}
-        {query.isLoading ? (
-          <LoadingState />
-        ) : query.isError ? (
-          <EmptyState
-            icon="wifi-off"
-            title="Erro ao carregar"
-            description="Não foi possível buscar as contas."
-            actionLabel="Tentar novamente"
-            onAction={() => query.refetch()}
-          />
-        ) : (
-          <FlatList
-            data={allItems}
-            keyExtractor={item => item.id}
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingBottom: 24,
-              flexGrow: 1,
-            }}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={query.isRefetching && !query.isFetchingNextPage}
-                onRefresh={() => query.refetch()}
-                colors={['#1976d2']}
-                tintColor="#1976d2"
+              <AdvancedFilterChip
+                icon="calendar-month-outline"
+                label={nextDueMonth ? formatMonthYear(nextDueMonth) : 'Mês'}
+                active={!!nextDueMonth}
+                onPress={() => setMonthPickerOpen(true)}
+                onClear={() => setNextDueMonth(null)}
               />
-            }
-            renderItem={({ item }) => (
-              <PayableCard item={item} onPay={setSelectedPayable} />
-            )}
-            ListEmptyComponent={
-              <EmptyState
-                icon="check-circle-outline"
-                title="Nenhuma conta encontrada"
-                description={
-                  statusFilter === 'ALL'
-                    ? 'Não há contas a pagar cadastradas.'
-                    : `Nenhuma conta com status "${STATUS_LABELS[statusFilter as keyof typeof STATUS_LABELS]}".`
-                }
+              <AdvancedFilterChip
+                icon="account-outline"
+                label={vendorFilter ? vendorFilter.name : 'Credor'}
+                active={!!vendorFilter}
+                onPress={() => setVendorPickerOpen(true)}
+                onClear={() => setVendorFilter(null)}
               />
-            }
-            onEndReached={() => {
-              if (query.hasNextPage && !query.isFetchingNextPage) {
-                query.fetchNextPage();
-              }
-            }}
-            onEndReachedThreshold={0.3}
-            ListFooterComponent={
-              query.isFetchingNextPage ? (
-                <LoadingState message="Carregando mais..." />
-              ) : null
-            }
+            </ScrollView>
+          </View>
+        }
+        contentContainerStyle={{ paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={query.isRefetching && !query.isFetchingNextPage}
+            onRefresh={() => query.refetch()}
+            colors={['#1976d2']}
+            tintColor="#1976d2"
           />
+        }
+        renderItem={({ item }) => (
+          <View style={{ paddingHorizontal: 16 }}>
+            <PayableCard item={item} onPay={setSelectedPayable} />
+          </View>
         )}
-      </View>
+        ListEmptyComponent={
+          query.isLoading ? (
+            <LoadingState />
+          ) : query.isError ? (
+            <EmptyState
+              icon="wifi-off"
+              title="Erro ao carregar"
+              description="Não foi possível buscar as contas."
+              actionLabel="Tentar novamente"
+              onAction={() => query.refetch()}
+            />
+          ) : (
+            <EmptyState
+              icon="check-circle-outline"
+              title="Nenhuma conta encontrada"
+              description={
+                statusFilter === 'ALL'
+                  ? 'Não há contas a pagar cadastradas.'
+                  : `Nenhuma conta com status "${STATUS_LABELS[statusFilter as keyof typeof STATUS_LABELS]}".`
+              }
+            />
+          )
+        }
+        onEndReached={() => {
+          if (query.hasNextPage && !query.isFetchingNextPage) {
+            query.fetchNextPage();
+          }
+        }}
+        onEndReachedThreshold={0.3}
+        ListFooterComponent={
+          query.isFetchingNextPage ? (
+            <LoadingState message="Carregando mais..." />
+          ) : null
+        }
+      />
 
       {/* Payment Modal */}
       <PaymentModal
@@ -436,10 +261,33 @@ export default function PayablesScreen() {
         <MaterialCommunityIcons name="plus" size={28} color="#fff" />
       </TouchableOpacity>
 
-      {/* Create Payable Sheet */}
       <CreatePayableSheet
         visible={createSheetOpen}
         onClose={() => setCreateSheetOpen(false)}
+      />
+
+      <MonthPickerSheet
+        visible={monthPickerOpen}
+        value={nextDueMonth}
+        onChange={setNextDueMonth}
+        onClose={() => setMonthPickerOpen(false)}
+      />
+
+      <SearchablePickerSheet
+        visible={vendorPickerOpen}
+        title="Filtrar por credor"
+        items={vendorsQuery.data?.items ?? []}
+        isLoading={vendorsQuery.isLoading}
+        onSelect={item => {
+          setVendorFilter(item);
+          setVendorPickerOpen(false);
+        }}
+        onClose={() => {
+          setVendorPickerOpen(false);
+          setVendorSearch('');
+        }}
+        onSearchChange={setVendorSearch}
+        searchPlaceholder="Buscar credor..."
       />
     </ScreenContainer>
   );

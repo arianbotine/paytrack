@@ -25,7 +25,7 @@ interface TagPickerSheetProps {
   isLoading?: boolean;
   selectedIds: string[];
   onConfirm: (ids: string[]) => void;
-  onCreateNew: () => void;
+  onCreateNew: (name: string) => void;
   onClose: () => void;
 }
 
@@ -82,16 +82,18 @@ export function TagPickerSheet({
     );
   };
 
-  const filtered = search.trim()
-    ? tags.filter(t =>
-        t.name.toLowerCase().includes(search.trim().toLowerCase())
-      )
+  const trimmed = search.trim();
+  const showCreateNew = trimmed.length > 0 && !isLoading;
+
+  const filtered = trimmed
+    ? tags.filter(t => t.name.toLowerCase().includes(trimmed.toLowerCase()))
     : tags;
 
   return (
     <BottomSheetModal
       ref={sheetRef}
       onDismiss={onClose}
+      enableDynamicSizing={false}
       snapPoints={snapPoints}
       backdropComponent={renderBackdrop}
       keyboardBehavior="interactive"
@@ -144,7 +146,11 @@ export function TagPickerSheet({
           data={isLoading ? [] : filtered}
           keyExtractor={(item: Tag) => item.id}
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: 20 }}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingBottom: showCreateNew ? 8 : 0,
+          }}
           ListEmptyComponent={
             isLoading ? (
               <View className="items-center py-8">
@@ -160,6 +166,38 @@ export function TagPickerSheet({
                   : 'Nenhuma tag encontrada'}
               </Text>
             )
+          }
+          ListFooterComponent={
+            showCreateNew ? (
+              <View style={{ paddingBottom: 8 }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    onCreateNew(trimmed);
+                    onClose();
+                  }}
+                  className="flex-row items-center py-4 mt-1 border-t border-neutral-100"
+                  activeOpacity={0.7}
+                >
+                  <View className="w-8 h-8 rounded-full bg-primary-50 items-center justify-center mr-3">
+                    <MaterialCommunityIcons
+                      name="plus"
+                      size={16}
+                      color="#4F46E5"
+                    />
+                  </View>
+                  <Text variant="body" className="text-primary-700 flex-1">
+                    Criar tag{' '}
+                    <Text
+                      variant="body"
+                      weight="semibold"
+                      className="text-primary-700"
+                    >
+                      "{trimmed}"
+                    </Text>
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : null
           }
           renderItem={({ item }: { item: Tag }) => {
             const selected = pending.includes(item.id);
@@ -209,34 +247,16 @@ export function TagPickerSheet({
         />
 
         {/* Bottom actions */}
-        <View className="flex-row items-center gap-3 px-5 pt-3 pb-6">
-          <TouchableOpacity
-            onPress={onCreateNew}
-            activeOpacity={0.7}
-            className="flex-row items-center border border-primary-200 bg-primary-50 rounded-xl px-4 py-3"
-          >
-            <MaterialCommunityIcons name="plus" size={16} color="#4F46E5" />
-            <Text
-              variant="label"
-              weight="semibold"
-              className="text-primary-700 ml-1"
-            >
-              Nova tag
-            </Text>
-          </TouchableOpacity>
-          <View className="flex-1">
-            <Button
-              label={
-                pending.length > 0
-                  ? `Confirmar (${pending.length})`
-                  : 'Confirmar'
-              }
-              variant="primary"
-              size="md"
-              fullWidth
-              onPress={handleConfirm}
-            />
-          </View>
+        <View className="px-5 pt-3 pb-6">
+          <Button
+            label={
+              pending.length > 0 ? `Confirmar (${pending.length})` : 'Confirmar'
+            }
+            variant="primary"
+            size="md"
+            fullWidth
+            onPress={handleConfirm}
+          />
         </View>
       </View>
     </BottomSheetModal>
