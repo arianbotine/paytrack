@@ -25,11 +25,18 @@ export class SocialAuthService {
    * Obtém a sessão pelo token passado explicitamente (sem cookie).
    * Usado quando o token é passado via URL (?session=TOKEN) para contornar
    * a limitação de cookies SameSite em ambientes cross-origin (CDN Railway).
+   *
+   * Em produção (HTTPS), better-auth nomeia o cookie como
+   * __Secure-better-auth.session_token. Em desenvolvimento (HTTP), usa
+   * better-auth.session_token. Passamos ambos para o getSession funcionar
+   * nos dois ambientes sem depender de NODE_ENV.
    */
   async getSessionByToken(token: string) {
     return socialAuth.api.getSession({
       headers: new Headers({
-        cookie: `better-auth.session_token=${token}`,
+        cookie:
+          `better-auth.session_token=${token}; ` +
+          `__Secure-better-auth.session_token=${token}`,
       }),
     });
   }

@@ -181,16 +181,24 @@ async function handleCallback(req: Request, res: Response): Promise<void> {
 
     // Em produção (HTTPS) better-auth usa o prefixo __Secure- no cookie.
     // Tenta o nome seguro primeiro; fallback para desenvolvimento (HTTP).
-    const sessionToken =
+    const rawToken =
       extractCookieValue(setCookies, '__Secure-better-auth.session_token') ??
       extractCookieValue(setCookies, 'better-auth.session_token');
+
+    // Os valores de cookie são URL-encoded pelo serializeSignedCookie do better-call
+    // (%2B para +, %3D para =). Decodifica antes de encodeURIComponent para
+    // evitar double-encoding (%252B) que quebraria a verificação HMAC.
+    const sessionToken = rawToken != null
+      ? encodeURIComponent(decodeURIComponent(rawToken))
+      : null;
+
     const location = authResponse.headers.get('location') ?? FRONTEND_ORIGIN;
 
     if (sessionToken) {
       const sep = location.includes('?') ? '&' : '?';
       res
         .writeHead(302, {
-          Location: `${location}${sep}session=${encodeURIComponent(sessionToken)}`,
+          Location: `${location}${sep}session=${sessionToken}`,
         })
         .end();
     } else {
