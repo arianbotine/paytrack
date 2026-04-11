@@ -95,9 +95,9 @@ async function handleInitiate(req: Request, res: Response): Promise<void> {
 
   try {
     const authResponse = await socialAuth.handler(
-      new Request(`${API_URL}/api/auth-social/sign-in/social`, {
+      new globalThis.Request(`${API_URL}/api/auth-social/sign-in/social`, {
         method: 'POST',
-        headers: new Headers({ 'content-type': 'application/json' }),
+        headers: new globalThis.Headers({ 'content-type': 'application/json' }),
         body: JSON.stringify({ provider, callbackURL }),
       })
     );
@@ -141,9 +141,9 @@ async function handleInitiate(req: Request, res: Response): Promise<void> {
 async function handleCallback(req: Request, res: Response): Promise<void> {
   try {
     const authResponse = await socialAuth.handler(
-      new Request(`${API_URL}${req.url}`, {
+      new globalThis.Request(`${API_URL}${req.url}`, {
         method: 'GET',
-        headers: new Headers({ cookie: req.headers.cookie ?? '' }),
+        headers: new globalThis.Headers({ cookie: req.headers.cookie ?? '' }),
       })
     );
 
