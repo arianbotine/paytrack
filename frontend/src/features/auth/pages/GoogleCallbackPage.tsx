@@ -59,9 +59,7 @@ export function GoogleCallbackPage() {
           navigate('/select-organization');
         }
       } catch {
-        setError(
-          'Não foi possível completar o login com Google. Tente novamente.'
-        );
+        setError(ERROR_MESSAGES['oauth_error']);
       }
     };
 

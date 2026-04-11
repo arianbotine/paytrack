@@ -3,20 +3,19 @@ import cors, { CorsOptions } from 'cors';
 import { toNodeHandler } from 'better-auth/node';
 import { socialAuth } from './better-auth.config';
 
+const API_URL = process.env.API_URL ?? 'http://localhost:3000';
+const FRONTEND_ORIGIN = process.env.FRONTEND_URL ?? 'http://localhost:5173';
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Origens confiáveis para redirecionar após OAuth (mesmo valor de CORS_ORIGINS)
 const trustedOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:5173')
   .split(',')
   .map(o => o.trim())
   .filter(Boolean);
 
-const allowedOrigins = trustedOrigins;
-
 const corsOptions: CorsOptions = {
   origin: isProduction
     ? (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin || trustedOrigins.includes(origin)) {
           callback(null, true);
         } else {
           callback(new Error(`Origin ${origin} not allowed`));
@@ -31,19 +30,15 @@ const corsOptions: CorsOptions = {
 const socialAuthCors = cors(corsOptions);
 const socialAuthHandler = toNodeHandler(socialAuth);
 
-const FRONTEND_ORIGIN = process.env.FRONTEND_URL || 'http://localhost:5173';
-
 /**
  * Middleware Express que intercepta rotas /api/auth-social/*.
- * Deve ser montado ANTES dos body-parsers do NestJS para que o
- * toNodeHandler possa ler o corpo bruto das requisições OAuth.
+ * Deve ser montado ANTES dos body-parsers do NestJS.
  *
- * Responsabilidades:
- * - GET /api/auth-social/initiate: inicia OAuth via navegação direta do browser
- *   (evita que CDN/Fastly do Railway suprima o Set-Cookie do cookie de estado)
- * - Redirecionar /api/auth-social/error para o frontend com o código de erro
- * - Aplicar CORS adequado às rotas do better-auth
- * - Delegar o processamento OAuth ao handler do better-auth
+ * - /initiate : inicia OAuth via navegação top-level (garante Set-Cookie do estado)
+ * - /callback/*: extrai o session token do Set-Cookie e o passa via URL para o
+ *   frontend (?session=TOKEN), contornando a supressão de cookies pelo CDN Railway
+ * - /error    : redireciona erros OAuth para a página de callback do frontend
+ * - demais    : delegado ao toNodeHandler do better-auth com CORS aplicado
  */
 export function socialAuthMiddleware(
   req: Request,
@@ -55,22 +50,11 @@ export function socialAuthMiddleware(
     return;
   }
 
-  // Endpoint de iniciação via navegação direta do browser.
-  // Ao contrário de um fetch CORS, uma navegação top-level não passa pela
-  // lógica de CDN que suprime Set-Cookie, garantindo que o cookie de estado
-  // do OAuth (better-auth.state) chegue ao browser.
   if (req.method === 'GET' && req.url.startsWith('/api/auth-social/initiate')) {
     void handleInitiate(req, res);
     return;
   }
 
-  // Intercepta o callback do OAuth ANTES do toNodeHandler.
-  // O Fastly (Railway CDN) suprime Set-Cookie em respostas 302 cross-origin,
-  // portanto o cookie better-auth.session_token nunca chega ao browser.
-  // A solução: extrair o token da sessão do Set-Cookie da resposta interna
-  // do better-auth e passá-lo na URL de redirecionamento para o frontend
-  // (?session=TOKEN). O frontend envia o token no body do POST /auth/google/token
-  // — sem depender de cookies cross-origin.
   if (
     req.method === 'GET' &&
     req.url.startsWith('/api/auth-social/callback/')
@@ -92,12 +76,11 @@ export function socialAuthMiddleware(
 }
 
 /**
- * Inicia o fluxo OAuth via navegação direta do browser (GET).
- * Chama o handler interno do better-auth para obter a URL do Google e os
+ * Inicia o fluxo OAuth via navegação top-level.
+ * Chama socialAuth.handler internamente para obter a URL do Google e os
  * cookies de estado/PKCE, depois faz 302 → Google com Set-Cookie no response.
- *
- * Por ser uma navegação top-level (não CORS/fetch), a CDN do Railway
- * não suprime o Set-Cookie, e o cookie chega corretamente ao browser.
+ * Navegações top-level não são interceptadas pelo Fastly do Railway,
+ * então o cookie de estado chega ao browser corretamente.
  */
 async function handleInitiate(req: Request, res: Response): Promise<void> {
   const qs = req.url.split('?')[1] ?? '';
@@ -105,37 +88,25 @@ async function handleInitiate(req: Request, res: Response): Promise<void> {
   const provider = params.get('provider') ?? '';
   const callbackURL = params.get('callbackURL') ?? '';
 
-  const isTrusted = trustedOrigins.some(o => callbackURL.startsWith(o));
-  if (!provider || !isTrusted) {
+  if (!provider || !trustedOrigins.some(o => callbackURL.startsWith(o))) {
     res.writeHead(400).end('Bad Request');
     return;
   }
 
   try {
-    // Chama o handler do better-auth diretamente (sem round-trip HTTP)
-    const apiUrl = process.env.API_URL ?? 'http://localhost:3000';
-    const internalReq = new globalThis.Request(
-      `${apiUrl}/api/auth-social/sign-in/social`,
-      {
+    const authResponse = await socialAuth.handler(
+      new Request(`${API_URL}/api/auth-social/sign-in/social`, {
         method: 'POST',
         headers: new Headers({ 'content-type': 'application/json' }),
         body: JSON.stringify({ provider, callbackURL }),
-      }
+      })
     );
 
-    const authResponse = await socialAuth.handler(internalReq);
     const body = (await authResponse.json()) as { url?: string };
+    const setCookies = getSetCookies(authResponse.headers);
 
-    // Copia todos os Set-Cookie do better-auth para o response do browser
-    const cookies: string[] =
-      typeof authResponse.headers.getSetCookie === 'function'
-        ? authResponse.headers.getSetCookie()
-        : authResponse.headers.get('set-cookie')
-          ? [authResponse.headers.get('set-cookie') as string]
-          : [];
-
-    if (cookies.length > 0) {
-      res.setHeader('set-cookie', cookies);
+    if (setCookies.length > 0) {
+      res.setHeader('set-cookie', setCookies);
     }
 
     if (body.url) {
@@ -144,9 +115,11 @@ async function handleInitiate(req: Request, res: Response): Promise<void> {
       res.writeHead(500).end('OAuth initiation failed');
     }
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
     // eslint-disable-next-line no-console
-    console.error('[SocialAuth] initiate failed:', msg);
+    console.error(
+      '[SocialAuth] initiate failed:',
+      err instanceof Error ? err.message : err
+    );
     res.writeHead(500).end('OAuth initiation failed');
   }
 }
@@ -154,43 +127,35 @@ async function handleInitiate(req: Request, res: Response): Promise<void> {
 /**
  * Processa o callback do Google interceptando a resposta interna do better-auth.
  *
- * Problema: Railway/Fastly suprime Set-Cookie em respostas 302 cross-origin,
- * então o cookie better-auth.session_token nunca chega ao browser.
+ * O Railway/Fastly suprime Set-Cookie em respostas 302 cross-origin, portanto
+ * o cookie de sessão nunca chegaria ao browser. A solução é chamar o handler
+ * internamente, extrair o token do Set-Cookie e incluí-lo na URL de
+ * redirecionamento (?session=TOKEN) para que o frontend o envie via body no
+ * POST /api/auth/google/token — sem depender de cookies cross-origin.
  *
- * Solução: chamar socialAuth.handler internamente, extrair o token de sessão
- * do Set-Cookie da resposta e incluí-lo na URL de redirecionamento para o
- * frontend (?session=TOKEN). O frontend então envia o token no body do POST
- * /api/auth/google/token — sem cookies cross-origin.
+ * Notas sobre encoding:
+ * - Em HTTPS (produção), better-auth nomeia o cookie __Secure-better-auth.session_token
+ * - Os valores são URL-encoded pelo better-call (+ → %2B, = → %3D); decodificamos
+ *   e re-encodamos para evitar double-encoding (%252B) que quebra a assinatura HMAC
  */
 async function handleCallback(req: Request, res: Response): Promise<void> {
   try {
-    const apiUrl = process.env.API_URL ?? 'http://localhost:3000';
-    const internalReq = new globalThis.Request(`${apiUrl}${req.url}`, {
-      method: 'GET',
-      headers: new globalThis.Headers({ cookie: req.headers.cookie ?? '' }),
-    });
+    const authResponse = await socialAuth.handler(
+      new Request(`${API_URL}${req.url}`, {
+        method: 'GET',
+        headers: new Headers({ cookie: req.headers.cookie ?? '' }),
+      })
+    );
 
-    const authResponse = await socialAuth.handler(internalReq);
-
-    const setCookies: string[] =
-      typeof authResponse.headers.getSetCookie === 'function'
-        ? authResponse.headers.getSetCookie()
-        : authResponse.headers.get('set-cookie')
-          ? [authResponse.headers.get('set-cookie') as string]
-          : [];
-
-    // Em produção (HTTPS) better-auth usa o prefixo __Secure- no cookie.
-    // Tenta o nome seguro primeiro; fallback para desenvolvimento (HTTP).
+    const setCookies = getSetCookies(authResponse.headers);
     const rawToken =
       extractCookieValue(setCookies, '__Secure-better-auth.session_token') ??
       extractCookieValue(setCookies, 'better-auth.session_token');
 
-    // Os valores de cookie são URL-encoded pelo serializeSignedCookie do better-call
-    // (%2B para +, %3D para =). Decodifica antes de encodeURIComponent para
-    // evitar double-encoding (%252B) que quebraria a verificação HMAC.
-    const sessionToken = rawToken != null
-      ? encodeURIComponent(decodeURIComponent(rawToken))
-      : null;
+    const sessionToken =
+      rawToken != null
+        ? encodeURIComponent(decodeURIComponent(rawToken))
+        : null;
 
     const location = authResponse.headers.get('location') ?? FRONTEND_ORIGIN;
 
@@ -202,20 +167,29 @@ async function handleCallback(req: Request, res: Response): Promise<void> {
         })
         .end();
     } else {
-      // Sem token = erro no callback (ex: state_mismatch) — redireciona como está
       res.writeHead(302, { Location: location }).end();
     }
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
     // eslint-disable-next-line no-console
-    console.error('[SocialAuth] callback failed:', msg);
-    const sep = FRONTEND_ORIGIN.includes('?') ? '&' : '?';
+    console.error(
+      '[SocialAuth] callback failed:',
+      err instanceof Error ? err.message : err
+    );
     res
       .writeHead(302, {
-        Location: `${FRONTEND_ORIGIN}/auth/google/callback${sep}error=oauth_error`,
+        Location: `${FRONTEND_ORIGIN}/auth/google/callback?error=oauth_error`,
       })
       .end();
   }
+}
+
+/** Retorna todos os valores Set-Cookie de um Headers fetch-compatible. */
+function getSetCookies(headers: Headers): string[] {
+  if (typeof headers.getSetCookie === 'function') {
+    return headers.getSetCookie();
+  }
+  const single = headers.get('set-cookie');
+  return single ? [single] : [];
 }
 
 /** Extrai o valor de um cookie específico de um array de strings Set-Cookie. */

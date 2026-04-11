@@ -2,9 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { socialAuth } from './better-auth.config';
 
-// Em produção (HTTPS) better-auth usa o prefixo __Secure- no cookie.
-const SESSION_COOKIE = 'better-auth.session_token';
-const SESSION_COOKIE_SECURE = '__Secure-better-auth.session_token';
+// Cookie names used by better-auth:
+// - HTTP  (dev) : better-auth.session_token
+// - HTTPS (prod): __Secure-better-auth.session_token
+const SESSION_COOKIES = [
+  'better-auth.session_token',
+  '__Secure-better-auth.session_token',
+] as const;
 
 @Injectable()
 export class SocialAuthService {
@@ -23,51 +27,48 @@ export class SocialAuthService {
 
   /**
    * Obtém a sessão pelo token passado explicitamente (sem cookie).
-   * Usado quando o token é passado via URL (?session=TOKEN) para contornar
-   * a limitação de cookies SameSite em ambientes cross-origin (CDN Railway).
+   * Usado em produção (cross-origin), onde o CDN do Railway suprime Set-Cookie
+   * e o token é enviado via URL (?session=TOKEN) pelo handleCallback do middleware.
    *
-   * Em produção (HTTPS), better-auth nomeia o cookie como
-   * __Secure-better-auth.session_token. Em desenvolvimento (HTTP), usa
-   * better-auth.session_token. Passamos ambos para o getSession funcionar
-   * nos dois ambientes sem depender de NODE_ENV.
+   * Passa ambos os nomes de cookie para funcionar em HTTP (dev) e HTTPS (prod):
+   * better-auth usa getSignedCookie que exige o nome exato do cookie.
    */
   async getSessionByToken(token: string) {
+    const cookieHeader = SESSION_COOKIES.map(name => `${name}=${token}`).join(
+      '; '
+    );
     return socialAuth.api.getSession({
-      headers: new Headers({
-        cookie:
-          `better-auth.session_token=${token}; ` +
-          `__Secure-better-auth.session_token=${token}`,
-      }),
+      headers: new Headers({ cookie: cookieHeader }),
     });
   }
 
   /**
-   * Encerra a sessão do better-auth, invalidando o registro no banco
-   * e instruindo o browser a remover o cookie de sessão.
-   *
-   * Deve ser chamado no logout para evitar que o cookie residual
+   * Encerra a sessão do better-auth invalidando-a no banco e limpando
+   * os cookies do browser. Chamado no logout para evitar que cookie residual
    * cause "invalid_code" no próximo login com Google.
    */
   async signOut(req: Request, res: Response): Promise<void> {
     const cookie = req.headers.cookie ?? '';
+    const isProduction = process.env.NODE_ENV === 'production';
 
-    if (cookie.includes(SESSION_COOKIE)) {
+    // 'better-auth.session_token' é substring do nome seguro também,
+    // portanto esta checagem cobre ambos os ambientes.
+    if (cookie.includes('better-auth.session_token')) {
       try {
-        await socialAuth.api.signOut({
-          headers: new Headers({ cookie }),
-        });
+        await socialAuth.api.signOut({ headers: new Headers({ cookie }) });
       } catch {
-        // Sessão pode já estar expirada — garante limpeza do cookie mesmo assim
+        // Sessão pode já estar expirada — continua para limpar o cookie
       }
     }
 
-    const isProduction = process.env.NODE_ENV === 'production';
-    const cookieName = isProduction ? SESSION_COOKIE_SECURE : SESSION_COOKIE;
-    res.clearCookie(cookieName, {
-      path: '/',
-      httpOnly: true,
-      sameSite: isProduction ? 'none' : 'lax',
-      secure: isProduction,
-    });
+    // Limpa ambos os nomes de cookie para cobrir HTTP e HTTPS
+    for (const name of SESSION_COOKIES) {
+      res.clearCookie(name, {
+        path: '/',
+        httpOnly: true,
+        sameSite: isProduction ? 'none' : 'lax',
+        secure: isProduction,
+      });
+    }
   }
 }
