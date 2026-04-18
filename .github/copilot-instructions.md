@@ -18,6 +18,7 @@ Multi-tenant accounts payable/receivable system (Brazilian "contas a pagar e rec
 
 - **Backend**: [backend-architecture.md](instructions/backend-architecture.md) - NestJS modules, Clean Architecture (refactored: payables, payments, receivables, reports; legacy: others).
 - **Frontend**: [frontend-patterns.md](instructions/frontend-patterns.md) - React features, forms, data fetching, state.
+- **Mobile**: [mobile-architecture.md](instructions/mobile-architecture.md) - Expo/React Native, expo-router, NativeWind, Zustand, TanStack Query, bottom sheets, performance.
 - **Database**: [database-schema.md](instructions/database-schema.md) - Prisma models, enums, relations, multi-tenancy.
 - **Testing & Quality**: [testing-quality.md](instructions/testing-quality.md) - Unit/E2E tests, linting, best practices.
 - **Deployment**: [deployment-commands.md](instructions/deployment-commands.md) - Makefile, Docker, production.
@@ -48,6 +49,15 @@ Detailed guides for specific modules:
 - **Forms**: react-hook-form + zod. See [frontend-patterns.md](instructions/frontend-patterns.md).
 - **Data Fetching**: TanStack Query. See [frontend-patterns.md](instructions/frontend-patterns.md).
 - **Multi-Tenancy**: Always filter by organizationId. See [database-schema.md](instructions/database-schema.md).
+- **Mobile Routing**: expo-router file-based, ScreenContainer, NativeWind. See [mobile-architecture.md](instructions/mobile-architecture.md).
+
+## Mobile Skills (Prompts)
+
+Reusable prompt skills for the mobile app (invoke via Copilot Chat `#` reference):
+
+- [mobile-create-screen](.github/prompts/mobile-create-screen.prompt.md) - Nova tela expo-router com hooks e navegação.
+- [mobile-create-feature](.github/prompts/mobile-create-feature.prompt.md) - Novo feature completo (hooks + card + bottom sheet).
+- [mobile-create-component](.github/prompts/mobile-create-component.prompt.md) - Novo componente compartilhado em `src/shared/components/`.
 
 ## API Conventions
 
