@@ -64,12 +64,18 @@ services:
         sync: false
 
       # JWT Configuration
-      # IMPORTANTE: Gere uma chave segura de 256 bits para produção
+      # IMPORTANTE: Gere chaves seguras de 256 bits para produção
       # Exemplo: openssl rand -base64 32
       - key: JWT_SECRET
         sync: false # Não sincronizar - configurar manualmente
 
+      - key: JWT_REFRESH_SECRET
+        sync: false # Não sincronizar - configurar manualmente
+
       - key: JWT_EXPIRES_IN
+        value: 7d
+
+      - key: JWT_REFRESH_EXPIRES_IN
         value: 7d
 
       # Conexão com banco de dados (Neon PostgreSQL)
@@ -123,8 +129,9 @@ services:
       - key: BACKEND_URL
         value: https://paytrack-backend.onrender.com
 
-      # JWT Secret - deve ser o mesmo do backend
-      - key: BFF_JWT_SECRET
+      # JWT Secret — deve ser o MESMO valor que JWT_SECRET do backend.
+      # O BFF valida tokens emitidos pelo backend (shared secret).
+      - key: JWT_SECRET
         sync: false # Não sincronizar - configurar manualmente
 
       # CORS Origins - origens permitidas separadas por vírgula

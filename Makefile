@@ -103,7 +103,8 @@ db-sync:
 # Iniciar aplicações
 up: setup db-up db-sync
 	@if [ ! -f .env ]; then cp .env.example .env; fi
-	@cp .env $(BACKEND_DIR)/.env
+	@if [ ! -f $(BACKEND_DIR)/.env ]; then cp $(BACKEND_DIR)/.env.example $(BACKEND_DIR)/.env; echo "Criado backend/.env a partir do .env.example — revise as variáveis."; fi
+	@if [ ! -f $(BFF_DIR)/.env ]; then cp $(BFF_DIR)/.env.example $(BFF_DIR)/.env; echo "Criado bff-mobile/.env a partir do .env.example — revise as variáveis."; fi
 	@set -a && . .env && set +a
 	@mkdir -p $(LOGS_DIR)
 	@echo "Iniciando backend..."
@@ -113,7 +114,6 @@ up: setup db-up db-sync
 	@cd $(FRONTEND_DIR) && (npm run dev > ../$(LOGS_DIR)/frontend.log 2>&1 & echo $$! > ../$(LOGS_DIR)/.pids.frontend)
 	@echo "Frontend iniciado (PID: $$(cat $(LOGS_DIR)/.pids.frontend))"
 	@echo "Iniciando BFF Mobile..."
-	@cp .env $(BFF_DIR)/.env
 	@cd $(BFF_DIR) && (npm run start:dev > ../$(LOGS_DIR)/bff.log 2>&1 & echo $$! > ../$(LOGS_DIR)/.pids.bff)
 	@echo "BFF iniciado (PID: $$(cat $(LOGS_DIR)/.pids.bff))"
 	@echo "Aplicações iniciadas. Use 'make logs' para acompanhar logs."
@@ -259,8 +259,15 @@ mobile-setup:
 # Iniciar Expo (app mobile) - aponta para BFF local
 mobile-start: mobile-setup
 	@if [ ! -f .env ]; then cp .env.example .env; fi
-	@set -a && . ./.env && set +a && echo "EXPO_PUBLIC_BFF_URL=http://$$MOBILE_HOST_IP:$(BFF_PORT)" > $(MOBILE_DIR)/.env
-	@echo "Encerrando instâncias anteriores do Expo/Metro..."
+	@if [ ! -f $(MOBILE_DIR)/.env ]; then cp $(MOBILE_DIR)/.env.example $(MOBILE_DIR)/.env; echo "Criado mobile/.env a partir do .env.example — configure os EXPO_PUBLIC_GOOGLE_*_CLIENT_ID."; fi
+	@set -a && . ./.env && set +a && \
+		BFF_URL="http://$$MOBILE_HOST_IP:$(BFF_PORT)" && \
+		if grep -q "^EXPO_PUBLIC_BFF_URL=" $(MOBILE_DIR)/.env; then \
+			sed -i "s|^EXPO_PUBLIC_BFF_URL=.*|EXPO_PUBLIC_BFF_URL=$$BFF_URL|" $(MOBILE_DIR)/.env; \
+		else \
+			echo "EXPO_PUBLIC_BFF_URL=$$BFF_URL" >> $(MOBILE_DIR)/.env; \
+		fi
+	@echo "Usando EXPO_PUBLIC_BFF_URL=$(shell set -a && . ./.env && set +a && echo http://$$MOBILE_HOST_IP:$(BFF_PORT) 2>/dev/null || grep EXPO_PUBLIC_BFF_URL $(MOBILE_DIR)/.env 2>/dev/null || echo '(ver mobile/.env)')"
 	@-pkill -f "expo start" 2>/dev/null || true
 	@-pkill -f "metro" 2>/dev/null || true
 	@-lsof -ti:8081 | xargs kill -9 2>/dev/null || true

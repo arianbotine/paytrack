@@ -93,7 +93,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.API_PORT || 3000;
+  const port = process.env.PORT || process.env.API_PORT || 3000;
   await app.listen(port);
   logInfo(`PayTrack API running on port ${port}`, 'Bootstrap');
   logInfo(`Swagger docs available at /api/docs`, 'Bootstrap');

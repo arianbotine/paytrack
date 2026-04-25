@@ -19,7 +19,7 @@ import { SharedModule } from './modules/shared/shared.module';
     }),
     JwtModule.register({
       global: true,
-      secret: process.env.BFF_JWT_SECRET || process.env.JWT_SECRET,
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '15m' },
     }),
     HttpClientModule,

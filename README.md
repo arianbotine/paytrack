@@ -288,32 +288,37 @@ curl -X POST http://localhost:3001/bff/auth/login \
 
 ### Variáveis de Ambiente Mobile
 
-| Variável              | Descrição             | Padrão                  |
-| --------------------- | --------------------- | ----------------------- |
-| `BFF_PORT`            | Porta do BFF          | `3001`                  |
-| `BACKEND_URL`         | URL do backend        | `http://localhost:3000` |
-| `BFF_JWT_SECRET`      | Secret JWT do BFF     | (usa JWT_SECRET)        |
-| `EXPO_PUBLIC_BFF_URL` | URL do BFF para o app | `http://localhost:3001` |
+| Variável              | Descrição                                  | Padrão                  |
+| --------------------- | ------------------------------------------ | ----------------------- |
+| `BFF_PORT`            | Porta do BFF                               | `3001`                  |
+| `BACKEND_URL`         | URL do backend                             | `http://localhost:3000` |
+| `JWT_SECRET`          | Secret JWT do BFF (mesmo valor do backend) | —                       |
+| `EXPO_PUBLIC_BFF_URL` | URL do BFF para o app                      | `http://localhost:3001` |
 
 ## ⚙️ Variáveis de Ambiente
 
-Edite o arquivo `.env` na raiz do projeto:
+Cada app possui seu próprio arquivo `.env`. Copie o `.env.example` correspondente:
 
-| Variável               | Descrição                                         | Padrão                  |
-| ---------------------- | ------------------------------------------------- | ----------------------- |
-| `DB_USER`              | Usuário do PostgreSQL                             | `paytrack`              |
-| `DB_PASSWORD`          | Senha do PostgreSQL                               | `paytrack123`           |
-| `DB_NAME`              | Nome do banco                                     | `paytrack`              |
-| `DB_PORT`              | Porta do PostgreSQL                               | `5433`                  |
-| `DATABASE_URL`         | URL de conexão Prisma                             | `postgresql://...`      |
-| `API_PORT`             | Porta do backend                                  | `3000`                  |
-| `WEB_PORT`             | Porta do frontend                                 | `5173`                  |
-| `JWT_SECRET`           | Secret para JWT                                   | `super-secret-...`      |
-| `VITE_API_URL`         | URL da API para frontend                          | `http://localhost:3000` |
-| `API_URL`              | URL base da API (Google OAuth redirect URI)       | `http://localhost:3000` |
-| `GOOGLE_CLIENT_ID`     | Client ID do Google OAuth 2.0                     | —                       |
-| `GOOGLE_CLIENT_SECRET` | Client Secret do Google OAuth 2.0                 | —                       |
-| `BETTER_AUTH_SECRET`   | Chave de assinatura das sessões OAuth (≥32 chars) | —                       |
+```bash
+cp .env.example .env                      # orquestração (docker-compose + Makefile)
+cp backend/.env.example backend/.env      # backend NestJS
+cp bff-mobile/.env.example bff-mobile/.env  # BFF Mobile
+cp mobile/.env.example mobile/.env        # App Expo (ou use `make mobile-setup`)
+# frontend/.env já está incluso (só VITE_API_URL)
+```
+
+### Root `.env` (docker-compose + Makefile)
+
+| Variável         | Descrição                                      | Padrão             |
+| ---------------- | ---------------------------------------------- | ------------------ |
+| `DB_USER`        | Usuário do PostgreSQL                          | `paytrack`         |
+| `DB_PASSWORD`    | Senha do PostgreSQL                            | `paytrack123`      |
+| `DB_NAME`        | Nome do banco                                  | `paytrack`         |
+| `DB_PORT`        | Porta exposta pelo container                   | `5433`             |
+| `DATABASE_URL`   | URL Prisma (usada pelo `make db-sync`)         | `postgresql://...` |
+| `WEB_PORT`       | Porta local do frontend                        | `5173`             |
+| `BFF_PORT`       | Porta local do BFF Mobile                      | `3001`             |
+| `MOBILE_HOST_IP` | IP do host acessível pelo celular (Wi-Fi/WSL2) | `192.168.1.100`    |
 
 ## 🗄️ Banco de Dados
 
