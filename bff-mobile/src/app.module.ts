@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { HttpClientModule } from './infrastructure/http-client.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -17,10 +17,21 @@ import { SharedModule } from './modules/shared/shared.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    JwtModule.register({
+    JwtModule.registerAsync({
       global: true,
-      secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '15m' },
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const jwtSecret = configService.get<string>('JWT_SECRET');
+
+        if (!jwtSecret) {
+          throw new Error('JWT_SECRET não definido no ambiente do BFF');
+        }
+
+        return {
+          secret: jwtSecret,
+          signOptions: { expiresIn: '15m' },
+        };
+      },
     }),
     HttpClientModule,
     SharedModule,

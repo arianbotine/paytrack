@@ -18,6 +18,7 @@ import { Text } from '../../src/shared/components/Text';
 import { EmptyState } from '../../src/shared/components/EmptyState';
 import { LoadingState } from '../../src/shared/components/LoadingState';
 import { PaymentModal } from '../../src/shared/components/PaymentModal';
+import { EditInstallmentSheet } from '../../src/shared/components/EditInstallmentSheet';
 import { MonthPickerSheet } from '../../src/shared/components/MonthPickerSheet';
 import { SearchablePickerSheet } from '../../src/shared/components/SearchablePickerSheet';
 import { CreateReceivableSheet } from '../../src/features/receivables/components/CreateReceivableSheet';
@@ -27,6 +28,8 @@ import {
   type ReceivableStatusFilter,
 } from '../../src/features/receivables/use-receivables';
 import { useReceiveInstallment } from '../../src/features/receivables/use-receive-installment';
+import { useReceivable } from '../../src/features/receivables/use-receivable';
+import { useUpdateReceivableInstallment } from '../../src/features/receivables/use-update-receivable-installment';
 import { useCustomers } from '../../src/features/customers/use-customers';
 import type { ReceivableListItem } from '../../src/lib/types';
 
@@ -50,6 +53,8 @@ export default function ReceivablesScreen() {
   const [customerSearch, setCustomerSearch] = useState('');
   const [selectedReceivable, setSelectedReceivable] =
     useState<ReceivableListItem | null>(null);
+  const [editingReceivable, setEditingReceivable] =
+    useState<ReceivableListItem | null>(null);
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
 
   const customersQuery = useCustomers(customerSearch || undefined);
@@ -61,6 +66,16 @@ export default function ReceivablesScreen() {
   const receiveMutation = useReceiveInstallment(() =>
     setSelectedReceivable(null)
   );
+  const receivableDetailQuery = useReceivable(editingReceivable?.id);
+  const updateInstallmentMutation = useUpdateReceivableInstallment(() =>
+    setEditingReceivable(null)
+  );
+
+  const editingInstallment = editingReceivable?.nextInstallmentId
+    ? (receivableDetailQuery.data?.installments.find(
+        i => i.id === editingReceivable.nextInstallmentId
+      ) ?? null)
+    : null;
 
   const allItems = query.data?.pages.flatMap(p => p.items) ?? [];
   const total = query.data?.pages[0]?.total ?? 0;
@@ -182,7 +197,11 @@ export default function ReceivablesScreen() {
         }
         renderItem={({ item }) => (
           <View style={{ paddingHorizontal: 16 }}>
-            <ReceivableCard item={item} onReceive={setSelectedReceivable} />
+            <ReceivableCard
+              item={item}
+              onReceive={setSelectedReceivable}
+              onEdit={setEditingReceivable}
+            />
           </View>
         )}
         ListEmptyComponent={
@@ -239,6 +258,22 @@ export default function ReceivablesScreen() {
           });
         }}
         confirmLabel="Registrar Recebimento"
+      />
+
+      <EditInstallmentSheet
+        visible={!!editingReceivable}
+        installment={editingInstallment}
+        loadingDetail={receivableDetailQuery.isFetching}
+        loading={updateInstallmentMutation.isPending}
+        onClose={() => setEditingReceivable(null)}
+        onSubmit={data => {
+          if (!editingReceivable?.nextInstallmentId) return;
+          updateInstallmentMutation.mutate({
+            receivableId: editingReceivable.id,
+            installmentId: editingReceivable.nextInstallmentId,
+            data,
+          });
+        }}
       />
 
       {/* FAB - Nova conta */}

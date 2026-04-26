@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Alert } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, useAuthStore } from '@lib/index';
@@ -6,7 +6,12 @@ import type {
   DashboardData,
   DashboardInstallmentItem,
   PaymentMethod,
+  UpdateInstallmentInput,
 } from '@lib/types';
+import { usePayable } from '../payables/use-payable';
+import { useReceivable } from '../receivables/use-receivable';
+import { useUpdatePayableInstallment } from '../payables/use-update-payable-installment';
+import { useUpdateReceivableInstallment } from '../receivables/use-update-receivable-installment';
 
 export function useDashboard() {
   const user = useAuthStore(state => state.user);
@@ -19,6 +24,12 @@ export function useDashboard() {
     'payable'
   );
 
+  // Edit installment state
+  const [editItem, setEditItem] = useState<DashboardInstallmentItem | null>(
+    null
+  );
+  const [editType, setEditType] = useState<'payable' | 'receivable'>('payable');
+
   const query = useQuery({
     queryKey: ['dashboard', organizationId],
     queryFn: async () => {
@@ -26,6 +37,34 @@ export function useDashboard() {
       return response.data;
     },
     enabled: !!organizationId,
+  });
+
+  // Lazy detail queries — only fetch when the user opens the edit sheet
+  const payableDetailQuery = usePayable(
+    editItem && editType === 'payable' ? editItem.id : undefined
+  );
+  const receivableDetailQuery = useReceivable(
+    editItem && editType === 'receivable' ? editItem.id : undefined
+  );
+
+  // Derive the specific installment from the detail once loaded
+  const editInstallment = useMemo(() => {
+    if (!editItem?.installmentId) return null;
+    const detail =
+      editType === 'payable'
+        ? payableDetailQuery.data
+        : receivableDetailQuery.data;
+    if (!detail) return null;
+    return (
+      detail.installments.find(i => i.id === editItem.installmentId) ?? null
+    );
+  }, [editItem, editType, payableDetailQuery.data, receivableDetailQuery.data]);
+
+  const updatePayableMutation = useUpdatePayableInstallment(() => {
+    setEditItem(null);
+  });
+  const updateReceivableMutation = useUpdateReceivableInstallment(() => {
+    setEditItem(null);
   });
 
   const payMutation = useMutation({
@@ -131,6 +170,31 @@ export function useDashboard() {
     setSelectedItem(item);
   }
 
+  function selectEdit(
+    item: DashboardInstallmentItem,
+    type: 'payable' | 'receivable'
+  ) {
+    setEditType(type);
+    setEditItem(item);
+  }
+
+  function handleEditSubmit(data: UpdateInstallmentInput) {
+    if (!editItem?.installmentId) return;
+    if (editType === 'payable') {
+      updatePayableMutation.mutate({
+        payableId: editItem.id,
+        installmentId: editItem.installmentId,
+        data,
+      });
+    } else {
+      updateReceivableMutation.mutate({
+        receivableId: editItem.id,
+        installmentId: editItem.installmentId,
+        data,
+      });
+    }
+  }
+
   return {
     user,
     query,
@@ -140,5 +204,16 @@ export function useDashboard() {
     selectItem,
     clearSelection: () => setSelectedItem(null),
     handleConfirm,
+    // Edit installment
+    editItem,
+    editInstallment,
+    editType,
+    isLoadingDetail:
+      payableDetailQuery.isFetching || receivableDetailQuery.isFetching,
+    isUpdating:
+      updatePayableMutation.isPending || updateReceivableMutation.isPending,
+    selectEdit,
+    clearEdit: () => setEditItem(null),
+    handleEditSubmit,
   };
 }

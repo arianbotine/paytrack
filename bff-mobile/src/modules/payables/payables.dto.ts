@@ -156,6 +156,25 @@ export class QuickPayDto {
   notes?: string;
 }
 
+export class UpdateInstallmentBffDto {
+  @ApiPropertyOptional({
+    example: 250.5,
+    description:
+      'Novo valor da parcela. Só pode ser alterado se não houver pagamentos registrados.',
+    minimum: 0.01,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0.01)
+  @Type(() => Number)
+  amount?: number;
+
+  @ApiPropertyOptional({ example: 'Observação sobre a parcela' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
 export class CreatePayableBffDto {
   @ApiProperty({
     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',

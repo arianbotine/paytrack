@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -33,6 +34,12 @@ export default function SelectOrganizationScreen() {
       await setAuth(data.user, data.accessToken, data.refreshToken);
       queryClient.clear();
       router.replace('/(tabs)');
+    },
+    onError: () => {
+      Alert.alert(
+        'Erro ao selecionar organização',
+        'Não foi possível concluir a troca de organização. Tente novamente.'
+      );
     },
   });
 

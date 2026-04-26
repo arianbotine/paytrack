@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/infrastructure/database/prisma.service';
 import { randomUUID } from 'node:crypto';
 
@@ -11,6 +10,14 @@ export interface E2ETestContext {
   app: INestApplication;
   prisma: PrismaService;
   testSchema: string;
+  originalDatabaseUrl?: string;
+  originalDirectDatabaseUrl?: string;
+}
+
+function withSchemaInDatabaseUrl(databaseUrl: string, schema: string): string {
+  const parsedUrl = new URL(databaseUrl);
+  parsedUrl.searchParams.set('schema', schema);
+  return parsedUrl.toString();
 }
 
 /**
@@ -22,7 +29,7 @@ async function copySchemaStructure(
   prisma: PrismaService,
   testSchema: string
 ): Promise<void> {
-  // 1. Copiar ENUMs
+  // 1. Copiar ENUMs para o schema de teste
   await prisma.$executeRawUnsafe(`
     DO $$
     DECLARE r RECORD;
@@ -54,7 +61,36 @@ async function copySchemaStructure(
     );
   }
 
-  // 3. Copiar foreign keys (não incluídas em LIKE INCLUDING ALL)
+  // 3. Ajustar colunas enum para usar o enum do schema de teste
+  await prisma.$executeRawUnsafe(`
+    DO $$
+    DECLARE r RECORD;
+    BEGIN
+      FOR r IN
+        SELECT table_name, column_name, udt_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND data_type = 'USER-DEFINED'
+      LOOP
+        EXECUTE format(
+          'ALTER TABLE "${testSchema}".%I ALTER COLUMN %I DROP DEFAULT',
+          r.table_name,
+          r.column_name
+        );
+
+        EXECUTE format(
+          'ALTER TABLE "${testSchema}".%I ALTER COLUMN %I TYPE "${testSchema}".%I USING (%I::text::"${testSchema}".%I)',
+          r.table_name,
+          r.column_name,
+          r.udt_name,
+          r.column_name,
+          r.udt_name
+        );
+      END LOOP;
+    END $$;
+  `);
+
+  // 4. Copiar foreign keys (não incluídas em LIKE INCLUDING ALL)
   await prisma.$executeRawUnsafe(`
     DO $$
     DECLARE r RECORD;
@@ -89,12 +125,35 @@ async function copySchemaStructure(
  * Inicializa ambiente de teste E2E com schema isolado
  *
  * Cria um schema único para cada teste, copia a estrutura do schema public
- * e configura o Prisma Client para usar apenas o schema de teste.
+ * e configura o Prisma Client para usar apenas o schema de teste via DATABASE_URL.
  *
  * @returns Contexto com app, prisma e testSchema
  */
 export async function setupE2ETest(): Promise<E2ETestContext> {
-  const testSchema = `test_${randomUUID().replaceAll('-', '_')}`;
+  const testSchema = `e2e_${randomUUID().replaceAll('-', '_')}`;
+  const originalDatabaseUrl = process.env.DATABASE_URL;
+  const originalDirectDatabaseUrl = process.env.DIRECT_DATABASE_URL;
+
+  if (!originalDatabaseUrl) {
+    throw new Error('DATABASE_URL não está definido para testes E2E');
+  }
+
+  const baseDatabaseUrl = process.env.E2E_DATABASE_URL || originalDatabaseUrl;
+  process.env.DATABASE_URL = withSchemaInDatabaseUrl(
+    baseDatabaseUrl,
+    testSchema
+  );
+
+  if (originalDirectDatabaseUrl) {
+    const baseDirectDatabaseUrl =
+      process.env.E2E_DIRECT_DATABASE_URL || originalDirectDatabaseUrl;
+    process.env.DIRECT_DATABASE_URL = withSchemaInDatabaseUrl(
+      baseDirectDatabaseUrl,
+      testSchema
+    );
+  }
+
+  const { AppModule } = await import('../../src/app.module');
 
   // Criar módulo de teste com todas as dependências
   const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -118,24 +177,46 @@ export async function setupE2ETest(): Promise<E2ETestContext> {
   // Criar schema isolado e copiar estrutura do public
   await prisma.$executeRawUnsafe(`CREATE SCHEMA "${testSchema}"`);
   await copySchemaStructure(prisma, testSchema);
-  await prisma.$executeRawUnsafe(`SET search_path TO "${testSchema}", public`);
 
+  // Inicializa o app — todas as conexões abertas aqui já usam testSchema
   await app.init();
 
-  return { app, prisma, testSchema };
+  return {
+    app,
+    prisma,
+    testSchema,
+    originalDatabaseUrl,
+    originalDirectDatabaseUrl,
+  };
 }
 
 /**
  * Limpa ambiente de teste E2E
  *
- * Remove o schema de teste e fecha todas as conexões.
+ * Remove o schema de teste, restaura variáveis de ambiente e fecha conexões.
  *
  * @param context - Contexto do teste a ser limpo
  */
 export async function teardownE2ETest(context: E2ETestContext): Promise<void> {
-  const { app, prisma, testSchema } = context;
+  const {
+    app,
+    prisma,
+    testSchema,
+    originalDatabaseUrl,
+    originalDirectDatabaseUrl,
+  } = context;
 
-  await prisma.$executeRawUnsafe(`DROP SCHEMA "${testSchema}" CASCADE`);
-  await prisma.$disconnect();
-  await app.close();
+  try {
+    await prisma.$executeRawUnsafe(`DROP SCHEMA "${testSchema}" CASCADE`);
+  } finally {
+    await prisma.$disconnect();
+    await app.close();
+    if (originalDatabaseUrl) {
+      process.env.DATABASE_URL = originalDatabaseUrl;
+    }
+
+    if (originalDirectDatabaseUrl) {
+      process.env.DIRECT_DATABASE_URL = originalDirectDatabaseUrl;
+    }
+  }
 }

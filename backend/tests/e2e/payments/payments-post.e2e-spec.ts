@@ -121,6 +121,47 @@ describe('[Pagamentos] POST /api/payments', () => {
     );
   });
 
+  it('deve bloquear recebimento acima do valor restante da parcela', async () => {
+    const { organizationId, accessToken } = await createAuthenticatedUser(
+      app,
+      prisma
+    );
+    const customerFactory = new CustomerFactory(prisma);
+    const receivableFactory = new ReceivableFactory(prisma);
+
+    const customer = await customerFactory.create({ organizationId });
+    const receivable = await receivableFactory.create({
+      organizationId,
+      customerId: customer.id,
+      amount: 1000,
+    });
+
+    const installment = await prisma.receivableInstallment.findFirst({
+      where: { receivableId: receivable.id },
+    });
+
+    const response = await request(app.getHttpServer())
+      .post('/api/payments')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('idempotency-key', randomUUID())
+      .send({
+        amount: 1200,
+        paymentDate: '2026-01-08T15:00:00.000Z',
+        paymentMethod: 'PIX',
+        allocations: [
+          {
+            receivableInstallmentId: installment?.id,
+            amount: 1200,
+          },
+        ],
+      })
+      .expect(400);
+
+    expect(String(response.body.message)).toContain(
+      'excede o valor restante da parcela a receber'
+    );
+  });
+
   it('deve criar pagamento com múltiplas alocações', async () => {
     const { organizationId, accessToken } = await createAuthenticatedUser(
       app,

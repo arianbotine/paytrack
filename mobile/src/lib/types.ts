@@ -80,6 +80,28 @@ export interface PayableListItem {
   paidInstallments: number;
 }
 
+export interface PayableInstallment {
+  id: string;
+  installmentNumber: number;
+  dueDate: string;
+  amount: number;
+  paidAmount: number;
+  remaining: number;
+  status: AccountStatus;
+  notes: string | null;
+}
+
+export interface PayableDetail {
+  id: string;
+  amount: number;
+  status: AccountStatus;
+  createdAt: string;
+  vendor: { id: string; name: string } | null;
+  category: { id: string; name: string } | null;
+  tags: Tag[];
+  installments: PayableInstallment[];
+}
+
 // Receivables
 export interface ReceivableListItem {
   id: string;
@@ -93,6 +115,34 @@ export interface ReceivableListItem {
   nextInstallmentId: string | null;
   installmentsCount: number;
   receivedInstallments: number;
+}
+
+export interface ReceivableInstallment {
+  id: string;
+  installmentNumber: number;
+  dueDate: string;
+  amount: number;
+  paidAmount: number;
+  remaining: number;
+  status: AccountStatus;
+  notes: string | null;
+}
+
+export interface ReceivableDetail {
+  id: string;
+  amount: number;
+  status: AccountStatus;
+  createdAt: string;
+  customer: { id: string; name: string } | null;
+  category: { id: string; name: string } | null;
+  tags: Tag[];
+  installments: ReceivableInstallment[];
+}
+
+// Update installment input
+export interface UpdateInstallmentInput {
+  amount?: number;
+  notes?: string;
 }
 
 // Shared

@@ -15,14 +15,22 @@ import {
   IconButton,
   CircularProgress,
   Divider,
+  Avatar,
 } from '@mui/material';
 import {
   Visibility,
   VisibilityOff,
   Login as LoginIcon,
+  PersonOutline,
 } from '@mui/icons-material';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/stores/authStore';
+import {
+  saveLastUser,
+  loadLastUser,
+  clearLastUser,
+  type LastUser,
+} from '@/lib/lastUserStorage';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -39,27 +47,35 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [lastUser, setLastUser] = useState<LastUser | null>(null);
+  const [switchingAccount, setSwitchingAccount] = useState(false);
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
+  useEffect(() => {
+    const stored = loadLastUser();
+    if (stored) {
+      setLastUser(stored);
+      setValue('email', stored.email);
+    }
+  }, [setValue]);
+
   // Verificar se o servidor está respondendo ao carregar a página
   useEffect(() => {
     const checkServerStatus = async () => {
       try {
-        // Faz uma requisição simples para verificar se o servidor está respondendo
-        // Isso vai ativar o ServerWakeupDialog se o servidor estiver frio
         await api.get('/health', {
           headers: { 'X-Silent-Request': 'true' },
         });
       } catch {
         // Ignora erros - o ServerWakeupDialog será ativado automaticamente
-        // se o servidor estiver frio
       }
     };
 
@@ -74,6 +90,12 @@ export function LoginPage() {
       const response = await api.post('/auth/login', data);
       const { user, accessToken } = response.data;
       setAuth(user, accessToken);
+
+      saveLastUser({
+        email: user.email,
+        name: user.name,
+        organizationName: user.currentOrganization?.name,
+      });
 
       if (user.currentOrganization) {
         navigate('/dashboard');
@@ -90,13 +112,20 @@ export function LoginPage() {
         return;
       }
 
-      // User has no organizations and is not system admin
       navigate('/select-organization');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao fazer login');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSwitchAccount = () => {
+    clearLastUser();
+    setLastUser(null);
+    setSwitchingAccount(false);
+    setValue('email', '');
+    setError('');
   };
 
   const handleGoogleLogin = () => {
@@ -146,60 +175,183 @@ export function LoginPage() {
             </Alert>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <TextField
-              fullWidth
-              label="Email"
-              type="email"
-              margin="normal"
-              {...register('email')}
-              error={!!errors.email}
-              helperText={errors.email?.message}
-              autoComplete="email"
-              autoFocus
-            />
+          {lastUser && !switchingAccount ? (
+            /* ---- Modo "continuar como" ---- */
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  mb: 3,
+                  gap: 1,
+                }}
+              >
+                <Avatar
+                  sx={{
+                    width: 64,
+                    height: 64,
+                    bgcolor: 'primary.main',
+                    fontSize: '1.5rem',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {lastUser.name
+                    .split(' ')
+                    .slice(0, 2)
+                    .map(n => n[0])
+                    .join('')
+                    .toUpperCase()}
+                </Avatar>
+                <Typography variant="h6" fontWeight="medium">
+                  {lastUser.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {lastUser.email}
+                </Typography>
+                {lastUser.organizationName && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                      bgcolor: 'action.hover',
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: 4,
+                    }}
+                  >
+                    {lastUser.organizationName}
+                  </Typography>
+                )}
+              </Box>
 
-            <TextField
-              fullWidth
-              label="Senha"
-              type={showPassword ? 'text' : 'password'}
-              margin="normal"
-              {...register('password')}
-              error={!!errors.password}
-              helperText={errors.password?.message}
-              autoComplete="current-password"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
+              {/* Email oculto mas registrado no form */}
+              <input type="hidden" {...register('email')} />
 
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              size="large"
-              disabled={loading || googleLoading}
-              sx={{ mt: 3, mb: 2 }}
-              startIcon={
-                loading ? (
-                  <CircularProgress size={20} color="inherit" />
-                ) : (
-                  <LoginIcon />
-                )
-              }
-            >
-              {loading ? 'Entrando...' : 'Entrar'}
-            </Button>
-          </form>
+              <TextField
+                fullWidth
+                label="Senha"
+                type={showPassword ? 'text' : 'password'}
+                margin="normal"
+                {...register('password')}
+                error={!!errors.password}
+                helperText={errors.password?.message}
+                autoComplete="current-password"
+                autoFocus
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={loading || googleLoading}
+                sx={{ mt: 3, mb: 1 }}
+                startIcon={
+                  loading ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    <LoginIcon />
+                  )
+                }
+              >
+                {loading ? 'Entrando...' : 'Continuar'}
+              </Button>
+
+              <Button
+                fullWidth
+                variant="text"
+                size="small"
+                onClick={() => setSwitchingAccount(true)}
+                startIcon={<PersonOutline />}
+                sx={{ color: 'text.secondary' }}
+              >
+                Usar outra conta
+              </Button>
+            </form>
+          ) : (
+            /* ---- Modo login normal ---- */
+            <>
+              <form onSubmit={handleSubmit(onSubmit)}>
+                <TextField
+                  fullWidth
+                  label="Email"
+                  type="email"
+                  margin="normal"
+                  {...register('email')}
+                  error={!!errors.email}
+                  helperText={errors.email?.message}
+                  autoComplete="email"
+                  autoFocus
+                />
+
+                <TextField
+                  fullWidth
+                  label="Senha"
+                  type={showPassword ? 'text' : 'password'}
+                  margin="normal"
+                  {...register('password')}
+                  error={!!errors.password}
+                  helperText={errors.password?.message}
+                  autoComplete="current-password"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  disabled={loading || googleLoading}
+                  sx={{ mt: 3, mb: 2 }}
+                  startIcon={
+                    loading ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      <LoginIcon />
+                    )
+                  }
+                >
+                  {loading ? 'Entrando...' : 'Entrar'}
+                </Button>
+              </form>
+
+              {switchingAccount && (
+                <Button
+                  fullWidth
+                  variant="text"
+                  size="small"
+                  onClick={handleSwitchAccount}
+                  sx={{ mb: 1, color: 'text.secondary' }}
+                >
+                  Cancelar
+                </Button>
+              )}
+            </>
+          )}
 
           <Divider sx={{ my: 2 }}>
             <Typography variant="body2" color="text.secondary">

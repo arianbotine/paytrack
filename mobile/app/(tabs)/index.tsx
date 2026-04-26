@@ -5,6 +5,7 @@ import { Text } from '../../src/shared/components/Text';
 import { LoadingState } from '../../src/shared/components/LoadingState';
 import { EmptyState } from '../../src/shared/components/EmptyState';
 import { PaymentModal } from '../../src/shared/components/PaymentModal';
+import { EditInstallmentSheet } from '../../src/shared/components/EditInstallmentSheet';
 import {
   useDashboard,
   MonthSummaryCard,
@@ -22,6 +23,13 @@ export default function DashboardScreen() {
     selectItem,
     clearSelection,
     handleConfirm,
+    editItem,
+    editInstallment,
+    isLoadingDetail,
+    isUpdating,
+    selectEdit,
+    clearEdit,
+    handleEditSubmit,
   } = useDashboard();
 
   if (query.isLoading) {
@@ -95,6 +103,7 @@ export default function DashboardScreen() {
                 amountColor="expense"
                 actionLabel="Pagar"
                 onPay={() => selectItem(item, 'payable')}
+                onEdit={() => selectEdit(item, 'payable')}
               />
             ))}
           </SectionCard>
@@ -116,6 +125,7 @@ export default function DashboardScreen() {
                 amountColor="warning"
                 actionLabel="Pagar"
                 onPay={() => selectItem(item, 'payable')}
+                onEdit={() => selectEdit(item, 'payable')}
               />
             ))}
           </SectionCard>
@@ -136,6 +146,7 @@ export default function DashboardScreen() {
                 amountColor="income"
                 actionLabel="Receber"
                 onPay={() => selectItem(item, 'receivable')}
+                onEdit={() => selectEdit(item, 'receivable')}
               />
             ))}
           </SectionCard>
@@ -157,6 +168,7 @@ export default function DashboardScreen() {
                 amountColor="income"
                 actionLabel="Receber"
                 onPay={() => selectItem(item, 'receivable')}
+                onEdit={() => selectEdit(item, 'receivable')}
               />
             ))}
           </SectionCard>
@@ -199,6 +211,15 @@ export default function DashboardScreen() {
         loading={isMutating}
         onClose={clearSelection}
         onConfirm={handleConfirm}
+      />
+
+      <EditInstallmentSheet
+        visible={editItem !== null}
+        onClose={clearEdit}
+        onSubmit={handleEditSubmit}
+        loading={isUpdating}
+        loadingDetail={isLoadingDetail}
+        installment={editInstallment}
       />
     </ScreenContainer>
   );

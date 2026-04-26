@@ -11,9 +11,14 @@ import { Text } from '../../../shared/components/Text';
 interface ReceivableCardProps {
   item: ReceivableListItem;
   onReceive: (item: ReceivableListItem) => void;
+  onEdit?: (item: ReceivableListItem) => void;
 }
 
-export function ReceivableCard({ item, onReceive }: ReceivableCardProps) {
+export function ReceivableCard({
+  item,
+  onReceive,
+  onEdit,
+}: ReceivableCardProps) {
   const isPaid = item.status === 'PAID';
 
   return (
@@ -117,24 +122,46 @@ export function ReceivableCard({ item, onReceive }: ReceivableCardProps) {
           </View>
 
           {!isPaid && item.nextInstallmentId && (
-            <TouchableOpacity
-              onPress={() => onReceive(item)}
-              activeOpacity={0.75}
-              className="flex-row items-center bg-success-700 px-3 py-1.5 rounded-lg"
-            >
-              <MaterialCommunityIcons
-                name="cash-check"
-                size={14}
-                color="#ffffff"
-              />
-              <Text
-                variant="label"
-                weight="semibold"
-                className="text-white ml-1"
+            <View className="flex-row items-center gap-2">
+              {onEdit && (
+                <TouchableOpacity
+                  onPress={() => onEdit(item)}
+                  activeOpacity={0.75}
+                  className="flex-row items-center bg-neutral-100 px-3 py-1.5 rounded-lg"
+                >
+                  <MaterialCommunityIcons
+                    name="pencil-outline"
+                    size={14}
+                    color="#616161"
+                  />
+                  <Text
+                    variant="label"
+                    weight="semibold"
+                    className="text-neutral-700 ml-1"
+                  >
+                    Editar
+                  </Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                onPress={() => onReceive(item)}
+                activeOpacity={0.75}
+                className="flex-row items-center bg-success-700 px-3 py-1.5 rounded-lg"
               >
-                Receber
-              </Text>
-            </TouchableOpacity>
+                <MaterialCommunityIcons
+                  name="cash-check"
+                  size={14}
+                  color="#ffffff"
+                />
+                <Text
+                  variant="label"
+                  weight="semibold"
+                  className="text-white ml-1"
+                >
+                  Receber
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       </View>

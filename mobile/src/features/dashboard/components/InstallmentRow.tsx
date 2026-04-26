@@ -11,6 +11,7 @@ interface InstallmentRowProps {
   nameKey: 'vendorName' | 'customerName';
   amountColor: 'expense' | 'income' | 'warning';
   onPay?: () => void;
+  onEdit?: () => void;
   actionLabel?: string;
 }
 
@@ -19,6 +20,7 @@ export function InstallmentRow({
   nameKey,
   amountColor,
   onPay,
+  onEdit,
   actionLabel,
 }: InstallmentRowProps) {
   const name =
@@ -74,28 +76,43 @@ export function InstallmentRow({
           weight="bold"
           className={amountColor === 'warning' ? 'text-warning-700' : undefined}
         />
-        {onPay && item.installmentId && (
-          <TouchableOpacity
-            onPress={onPay}
-            activeOpacity={0.75}
-            className={`flex-row items-center px-2.5 py-1 rounded-lg ${
-              actionLabel === 'Receber' ? 'bg-success-700' : 'bg-primary-700'
-            }`}
-          >
-            <MaterialCommunityIcons
-              name={actionLabel === 'Receber' ? 'cash-plus' : 'cash-check'}
-              size={13}
-              color="#ffffff"
-            />
-            <Text
-              variant="caption"
-              weight="semibold"
-              className="text-white ml-1"
+        <View className="flex-row items-center gap-1.5">
+          {onEdit && item.installmentId && (
+            <TouchableOpacity
+              onPress={onEdit}
+              activeOpacity={0.75}
+              className="w-7 h-7 rounded-lg bg-neutral-100 items-center justify-center"
             >
-              {actionLabel ?? 'Pagar'}
-            </Text>
-          </TouchableOpacity>
-        )}
+              <MaterialCommunityIcons
+                name="pencil-outline"
+                size={14}
+                color="#616161"
+              />
+            </TouchableOpacity>
+          )}
+          {onPay && item.installmentId && (
+            <TouchableOpacity
+              onPress={onPay}
+              activeOpacity={0.75}
+              className={`flex-row items-center px-2.5 py-1 rounded-lg ${
+                actionLabel === 'Receber' ? 'bg-success-700' : 'bg-primary-700'
+              }`}
+            >
+              <MaterialCommunityIcons
+                name={actionLabel === 'Receber' ? 'cash-plus' : 'cash-check'}
+                size={13}
+                color="#ffffff"
+              />
+              <Text
+                variant="caption"
+                weight="semibold"
+                className="text-white ml-1"
+              >
+                {actionLabel ?? 'Pagar'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </View>
   );

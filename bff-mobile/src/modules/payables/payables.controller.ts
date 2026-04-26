@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Param,
   Query,
   Body,
@@ -22,6 +23,7 @@ import {
   PayableFilterDto,
   QuickPayDto,
   CreatePayableBffDto,
+  UpdateInstallmentBffDto,
 } from './payables.dto';
 
 @ApiTags('Payables')
@@ -192,6 +194,47 @@ export class PayablesController {
     @Body() dto: QuickPayDto
   ) {
     return this.payablesService.quickPay(
+      accessToken,
+      payableId,
+      installmentId,
+      dto
+    );
+  }
+
+  /**
+   * Update a payable installment (amount and/or notes).
+   */
+  @Patch(':payableId/installments/:installmentId')
+  @ApiOperation({
+    summary: 'Atualizar parcela de conta a pagar',
+    description:
+      'Atualiza o valor e/ou observação de uma parcela. O valor só pode ser alterado se não houver pagamentos registrados.',
+  })
+  @ApiParam({
+    name: 'payableId',
+    description: 'UUID da conta a pagar',
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
+  @ApiParam({
+    name: 'installmentId',
+    description: 'UUID da parcela a atualizar',
+    example: 'i1i2i3i4-e5f6-7890-abcd-ef1234567890',
+  })
+  @ApiBody({ type: UpdateInstallmentBffDto })
+  @ApiResponse({ status: 200, description: 'Parcela atualizada com sucesso.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Dados inválidos ou parcela não pode ser editada.',
+  })
+  @ApiResponse({ status: 401, description: 'Token inválido ou expirado.' })
+  @ApiResponse({ status: 404, description: 'Parcela não encontrada.' })
+  async updateInstallment(
+    @CurrentUser('accessToken') accessToken: string,
+    @Param('payableId') payableId: string,
+    @Param('installmentId') installmentId: string,
+    @Body() dto: UpdateInstallmentBffDto
+  ) {
+    return this.payablesService.updateInstallment(
       accessToken,
       payableId,
       installmentId,

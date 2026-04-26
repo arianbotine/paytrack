@@ -42,6 +42,7 @@ interface PaymentModalProps {
   loading?: boolean;
   title: string;
   defaultAmount?: number;
+  maxAmount?: number;
   confirmLabel?: string;
 }
 
@@ -52,6 +53,7 @@ export function PaymentModal({
   loading = false,
   title,
   defaultAmount,
+  maxAmount,
   confirmLabel = 'Confirmar',
 }: PaymentModalProps) {
   const sheetRef = useRef<BottomSheetModal>(null);
@@ -62,6 +64,9 @@ export function PaymentModal({
   const [method, setMethod] = useState<PaymentMethod>('PIX');
   const [paymentDate, setPaymentDate] = useState(todayIso);
   const [showCalendar, setShowCalendar] = useState(false);
+  const effectiveMaxAmount = maxAmount ?? defaultAmount;
+
+  const toCents = (value: number): number => Math.round(value * 100);
 
   useEffect(() => {
     if (visible) {
@@ -93,6 +98,18 @@ export function PaymentModal({
       Alert.alert('Valor inválido', 'Informe um valor maior que zero.');
       return;
     }
+
+    if (
+      effectiveMaxAmount != null &&
+      toCents(parsed) > toCents(effectiveMaxAmount)
+    ) {
+      Alert.alert(
+        'Valor acima do permitido',
+        `O valor máximo para esta parcela é R$ ${effectiveMaxAmount.toFixed(2)}.`
+      );
+      return;
+    }
+
     onConfirm(parsed, method, paymentDate);
   };
 

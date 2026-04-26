@@ -316,14 +316,27 @@ describe('Dashboard - GET (e2e)', () => {
     it('deve incluir installments próximos do vencimento', async () => {
       // Criar receivable com vencimento em breve
       const customer = await customerFactory.create({ organizationId });
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 5); // 5 dias no futuro
+      const todayUTC = new Date();
+      todayUTC.setUTCHours(0, 0, 0, 0);
+
+      const endOfCurrentMonthUTC = new Date(
+        Date.UTC(todayUTC.getUTCFullYear(), todayUTC.getUTCMonth() + 1, 0)
+      );
+
+      const dueDateWithinUpcomingWindow = new Date(todayUTC);
+      dueDateWithinUpcomingWindow.setUTCDate(
+        dueDateWithinUpcomingWindow.getUTCDate() + 5
+      );
+
+      if (dueDateWithinUpcomingWindow > endOfCurrentMonthUTC) {
+        dueDateWithinUpcomingWindow.setTime(todayUTC.getTime());
+      }
 
       const receivable = await receivableFactory.create({
         organizationId,
         customerId: customer.id,
         amount: 300,
-        dueDate: futureDate,
+        dueDate: dueDateWithinUpcomingWindow,
         status: 'PENDING',
       });
 
@@ -331,9 +344,9 @@ describe('Dashboard - GET (e2e)', () => {
       expect(receivable).toHaveProperty('id');
       expect(receivable.amount.toNumber()).toBe(300);
       expect(receivable.status).toBe('PENDING');
-      expect(receivable.installments[0].dueDate.getTime()).toBeGreaterThan(
-        Date.now()
-      ); // Data futura
+      expect(
+        receivable.installments[0].dueDate.getTime()
+      ).toBeGreaterThanOrEqual(todayUTC.getTime()); // Data futura
 
       const response = await request(app.getHttpServer())
         .get('/api/dashboard')
@@ -341,6 +354,9 @@ describe('Dashboard - GET (e2e)', () => {
         .expect(200);
 
       expect(response.body.receivableInstallments.upcoming).toHaveLength(1);
+      expect(response.body.receivableInstallments.upcoming[0].id).toBe(
+        receivable.id
+      );
       expect(response.body.receivableInstallments.upcoming[0]).toHaveProperty(
         'amount'
       );

@@ -5,6 +5,7 @@ import {
   ReceivableFilterDto,
   QuickReceiveDto,
   CreateReceivableBffDto,
+  UpdateInstallmentBffDto,
 } from './receivables.dto';
 
 /**
@@ -46,7 +47,9 @@ interface BackendReceivable {
     installmentNumber: number;
     dueDate: string;
     amount: number;
-    /** Available in payable installments; not in receivable installments. */
+    /** Receivable installments use receivedAmount in backend responses. */
+    receivedAmount?: number;
+    /** Backward compatibility in case some responses still expose paidAmount. */
     paidAmount?: number;
     /** Backend-computed remaining (null when PAID). Present in receivable installments. */
     remaining?: number | null;
@@ -218,6 +221,25 @@ export class ReceivablesService {
   }
 
   /**
+   * Update a receivable installment (amount and/or notes).
+   */
+  async updateInstallment(
+    accessToken: string,
+    receivableId: string,
+    installmentId: string,
+    dto: UpdateInstallmentBffDto
+  ): Promise<unknown> {
+    const payload: Record<string, unknown> = {};
+    if (dto.amount !== undefined) payload.amount = dto.amount;
+    if (dto.notes !== undefined) payload.notes = dto.notes;
+    return this.httpClient.patch<unknown>(
+      `/receivables/${receivableId}/installments/${installmentId}`,
+      payload,
+      accessToken
+    );
+  }
+
+  /**
    * Get payment history for a receivable.
    */
   async getPayments(accessToken: string, id: string) {
@@ -242,7 +264,8 @@ export class ReceivablesService {
     // Compute remaining amount: use backend's field if present, else calculate
     const nextDueAmount = nextInstallment
       ? (nextInstallment.remaining ??
-        nextInstallment.amount - (nextInstallment.paidAmount ?? 0))
+        nextInstallment.amount -
+          (nextInstallment.receivedAmount ?? nextInstallment.paidAmount ?? 0))
       : null;
 
     return {
@@ -274,15 +297,14 @@ export class ReceivablesService {
       category: receivable.category || null,
       tags: flattenTags(receivable.tags),
       installments: receivable.installments.map(i => {
-        // Backend may return 'remaining' directly (null when PAID = 0 remaining)
-        const remaining = i.remaining ?? 0;
-        const paidAmount = i.paidAmount ?? i.amount - remaining;
+        const receivedAmount = i.receivedAmount ?? i.paidAmount ?? 0;
+        const remaining = i.remaining ?? Math.max(i.amount - receivedAmount, 0);
         return {
           id: i.id,
           installmentNumber: i.installmentNumber,
           dueDate: i.dueDate.split('T')[0],
           amount: i.amount,
-          paidAmount,
+          paidAmount: receivedAmount,
           remaining,
           status: i.status,
           notes: i.notes || null,

@@ -12,7 +12,7 @@ interface AuthState {
   setAuth: (
     user: User,
     accessToken: string,
-    refreshToken: string
+    refreshToken?: string | null
   ) => Promise<void>;
   setTokens: (accessToken: string, refreshToken: string) => Promise<void>;
   setUser: (user: User) => void;
@@ -27,7 +27,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: true,
 
   setAuth: async (user, accessToken, refreshToken) => {
-    await secureStorage.setItem('refreshToken', refreshToken);
+    // Keep the previously stored refresh token if backend/BFF omits a new one.
+    if (refreshToken) {
+      await secureStorage.setItem('refreshToken', refreshToken);
+    }
     await secureStorage.setItem('user', JSON.stringify(user));
 
     set({

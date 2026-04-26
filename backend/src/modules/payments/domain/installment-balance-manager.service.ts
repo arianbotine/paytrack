@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { Prisma, AccountStatus } from '@prisma/client';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
 import { Decimal } from '@prisma/client/runtime/library';
+import { MONEY_COMPARISON_THRESHOLD } from '../../../shared/constants';
 
 /**
  * Serviço de domínio para gerenciar atualizações de saldo de parcelas
@@ -9,6 +10,18 @@ import { Decimal } from '@prisma/client/runtime/library';
  */
 @Injectable()
 export class InstallmentBalanceManager {
+  private validateAmountDoesNotExceedRemaining(
+    amountToAdd: number,
+    remainingAmount: number,
+    accountType: 'pagar' | 'receber'
+  ): void {
+    if (amountToAdd - remainingAmount > MONEY_COMPARISON_THRESHOLD) {
+      throw new BadRequestException(
+        `O valor informado excede o valor restante da parcela a ${accountType}. Máximo permitido: ${remainingAmount.toFixed(2)}`
+      );
+    }
+  }
+
   /**
    * Calcula o status de uma parcela com base no valor pago/recebido
    * Nota: Vencimento não é mais um status, será calculado separadamente via isOverdue()
@@ -43,6 +56,16 @@ export class InstallmentBalanceManager {
     if (!installment) {
       throw new BadRequestException('Parcela de conta a pagar não encontrada');
     }
+
+    const remainingAmount = Math.max(
+      0,
+      Number(installment.amount) - Number(installment.paidAmount)
+    );
+    this.validateAmountDoesNotExceedRemaining(
+      amountToAdd,
+      remainingAmount,
+      'pagar'
+    );
 
     const newPaidAmount = Number(installment.paidAmount) + amountToAdd;
     const totalAmount = Number(installment.amount);
@@ -81,6 +104,16 @@ export class InstallmentBalanceManager {
         'Parcela de conta a receber não encontrada'
       );
     }
+
+    const remainingAmount = Math.max(
+      0,
+      Number(installment.amount) - Number(installment.receivedAmount)
+    );
+    this.validateAmountDoesNotExceedRemaining(
+      amountToAdd,
+      remainingAmount,
+      'receber'
+    );
 
     const newReceivedAmount = Number(installment.receivedAmount) + amountToAdd;
     const totalAmount = Number(installment.amount);

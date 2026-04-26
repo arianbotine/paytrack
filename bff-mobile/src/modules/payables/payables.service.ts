@@ -5,6 +5,7 @@ import {
   PayableFilterDto,
   QuickPayDto,
   CreatePayableBffDto,
+  UpdateInstallmentBffDto,
 } from './payables.dto';
 
 /**
@@ -215,6 +216,25 @@ export class PayablesService {
       payload,
       accessToken,
       { headers: { 'idempotency-key': randomUUID() } }
+    );
+  }
+
+  /**
+   * Update a payable installment (amount and/or notes).
+   */
+  async updateInstallment(
+    accessToken: string,
+    payableId: string,
+    installmentId: string,
+    dto: UpdateInstallmentBffDto
+  ): Promise<unknown> {
+    const payload: Record<string, unknown> = {};
+    if (dto.amount !== undefined) payload.amount = dto.amount;
+    if (dto.notes !== undefined) payload.notes = dto.notes;
+    return this.httpClient.patch<unknown>(
+      `/payables/${payableId}/installments/${installmentId}`,
+      payload,
+      accessToken
     );
   }
 

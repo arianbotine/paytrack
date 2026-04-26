@@ -12,3 +12,4 @@ export { PaymentMethodPicker } from './PaymentMethodPicker';
 export { WakingUpBanner } from './WakingUpBanner';
 export { CalendarPicker } from './CalendarPicker';
 export { AppVersionLabel } from './AppVersionLabel';
+export { EditInstallmentSheet } from './EditInstallmentSheet';
