@@ -224,6 +224,7 @@ model Payable {
   installments PayableInstallment[]
 
   @@index([organizationId, status])
+  @@index([organizationId, createdAt])
   @@index([vendorId])
   @@index([categoryId])
   @@index([organizationId, categoryId])
@@ -281,6 +282,7 @@ model Receivable {
   installments ReceivableInstallment[]
 
   @@index([organizationId, status])
+  @@index([organizationId, createdAt])
   @@index([customerId])
   @@index([categoryId])
   @@index([organizationId, categoryId])
