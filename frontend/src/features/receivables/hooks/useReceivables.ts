@@ -56,8 +56,6 @@ interface UseReceivablesParams {
   installmentDueDateFrom?: string;
   installmentDueDateTo?: string;
   nextDueMonth?: string;
-  page: number;
-  rowsPerPage: number;
 }
 
 export const useReceivables = (params: UseReceivablesParams) => {

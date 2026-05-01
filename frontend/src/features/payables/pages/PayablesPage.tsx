@@ -48,8 +48,6 @@ export const PayablesPage: React.FC = () => {
     []
   );
   const [nextDueMonth, setNextDueMonth] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Helper para calcular data de ontem em formato YYYY-MM-DD
   const getYesterdayDate = (): string => {
@@ -60,9 +58,12 @@ export const PayablesPage: React.FC = () => {
 
   // Queries
   const {
-    data: payablesData,
+    data: payables,
     isLoading,
     error,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
   } = usePayables({
     status: statusFilter,
     vendorId: vendorFilter,
@@ -71,8 +72,6 @@ export const PayablesPage: React.FC = () => {
     installmentTagIds: installmentTagFilters,
     installmentDueDateTo: showOverdueOnly ? getYesterdayDate() : undefined,
     nextDueMonth: nextDueMonth || undefined,
-    page,
-    rowsPerPage,
   });
 
   const { data: vendors = [] } = useVendors();
@@ -175,36 +174,22 @@ export const PayablesPage: React.FC = () => {
 
   const handleStatusChange = useCallback((status: string[]) => {
     setStatusFilter(status);
-    setPage(0);
   }, []);
 
   const handleVendorChange = useCallback((vendorId: string | null) => {
     setVendorFilter(vendorId);
-    setPage(0);
   }, []);
 
   const handleCategoryChange = useCallback((categoryId: string | null) => {
     setCategoryFilter(categoryId);
-    setPage(0);
   }, []);
 
   const handleTagsChange = useCallback((tagIds: string[]) => {
     setTagFilters(tagIds);
-    setPage(0);
   }, []);
 
   const handleInstallmentTagsChange = useCallback((tagIds: string[]) => {
     setInstallmentTagFilters(tagIds);
-    setPage(0);
-  }, []);
-
-  const handlePageChange = useCallback((newPage: number) => {
-    setPage(newPage);
-  }, []);
-
-  const handleRowsPerPageChange = useCallback((newRowsPerPage: number) => {
-    setRowsPerPage(newRowsPerPage);
-    setPage(0);
   }, []);
 
   const handleSubmit = useCallback(
@@ -287,9 +272,6 @@ export const PayablesPage: React.FC = () => {
     [updateInstallmentMutation, selectedPayable, selectedInstallment]
   );
 
-  const payables = payablesData?.data || [];
-  const totalCount = payablesData?.total || 0;
-
   return (
     <AnimatedPage>
       <Box>
@@ -327,12 +309,10 @@ export const PayablesPage: React.FC = () => {
 
         <PayablesTable
           payables={payables}
-          totalCount={totalCount}
-          page={page}
-          rowsPerPage={rowsPerPage}
           isLoading={isLoading}
-          onPageChange={handlePageChange}
-          onRowsPerPageChange={handleRowsPerPageChange}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          onLoadMore={fetchNextPage}
           onEdit={handleOpenDialog}
           onDelete={handleDelete}
           onPayment={handlePayment}

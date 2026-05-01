@@ -1,4 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useQuery,
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { useUIStore } from '../../lib/stores/uiStore';
 
@@ -70,9 +75,9 @@ interface UseAccountsParams {
   installmentDueDateFrom?: string;
   installmentDueDateTo?: string;
   nextDueMonth?: string;
-  page: number;
-  rowsPerPage: number;
 }
+
+const PAGE_SIZE = 20;
 
 export const useAccounts = <T>(
   config: UseAccountsConfig,
@@ -80,7 +85,7 @@ export const useAccounts = <T>(
 ) => {
   const keys = createAccountKeys(config.queryKeyPrefix);
 
-  return useQuery({
+  const infiniteQuery = useInfiniteQuery({
     queryKey: keys.list({
       status: params.status,
       vendorId: params.vendorId,
@@ -91,13 +96,12 @@ export const useAccounts = <T>(
       installmentDueDateFrom: params.installmentDueDateFrom,
       installmentDueDateTo: params.installmentDueDateTo,
       nextDueMonth: params.nextDueMonth,
-      page: params.page,
-      rowsPerPage: params.rowsPerPage,
     }),
-    queryFn: async (): Promise<BaseResponse<T>> => {
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }): Promise<BaseResponse<T>> => {
       const queryParams: Record<string, string | number> = {
-        skip: params.page * params.rowsPerPage,
-        take: params.rowsPerPage,
+        skip: pageParam as number,
+        take: PAGE_SIZE,
       };
 
       // Handle status - pode ser string ou array
@@ -113,35 +117,33 @@ export const useAccounts = <T>(
       }
 
       // Handle other filters
-      if (params.vendorId) {
-        queryParams.vendorId = params.vendorId;
-      }
-      if (params.customerId) {
-        queryParams.customerId = params.customerId;
-      }
-      if (params.categoryId) {
-        queryParams.categoryId = params.categoryId;
-      }
-      if (params.tagIds && params.tagIds.length > 0) {
+      if (params.vendorId) queryParams.vendorId = params.vendorId;
+      if (params.customerId) queryParams.customerId = params.customerId;
+      if (params.categoryId) queryParams.categoryId = params.categoryId;
+      if (params.tagIds && params.tagIds.length > 0)
         queryParams.tagIds = params.tagIds.join(',');
-      }
-      if (params.installmentTagIds && params.installmentTagIds.length > 0) {
+      if (params.installmentTagIds && params.installmentTagIds.length > 0)
         queryParams.installmentTagIds = params.installmentTagIds.join(',');
-      }
-      if (params.installmentDueDateFrom) {
+      if (params.installmentDueDateFrom)
         queryParams.installmentDueDateFrom = params.installmentDueDateFrom;
-      }
-      if (params.installmentDueDateTo) {
+      if (params.installmentDueDateTo)
         queryParams.installmentDueDateTo = params.installmentDueDateTo;
-      }
-      if (params.nextDueMonth) {
-        queryParams.nextDueMonth = params.nextDueMonth;
-      }
+      if (params.nextDueMonth) queryParams.nextDueMonth = params.nextDueMonth;
 
       const response = await api.get(config.endpoint, { params: queryParams });
       return response.data;
     },
+    getNextPageParam: (lastPage, allPages) => {
+      const loadedCount = allPages.flatMap(p => p.data).length;
+      return loadedCount < lastPage.total ? loadedCount : undefined;
+    },
   });
+
+  return {
+    ...infiniteQuery,
+    data: infiniteQuery.data?.pages.flatMap(p => p.data) ?? [],
+    total: infiniteQuery.data?.pages[0]?.total ?? 0,
+  };
 };
 
 // ============================================================

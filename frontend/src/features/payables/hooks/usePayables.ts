@@ -56,8 +56,6 @@ interface UsePayablesParams {
   installmentDueDateFrom?: string;
   installmentDueDateTo?: string;
   nextDueMonth?: string;
-  page: number;
-  rowsPerPage: number;
 }
 
 export const usePayables = (params: UsePayablesParams) => {

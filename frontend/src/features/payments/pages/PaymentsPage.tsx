@@ -26,19 +26,21 @@ export const PaymentsPage: React.FC = () => {
   const [customerFilter, setCustomerFilter] = useState<string | null>(null);
   const [dateFromFilter, setDateFromFilter] = useState<string | null>(null);
   const [dateToFilter, setDateToFilter] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Queries
-  const { data: paymentsData, isLoading } = usePayments({
+  const {
+    data: payments,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = usePayments({
     paymentMethod: methodFilter,
     type: typeFilter,
     vendorId: vendorFilter,
     customerId: customerFilter,
     paymentDateFrom: dateFromFilter,
     paymentDateTo: dateToFilter,
-    page,
-    rowsPerPage,
   });
 
   const { data: vendors = [] } = useVendors();
@@ -77,48 +79,29 @@ export const PaymentsPage: React.FC = () => {
     }
   }, [deleteMutation, selectedPayment]);
 
-  // Filter handlers - resetam paginação
   const handleMethodChange = useCallback((methods: string[]) => {
     setMethodFilter(methods);
-    setPage(0);
   }, []);
 
   const handleTypeChange = useCallback((type: string | null) => {
     setTypeFilter(type);
-    setPage(0);
   }, []);
 
   const handleVendorChange = useCallback((vendorId: string | null) => {
     setVendorFilter(vendorId);
-    setPage(0);
   }, []);
 
   const handleCustomerChange = useCallback((customerId: string | null) => {
     setCustomerFilter(customerId);
-    setPage(0);
   }, []);
 
   const handleDateFromChange = useCallback((date: string | null) => {
     setDateFromFilter(date);
-    setPage(0);
   }, []);
 
   const handleDateToChange = useCallback((date: string | null) => {
     setDateToFilter(date);
-    setPage(0);
   }, []);
-
-  const handlePageChange = useCallback((newPage: number) => {
-    setPage(newPage);
-  }, []);
-
-  const handleRowsPerPageChange = useCallback((newRowsPerPage: number) => {
-    setRowsPerPage(newRowsPerPage);
-    setPage(0);
-  }, []);
-
-  const payments = paymentsData?.data || [];
-  const total = paymentsData?.total || 0;
 
   return (
     <AnimatedPage>
@@ -148,15 +131,11 @@ export const PaymentsPage: React.FC = () => {
         <PaymentsTable
           payments={payments}
           isLoading={isLoading}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          onLoadMore={fetchNextPage}
           onEdit={handleEdit}
           onDelete={handleDelete}
-          page={page}
-          rowsPerPage={rowsPerPage}
-          total={total}
-          onPageChange={(_e, newPage) => handlePageChange(newPage)}
-          onRowsPerPageChange={e =>
-            handleRowsPerPageChange(Number.parseInt(e.target.value, 10))
-          }
         />
 
         <EditPaymentDialog

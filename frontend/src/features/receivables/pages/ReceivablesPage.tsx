@@ -48,8 +48,6 @@ export const ReceivablesPage: React.FC = () => {
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [showOverdueOnly, setShowOverdueOnly] = useState(false);
   const [nextDueMonth, setNextDueMonth] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [installmentTagFilters, setInstallmentTagFilters] = useState<string[]>(
     []
   );
@@ -68,9 +66,12 @@ export const ReceivablesPage: React.FC = () => {
 
   // Queries
   const {
-    data: receivablesData,
+    data: receivables,
     isLoading,
     error,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
   } = useReceivables({
     status: statusFilter,
     customerId: customerFilter,
@@ -79,8 +80,6 @@ export const ReceivablesPage: React.FC = () => {
     installmentTagIds: installmentTagFilters,
     installmentDueDateTo: showOverdueOnly ? getYesterdayDate() : undefined,
     nextDueMonth: nextDueMonth || undefined,
-    page,
-    rowsPerPage,
   });
 
   const { data: customers = [] } = useCustomers();
@@ -184,36 +183,22 @@ export const ReceivablesPage: React.FC = () => {
 
   const handleStatusChange = useCallback((status: string[]) => {
     setStatusFilter(status);
-    setPage(0);
   }, []);
 
   const handleCustomerChange = useCallback((customerId: string | null) => {
     setCustomerFilter(customerId);
-    setPage(0);
   }, []);
 
   const handleCategoryChange = useCallback((categoryId: string | null) => {
     setCategoryFilter(categoryId);
-    setPage(0);
   }, []);
 
   const handleTagsChange = useCallback((tagIds: string[]) => {
     setTagFilters(tagIds);
-    setPage(0);
   }, []);
 
   const handleInstallmentTagsChange = useCallback((tagIds: string[]) => {
     setInstallmentTagFilters(tagIds);
-    setPage(0);
-  }, []);
-
-  const handlePageChange = useCallback((newPage: number) => {
-    setPage(newPage);
-  }, []);
-
-  const handleRowsPerPageChange = useCallback((newRowsPerPage: number) => {
-    setRowsPerPage(newRowsPerPage);
-    setPage(0);
   }, []);
 
   const handleSubmit = useCallback(
@@ -304,9 +289,6 @@ export const ReceivablesPage: React.FC = () => {
     [updateInstallmentMutation, editingReceivable, selectedInstallment]
   );
 
-  const receivables = receivablesData?.data || [];
-  const totalCount = receivablesData?.total || 0;
-
   return (
     <AnimatedPage>
       <Box>
@@ -344,12 +326,10 @@ export const ReceivablesPage: React.FC = () => {
 
         <ReceivablesTable
           receivables={receivables}
-          totalCount={totalCount}
-          page={page}
-          rowsPerPage={rowsPerPage}
           isLoading={isLoading}
-          onPageChange={handlePageChange}
-          onRowsPerPageChange={handleRowsPerPageChange}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          onLoadMore={fetchNextPage}
           onEdit={handleOpenDialog}
           onDelete={handleDelete}
           onPayment={handlePayment}

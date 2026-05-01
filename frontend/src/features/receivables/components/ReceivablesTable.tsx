@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -12,7 +12,7 @@ import {
   Chip,
   Tooltip,
   Typography,
-  TablePagination,
+  CircularProgress,
   Collapse,
   LinearProgress,
   Card,
@@ -52,12 +52,10 @@ import type { Receivable, ReceivableInstallment } from '../types';
 
 interface ReceivablesTableProps {
   receivables: Receivable[];
-  totalCount: number;
-  page: number;
-  rowsPerPage: number;
   isLoading: boolean;
-  onPageChange: (page: number) => void;
-  onRowsPerPageChange: (rowsPerPage: number) => void;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  onLoadMore?: () => void;
   onEdit: (receivable: Receivable) => void;
   onDelete: (receivable: Receivable) => void;
   onPayment: (item: Receivable | ReceivableInstallment) => void;
@@ -86,12 +84,10 @@ const MotionTableRow = motion.create(TableRow);
 
 export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
   receivables,
-  totalCount,
-  page,
-  rowsPerPage,
   isLoading,
-  onPageChange,
-  onRowsPerPageChange,
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadMore,
   onEdit,
   onDelete,
   onPayment,
@@ -110,6 +106,23 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
   const [editAmount, setEditAmount] = useState<number | null>(null);
   const [editingDueDate, setEditingDueDate] = useState<string | null>(null);
   const [editDueDate, setEditDueDate] = useState<string>('');
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          onLoadMore?.();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, onLoadMore]);
 
   const filteredAccounts = receivables;
 
@@ -708,7 +721,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {isLoading && <TableSkeleton columns={6} rows={rowsPerPage} />}
+              {isLoading && <TableSkeleton columns={6} rows={5} />}
               {!isLoading && filteredAccounts.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6}>
@@ -1474,26 +1487,18 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
         </TableContainer>
       )}
 
-      {/* Paginação compartilhada */}
-      {!isLoading && filteredAccounts.length > 0 && (
-        <Paper sx={{ mt: isMobile ? 2 : 0, borderRadius: isMobile ? 2 : 0 }}>
-          <TablePagination
-            component="div"
-            count={totalCount}
-            page={page}
-            onPageChange={(_, newPage) => onPageChange(newPage)}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={e =>
-              onRowsPerPageChange(Number.parseInt(e.target.value, 10))
-            }
-            rowsPerPageOptions={[10, 25, 50, 100]}
-            labelRowsPerPage="Linhas por página:"
-            labelDisplayedRows={({ from, to, count }) =>
-              `${from}-${to} de ${count === -1 ? 'mais de ' + to : count}`
-            }
-          />
-        </Paper>
-      )}
+      {/* Infinite scroll sentinel */}
+      <Box
+        ref={sentinelRef}
+        sx={{ py: 2, display: 'flex', justifyContent: 'center' }}
+      >
+        {isFetchingNextPage && <CircularProgress size={28} />}
+        {!isLoading && !hasNextPage && filteredAccounts.length > 0 && (
+          <Typography variant="caption" color="text.secondary">
+            Todos os registros foram carregados
+          </Typography>
+        )}
+      </Box>
     </Box>
   );
 };

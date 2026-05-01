@@ -1,4 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useQuery,
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { api } from '../../../lib/api';
 import { useUIStore } from '../../../lib/stores/uiStore';
 import { toUTCDatetime } from '../../../shared/utils/dateUtils';
@@ -30,12 +35,12 @@ interface UsePaymentsParams {
   customerId?: string | null;
   paymentDateFrom?: string | null;
   paymentDateTo?: string | null;
-  page: number;
-  rowsPerPage: number;
 }
 
+const PAYMENTS_PAGE_SIZE = 20;
+
 export const usePayments = (params: UsePaymentsParams) => {
-  return useQuery({
+  const infiniteQuery = useInfiniteQuery({
     queryKey: paymentKeys.list({
       paymentMethod: params.paymentMethod,
       type: params.type,
@@ -43,10 +48,9 @@ export const usePayments = (params: UsePaymentsParams) => {
       customerId: params.customerId,
       paymentDateFrom: params.paymentDateFrom,
       paymentDateTo: params.paymentDateTo,
-      page: params.page,
-      rowsPerPage: params.rowsPerPage,
     }),
-    queryFn: async (): Promise<PaymentsResponse> => {
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }): Promise<PaymentsResponse> => {
       const queryParams = new URLSearchParams();
 
       if (params.paymentMethod && params.paymentMethod.length > 0) {
@@ -68,19 +72,28 @@ export const usePayments = (params: UsePaymentsParams) => {
         queryParams.append('paymentDateTo', params.paymentDateTo);
       }
 
-      const skip = params.page * params.rowsPerPage;
-      queryParams.append('skip', skip.toString());
-      queryParams.append('take', params.rowsPerPage.toString());
+      queryParams.append('skip', (pageParam as number).toString());
+      queryParams.append('take', PAYMENTS_PAGE_SIZE.toString());
 
       const response = await api.get(`/payments?${queryParams.toString()}`);
       return response.data;
     },
-    staleTime: 0, // Dados sempre considerados stale (sem cache)
-    gcTime: 0, // Remove dados do cache imediatamente após desmontar
-    refetchOnWindowFocus: true, // Refetch quando a janela ganha foco
-    refetchOnReconnect: true, // Refetch quando reconecta
-    refetchInterval: 30000, // Refetch a cada 30 segundos para dados em tempo real
+    getNextPageParam: (lastPage, allPages) => {
+      const loadedCount = allPages.flatMap(p => p.data).length;
+      return loadedCount < lastPage.total ? loadedCount : undefined;
+    },
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 30000,
   });
+
+  return {
+    ...infiniteQuery,
+    data: infiniteQuery.data?.pages.flatMap(p => p.data) ?? [],
+    total: infiniteQuery.data?.pages[0]?.total ?? 0,
+  };
 };
 
 // ============================================================

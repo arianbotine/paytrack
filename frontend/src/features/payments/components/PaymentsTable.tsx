@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -8,7 +8,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TablePagination,
+  CircularProgress,
   IconButton,
   Chip,
   Tooltip,
@@ -40,13 +40,11 @@ import { getMethodLabel } from '../types';
 interface PaymentsTableProps {
   payments: Payment[];
   isLoading: boolean;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  onLoadMore?: () => void;
   onEdit: (payment: Payment) => void;
   onDelete: (payment: Payment) => void;
-  page: number;
-  rowsPerPage: number;
-  total: number;
-  onPageChange: (event: unknown, newPage: number) => void;
-  onRowsPerPageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 const MotionTableRow = motion.create(TableRow);
@@ -303,14 +301,29 @@ PaymentRow.displayName = 'PaymentRow';
 export const PaymentsTable: React.FC<PaymentsTableProps> = ({
   payments,
   isLoading,
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadMore,
   onEdit,
   onDelete,
-  page,
-  rowsPerPage,
-  total,
-  onPageChange,
-  onRowsPerPageChange,
 }) => {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          onLoadMore?.();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, onLoadMore]);
+
   const renderTableBody = () => {
     if (isLoading) {
       return <TableSkeleton columns={7} rows={5} />;
@@ -363,22 +376,17 @@ export const PaymentsTable: React.FC<PaymentsTableProps> = ({
           <TableBody>{renderTableBody()}</TableBody>
         </Table>
       </TableContainer>
-      <TablePagination
-        component="div"
-        count={total}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        onPageChange={onPageChange}
-        onRowsPerPageChange={onRowsPerPageChange}
-        rowsPerPageOptions={[5, 10, 25, 50]}
-        labelRowsPerPage="Itens por página:"
-        labelDisplayedRows={({ from, to, count }) => {
-          if (count === -1) {
-            return `${from}-${to} de mais de ${to}`;
-          }
-          return `${from}-${to} de ${count}`;
-        }}
-      />
+      <Box
+        ref={sentinelRef}
+        sx={{ py: 2, display: 'flex', justifyContent: 'center' }}
+      >
+        {isFetchingNextPage && <CircularProgress size={28} />}
+        {!isLoading && !hasNextPage && payments.length > 0 && (
+          <Typography variant="caption" color="text.secondary">
+            Todos os registros foram carregados
+          </Typography>
+        )}
+      </Box>
     </Paper>
   );
 };
