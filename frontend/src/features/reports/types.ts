@@ -81,3 +81,54 @@ export interface PaymentsReportDetailsResponse {
   data: PaymentsReportDetailItem[];
   total: number;
 }
+
+// ============================================================
+// Installment Items Report
+// ============================================================
+
+export interface InstallmentItemTag {
+  id: string;
+  name: string;
+  color: string | null;
+}
+
+export interface InstallmentItemReportRow {
+  itemId: string;
+  itemDescription: string;
+  itemAmount: number;
+  itemSortOrder: number;
+  itemCreatedAt: string;
+  tags: InstallmentItemTag[];
+  installmentId: string;
+  installmentNumber: number;
+  totalInstallments: number;
+  installmentAmount: number;
+  installmentDueDate: string;
+  installmentStatus: string;
+  installmentPaidAmount: number;
+  installmentNotes: string | null;
+  payableId: string;
+  vendorName: string;
+  categoryName: string | null;
+  payableCreatedAt: string;
+  payableNotes: string | null;
+}
+
+export interface InstallmentItemsReportSummary {
+  totalItems: number;
+  totalAmount: number;
+  uniqueInstallments: number;
+  uniquePayables: number;
+}
+
+export interface InstallmentItemsReportResponse {
+  data: InstallmentItemReportRow[];
+  total: number;
+  summary: InstallmentItemsReportSummary;
+}
+
+export interface UseInstallmentItemsReportParams {
+  tagIds: string[];
+  skip?: number;
+  take?: number;
+}

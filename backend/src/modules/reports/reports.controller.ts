@@ -11,6 +11,8 @@ import {
   PaymentsReportFilterDto,
   PaymentsReportResponseDto,
   PaymentsReportDetailsResponseDto,
+  InstallmentItemsReportFilterDto,
+  InstallmentItemsReportResponseDto,
 } from './dto';
 
 @ApiTags('Relatórios')
@@ -49,6 +51,24 @@ export class ReportsController {
     @Query() filters: PaymentsReportFilterDto
   ): Promise<PaymentsReportDetailsResponseDto> {
     return this.reportsService.getPaymentsReportDetails(
+      organizationId,
+      filters
+    );
+  }
+
+  @Get('installment-items')
+  @ApiOperation({ summary: 'Relatório de itens de parcelas por tag' })
+  @ApiResponse({
+    status: 200,
+    description: 'Relatório gerado com sucesso',
+    type: InstallmentItemsReportResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Parâmetros inválidos' })
+  async getInstallmentItemsReport(
+    @CurrentUser('organizationId') organizationId: string,
+    @Query() filters: InstallmentItemsReportFilterDto
+  ): Promise<InstallmentItemsReportResponseDto> {
+    return this.reportsService.getInstallmentItemsReport(
       organizationId,
       filters
     );

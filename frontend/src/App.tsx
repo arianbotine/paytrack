@@ -106,6 +106,11 @@ const PaymentsReportPage = lazy(() =>
     default: m.default,
   }))
 );
+const InstallmentItemsReportPage = lazy(() =>
+  import('./features/reports/pages/InstallmentItemsReportPage').then(m => ({
+    default: m.default,
+  }))
+);
 const OrganizationSettingsPage = lazy(() =>
   import('./features/organization/pages/OrganizationSettingsPage').then(m => ({
     default: m.OrganizationSettingsPage,
@@ -184,6 +189,10 @@ function App() {
             />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="reports/payments" element={<PaymentsReportPage />} />
+            <Route
+              path="reports/installment-items"
+              element={<InstallmentItemsReportPage />}
+            />
             <Route path="payables" element={<PayablesPage />} />
             <Route path="receivables" element={<ReceivablesPage />} />
             <Route path="payments" element={<PaymentsPage />} />

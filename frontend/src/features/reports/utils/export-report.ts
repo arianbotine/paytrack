@@ -2,6 +2,7 @@ import type {
   PaymentsReportResponse,
   PaymentsReportDetailsResponse,
   ReportFilters,
+  InstallmentItemsReportResponse,
 } from '../types';
 
 /**
@@ -350,5 +351,65 @@ export function exportPaymentsReportDetailsToCSV(
 
   const csvContent = convertToCSV([...header, ...rows]);
   const filename = `detalhamento-pagamentos_${filters.startDate}_${filters.endDate}.csv`;
+  downloadCSV(csvContent, filename);
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Pendente',
+  PAID: 'Pago',
+  OVERDUE: 'Vencido',
+  CANCELLED: 'Cancelado',
+  PARTIAL: 'Parcial',
+};
+
+/**
+ * Exporta o relatório de itens de parcelas por tag para CSV
+ */
+export function exportInstallmentItemsReportToCSV(
+  data: InstallmentItemsReportResponse,
+  tagNames: string[]
+): void {
+  const header: string[][] = [
+    ['RELATÓRIO DE ITENS POR TAG'],
+    ['Tags:', tagNames.join(', ')],
+    ['Total de Itens:', data.summary.totalItems.toString()],
+    ['Valor Total:', formatCurrency(data.summary.totalAmount)],
+    ['Parcelas Únicas:', data.summary.uniqueInstallments.toString()],
+    ['Contas Únicas:', data.summary.uniquePayables.toString()],
+    ['Gerado em:', new Date().toLocaleString('pt-BR')],
+    [''],
+    [
+      'Descrição do Item',
+      'Valor do Item',
+      'Tags do Item',
+      'Fornecedor',
+      'Categoria',
+      'Parcela',
+      'Vencimento',
+      'Status',
+      'Valor da Parcela',
+      'Valor Pago',
+      'Obs. Parcela',
+      'Data de Criação do Item',
+    ],
+  ];
+
+  const rows = data.data.map(item => [
+    item.itemDescription,
+    formatCurrency(item.itemAmount),
+    item.tags.map(t => t.name).join(', '),
+    item.vendorName,
+    item.categoryName || '',
+    `${item.installmentNumber}/${item.totalInstallments}`,
+    formatDate(item.installmentDueDate),
+    STATUS_LABELS[item.installmentStatus] || item.installmentStatus,
+    formatCurrency(item.installmentAmount),
+    formatCurrency(item.installmentPaidAmount),
+    item.installmentNotes || '',
+    formatDate(item.itemCreatedAt),
+  ]);
+
+  const csvContent = convertToCSV([...header, ...rows]);
+  const filename = `relatorio-itens-por-tag_${new Date().toISOString().split('T')[0]}.csv`;
   downloadCSV(csvContent, filename);
 }

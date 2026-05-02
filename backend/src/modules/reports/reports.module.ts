@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ReportsController } from './reports.controller';
 import { ReportsService } from './reports.service';
-import { PaymentsReportsRepository } from './repositories';
+import {
+  PaymentsReportsRepository,
+  InstallmentItemsReportRepository,
+} from './repositories';
 import { PeriodCalculator, ReportCalculator } from './domain';
 import {
   GetPaymentsReportUseCase,
   GetPaymentsReportDetailsUseCase,
+  GetInstallmentItemsReportUseCase,
 } from './use-cases';
 import { DatabaseModule } from '../../infrastructure/database/database.module';
 
@@ -15,10 +19,12 @@ import { DatabaseModule } from '../../infrastructure/database/database.module';
   providers: [
     ReportsService,
     PaymentsReportsRepository,
+    InstallmentItemsReportRepository,
     PeriodCalculator,
     ReportCalculator,
     GetPaymentsReportUseCase,
     GetPaymentsReportDetailsUseCase,
+    GetInstallmentItemsReportUseCase,
   ],
   exports: [ReportsService],
 })

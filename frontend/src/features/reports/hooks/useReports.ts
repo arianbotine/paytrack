@@ -4,6 +4,8 @@ import type {
   PaymentsReportResponse,
   PaymentsReportDetailsResponse,
   ReportFilters,
+  InstallmentItemsReportResponse,
+  UseInstallmentItemsReportParams,
 } from '../types';
 
 interface UsePaymentsReportParams extends ReportFilters {
@@ -150,5 +152,34 @@ export const useReportCustomers = () => {
       return data;
     },
     staleTime: 10 * 60 * 1000, // 10 minutos
+  });
+};
+
+export const useInstallmentItemsReport = (
+  params: UseInstallmentItemsReportParams,
+  enabled = true
+) => {
+  return useQuery<
+    InstallmentItemsReportResponse,
+    Error,
+    InstallmentItemsReportResponse
+  >({
+    queryKey: ['reports', 'installment-items', params],
+    queryFn: async (): Promise<InstallmentItemsReportResponse> => {
+      const { data } = await api.get<InstallmentItemsReportResponse>(
+        '/reports/installment-items',
+        {
+          params: {
+            tagIds: params.tagIds.join(','),
+            skip: params.skip ?? 0,
+            take: params.take ?? 50,
+          },
+        }
+      );
+      return data;
+    },
+    enabled: enabled && params.tagIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };

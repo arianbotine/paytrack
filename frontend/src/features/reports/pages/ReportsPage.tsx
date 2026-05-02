@@ -10,9 +10,7 @@ import { alpha, useTheme } from '@mui/material/styles';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import PaymentIcon from '@mui/icons-material/Payment';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import CategoryIcon from '@mui/icons-material/Category';
-import PersonIcon from '@mui/icons-material/Person';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 
 interface ReportCardItem {
   id: string;
@@ -37,28 +35,12 @@ export default function ReportsPage() {
       enabled: true,
     },
     {
-      id: 'cashflow',
-      title: 'Fluxo de Caixa',
-      description: 'Em breve',
-      icon: <TrendingUpIcon fontSize="large" />,
-      path: '/reports/cashflow',
-      enabled: false,
-    },
-    {
-      id: 'categories',
-      title: 'Análise de Categorias',
-      description: 'Em breve',
-      icon: <CategoryIcon fontSize="large" />,
-      path: '/reports/categories',
-      enabled: false,
-    },
-    {
-      id: 'debtors',
-      title: 'Performance de Devedores',
-      description: 'Em breve',
-      icon: <PersonIcon fontSize="large" />,
-      path: '/reports/debtors',
-      enabled: false,
+      id: 'installment-items',
+      title: 'Itens por Tag',
+      description: 'Liste itens de parcelas filtrando por tag',
+      icon: <ListAltIcon fontSize="large" color="primary" />,
+      path: '/reports/installment-items',
+      enabled: true,
     },
   ];
 
