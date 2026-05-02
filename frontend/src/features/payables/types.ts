@@ -22,6 +22,33 @@ export interface Tag {
   color?: string;
 }
 
+export interface InstallmentItemTag {
+  id: string;
+  name: string;
+  color?: string | null;
+}
+
+export interface PayableInstallmentItem {
+  id: string;
+  description: string;
+  amount: number;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  tags: InstallmentItemTag[];
+}
+
+export interface PayableInstallmentItemsSummary {
+  installmentAmount: number;
+  itemsTotal: number;
+  remainingAmountForItems: number;
+}
+
+export interface PayableInstallmentItemsResponse {
+  data: PayableInstallmentItem[];
+  summary: PayableInstallmentItemsSummary;
+}
+
 export type PayableStatus = 'PENDING' | 'PAID' | 'PARTIAL';
 
 export interface PayableInstallment {
@@ -40,6 +67,10 @@ export interface PayableInstallment {
       color?: string;
     };
   }>;
+  lineItems?: PayableInstallmentItem[];
+  lineItemsCount?: number;
+  itemsTotal?: number;
+  remainingAmountForItems?: number;
   isOverdue?: boolean;
   payable?: {
     id: string;

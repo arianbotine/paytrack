@@ -16,6 +16,8 @@ import {
   useCategories,
   useTags,
   usePayableOperations,
+  usePayableInstallmentItems,
+  usePayableInstallmentItemOperations,
 } from '../hooks/usePayables';
 import {
   usePayablePayments,
@@ -78,6 +80,15 @@ export const PayablesPage: React.FC = () => {
   const { data: categories = [] } = useCategories();
   const { data: tags = [] } = useTags();
 
+  const {
+    data: installmentItemsResponse,
+    isLoading: isLoadingInstallmentItems,
+  } = usePayableInstallmentItems(
+    selectedPayable?.id,
+    selectedInstallment?.id,
+    editInstallmentDialogOpen
+  );
+
   // Payment history query - only fetch when dialog is open
   const { data: payments = [], isLoading: isLoadingPayments } =
     usePayablePayments(
@@ -136,6 +147,13 @@ export const PayablesPage: React.FC = () => {
   const { createMutation, isCreating } = usePaymentOperations({
     onCreateSuccess: handleCloseQuickPaymentDialog,
   });
+
+  const {
+    createMutation: createInstallmentItemMutation,
+    updateMutation: updateInstallmentItemMutation,
+    deleteMutation: deleteInstallmentItemMutation,
+    isMutating: isMutatingInstallmentItems,
+  } = usePayableInstallmentItemOperations();
 
   // Handlers
   const handleOpenDialog = useCallback((payable?: Payable) => {
@@ -272,6 +290,53 @@ export const PayablesPage: React.FC = () => {
     [updateInstallmentMutation, selectedPayable, selectedInstallment]
   );
 
+  const handleCreateInstallmentItem = useCallback(
+    (data: { description: string; amount: number; tagIds?: string[] }) => {
+      if (!selectedPayable || !selectedInstallment) return;
+
+      createInstallmentItemMutation.mutate({
+        payableId: selectedPayable.id,
+        installmentId: selectedInstallment.id,
+        data,
+      });
+    },
+    [createInstallmentItemMutation, selectedPayable, selectedInstallment]
+  );
+
+  const handleUpdateInstallmentItem = useCallback(
+    (
+      itemId: string,
+      data: {
+        description?: string;
+        amount?: number;
+        tagIds?: string[];
+      }
+    ) => {
+      if (!selectedPayable || !selectedInstallment) return;
+
+      updateInstallmentItemMutation.mutate({
+        payableId: selectedPayable.id,
+        installmentId: selectedInstallment.id,
+        itemId,
+        data,
+      });
+    },
+    [updateInstallmentItemMutation, selectedPayable, selectedInstallment]
+  );
+
+  const handleDeleteInstallmentItem = useCallback(
+    (itemId: string) => {
+      if (!selectedPayable || !selectedInstallment) return;
+
+      deleteInstallmentItemMutation.mutate({
+        payableId: selectedPayable.id,
+        installmentId: selectedInstallment.id,
+        itemId,
+      });
+    },
+    [deleteInstallmentItemMutation, selectedPayable, selectedInstallment]
+  );
+
   return (
     <AnimatedPage>
       <Box>
@@ -392,6 +457,13 @@ export const PayablesPage: React.FC = () => {
           payable={selectedPayable}
           tags={tags}
           isSubmitting={updateInstallmentMutation.isPending}
+          installmentItems={installmentItemsResponse?.data || []}
+          itemsSummary={installmentItemsResponse?.summary}
+          isLoadingItems={isLoadingInstallmentItems}
+          isMutatingItems={isMutatingInstallmentItems}
+          onCreateItem={handleCreateInstallmentItem}
+          onUpdateItem={handleUpdateInstallmentItem}
+          onDeleteItem={handleDeleteInstallmentItem}
           onSubmit={handleEditInstallmentSubmit}
           onClose={handleCloseEditInstallmentDialog}
         />

@@ -39,6 +39,7 @@ export class PayableDataTransformer {
       installments: payable.installments?.map((inst: any) => ({
         ...inst,
         isOverdue: isOverdue(inst.dueDate),
+        lineItemsCount: inst._count?.lineItems ?? 0,
       })),
     }));
   }

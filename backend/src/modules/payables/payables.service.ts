@@ -4,6 +4,8 @@ import {
   UpdatePayableDto,
   PayableFilterDto,
   UpdateInstallmentDto,
+  CreateInstallmentItemDto,
+  UpdateInstallmentItemDto,
 } from './dto/payable.dto';
 import {
   CreatePayableUseCase,
@@ -13,6 +15,10 @@ import {
   GetPayablePaymentsUseCase,
   DeletePayableInstallmentUseCase,
   UpdatePayableInstallmentUseCase,
+  ListPayableInstallmentItemsUseCase,
+  CreatePayableInstallmentItemUseCase,
+  UpdatePayableInstallmentItemUseCase,
+  DeletePayableInstallmentItemUseCase,
 } from './use-cases';
 import { PayablesRepository } from './repositories';
 
@@ -33,6 +39,10 @@ export class PayablesService {
     private readonly getPayablePaymentsUseCase: GetPayablePaymentsUseCase,
     private readonly deletePayableInstallmentUseCase: DeletePayableInstallmentUseCase,
     private readonly updatePayableInstallmentUseCase: UpdatePayableInstallmentUseCase,
+    private readonly listPayableInstallmentItemsUseCase: ListPayableInstallmentItemsUseCase,
+    private readonly createPayableInstallmentItemUseCase: CreatePayableInstallmentItemUseCase,
+    private readonly updatePayableInstallmentItemUseCase: UpdatePayableInstallmentItemUseCase,
+    private readonly deletePayableInstallmentItemUseCase: DeletePayableInstallmentItemUseCase,
     private readonly payablesRepository: PayablesRepository
   ) {}
 
@@ -53,6 +63,16 @@ export class PayablesService {
               include: {
                 tag: { select: { id: true, name: true, color: true } },
               },
+            },
+            lineItems: {
+              include: {
+                tags: {
+                  include: {
+                    tag: { select: { id: true, name: true, color: true } },
+                  },
+                },
+              },
+              orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
             },
           },
           orderBy: { installmentNumber: 'asc' },
@@ -110,6 +130,62 @@ export class PayablesService {
       installmentId,
       organizationId,
       updateDto
+    );
+  }
+
+  async listInstallmentItems(
+    payableId: string,
+    installmentId: string,
+    organizationId: string
+  ) {
+    return this.listPayableInstallmentItemsUseCase.execute(
+      payableId,
+      installmentId,
+      organizationId
+    );
+  }
+
+  async createInstallmentItem(
+    payableId: string,
+    installmentId: string,
+    organizationId: string,
+    dto: CreateInstallmentItemDto
+  ) {
+    return this.createPayableInstallmentItemUseCase.execute(
+      payableId,
+      installmentId,
+      organizationId,
+      dto
+    );
+  }
+
+  async updateInstallmentItem(
+    payableId: string,
+    installmentId: string,
+    itemId: string,
+    organizationId: string,
+    dto: UpdateInstallmentItemDto
+  ) {
+    return this.updatePayableInstallmentItemUseCase.execute(
+      payableId,
+      installmentId,
+      itemId,
+      organizationId,
+      dto
+    );
+  }
+
+  async deleteInstallmentItem(
+    payableId: string,
+    installmentId: string,
+    itemId: string,
+    organizationId: string
+  ) {
+    return this.deletePayableInstallmentItemUseCase.execute(
+      payableId,
+      installmentId,
+      itemId,
+      organizationId
     );
   }
 }

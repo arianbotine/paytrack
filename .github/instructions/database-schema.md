@@ -23,10 +23,33 @@
 ## Enums
 
 - `UserRole`: OWNER, ADMIN, ACCOUNTANT, VIEWER.
-- `AccountStatus`: PENDING, PARTIAL, PAID.
-- `PaymentMethod`: CASH, CHECK, TRANSFER, etc.
+- `AccountStatus`: PENDING, PARTIAL, PAID. ⚠️ OVERDUE e CANCELLED foram removidos — não existem mais.
+- `PaymentMethod`: CASH, CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER, PIX, BOLETO, CHECK, OTHER, ACCOUNT_DEBIT.
 - `CategoryType`: PAYABLE, RECEIVABLE.
 - `AuditAction`: CREATE, UPDATE, DELETE.
+
+## Nomes reais das tabelas no banco (snake_case)
+
+O Prisma mapeia os modelos para snake_case plural no PostgreSQL. Sempre usar esses nomes em queries SQL diretas:
+
+| Modelo Prisma           | Tabela SQL                |
+| ----------------------- | ------------------------- |
+| `Payable`               | `payables`                |
+| `PayableInstallment`    | `payable_installments`    |
+| `Receivable`            | `receivables`             |
+| `ReceivableInstallment` | `receivable_installments` |
+| `Payment`               | `payments`                |
+| `PaymentAllocation`     | `payment_allocations`     |
+| `Category`              | `categories`              |
+| `Vendor`                | `vendors`                 |
+| `Customer`              | `customers`               |
+| `Tag`                   | `tags`                    |
+| `Organization`          | `organizations`           |
+| `User`                  | `users`                   |
+| `UserOrganization`      | `user_organizations`      |
+| `AuditLog`              | `audit_logs`              |
+
+Colunas também seguem snake_case: `organization_id`, `due_date`, `paid_amount`, `payment_date`, etc.
 
 ## Relations
 

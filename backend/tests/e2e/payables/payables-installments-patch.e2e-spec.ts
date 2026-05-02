@@ -163,6 +163,49 @@ describe('Payables Installments - PATCH (e2e)', () => {
 
         expect(response.body.message).toContain('parcelas pendentes');
       });
+
+      it('deve retornar erro ao reduzir valor da parcela abaixo da soma dos itens detalhados', async () => {
+        const vendorFactory = new VendorFactory(prisma);
+        const vendor = await vendorFactory.create({ organizationId });
+
+        const payableFactory = new PayableFactory(prisma);
+        const payable = await payableFactory.createWithInstallments(1, {
+          organizationId,
+          vendorId: vendor.id,
+          amount: 1000,
+        });
+
+        const installment = payable.installments[0];
+
+        await prisma.payableInstallmentItem.createMany({
+          data: [
+            {
+              organizationId,
+              payableInstallmentId: installment.id,
+              description: 'Item 1',
+              amount: 300,
+              sortOrder: 1,
+            },
+            {
+              organizationId,
+              payableInstallmentId: installment.id,
+              description: 'Item 2',
+              amount: 250,
+              sortOrder: 2,
+            },
+          ],
+        });
+
+        const response = await request(app.getHttpServer())
+          .patch(`/api/payables/${payable.id}/installments/${installment.id}`)
+          .set('Authorization', `Bearer ${accessToken}`)
+          .send({ amount: 500 })
+          .expect(400);
+
+        expect(response.body.message).toContain(
+          'valor da parcela não pode ser menor que a soma dos itens detalhados'
+        );
+      });
     });
 
     describe('Atualização de Data de Vencimento', () => {

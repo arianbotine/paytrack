@@ -197,7 +197,9 @@ export async function setupE2ETest(): Promise<E2ETestContext> {
  *
  * @param context - Contexto do teste a ser limpo
  */
-export async function teardownE2ETest(context: E2ETestContext): Promise<void> {
+export async function teardownE2ETest(
+  context: Partial<E2ETestContext>
+): Promise<void> {
   const {
     app,
     prisma,
@@ -207,10 +209,18 @@ export async function teardownE2ETest(context: E2ETestContext): Promise<void> {
   } = context;
 
   try {
-    await prisma.$executeRawUnsafe(`DROP SCHEMA "${testSchema}" CASCADE`);
+    if (prisma && testSchema) {
+      await prisma.$executeRawUnsafe(`DROP SCHEMA "${testSchema}" CASCADE`);
+    }
   } finally {
-    await prisma.$disconnect();
-    await app.close();
+    if (prisma) {
+      await prisma.$disconnect();
+    }
+
+    if (app) {
+      await app.close();
+    }
+
     if (originalDatabaseUrl) {
       process.env.DATABASE_URL = originalDatabaseUrl;
     }

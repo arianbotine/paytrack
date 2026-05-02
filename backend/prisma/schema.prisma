@@ -71,6 +71,7 @@ model Organization {
   payables              Payable[]
   receivables           Receivable[]
   payableInstallments   PayableInstallment[]
+  payableInstallmentItems PayableInstallmentItem[]
   receivableInstallments ReceivableInstallment[]
   payments              Payment[]
   auditLogs             AuditLog[]
@@ -193,6 +194,7 @@ model Tag {
   payables               PayableTag[]
   receivables            ReceivableTag[]
   payableInstallments    PayableInstallmentTag[]
+  payableInstallmentItems PayableInstallmentItemTag[]
   receivableInstallments ReceivableInstallmentTag[]
 
   @@unique([organizationId, name])
@@ -250,6 +252,7 @@ model PayableInstallment {
   organization Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   allocations  PaymentAllocation[]
   tags         PayableInstallmentTag[]
+  lineItems    PayableInstallmentItem[]
 
   @@index([payableId, installmentNumber])
   @@index([organizationId, status, dueDate])
@@ -354,6 +357,41 @@ model PayableInstallmentTag {
   @@index([tagId])
   @@index([tagId, payableInstallmentId])
   @@map("payable_installment_tags")
+}
+
+model PayableInstallmentItem {
+  id                   String   @id @default(uuid())
+  payableInstallmentId String   @map("payable_installment_id")
+  organizationId       String   @map("organization_id")
+  description          String
+  amount               Decimal  @db.Decimal(15, 2)
+  sortOrder            Int      @default(0) @map("sort_order")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  payableInstallment PayableInstallment     @relation(fields: [payableInstallmentId], references: [id], onDelete: Cascade)
+  organization       Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  tags               PayableInstallmentItemTag[]
+
+  @@index([payableInstallmentId])
+  @@index([organizationId, payableInstallmentId])
+  @@index([payableInstallmentId, sortOrder])
+  @@map("payable_installment_items")
+}
+
+model PayableInstallmentItemTag {
+  payableInstallmentItemId String @map("payable_installment_item_id")
+  tagId                    String @map("tag_id")
+
+  payableInstallmentItem PayableInstallmentItem @relation(fields: [payableInstallmentItemId], references: [id], onDelete: Cascade)
+  tag                   Tag                    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([payableInstallmentItemId, tagId])
+  @@index([payableInstallmentItemId])
+  @@index([tagId])
+  @@index([tagId, payableInstallmentItemId])
+  @@map("payable_installment_item_tags")
 }
 
 model ReceivableInstallmentTag {

@@ -32,6 +32,20 @@ export class PayableInstallmentsRepository {
     });
   }
 
+  async findFirst(
+    where: Prisma.PayableInstallmentWhereInput,
+    options?: {
+      include?: Prisma.PayableInstallmentInclude;
+      select?: Prisma.PayableInstallmentSelect;
+      orderBy?: Prisma.PayableInstallmentOrderByWithRelationInput[];
+    }
+  ) {
+    return this.prisma.payableInstallment.findFirst({
+      where,
+      ...options,
+    });
+  }
+
   async createMany(data: Prisma.PayableInstallmentCreateManyInput[]) {
     return this.prisma.payableInstallment.createMany({ data });
   }

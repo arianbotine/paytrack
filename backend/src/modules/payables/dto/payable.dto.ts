@@ -14,6 +14,8 @@ import {
   ArrayMaxSize,
   ValidateNested,
   Matches,
+  MaxLength,
+  ArrayUnique,
 } from 'class-validator';
 import {
   ApiProperty,
@@ -276,3 +278,44 @@ export class UpdateInstallmentDto {
   @IsOptional()
   tagIds?: string[];
 }
+
+export class CreateInstallmentItemDto {
+  @ApiProperty({ example: 'Bolo de aniversário' })
+  @IsString({ message: 'Descrição é obrigatória' })
+  @MaxLength(200, { message: 'Descrição deve ter no máximo 200 caracteres' })
+  description!: string;
+
+  @ApiProperty({ example: 150.75 })
+  @IsNumber({}, { message: 'Valor deve ser um número válido' })
+  @Min(0.01, { message: 'Valor deve ser maior que zero' })
+  @Type(() => Number)
+  @Transform(({ value }) =>
+    typeof value === 'number' ? Math.round(value * 100) / 100 : value
+  )
+  amount!: number;
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['uuid-tag-1', 'uuid-tag-2'],
+    description: 'Tags específicas do item da parcela',
+  })
+  @IsArray()
+  @ArrayUnique({ message: 'Tags duplicadas não são permitidas' })
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  tagIds?: string[];
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Ordem de exibição do item na parcela',
+  })
+  @IsInt({ message: 'Ordem deve ser um número inteiro' })
+  @Min(0, { message: 'Ordem deve ser maior ou igual a zero' })
+  @Type(() => Number)
+  @IsOptional()
+  sortOrder?: number;
+}
+
+export class UpdateInstallmentItemDto extends PartialType(
+  CreateInstallmentItemDto
+) {}

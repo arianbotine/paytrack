@@ -15,6 +15,8 @@ import {
   UpdatePayableDto,
   PayableFilterDto,
   UpdateInstallmentDto,
+  CreateInstallmentItemDto,
+  UpdateInstallmentItemDto,
 } from './dto/payable.dto';
 import { CurrentUser, Roles } from '../../shared/decorators';
 import { Idempotent } from '../../shared/decorators/idempotent.decorator';
@@ -114,6 +116,73 @@ export class PayablesController {
       installmentId,
       organizationId,
       updateDto
+    );
+  }
+
+  @Get(':payableId/installments/:installmentId/items')
+  @ApiOperation({ summary: 'Listar itens detalhados de uma parcela' })
+  async listInstallmentItems(
+    @Param('payableId') payableId: string,
+    @Param('installmentId') installmentId: string,
+    @CurrentUser('organizationId') organizationId: string
+  ) {
+    return this.payablesService.listInstallmentItems(
+      payableId,
+      installmentId,
+      organizationId
+    );
+  }
+
+  @Post(':payableId/installments/:installmentId/items')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'Criar item detalhado em parcela' })
+  async createInstallmentItem(
+    @Param('payableId') payableId: string,
+    @Param('installmentId') installmentId: string,
+    @CurrentUser('organizationId') organizationId: string,
+    @Body() dto: CreateInstallmentItemDto
+  ) {
+    return this.payablesService.createInstallmentItem(
+      payableId,
+      installmentId,
+      organizationId,
+      dto
+    );
+  }
+
+  @Patch(':payableId/installments/:installmentId/items/:itemId')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'Atualizar item detalhado de parcela' })
+  async updateInstallmentItem(
+    @Param('payableId') payableId: string,
+    @Param('installmentId') installmentId: string,
+    @Param('itemId') itemId: string,
+    @CurrentUser('organizationId') organizationId: string,
+    @Body() dto: UpdateInstallmentItemDto
+  ) {
+    return this.payablesService.updateInstallmentItem(
+      payableId,
+      installmentId,
+      itemId,
+      organizationId,
+      dto
+    );
+  }
+
+  @Delete(':payableId/installments/:installmentId/items/:itemId')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'Excluir item detalhado de parcela' })
+  async deleteInstallmentItem(
+    @Param('payableId') payableId: string,
+    @Param('installmentId') installmentId: string,
+    @Param('itemId') itemId: string,
+    @CurrentUser('organizationId') organizationId: string
+  ) {
+    return this.payablesService.deleteInstallmentItem(
+      payableId,
+      installmentId,
+      itemId,
+      organizationId
     );
   }
 }

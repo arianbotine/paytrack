@@ -139,6 +139,7 @@ export class PayableQueryFilterBuilder {
               vendor: { select: { id: true, name: true } },
             },
           },
+          _count: { select: { lineItems: true } },
         },
         orderBy: { installmentNumber: 'asc' },
       },

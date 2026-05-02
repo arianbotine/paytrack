@@ -97,6 +97,23 @@ export class UpdatePayableInstallmentUseCase {
       } = {};
 
       if (updateDto.amount !== undefined) {
+        const itemsAggregate = await prisma.payableInstallmentItem.aggregate({
+          where: {
+            payableInstallmentId: installmentId,
+            organizationId,
+          },
+          _sum: {
+            amount: true,
+          },
+        });
+
+        const itemsTotal = Number(itemsAggregate._sum.amount || 0);
+        if (itemsTotal > Number(updateDto.amount)) {
+          throw new BadRequestException(
+            'O valor da parcela não pode ser menor que a soma dos itens detalhados'
+          );
+        }
+
         updateData.amount = MoneyUtils.toDecimal(updateDto.amount);
       }
 
@@ -193,6 +210,16 @@ export class UpdatePayableInstallmentUseCase {
               include: {
                 tag: { select: { id: true, name: true, color: true } },
               },
+            },
+            lineItems: {
+              include: {
+                tags: {
+                  include: {
+                    tag: { select: { id: true, name: true, color: true } },
+                  },
+                },
+              },
+              orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
             },
           },
           orderBy: { installmentNumber: 'asc' },

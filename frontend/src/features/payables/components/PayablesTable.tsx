@@ -39,6 +39,7 @@ import {
   EditNote as EditNoteIcon,
   Comment as CommentIcon,
   LocalOffer as LocalOfferIcon,
+  ListAlt as ListAltIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StatusChip } from '../../../shared/components/StatusChip';
@@ -259,6 +260,59 @@ const MobileInstallmentItem: React.FC<MobileInstallmentItemProps> = ({
       {installment.notes && (
         <Tooltip title={installment.notes}>
           <CommentIcon fontSize="small" color="action" />
+        </Tooltip>
+      )}
+      {(installment.lineItemsCount ?? 0) > 0 && (
+        <Tooltip
+          arrow
+          title={
+            <Box>
+              <Typography
+                variant="caption"
+                fontWeight={600}
+                display="block"
+                sx={{ mb: 0.5 }}
+              >
+                {installment.lineItemsCount}{' '}
+                {installment.lineItemsCount === 1
+                  ? 'item detalhado'
+                  : 'itens detalhados'}
+              </Typography>
+              {(installment.lineItems ?? []).slice(0, 5).map(li => (
+                <Typography
+                  key={li.id}
+                  variant="caption"
+                  display="block"
+                  sx={{ opacity: 0.85 }}
+                >
+                  • {li.description} — {formatCurrency(li.amount)}
+                </Typography>
+              ))}
+              {(installment.lineItemsCount ?? 0) > 5 && (
+                <Typography
+                  variant="caption"
+                  display="block"
+                  sx={{ mt: 0.5, opacity: 0.6 }}
+                >
+                  ...e mais {(installment.lineItemsCount ?? 0) - 5}
+                </Typography>
+              )}
+            </Box>
+          }
+        >
+          <Chip
+            icon={<ListAltIcon sx={{ fontSize: '0.75rem !important' }} />}
+            label={installment.lineItemsCount}
+            size="small"
+            color="secondary"
+            variant="outlined"
+            sx={{
+              fontSize: '0.65rem',
+              height: 20,
+              cursor: 'default',
+              '& .MuiChip-icon': { ml: '4px' },
+            }}
+          />
         </Tooltip>
       )}
       {editingInstallment === installment.id ? (
@@ -1112,6 +1166,90 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                                     height: '16px',
                                                   }}
                                                 />
+                                              )}
+                                              {(installment.lineItemsCount ??
+                                                0) > 0 && (
+                                                <Tooltip
+                                                  arrow
+                                                  title={
+                                                    <Box>
+                                                      <Typography
+                                                        variant="caption"
+                                                        fontWeight={600}
+                                                        display="block"
+                                                        sx={{ mb: 0.5 }}
+                                                      >
+                                                        {
+                                                          installment.lineItemsCount
+                                                        }{' '}
+                                                        {installment.lineItemsCount ===
+                                                        1
+                                                          ? 'item detalhado'
+                                                          : 'itens detalhados'}
+                                                      </Typography>
+                                                      {(
+                                                        installment.lineItems ??
+                                                        []
+                                                      )
+                                                        .slice(0, 5)
+                                                        .map(li => (
+                                                          <Typography
+                                                            key={li.id}
+                                                            variant="caption"
+                                                            display="block"
+                                                            sx={{
+                                                              opacity: 0.85,
+                                                            }}
+                                                          >
+                                                            • {li.description} —{' '}
+                                                            {formatCurrency(
+                                                              li.amount
+                                                            )}
+                                                          </Typography>
+                                                        ))}
+                                                      {(installment.lineItemsCount ??
+                                                        0) > 5 && (
+                                                        <Typography
+                                                          variant="caption"
+                                                          display="block"
+                                                          sx={{
+                                                            mt: 0.5,
+                                                            opacity: 0.6,
+                                                          }}
+                                                        >
+                                                          ...e mais{' '}
+                                                          {(installment.lineItemsCount ??
+                                                            0) - 5}
+                                                        </Typography>
+                                                      )}
+                                                    </Box>
+                                                  }
+                                                >
+                                                  <Chip
+                                                    icon={
+                                                      <ListAltIcon
+                                                        sx={{
+                                                          fontSize:
+                                                            '0.75rem !important',
+                                                        }}
+                                                      />
+                                                    }
+                                                    label={
+                                                      installment.lineItemsCount
+                                                    }
+                                                    size="small"
+                                                    color="secondary"
+                                                    variant="outlined"
+                                                    sx={{
+                                                      fontSize: '0.65rem',
+                                                      height: 18,
+                                                      cursor: 'default',
+                                                      '& .MuiChip-icon': {
+                                                        ml: '4px',
+                                                      },
+                                                    }}
+                                                  />
+                                                </Tooltip>
                                               )}
                                             </Box>
                                           </TableCell>

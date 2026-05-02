@@ -5,3 +5,7 @@ export * from './query-payables.use-case';
 export * from './get-payable-payments.use-case';
 export * from './delete-payable-installment.use-case';
 export * from './update-payable-installment.use-case';
+export * from './list-payable-installment-items.use-case';
+export * from './create-payable-installment-item.use-case';
+export * from './update-payable-installment-item.use-case';
+export * from './delete-payable-installment-item.use-case';

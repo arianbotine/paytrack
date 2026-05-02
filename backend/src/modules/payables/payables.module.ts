@@ -9,6 +9,7 @@ import { PaymentsModule } from '../payments/payments.module';
 import {
   PayablesRepository,
   PayableInstallmentsRepository,
+  PayableInstallmentItemsRepository,
 } from './repositories';
 
 // Domain Services
@@ -24,6 +25,10 @@ import {
   GetPayablePaymentsUseCase,
   DeletePayableInstallmentUseCase,
   UpdatePayableInstallmentUseCase,
+  ListPayableInstallmentItemsUseCase,
+  CreatePayableInstallmentItemUseCase,
+  UpdatePayableInstallmentItemUseCase,
+  DeletePayableInstallmentItemUseCase,
 } from './use-cases';
 
 @Module({
@@ -36,6 +41,7 @@ import {
     // Repositories
     PayablesRepository,
     PayableInstallmentsRepository,
+    PayableInstallmentItemsRepository,
 
     // Domain Services
     InstallmentsCalculator,
@@ -50,6 +56,10 @@ import {
     GetPayablePaymentsUseCase,
     DeletePayableInstallmentUseCase,
     UpdatePayableInstallmentUseCase,
+    ListPayableInstallmentItemsUseCase,
+    CreatePayableInstallmentItemUseCase,
+    UpdatePayableInstallmentItemUseCase,
+    DeletePayableInstallmentItemUseCase,
   ],
   exports: [PayablesService],
 })
