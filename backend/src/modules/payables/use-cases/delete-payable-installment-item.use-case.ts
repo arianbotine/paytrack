@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PayablesRepository } from '../repositories';
+import { InstallmentItemHelpersService } from '../services/installment-item-helpers.service';
 import { ListPayableInstallmentItemsUseCase } from './list-payable-installment-items.use-case';
 
 @Injectable()
 export class DeletePayableInstallmentItemUseCase {
   constructor(
     private readonly payablesRepository: PayablesRepository,
+    private readonly helpers: InstallmentItemHelpersService,
     private readonly listPayableInstallmentItemsUseCase: ListPayableInstallmentItemsUseCase
   ) {}
 
@@ -17,7 +18,7 @@ export class DeletePayableInstallmentItemUseCase {
     organizationId: string | undefined
   ) {
     await this.payablesRepository.transaction(async prisma => {
-      const installment = await this.ensureInstallmentExists(
+      const installment = await this.helpers.ensureInstallmentExists(
         prisma,
         payableId,
         installmentId,
@@ -34,6 +35,8 @@ export class DeletePayableInstallmentItemUseCase {
         },
         select: {
           id: true,
+          splitGroupId: true,
+          splitTotal: true,
         },
       });
 
@@ -41,9 +44,20 @@ export class DeletePayableInstallmentItemUseCase {
         throw new NotFoundException('Item da parcela não encontrado');
       }
 
-      await prisma.payableInstallmentItem.delete({
-        where: { id: existingItem.id },
-      });
+      const isSplitGroup = this.helpers.isSplitGroup(existingItem);
+
+      if (isSplitGroup) {
+        await prisma.payableInstallmentItem.deleteMany({
+          where: {
+            splitGroupId: existingItem.splitGroupId!,
+            organizationId: resolvedOrganizationId,
+          },
+        });
+      } else {
+        await prisma.payableInstallmentItem.delete({
+          where: { id: existingItem.id },
+        });
+      }
     });
 
     return this.listPayableInstallmentItemsUseCase.execute(
@@ -51,32 +65,5 @@ export class DeletePayableInstallmentItemUseCase {
       installmentId,
       organizationId
     );
-  }
-
-  private async ensureInstallmentExists(
-    prisma: Prisma.TransactionClient,
-    payableId: string,
-    installmentId: string,
-    organizationId?: string
-  ) {
-    const installmentWhere = {
-      id: installmentId,
-      payableId,
-      ...(organizationId ? { organizationId } : {}),
-    };
-
-    const installment = await prisma.payableInstallment.findFirst({
-      where: installmentWhere,
-      select: {
-        id: true,
-        organizationId: true,
-      },
-    });
-
-    if (!installment) {
-      throw new NotFoundException('Parcela não encontrada');
-    }
-
-    return installment;
   }
 }

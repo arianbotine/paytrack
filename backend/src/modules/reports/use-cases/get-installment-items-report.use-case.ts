@@ -42,6 +42,8 @@ export class GetInstallmentItemsReportUseCase {
         itemAmount: Number(item.amount),
         itemSortOrder: item.sortOrder,
         itemCreatedAt: item.createdAt.toISOString(),
+        itemSplitIndex: item.splitIndex ?? null,
+        itemSplitTotal: item.splitTotal ?? null,
         tags,
         installmentId: inst.id,
         installmentNumber: inst.installmentNumber,

@@ -33,9 +33,19 @@ export interface PayableInstallmentItem {
   description: string;
   amount: number;
   sortOrder: number;
+  splitIndex: number | null;
+  splitTotal: number | null;
   createdAt: string;
   updatedAt: string;
   tags: InstallmentItemTag[];
+}
+
+export interface AffectedInstallmentCapacity {
+  installmentNumber: number;
+  installmentId: string;
+  currentCapacity: number;
+  splitAmount: number;
+  adjustmentNeeded: number;
 }
 
 export interface PayableInstallmentItemsSummary {

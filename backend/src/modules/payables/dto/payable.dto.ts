@@ -9,6 +9,7 @@ import {
   Min,
   Max,
   IsInt,
+  IsBoolean,
   Validate,
   ArrayMinSize,
   ArrayMaxSize,
@@ -279,6 +280,14 @@ export class UpdateInstallmentDto {
   tagIds?: string[];
 }
 
+export interface AffectedInstallmentCapacity {
+  installmentNumber: number;
+  installmentId: string;
+  currentCapacity: number;
+  splitAmount: number;
+  adjustmentNeeded: number;
+}
+
 export class CreateInstallmentItemDto {
   @ApiProperty({ example: 'Bolo de aniversário' })
   @IsString({ message: 'Descrição é obrigatória' })
@@ -314,8 +323,31 @@ export class CreateInstallmentItemDto {
   @Type(() => Number)
   @IsOptional()
   sortOrder?: number;
+
+  @ApiPropertyOptional({
+    example: 3,
+    description:
+      'Quantidade de parcelas em que o item será distribuído, a partir da parcela atual. Padrão: 1 (somente a parcela atual).',
+  })
+  @IsInt({ message: 'Número de parcelas deve ser um inteiro' })
+  @Min(1, { message: 'Número de parcelas deve ser pelo menos 1' })
+  @Type(() => Number)
+  @IsOptional()
+  splitCount?: number;
+
+  @ApiPropertyOptional({
+    example: false,
+    description:
+      'Se true, ajusta automaticamente o valor das parcelas que não comportam o split. Padrão: false.',
+  })
+  @IsBoolean({ message: 'forceAdjustInstallmentAmount deve ser booleano' })
+  @IsOptional()
+  forceAdjustInstallmentAmount?: boolean;
 }
 
 export class UpdateInstallmentItemDto extends PartialType(
-  CreateInstallmentItemDto
+  OmitType(CreateInstallmentItemDto, [
+    'splitCount',
+    'forceAdjustInstallmentAmount',
+  ] as const)
 ) {}

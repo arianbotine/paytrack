@@ -31,6 +31,8 @@ import {
   DeletePayableInstallmentItemUseCase,
 } from './use-cases';
 
+import { InstallmentItemHelpersService } from './services/installment-item-helpers.service';
+
 @Module({
   imports: [CacheModule, PayablesServicesModule, PaymentsModule],
   controllers: [PayablesController],
@@ -46,6 +48,9 @@ import {
     // Domain Services
     InstallmentsCalculator,
     PayableInstallmentsManager,
+
+    // Services
+    InstallmentItemHelpersService,
 
     // Use Cases
     CreatePayableUseCase,

@@ -1,15 +1,30 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import {
   PayableInstallmentsRepository,
   PayableInstallmentItemsRepository,
 } from '../repositories';
+import { InstallmentItemHelpersService } from '../services/installment-item-helpers.service';
+
+type InstallmentItemWithTags = {
+  id: string;
+  description: string;
+  amount: { toFixed: (d: number) => string } & object;
+  sortOrder: number;
+  splitIndex: number | null;
+  splitTotal: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+  tags: Array<{
+    tag: { id: string; name: string; color: string | null };
+  }>;
+};
 
 @Injectable()
 export class ListPayableInstallmentItemsUseCase {
   constructor(
     private readonly payableInstallmentsRepository: PayableInstallmentsRepository,
-    private readonly payableInstallmentItemsRepository: PayableInstallmentItemsRepository
+    private readonly payableInstallmentItemsRepository: PayableInstallmentItemsRepository,
+    private readonly helpers: InstallmentItemHelpersService
   ) {}
 
   async execute(
@@ -17,22 +32,6 @@ export class ListPayableInstallmentItemsUseCase {
     installmentId: string,
     organizationId?: string
   ) {
-    type InstallmentItemWithTags = Prisma.PayableInstallmentItemGetPayload<{
-      include: {
-        tags: {
-          include: {
-            tag: {
-              select: {
-                id: true;
-                name: true;
-                color: true;
-              };
-            };
-          };
-        };
-      };
-    }>;
-
     const installmentWhere = {
       id: installmentId,
       payableId,
@@ -77,13 +76,15 @@ export class ListPayableInstallmentItemsUseCase {
         },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
       }
-    )) as InstallmentItemWithTags[];
+    )) as unknown as InstallmentItemWithTags[];
 
     const normalizedItems = items.map(item => ({
       id: item.id,
       description: item.description,
       amount: Number(item.amount),
       sortOrder: item.sortOrder,
+      splitIndex: item.splitIndex ?? null,
+      splitTotal: item.splitTotal ?? null,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
       tags: item.tags.map(itemTag => ({
@@ -102,16 +103,12 @@ export class ListPayableInstallmentItemsUseCase {
     return {
       data: normalizedItems,
       summary: {
-        installmentAmount: this.roundMoney(installmentAmount),
-        itemsTotal: this.roundMoney(itemsTotal),
-        remainingAmountForItems: this.roundMoney(
+        installmentAmount: this.helpers.roundMoney(installmentAmount),
+        itemsTotal: this.helpers.roundMoney(itemsTotal),
+        remainingAmountForItems: this.helpers.roundMoney(
           installmentAmount - itemsTotal
         ),
       },
     };
-  }
-
-  private roundMoney(value: number): number {
-    return Math.round(value * 100) / 100;
   }
 }

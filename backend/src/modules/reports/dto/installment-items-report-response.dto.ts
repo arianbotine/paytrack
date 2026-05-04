@@ -13,6 +13,8 @@ export class InstallmentItemReportRowDto {
   @ApiProperty() itemAmount: number;
   @ApiProperty() itemSortOrder: number;
   @ApiProperty() itemCreatedAt: string;
+  @ApiPropertyOptional({ nullable: true }) itemSplitIndex: number | null;
+  @ApiPropertyOptional({ nullable: true }) itemSplitTotal: number | null;
   @ApiProperty({ type: [InstallmentItemTagDto] }) tags: InstallmentItemTagDto[];
 
   // Installment fields

@@ -366,6 +366,9 @@ model PayableInstallmentItem {
   description          String
   amount               Decimal  @db.Decimal(15, 2)
   sortOrder            Int      @default(0) @map("sort_order")
+  splitIndex           Int?     @map("split_index")
+  splitTotal           Int?     @map("split_total")
+  splitGroupId         String?  @map("split_group_id") @db.Uuid
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 

@@ -41,6 +41,7 @@ import type {
   Tag,
   PayableInstallmentItem,
   PayableInstallmentItemsSummary,
+  AffectedInstallmentCapacity,
 } from '../types';
 import { CurrencyField } from '../../../shared/components';
 import { QuickCreateTag } from '../../../shared/components/QuickCreateTag';
@@ -71,7 +72,9 @@ interface EditInstallmentDialogProps {
     description: string;
     amount: number;
     tagIds?: string[];
-  }) => void;
+    splitCount?: number;
+    forceAdjustInstallmentAmount?: boolean;
+  }) => Promise<void>;
   onUpdateItem: (
     itemId: string,
     data: {
@@ -107,6 +110,20 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
   const [newItemDescription, setNewItemDescription] = useState('');
   const [newItemAmount, setNewItemAmount] = useState<number | null>(null);
   const [newItemTagIds, setNewItemTagIds] = useState<string[]>([]);
+  const [newItemSplitCount, setNewItemSplitCount] = useState(1);
+  const [splitMissingAlert, setSplitMissingAlert] = useState<string | null>(
+    null
+  );
+  const [splitPaidAlert, setSplitPaidAlert] = useState<string | null>(null);
+  const [splitCapacityError, setSplitCapacityError] = useState<
+    AffectedInstallmentCapacity[] | null
+  >(null);
+  const [pendingSplitPayload, setPendingSplitPayload] = useState<{
+    description: string;
+    amount: number;
+    tagIds?: string[];
+    splitCount: number;
+  } | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingItemDescription, setEditingItemDescription] = useState('');
   const [editingItemAmount, setEditingItemAmount] = useState<number | null>(
@@ -151,6 +168,11 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
     setNewItemDescription('');
     setNewItemAmount(null);
     setNewItemTagIds([]);
+    setNewItemSplitCount(1);
+    setSplitMissingAlert(null);
+    setSplitPaidAlert(null);
+    setSplitCapacityError(null);
+    setPendingSplitPayload(null);
     setEditingItemId(null);
     setEditingItemDescription('');
     setEditingItemAmount(null);
@@ -189,21 +211,109 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
   }, [installment, installmentItems, itemsSummary]);
 
   const canCreateItem =
-    newItemDescription.trim().length > 0 && (newItemAmount ?? 0) > 0;
+    newItemDescription.trim().length > 0 &&
+    (newItemAmount ?? 0) > 0 &&
+    newItemSplitCount >= 1;
 
-  const handleCreateItem = () => {
-    if (!canCreateItem) return;
-
-    onCreateItem({
-      description: newItemDescription.trim(),
-      amount: newItemAmount ?? 0,
-      tagIds: newItemTagIds.length > 0 ? newItemTagIds : undefined,
-    });
-
+  const resetAddForm = () => {
     setNewItemDescription('');
     setNewItemAmount(null);
     setNewItemTagIds([]);
+    setNewItemSplitCount(1);
+    setSplitMissingAlert(null);
+    setSplitPaidAlert(null);
     setShowAddForm(false);
+  };
+
+  const handleCreateItem = async () => {
+    if (!canCreateItem) return;
+
+    setSplitMissingAlert(null);
+    setSplitPaidAlert(null);
+
+    // Frontend pre-validation: check sibling installments exist
+    if (newItemSplitCount > 1 && installment && payable) {
+      const currentNumber = installment.installmentNumber;
+      const missingNumbers: number[] = [];
+      for (let i = 1; i < newItemSplitCount; i++) {
+        const targetNumber = currentNumber + i;
+        if (
+          !payable.installments.some(
+            inst => inst.installmentNumber === targetNumber
+          )
+        ) {
+          missingNumbers.push(targetNumber);
+        }
+      }
+      if (missingNumbers.length > 0) {
+        setSplitMissingAlert(
+          `As parcelas ${missingNumbers.join(', ')} não existem neste parcelamento. Reduza a quantidade ou adicione as parcelas manualmente.`
+        );
+        return;
+      }
+    }
+
+    const payload = {
+      description: newItemDescription.trim(),
+      amount: newItemAmount ?? 0,
+      tagIds: newItemTagIds.length > 0 ? newItemTagIds : undefined,
+      splitCount: newItemSplitCount > 1 ? newItemSplitCount : undefined,
+    };
+
+    try {
+      await onCreateItem(payload);
+      resetAddForm();
+    } catch (error: unknown) {
+      const code = (error as { response?: { data?: { code?: string } } })
+        ?.response?.data?.code;
+      if (code === 'INSTALLMENT_CAPACITY_EXCEEDED') {
+        const affected = (
+          error as {
+            response?: {
+              data?: { affectedInstallments?: AffectedInstallmentCapacity[] };
+            };
+          }
+        )?.response?.data?.affectedInstallments;
+        setPendingSplitPayload({
+          description: payload.description,
+          amount: payload.amount,
+          tagIds: payload.tagIds,
+          splitCount: newItemSplitCount,
+        });
+        setSplitCapacityError(affected ?? []);
+      } else if (code === 'PAID_INSTALLMENT_CANNOT_BE_ADJUSTED') {
+        const paidNumbers = (
+          error as {
+            response?: {
+              data?: { paidInstallmentNumbers?: number[] };
+            };
+          }
+        )?.response?.data?.paidInstallmentNumbers;
+        const nums = paidNumbers?.join(', ') ?? '';
+        setSplitPaidAlert(
+          `As parcelas ${nums} estão totalmente pagas e não podem ter o valor alterado. Reduza a quantidade de parcelas ou ajuste o valor do item.`
+        );
+      }
+      // Other errors are handled by the hook's onError toast
+    }
+  };
+
+  const handleConfirmForceAdjust = async () => {
+    if (!pendingSplitPayload) return;
+    const payload = pendingSplitPayload;
+    setSplitCapacityError(null);
+    setPendingSplitPayload(null);
+    try {
+      await onCreateItem({ ...payload, forceAdjustInstallmentAmount: true });
+      resetAddForm();
+    } catch {
+      // handled by hook's onError toast
+    }
+  };
+
+  const handleCancelForceAdjust = () => {
+    setSplitCapacityError(null);
+    setPendingSplitPayload(null);
   };
 
   const handleStartEditingItem = (item: PayableInstallmentItem) => {
@@ -615,95 +725,110 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                               }}
                             >
                               {isEditing ? (
-                                <Grid
-                                  container
-                                  spacing={1.5}
-                                  alignItems="flex-start"
-                                >
-                                  <Grid item xs={12} sm={4}>
-                                    <TextField
-                                      value={editingItemDescription}
-                                      onChange={e =>
-                                        setEditingItemDescription(
-                                          e.target.value
-                                        )
-                                      }
-                                      label="Descrição"
-                                      fullWidth
-                                      size="small"
-                                      autoFocus
-                                      disabled={isMutatingItems}
-                                    />
+                                <>
+                                  {item.splitTotal != null &&
+                                    item.splitTotal > 1 && (
+                                      <Typography
+                                        variant="caption"
+                                        color="warning.dark"
+                                        sx={{ display: 'block', mb: 1 }}
+                                      >
+                                        Item parcelado ({item.splitIndex}/
+                                        {item.splitTotal}) — alterações serão
+                                        aplicadas em todas as {item.splitTotal}{' '}
+                                        parcelas do grupo.
+                                      </Typography>
+                                    )}
+                                  <Grid
+                                    container
+                                    spacing={1.5}
+                                    alignItems="flex-start"
+                                  >
+                                    <Grid item xs={12} sm={4}>
+                                      <TextField
+                                        value={editingItemDescription}
+                                        onChange={e =>
+                                          setEditingItemDescription(
+                                            e.target.value
+                                          )
+                                        }
+                                        label="Descrição"
+                                        fullWidth
+                                        size="small"
+                                        autoFocus
+                                        disabled={isMutatingItems}
+                                      />
+                                    </Grid>
+                                    <Grid item xs={12} sm={3}>
+                                      <CurrencyField
+                                        label="Valor"
+                                        value={editingItemAmount || 0}
+                                        onChange={setEditingItemAmount}
+                                        fullWidth
+                                        size="small"
+                                        disabled={isMutatingItems}
+                                      />
+                                    </Grid>
+                                    <Grid item xs={12} sm={3}>
+                                      <Autocomplete
+                                        multiple
+                                        options={tags}
+                                        getOptionLabel={option => option.name}
+                                        value={tags.filter(tag =>
+                                          editingItemTagIds.includes(tag.id)
+                                        )}
+                                        onChange={(_, newValue) => {
+                                          setEditingItemTagIds(
+                                            newValue.map(tag => tag.id)
+                                          );
+                                        }}
+                                        size="small"
+                                        disabled={isMutatingItems}
+                                        renderInput={params => (
+                                          <TextField
+                                            {...params}
+                                            label="Tags"
+                                            placeholder="Selecione"
+                                          />
+                                        )}
+                                      />
+                                    </Grid>
+                                    <Grid item xs={12} sm={2}>
+                                      <Box
+                                        sx={{
+                                          display: 'flex',
+                                          justifyContent: 'flex-end',
+                                          gap: 0.5,
+                                          mt: { xs: 0, sm: 0.5 },
+                                        }}
+                                      >
+                                        <Tooltip title="Salvar" arrow>
+                                          <span>
+                                            <IconButton
+                                              color="success"
+                                              size="small"
+                                              onClick={handleSaveEditingItem}
+                                              disabled={isMutatingItems}
+                                            >
+                                              <CheckIcon fontSize="small" />
+                                            </IconButton>
+                                          </span>
+                                        </Tooltip>
+                                        <Tooltip title="Cancelar" arrow>
+                                          <span>
+                                            <IconButton
+                                              size="small"
+                                              onClick={handleCancelEditingItem}
+                                              disabled={isMutatingItems}
+                                            >
+                                              <CloseIcon fontSize="small" />
+                                            </IconButton>
+                                          </span>
+                                        </Tooltip>
+                                      </Box>
+                                    </Grid>
                                   </Grid>
-                                  <Grid item xs={12} sm={3}>
-                                    <CurrencyField
-                                      label="Valor"
-                                      value={editingItemAmount || 0}
-                                      onChange={setEditingItemAmount}
-                                      fullWidth
-                                      size="small"
-                                      disabled={isMutatingItems}
-                                    />
-                                  </Grid>
-                                  <Grid item xs={12} sm={3}>
-                                    <Autocomplete
-                                      multiple
-                                      options={tags}
-                                      getOptionLabel={option => option.name}
-                                      value={tags.filter(tag =>
-                                        editingItemTagIds.includes(tag.id)
-                                      )}
-                                      onChange={(_, newValue) => {
-                                        setEditingItemTagIds(
-                                          newValue.map(tag => tag.id)
-                                        );
-                                      }}
-                                      size="small"
-                                      disabled={isMutatingItems}
-                                      renderInput={params => (
-                                        <TextField
-                                          {...params}
-                                          label="Tags"
-                                          placeholder="Selecione"
-                                        />
-                                      )}
-                                    />
-                                  </Grid>
-                                  <Grid item xs={12} sm={2}>
-                                    <Box
-                                      sx={{
-                                        display: 'flex',
-                                        justifyContent: 'flex-end',
-                                        gap: 0.5,
-                                        mt: { xs: 0, sm: 0.5 },
-                                      }}
-                                    >
-                                      <Tooltip title="Salvar" arrow>
-                                        <span>
-                                          <IconButton
-                                            color="success"
-                                            size="small"
-                                            onClick={handleSaveEditingItem}
-                                            disabled={isMutatingItems}
-                                          >
-                                            <CheckIcon fontSize="small" />
-                                          </IconButton>
-                                        </span>
-                                      </Tooltip>
-                                      <Tooltip title="Cancelar" arrow>
-                                        <span>
-                                          <IconButton
-                                            size="small"
-                                            onClick={handleCancelEditingItem}
-                                            disabled={isMutatingItems}
-                                          >
-                                            <CloseIcon fontSize="small" />
-                                          </IconButton>
-                                        </span>
-                                      </Tooltip>
-                                    </Box>
-                                  </Grid>
-                                </Grid>
+                                </>
                               ) : isDeleting ? (
                                 <Box
                                   sx={{
@@ -714,13 +839,27 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                                     flexWrap: 'wrap',
                                   }}
                                 >
-                                  <Typography
-                                    variant="body2"
-                                    color="error.main"
-                                    fontWeight={500}
-                                  >
-                                    Excluir "{item.description}"?
-                                  </Typography>
+                                  <Box>
+                                    <Typography
+                                      variant="body2"
+                                      color="error.main"
+                                      fontWeight={500}
+                                    >
+                                      Excluir "{item.description}"?
+                                    </Typography>
+                                    {item.splitTotal != null &&
+                                      item.splitTotal > 1 && (
+                                        <Typography
+                                          variant="caption"
+                                          color="warning.dark"
+                                        >
+                                          Este é um item parcelado (
+                                          {item.splitIndex}/{item.splitTotal}).
+                                          Todas as {item.splitTotal} parcelas do
+                                          grupo serão excluídas.
+                                        </Typography>
+                                      )}
+                                  </Box>
                                   <Box sx={{ display: 'flex', gap: 1 }}>
                                     <Button
                                       size="small"
@@ -731,6 +870,10 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                                       startIcon={<DeleteIcon />}
                                     >
                                       Excluir
+                                      {item.splitTotal != null &&
+                                      item.splitTotal > 1
+                                        ? ' todas'
+                                        : ''}
                                     </Button>
                                     <Button
                                       size="small"
@@ -775,6 +918,22 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                                       >
                                         {formatCurrency(item.amount)}
                                       </Typography>
+                                      {item.splitIndex != null &&
+                                        item.splitTotal != null && (
+                                          <Chip
+                                            label={`${item.splitIndex}/${item.splitTotal}`}
+                                            size="small"
+                                            variant="outlined"
+                                            sx={{
+                                              height: 18,
+                                              fontSize: '0.68rem',
+                                              fontWeight: 700,
+                                              borderColor: 'warning.main',
+                                              color: 'warning.dark',
+                                              '& .MuiChip-label': { px: 0.75 },
+                                            }}
+                                          />
+                                        )}
                                     </Box>
                                     {item.tags.length > 0 && (
                                       <Box
@@ -878,11 +1037,29 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                                 }}
                               />
                             </Grid>
-                            <Grid item xs={12} sm={3}>
+                            <Grid item xs={6} sm={2}>
                               <CurrencyField
                                 label="Valor"
                                 value={newItemAmount || 0}
                                 onChange={setNewItemAmount}
+                                fullWidth
+                                size="small"
+                                disabled={isMutatingItems || isSubmitting}
+                              />
+                            </Grid>
+                            <Grid item xs={6} sm={1}>
+                              <TextField
+                                label="Parcelas"
+                                type="number"
+                                value={newItemSplitCount}
+                                onChange={e => {
+                                  const val = parseInt(e.target.value, 10);
+                                  setNewItemSplitCount(
+                                    isNaN(val) ? 1 : Math.max(1, val)
+                                  );
+                                  setSplitMissingAlert(null);
+                                }}
+                                inputProps={{ min: 1, step: 1 }}
                                 fullWidth
                                 size="small"
                                 disabled={isMutatingItems || isSubmitting}
@@ -944,6 +1121,8 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                                         setNewItemDescription('');
                                         setNewItemAmount(null);
                                         setNewItemTagIds([]);
+                                        setNewItemSplitCount(1);
+                                        setSplitMissingAlert(null);
                                       }}
                                       disabled={isMutatingItems || isSubmitting}
                                     >
@@ -953,6 +1132,26 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                                 </Tooltip>
                               </Box>
                             </Grid>
+                            {splitMissingAlert && (
+                              <Grid item xs={12}>
+                                <Alert
+                                  severity="error"
+                                  onClose={() => setSplitMissingAlert(null)}
+                                >
+                                  {splitMissingAlert}
+                                </Alert>
+                              </Grid>
+                            )}
+                            {splitPaidAlert && (
+                              <Grid item xs={12}>
+                                <Alert
+                                  severity="error"
+                                  onClose={() => setSplitPaidAlert(null)}
+                                >
+                                  {splitPaidAlert}
+                                </Alert>
+                              </Grid>
+                            )}
                           </Grid>
                         </Paper>
                       </Collapse>
@@ -999,6 +1198,57 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
           setValue('tagIds', [...currentTags, tag.id]);
         }}
       />
+
+      {/* Confirmation dialog: capacity exceeded */}
+      <Dialog
+        open={splitCapacityError !== null}
+        onClose={handleCancelForceAdjust}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Capacidade insuficiente nas parcelas</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" gutterBottom>
+            As parcelas abaixo não comportam o valor do item parcelado. Deseja
+            ajustar automaticamente o valor de cada parcela afetada?
+          </Typography>
+          <Stack spacing={1} mt={1.5}>
+            {(splitCapacityError ?? []).map(aff => (
+              <Box
+                key={aff.installmentId}
+                sx={{
+                  p: 1.5,
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  bgcolor: 'background.paper',
+                }}
+              >
+                <Typography variant="body2" fontWeight={600}>
+                  Parcela {aff.installmentNumber}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Capacidade disponível: {formatCurrency(aff.currentCapacity)} —
+                  Valor do split: {formatCurrency(aff.splitAmount)} — Ajuste
+                  necessário: +{formatCurrency(aff.adjustmentNeeded)}
+                </Typography>
+              </Box>
+            ))}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelForceAdjust} color="inherit">
+            Cancelar lançamento
+          </Button>
+          <Button
+            onClick={handleConfirmForceAdjust}
+            variant="contained"
+            color="warning"
+          >
+            Ajustar e salvar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

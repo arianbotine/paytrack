@@ -81,6 +81,8 @@ export interface InstallmentItemPayload {
   amount: number;
   tagIds?: string[];
   sortOrder?: number;
+  splitCount?: number;
+  forceAdjustInstallmentAmount?: boolean;
 }
 
 export interface UpdateInstallmentItemPayload {
@@ -161,7 +163,16 @@ export const usePayableInstallmentItemOperations = () => {
       await invalidateItemQueries(variables.payableId, variables.installmentId);
       showNotification('Item da parcela criado com sucesso!', 'success');
     },
-    onError: () => {
+    onError: (error: unknown) => {
+      const code = (error as { response?: { data?: { code?: string } } })
+        ?.response?.data?.code;
+      if (
+        code === 'INSTALLMENT_CAPACITY_EXCEEDED' ||
+        code === 'INSTALLMENTS_NOT_FOUND' ||
+        code === 'PAID_INSTALLMENT_CANNOT_BE_ADJUSTED'
+      ) {
+        return; // handled by the dialog
+      }
       showNotification('Erro ao criar item da parcela', 'error');
     },
   });

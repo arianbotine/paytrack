@@ -291,10 +291,16 @@ export const PayablesPage: React.FC = () => {
   );
 
   const handleCreateInstallmentItem = useCallback(
-    (data: { description: string; amount: number; tagIds?: string[] }) => {
+    async (data: {
+      description: string;
+      amount: number;
+      tagIds?: string[];
+      splitCount?: number;
+      forceAdjustInstallmentAmount?: boolean;
+    }) => {
       if (!selectedPayable || !selectedInstallment) return;
 
-      createInstallmentItemMutation.mutate({
+      await createInstallmentItemMutation.mutateAsync({
         payableId: selectedPayable.id,
         installmentId: selectedInstallment.id,
         data,
