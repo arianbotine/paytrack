@@ -132,3 +132,29 @@ export interface UseInstallmentItemsReportParams {
   skip?: number;
   take?: number;
 }
+
+// ============================================================
+// Installment Items Grouped by Description
+// ============================================================
+
+export interface InstallmentItemGroupedRow {
+  description: string;
+  totalAmount: number;
+  itemCount: number;
+  installmentCount: number;
+  payableCount: number;
+  tags: InstallmentItemTag[];
+}
+
+export interface InstallmentItemsGroupedSummary {
+  totalAmount: number;
+  uniqueDescriptions: number;
+  uniqueInstallments: number;
+  uniquePayables: number;
+}
+
+export interface InstallmentItemsGroupedResponse {
+  data: InstallmentItemGroupedRow[];
+  total: number;
+  summary: InstallmentItemsGroupedSummary;
+}

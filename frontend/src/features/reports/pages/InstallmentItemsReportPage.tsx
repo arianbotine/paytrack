@@ -18,6 +18,9 @@ import {
   TablePagination,
   Skeleton,
   Alert,
+  FormControlLabel,
+  Switch,
+  Tooltip,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
@@ -26,7 +29,12 @@ import LabelIcon from '@mui/icons-material/Label';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import StoreIcon from '@mui/icons-material/Store';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import { useInstallmentItemsReport, useReportTags } from '../hooks/useReports';
+import CategoryIcon from '@mui/icons-material/Category';
+import {
+  useInstallmentItemsReport,
+  useInstallmentItemsGroupedReport,
+  useReportTags,
+} from '../hooks/useReports';
 import { ReportCard } from '../components/ReportCard';
 import { exportInstallmentItemsReportToCSV } from '../utils/export-report';
 
@@ -89,6 +97,7 @@ export default function InstallmentItemsReportPage() {
   const [appliedTagIds, setAppliedTagIds] = useState<string[]>([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [groupByDescription, setGroupByDescription] = useState(false);
 
   const { data: tagsData } = useReportTags();
   const tags: TagOption[] = (tagsData ?? []).map(t => ({
@@ -99,12 +108,27 @@ export default function InstallmentItemsReportPage() {
 
   const { data, isLoading, isFetching, isError } = useInstallmentItemsReport(
     { tagIds: appliedTagIds, skip: page * rowsPerPage, take: rowsPerPage },
-    appliedTagIds.length > 0
+    appliedTagIds.length > 0 && !groupByDescription
+  );
+
+  const {
+    data: groupedData,
+    isLoading: isGroupedLoading,
+    isFetching: isGroupedFetching,
+    isError: isGroupedError,
+  } = useInstallmentItemsGroupedReport(
+    { tagIds: appliedTagIds },
+    appliedTagIds.length > 0 && groupByDescription
   );
 
   function handleApply() {
     setPage(0);
     setAppliedTagIds(selectedTags.map(t => t.id));
+  }
+
+  function handleToggleGroup(checked: boolean) {
+    setGroupByDescription(checked);
+    setPage(0);
   }
 
   function handleExport() {
@@ -116,6 +140,10 @@ export default function InstallmentItemsReportPage() {
   }
 
   const isQueryPending = appliedTagIds.length === 0;
+  const activeLoading = groupByDescription
+    ? isGroupedLoading || isGroupedFetching
+    : isLoading || isFetching;
+  const activeError = groupByDescription ? isGroupedError : isError;
 
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
@@ -216,7 +244,7 @@ export default function InstallmentItemsReportPage() {
           >
             Consultar
           </Button>
-          {data && (
+          {data && !groupByDescription && (
             <Button
               variant="outlined"
               startIcon={<FileDownloadIcon />}
@@ -227,56 +255,139 @@ export default function InstallmentItemsReportPage() {
             </Button>
           )}
         </Box>
+        <Box mt={2}>
+          <Tooltip title="Agrupa todos os itens com a mesma descrição somando seus valores, independentemente da parcela">
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={groupByDescription}
+                  onChange={e => handleToggleGroup(e.target.checked)}
+                  size="small"
+                />
+              }
+              label={
+                <Typography variant="body2">
+                  Agrupar por descrição do item
+                </Typography>
+              }
+            />
+          </Tooltip>
+        </Box>
       </Paper>
 
       {/* Summary Cards */}
-      {(isLoading || isFetching || data) && !isQueryPending && (
-        <Grid container spacing={2} mb={3}>
-          <Grid item xs={12} sm={6} md={3}>
-            <ReportCard
-              title="Total de Itens"
-              value={data?.summary.totalItems ?? 0}
-              color={theme.palette.primary.main}
-              icon={<ListAltIcon sx={{ color: theme.palette.primary.main }} />}
-              isLoading={isLoading || isFetching}
-              valueType="number"
-            />
+      {(activeLoading || (!groupByDescription ? data : groupedData)) &&
+        !isQueryPending && (
+          <Grid container spacing={2} mb={3}>
+            {groupByDescription ? (
+              <>
+                <Grid item xs={12} sm={6} md={3}>
+                  <ReportCard
+                    title="Descrições Únicas"
+                    value={groupedData?.summary.uniqueDescriptions ?? 0}
+                    color={theme.palette.primary.main}
+                    icon={
+                      <CategoryIcon
+                        sx={{ color: theme.palette.primary.main }}
+                      />
+                    }
+                    isLoading={activeLoading}
+                    valueType="number"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <ReportCard
+                    title="Valor Total"
+                    value={groupedData?.summary.totalAmount ?? 0}
+                    color={theme.palette.success.main}
+                    icon={
+                      <InventoryIcon
+                        sx={{ color: theme.palette.success.main }}
+                      />
+                    }
+                    isLoading={activeLoading}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <ReportCard
+                    title="Parcelas Únicas"
+                    value={groupedData?.summary.uniqueInstallments ?? 0}
+                    color={theme.palette.warning.main}
+                    icon={
+                      <ReceiptLongIcon
+                        sx={{ color: theme.palette.warning.main }}
+                      />
+                    }
+                    isLoading={activeLoading}
+                    valueType="number"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <ReportCard
+                    title="Contas Únicas"
+                    value={groupedData?.summary.uniquePayables ?? 0}
+                    color={theme.palette.info.main}
+                    icon={<StoreIcon sx={{ color: theme.palette.info.main }} />}
+                    isLoading={activeLoading}
+                    valueType="number"
+                  />
+                </Grid>
+              </>
+            ) : (
+              <>
+                <Grid item xs={12} sm={6} md={3}>
+                  <ReportCard
+                    title="Total de Itens"
+                    value={data?.summary.totalItems ?? 0}
+                    color={theme.palette.primary.main}
+                    icon={
+                      <ListAltIcon sx={{ color: theme.palette.primary.main }} />
+                    }
+                    isLoading={activeLoading}
+                    valueType="number"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <ReportCard
+                    title="Valor Total"
+                    value={data?.summary.totalAmount ?? 0}
+                    color={theme.palette.success.main}
+                    icon={
+                      <InventoryIcon
+                        sx={{ color: theme.palette.success.main }}
+                      />
+                    }
+                    isLoading={activeLoading}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <ReportCard
+                    title="Parcelas Únicas"
+                    value={data?.summary.uniqueInstallments ?? 0}
+                    color={theme.palette.warning.main}
+                    icon={
+                      <ReceiptLongIcon
+                        sx={{ color: theme.palette.warning.main }}
+                      />
+                    }
+                    isLoading={activeLoading}
+                    valueType="number"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <ReportCard
+                    title="Contas Únicas"
+                    value={data?.summary.uniquePayables ?? 0}
+                    color={theme.palette.info.main}
+                    icon={<StoreIcon sx={{ color: theme.palette.info.main }} />}
+                    isLoading={activeLoading}
+                    valueType="number"
+                  />
+                </Grid>
+              </>
+            )}
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <ReportCard
-              title="Valor Total"
-              value={data?.summary.totalAmount ?? 0}
-              color={theme.palette.success.main}
-              icon={
-                <InventoryIcon sx={{ color: theme.palette.success.main }} />
-              }
-              isLoading={isLoading || isFetching}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <ReportCard
-              title="Parcelas Únicas"
-              value={data?.summary.uniqueInstallments ?? 0}
-              color={theme.palette.warning.main}
-              icon={
-                <ReceiptLongIcon sx={{ color: theme.palette.warning.main }} />
-              }
-              isLoading={isLoading || isFetching}
-              valueType="number"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <ReportCard
-              title="Contas Únicas"
-              value={data?.summary.uniquePayables ?? 0}
-              color={theme.palette.info.main}
-              icon={<StoreIcon sx={{ color: theme.palette.info.main }} />}
-              isLoading={isLoading || isFetching}
-              valueType="number"
-            />
-          </Grid>
-        </Grid>
-      )}
+        )}
 
       {/* Initial empty state */}
       {isQueryPending && (
@@ -292,14 +403,122 @@ export default function InstallmentItemsReportPage() {
       )}
 
       {/* Error */}
-      {isError && (
+      {activeError && (
         <Alert severity="error" sx={{ mb: 2 }}>
           Ocorreu um erro ao buscar os dados. Tente novamente.
         </Alert>
       )}
 
-      {/* Table */}
-      {!isQueryPending && !isError && (
+      {/* Grouped Table */}
+      {!isQueryPending && !activeError && groupByDescription && (
+        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow
+                  sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}
+                >
+                  <TableCell sx={{ fontWeight: 600 }}>
+                    Descrição do Item
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600 }} align="right">
+                    Valor Total
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600 }} align="right">
+                    Qtd. Itens
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600 }} align="right">
+                    Parcelas
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600 }} align="right">
+                    Contas
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Tags</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {activeLoading &&
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <TableRow key={i}>
+                      {Array.from({ length: 6 }).map((_, j) => (
+                        <TableCell key={j}>
+                          <Skeleton variant="text" width="80%" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                {!activeLoading && groupedData?.data.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Nenhum item encontrado para as tags selecionadas.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+                {!activeLoading &&
+                  groupedData?.data.map((row, idx) => (
+                    <TableRow
+                      key={idx}
+                      hover
+                      sx={{ '&:last-child td': { borderBottom: 0 } }}
+                    >
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={500}>
+                          {row.description}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography
+                          variant="body2"
+                          fontWeight={600}
+                          color="error.main"
+                        >
+                          {formatCurrency(row.totalAmount)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body2">{row.itemCount}</Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body2">
+                          {row.installmentCount}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Typography variant="body2">
+                          {row.payableCount}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box display="flex" gap={0.5} flexWrap="wrap">
+                          {row.tags.map(tag => (
+                            <Chip
+                              key={tag.id}
+                              label={tag.name}
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: '0.68rem',
+                                bgcolor: alpha(tag.color ?? '#888', 0.15),
+                                borderColor: tag.color ?? '#888',
+                                border: '1px solid',
+                                color: tag.color ?? '#888',
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+      )}
+
+      {/* Flat Table */}
+      {!isQueryPending && !activeError && !groupByDescription && (
         <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
           <TableContainer>
             <Table size="small">

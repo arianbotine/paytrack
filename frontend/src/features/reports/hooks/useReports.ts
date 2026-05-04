@@ -6,6 +6,7 @@ import type {
   ReportFilters,
   InstallmentItemsReportResponse,
   UseInstallmentItemsReportParams,
+  InstallmentItemsGroupedResponse,
 } from '../types';
 
 interface UsePaymentsReportParams extends ReportFilters {
@@ -173,6 +174,33 @@ export const useInstallmentItemsReport = (
             tagIds: params.tagIds.join(','),
             skip: params.skip ?? 0,
             take: params.take ?? 50,
+          },
+        }
+      );
+      return data;
+    },
+    enabled: enabled && params.tagIds.length > 0,
+    staleTime: 0,
+    gcTime: 0,
+  });
+};
+
+export const useInstallmentItemsGroupedReport = (
+  params: Pick<UseInstallmentItemsReportParams, 'tagIds'>,
+  enabled = true
+) => {
+  return useQuery<
+    InstallmentItemsGroupedResponse,
+    Error,
+    InstallmentItemsGroupedResponse
+  >({
+    queryKey: ['reports', 'installment-items-grouped', params],
+    queryFn: async (): Promise<InstallmentItemsGroupedResponse> => {
+      const { data } = await api.get<InstallmentItemsGroupedResponse>(
+        '/reports/installment-items/grouped',
+        {
+          params: {
+            tagIds: params.tagIds.join(','),
           },
         }
       );

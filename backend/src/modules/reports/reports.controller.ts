@@ -13,6 +13,7 @@ import {
   PaymentsReportDetailsResponseDto,
   InstallmentItemsReportFilterDto,
   InstallmentItemsReportResponseDto,
+  InstallmentItemsGroupedResponseDto,
 } from './dto';
 
 @ApiTags('Relatórios')
@@ -69,6 +70,26 @@ export class ReportsController {
     @Query() filters: InstallmentItemsReportFilterDto
   ): Promise<InstallmentItemsReportResponseDto> {
     return this.reportsService.getInstallmentItemsReport(
+      organizationId,
+      filters
+    );
+  }
+
+  @Get('installment-items/grouped')
+  @ApiOperation({
+    summary: 'Relatório de itens de parcelas por tag agrupados por descrição',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Relatório agrupado gerado com sucesso',
+    type: InstallmentItemsGroupedResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Parâmetros inválidos' })
+  async getInstallmentItemsGroupedReport(
+    @CurrentUser('organizationId') organizationId: string,
+    @Query() filters: InstallmentItemsReportFilterDto
+  ): Promise<InstallmentItemsGroupedResponseDto> {
+    return this.reportsService.getInstallmentItemsGroupedReport(
       organizationId,
       filters
     );

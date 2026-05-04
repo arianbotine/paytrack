@@ -80,4 +80,43 @@ export class InstallmentItemsReportRepository {
 
     return { data: data as unknown as InstallmentItemRaw[], total };
   }
+
+  async findAllItemsByTagIds(
+    organizationId: string,
+    tagIds: string[]
+  ): Promise<InstallmentItemRaw[]> {
+    const data = await this.prisma.payableInstallmentItem.findMany({
+      where: {
+        organizationId,
+        tags: {
+          some: {
+            tagId: { in: tagIds },
+          },
+        },
+      },
+      include: {
+        tags: {
+          include: {
+            tag: { select: { id: true, name: true, color: true } },
+          },
+        },
+        payableInstallment: {
+          include: {
+            payable: {
+              include: {
+                vendor: { select: { name: true } },
+                category: { select: { name: true } },
+              },
+            },
+          },
+        },
+      },
+      orderBy: [
+        { payableInstallment: { dueDate: 'asc' } },
+        { sortOrder: 'asc' },
+      ],
+    });
+
+    return data as unknown as InstallmentItemRaw[];
+  }
 }

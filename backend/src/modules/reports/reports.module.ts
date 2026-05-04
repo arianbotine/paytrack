@@ -10,6 +10,7 @@ import {
   GetPaymentsReportUseCase,
   GetPaymentsReportDetailsUseCase,
   GetInstallmentItemsReportUseCase,
+  GetInstallmentItemsGroupedReportUseCase,
 } from './use-cases';
 import { DatabaseModule } from '../../infrastructure/database/database.module';
 
@@ -25,6 +26,7 @@ import { DatabaseModule } from '../../infrastructure/database/database.module';
     GetPaymentsReportUseCase,
     GetPaymentsReportDetailsUseCase,
     GetInstallmentItemsReportUseCase,
+    GetInstallmentItemsGroupedReportUseCase,
   ],
   exports: [ReportsService],
 })

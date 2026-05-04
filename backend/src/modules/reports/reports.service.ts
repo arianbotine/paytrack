@@ -3,6 +3,7 @@ import {
   GetPaymentsReportUseCase,
   GetPaymentsReportDetailsUseCase,
   GetInstallmentItemsReportUseCase,
+  GetInstallmentItemsGroupedReportUseCase,
 } from './use-cases';
 import {
   PaymentsReportFilterDto,
@@ -10,6 +11,7 @@ import {
   PaymentsReportDetailsResponseDto,
   InstallmentItemsReportFilterDto,
   InstallmentItemsReportResponseDto,
+  InstallmentItemsGroupedResponseDto,
 } from './dto';
 
 @Injectable()
@@ -17,7 +19,8 @@ export class ReportsService {
   constructor(
     private readonly getPaymentsReportUseCase: GetPaymentsReportUseCase,
     private readonly getPaymentsReportDetailsUseCase: GetPaymentsReportDetailsUseCase,
-    private readonly getInstallmentItemsReportUseCase: GetInstallmentItemsReportUseCase
+    private readonly getInstallmentItemsReportUseCase: GetInstallmentItemsReportUseCase,
+    private readonly getInstallmentItemsGroupedReportUseCase: GetInstallmentItemsGroupedReportUseCase
   ) {}
 
   async getPaymentsReport(
@@ -42,6 +45,16 @@ export class ReportsService {
     filters: InstallmentItemsReportFilterDto
   ): Promise<InstallmentItemsReportResponseDto> {
     return this.getInstallmentItemsReportUseCase.execute(
+      organizationId,
+      filters
+    );
+  }
+
+  async getInstallmentItemsGroupedReport(
+    organizationId: string,
+    filters: InstallmentItemsReportFilterDto
+  ): Promise<InstallmentItemsGroupedResponseDto> {
+    return this.getInstallmentItemsGroupedReportUseCase.execute(
       organizationId,
       filters
     );
