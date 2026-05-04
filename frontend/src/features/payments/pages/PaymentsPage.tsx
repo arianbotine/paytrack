@@ -3,11 +3,8 @@ import { Box } from '@mui/material';
 import { AnimatedPage } from '../../../shared/components';
 import { PageHeader } from '../../../shared/components/PageHeader';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
-import {
-  PaymentsTable,
-  PaymentFilters,
-  EditPaymentDialog,
-} from '../components';
+import { PaymentsTable } from '../components/PaymentsTable';
+import { PaymentFilters, EditPaymentDialog } from '../components';
 import { usePayments, usePaymentOperations } from '../hooks/usePayments';
 import { useVendors } from '../../payables/hooks/usePayables';
 import { useCustomers } from '../../receivables/hooks/useReceivables';

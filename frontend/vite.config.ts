@@ -18,17 +18,22 @@ export default defineConfig({
     host: true,
   },
   build: {
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
           // Core React vendor chunk
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          // UI framework chunk
-          'vendor-mui': [
+          // MUI core (material + emotion)
+          'vendor-mui-core': [
             '@mui/material',
-            '@mui/icons-material',
-            '@mui/x-date-pickers',
+            '@emotion/react',
+            '@emotion/styled',
           ],
+          // MUI icons (large — isolated for better tree-shaking)
+          'vendor-mui-icons': ['@mui/icons-material'],
+          // MUI X components
+          'vendor-mui-x': ['@mui/x-date-pickers', '@mui/x-data-grid'],
           // Data & forms chunk
           'vendor-data': [
             '@tanstack/react-query',
@@ -37,13 +42,14 @@ export default defineConfig({
             'zod',
             'zustand',
             'axios',
+            'better-auth',
           ],
           // Charts chunk
           'vendor-charts': ['recharts'],
           // Animation chunk
           'vendor-animation': ['framer-motion'],
           // Date utilities
-          'vendor-date': ['date-fns'],
+          'vendor-date': ['date-fns', 'dayjs'],
         },
       },
     },
