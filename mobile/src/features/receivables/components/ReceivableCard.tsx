@@ -20,12 +20,13 @@ export function ReceivableCard({
   onEdit,
 }: ReceivableCardProps) {
   const isPaid = item.status === 'PAID';
+  const hasActions = !isPaid && item.nextInstallmentId;
 
   return (
     <Card variant="elevated" padding="none" className="mb-3 overflow-hidden">
       <View className="px-4 pt-4 pb-3">
         {/* Top row */}
-        <View className="flex-row items-start justify-between mb-3">
+        <View className="flex-row items-center justify-between mb-3">
           <View className="flex-1 mr-3">
             <Text
               variant="title"
@@ -95,72 +96,27 @@ export function ReceivableCard({
         </View>
 
         {/* Footer row */}
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center gap-3">
+        <View className="flex-row items-center gap-3">
+          <View className="flex-row items-center">
+            <MaterialCommunityIcons
+              name="layers-outline"
+              size={14}
+              color="#9e9e9e"
+            />
+            <Text variant="caption" className="text-neutral-500 ml-1">
+              {item.receivedInstallments}/{item.installmentsCount} parcelas
+            </Text>
+          </View>
+          {item.nextDueDate && !isPaid && (
             <View className="flex-row items-center">
               <MaterialCommunityIcons
-                name="layers-outline"
+                name="calendar-outline"
                 size={14}
                 color="#9e9e9e"
               />
               <Text variant="caption" className="text-neutral-500 ml-1">
-                {item.receivedInstallments}/{item.installmentsCount} parcelas
+                {formatDate(item.nextDueDate)}
               </Text>
-            </View>
-            {item.nextDueDate && !isPaid && (
-              <View className="flex-row items-center">
-                <MaterialCommunityIcons
-                  name="calendar-outline"
-                  size={14}
-                  color="#9e9e9e"
-                />
-                <Text variant="caption" className="text-neutral-500 ml-1">
-                  {formatDate(item.nextDueDate)}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {!isPaid && item.nextInstallmentId && (
-            <View className="flex-row items-center gap-2">
-              {onEdit && (
-                <TouchableOpacity
-                  onPress={() => onEdit(item)}
-                  activeOpacity={0.75}
-                  className="flex-row items-center bg-neutral-100 px-3 py-1.5 rounded-lg"
-                >
-                  <MaterialCommunityIcons
-                    name="pencil-outline"
-                    size={14}
-                    color="#616161"
-                  />
-                  <Text
-                    variant="label"
-                    weight="semibold"
-                    className="text-neutral-700 ml-1"
-                  >
-                    Editar
-                  </Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                onPress={() => onReceive(item)}
-                activeOpacity={0.75}
-                className="flex-row items-center bg-success-700 px-3 py-1.5 rounded-lg"
-              >
-                <MaterialCommunityIcons
-                  name="cash-check"
-                  size={14}
-                  color="#ffffff"
-                />
-                <Text
-                  variant="label"
-                  weight="semibold"
-                  className="text-white ml-1"
-                >
-                  Receber
-                </Text>
-              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -175,6 +131,49 @@ export function ReceivableCard({
               width: `${(item.receivedInstallments / item.installmentsCount) * 100}%`,
             }}
           />
+        </View>
+      )}
+
+      {/* Action bar */}
+      {hasActions && (
+        <View className="flex-row border-t border-neutral-100">
+          {onEdit && (
+            <>
+              <TouchableOpacity
+                onPress={() => onEdit(item)}
+                activeOpacity={0.75}
+                className="flex-1 flex-row items-center justify-center py-4 gap-1.5 active:bg-neutral-50"
+              >
+                <MaterialCommunityIcons
+                  name="pencil-outline"
+                  size={18}
+                  color="#525252"
+                />
+                <Text
+                  variant="label"
+                  weight="medium"
+                  className="text-neutral-600"
+                >
+                  Editar
+                </Text>
+              </TouchableOpacity>
+              <View className="w-px bg-neutral-100" />
+            </>
+          )}
+          <TouchableOpacity
+            onPress={() => onReceive(item)}
+            activeOpacity={0.75}
+            className="flex-1 flex-row items-center justify-center py-4 gap-1.5 active:bg-success-50"
+          >
+            <MaterialCommunityIcons
+              name="cash-plus"
+              size={18}
+              color="#16a34a"
+            />
+            <Text variant="label" weight="medium" className="text-success-700">
+              Receber
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
     </Card>

@@ -10,9 +10,12 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  FlatList,
 } from 'react-native';
-import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from './Text';
@@ -142,109 +145,104 @@ export function TagPickerSheet({
         </View>
 
         {/* Tag list */}
-        <FlatList<Tag>
-          data={isLoading ? [] : filtered}
-          keyExtractor={(item: Tag) => item.id}
+        <BottomSheetScrollView
           style={{ flex: 1 }}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{
             paddingHorizontal: 20,
             paddingBottom: showCreateNew ? 8 : 0,
           }}
-          ListEmptyComponent={
-            isLoading ? (
-              <View className="items-center py-8">
-                <ActivityIndicator color="#4F46E5" />
-              </View>
-            ) : (
-              <Text
-                variant="body"
-                className="text-neutral-400 text-center py-6"
-              >
-                {tags.length === 0
-                  ? 'Nenhuma tag cadastrada'
-                  : 'Nenhuma tag encontrada'}
-              </Text>
-            )
-          }
-          ListFooterComponent={
-            showCreateNew ? (
-              <View style={{ paddingBottom: 8 }}>
+        >
+          {isLoading ? (
+            <View className="items-center py-8">
+              <ActivityIndicator color="#4F46E5" />
+            </View>
+          ) : filtered.length === 0 ? (
+            <Text variant="body" className="text-neutral-400 text-center py-6">
+              {tags.length === 0
+                ? 'Nenhuma tag cadastrada'
+                : 'Nenhuma tag encontrada'}
+            </Text>
+          ) : (
+            filtered.map(item => {
+              const selected = pending.includes(item.id);
+              return (
                 <TouchableOpacity
-                  onPress={() => {
-                    onCreateNew(trimmed);
-                    onClose();
-                  }}
-                  className="flex-row items-center py-4 mt-1 border-t border-neutral-100"
+                  key={item.id}
+                  onPress={() => toggle(item.id)}
                   activeOpacity={0.7}
+                  className="flex-row items-center py-3 border-b border-neutral-100"
                 >
-                  <View className="w-8 h-8 rounded-full bg-primary-50 items-center justify-center mr-3">
-                    <MaterialCommunityIcons
-                      name="plus"
-                      size={16}
-                      color="#4F46E5"
-                    />
-                  </View>
-                  <Text variant="body" className="text-primary-700 flex-1">
-                    Criar tag{' '}
-                    <Text
-                      variant="body"
-                      weight="semibold"
-                      className="text-primary-700"
-                    >
-                      "{trimmed}"
-                    </Text>
+                  {/* Color dot */}
+                  <View
+                    style={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: 6,
+                      backgroundColor: item.color,
+                      marginRight: 12,
+                    }}
+                  />
+                  <Text variant="body" className="text-neutral-800 flex-1">
+                    {item.name}
                   </Text>
+                  {/* Selection indicator */}
+                  <View
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 11,
+                      borderWidth: 2,
+                      borderColor: selected ? '#4F46E5' : '#d4d4d4',
+                      backgroundColor: selected ? '#4F46E5' : 'transparent',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {selected && (
+                      <MaterialCommunityIcons
+                        name="check"
+                        size={13}
+                        color="#ffffff"
+                      />
+                    )}
+                  </View>
                 </TouchableOpacity>
-              </View>
-            ) : null
-          }
-          renderItem={({ item }: { item: Tag }) => {
-            const selected = pending.includes(item.id);
-            return (
+              );
+            })
+          )}
+
+          {showCreateNew && (
+            <View style={{ paddingBottom: 8 }}>
               <TouchableOpacity
-                onPress={() => toggle(item.id)}
+                onPress={() => {
+                  onCreateNew(trimmed);
+                  onClose();
+                }}
+                className="flex-row items-center py-4 mt-1 border-t border-neutral-100"
                 activeOpacity={0.7}
-                className="flex-row items-center py-3 border-b border-neutral-100"
               >
-                {/* Color dot */}
-                <View
-                  style={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: 6,
-                    backgroundColor: item.color,
-                    marginRight: 12,
-                  }}
-                />
-                <Text variant="body" className="text-neutral-800 flex-1">
-                  {item.name}
-                </Text>
-                {/* Selection indicator */}
-                <View
-                  style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: 11,
-                    borderWidth: 2,
-                    borderColor: selected ? '#4F46E5' : '#d4d4d4',
-                    backgroundColor: selected ? '#4F46E5' : 'transparent',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {selected && (
-                    <MaterialCommunityIcons
-                      name="check"
-                      size={13}
-                      color="#ffffff"
-                    />
-                  )}
+                <View className="w-8 h-8 rounded-full bg-primary-50 items-center justify-center mr-3">
+                  <MaterialCommunityIcons
+                    name="plus"
+                    size={16}
+                    color="#4F46E5"
+                  />
                 </View>
+                <Text variant="body" className="text-primary-700 flex-1">
+                  Criar tag{' '}
+                  <Text
+                    variant="body"
+                    weight="semibold"
+                    className="text-primary-700"
+                  >
+                    "{trimmed}"
+                  </Text>
+                </Text>
               </TouchableOpacity>
-            );
-          }}
-        />
+            </View>
+          )}
+        </BottomSheetScrollView>
 
         {/* Bottom actions */}
         <View className="px-5 pt-3 pb-6">

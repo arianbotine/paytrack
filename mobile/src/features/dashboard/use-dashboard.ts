@@ -37,6 +37,24 @@ export function useDashboard() {
       return response.data;
     },
     enabled: !!organizationId,
+    select: (data: DashboardData): DashboardData => {
+      const dedup = <T extends { id: string }>(items: T[]): T[] => [
+        ...new Map(items.map(i => [i.id, i])).values(),
+      ];
+      return {
+        ...data,
+        payables: {
+          ...data.payables,
+          overdueItems: dedup(data.payables.overdueItems),
+          upcomingItems: dedup(data.payables.upcomingItems),
+        },
+        receivables: {
+          ...data.receivables,
+          overdueItems: dedup(data.receivables.overdueItems),
+          upcomingItems: dedup(data.receivables.upcomingItems),
+        },
+      };
+    },
   });
 
   // Lazy detail queries — only fetch when the user opens the edit sheet

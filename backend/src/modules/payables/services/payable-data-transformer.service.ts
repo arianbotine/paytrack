@@ -60,6 +60,7 @@ export class PayableDataTransformer {
         amount: Number(inst.amount),
         paidAmount: Number(inst.paidAmount),
         isOverdue: isOverdue(inst.dueDate),
+        lineItemsCount: inst._count?.lineItems ?? 0,
       })),
     };
   }

@@ -6,6 +6,8 @@ import {
   QuickPayDto,
   CreatePayableBffDto,
   UpdateInstallmentBffDto,
+  CreateInstallmentItemBffDto,
+  UpdateInstallmentItemBffDto,
 } from './payables.dto';
 
 /**
@@ -51,6 +53,9 @@ interface BackendPayable {
     remaining?: number | null;
     status: string;
     notes?: string;
+    lineItemsCount?: number;
+    lineItems?: Array<{ id: string }>;
+    _count?: { lineItems?: number };
   }>;
 }
 
@@ -85,6 +90,7 @@ export interface MobilePayableDetail {
     remaining: number;
     status: string;
     notes: string | null;
+    lineItemsCount: number;
   }>;
 }
 
@@ -295,7 +301,72 @@ export class PayablesService {
         remaining: i.remaining ?? i.amount - i.paidAmount,
         status: i.status,
         notes: i.notes || null,
+        lineItemsCount:
+          i.lineItemsCount ?? i._count?.lineItems ?? i.lineItems?.length ?? 0,
       })),
     };
+  }
+
+  /**
+   * List installment items for a specific installment.
+   */
+  async listInstallmentItems(
+    accessToken: string,
+    payableId: string,
+    installmentId: string
+  ) {
+    return this.httpClient.get(
+      `/payables/${payableId}/installments/${installmentId}/items`,
+      accessToken
+    );
+  }
+
+  /**
+   * Create an installment item.
+   */
+  async createInstallmentItem(
+    accessToken: string,
+    payableId: string,
+    installmentId: string,
+    dto: CreateInstallmentItemBffDto
+  ) {
+    return this.httpClient.post(
+      `/payables/${payableId}/installments/${installmentId}/items`,
+      dto,
+      accessToken,
+      { headers: { 'idempotency-key': randomUUID() } }
+    );
+  }
+
+  /**
+   * Update an installment item.
+   */
+  async updateInstallmentItem(
+    accessToken: string,
+    payableId: string,
+    installmentId: string,
+    itemId: string,
+    dto: UpdateInstallmentItemBffDto
+  ) {
+    return this.httpClient.patch(
+      `/payables/${payableId}/installments/${installmentId}/items/${itemId}`,
+      dto,
+      accessToken
+    );
+  }
+
+  /**
+   * Delete an installment item.
+   */
+  async deleteInstallmentItem(
+    accessToken: string,
+    payableId: string,
+    installmentId: string,
+    itemId: string
+  ) {
+    return this.httpClient.delete(
+      `/payables/${payableId}/installments/${installmentId}/items/${itemId}`,
+      accessToken
+    );
   }
 }

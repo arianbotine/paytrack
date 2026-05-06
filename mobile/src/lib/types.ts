@@ -89,6 +89,7 @@ export interface PayableInstallment {
   remaining: number;
   status: AccountStatus;
   notes: string | null;
+  lineItemsCount?: number;
 }
 
 export interface PayableDetail {
@@ -143,6 +144,46 @@ export interface ReceivableDetail {
 export interface UpdateInstallmentInput {
   amount?: number;
   notes?: string;
+}
+
+// Installment Items
+export interface InstallmentItem {
+  id: string;
+  description: string;
+  amount: number;
+  sortOrder: number;
+  splitIndex: number | null;
+  splitTotal: number | null;
+  createdAt: string;
+  updatedAt: string;
+  tags: Tag[];
+}
+
+export interface InstallmentItemsSummary {
+  installmentAmount: number;
+  itemsTotal: number;
+  remainingAmountForItems: number;
+}
+
+export interface InstallmentItemsResponse {
+  data: InstallmentItem[];
+  summary: InstallmentItemsSummary;
+}
+
+export interface CreateInstallmentItemInput {
+  description: string;
+  amount: number;
+  tagIds?: string[];
+  sortOrder?: number;
+  splitCount?: number;
+  forceAdjustInstallmentAmount?: boolean;
+}
+
+export interface UpdateInstallmentItemInput {
+  description?: string;
+  amount?: number;
+  tagIds?: string[];
+  sortOrder?: number;
 }
 
 // Shared

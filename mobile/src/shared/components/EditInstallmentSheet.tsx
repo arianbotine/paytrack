@@ -11,7 +11,6 @@ import {
   BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
-import { useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -129,7 +128,6 @@ export function EditInstallmentSheet({
       handleIndicatorStyle={{ backgroundColor: '#e0e0e0', width: 40 }}
     >
       <BottomSheetScrollView
-        focusHook={useFocusEffect}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           paddingHorizontal: 20,

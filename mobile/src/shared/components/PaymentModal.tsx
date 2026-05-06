@@ -5,14 +5,12 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
+import { View, TextInput, TouchableOpacity, Alert } from 'react-native';
 import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
-} from 'react-native';
-import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from './Text';
@@ -124,7 +122,7 @@ export function PaymentModal({
       keyboardBlurBehavior="restore"
       handleIndicatorStyle={{ backgroundColor: '#e0e0e0', width: 40 }}
     >
-      <ScrollView
+      <BottomSheetScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           paddingHorizontal: 20,
@@ -247,7 +245,7 @@ export function PaymentModal({
             onPress={handleConfirm}
           />
         </View>
-      </ScrollView>
+      </BottomSheetScrollView>
     </BottomSheetModal>
   );
 }

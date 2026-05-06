@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Query,
   Body,
@@ -24,6 +25,8 @@ import {
   QuickPayDto,
   CreatePayableBffDto,
   UpdateInstallmentBffDto,
+  CreateInstallmentItemBffDto,
+  UpdateInstallmentItemBffDto,
 } from './payables.dto';
 
 @ApiTags('Payables')
@@ -279,5 +282,110 @@ export class PayablesController {
     @Param('id') id: string
   ) {
     return this.payablesService.getPayments(accessToken, id);
+  }
+
+  /**
+   * List installment items.
+   */
+  @Get(':payableId/installments/:installmentId/items')
+  @ApiOperation({ summary: 'Listar itens da parcela' })
+  @ApiParam({ name: 'payableId', description: 'UUID da conta a pagar' })
+  @ApiParam({ name: 'installmentId', description: 'UUID da parcela' })
+  @ApiResponse({ status: 200, description: 'Itens retornados com sucesso.' })
+  @ApiResponse({ status: 401, description: 'Token inválido ou expirado.' })
+  @ApiResponse({ status: 404, description: 'Parcela não encontrada.' })
+  async listInstallmentItems(
+    @CurrentUser('accessToken') accessToken: string,
+    @Param('payableId') payableId: string,
+    @Param('installmentId') installmentId: string
+  ) {
+    return this.payablesService.listInstallmentItems(
+      accessToken,
+      payableId,
+      installmentId
+    );
+  }
+
+  /**
+   * Create an installment item.
+   */
+  @Post(':payableId/installments/:installmentId/items')
+  @ApiOperation({ summary: 'Criar item da parcela' })
+  @ApiParam({ name: 'payableId', description: 'UUID da conta a pagar' })
+  @ApiParam({ name: 'installmentId', description: 'UUID da parcela' })
+  @ApiBody({ type: CreateInstallmentItemBffDto })
+  @ApiResponse({ status: 201, description: 'Item criado com sucesso.' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos.' })
+  @ApiResponse({ status: 401, description: 'Token inválido ou expirado.' })
+  @ApiResponse({
+    status: 422,
+    description: 'Capacidade da parcela excedida.',
+  })
+  async createInstallmentItem(
+    @CurrentUser('accessToken') accessToken: string,
+    @Param('payableId') payableId: string,
+    @Param('installmentId') installmentId: string,
+    @Body() dto: CreateInstallmentItemBffDto
+  ) {
+    return this.payablesService.createInstallmentItem(
+      accessToken,
+      payableId,
+      installmentId,
+      dto
+    );
+  }
+
+  /**
+   * Update an installment item.
+   */
+  @Patch(':payableId/installments/:installmentId/items/:itemId')
+  @ApiOperation({ summary: 'Atualizar item da parcela' })
+  @ApiParam({ name: 'payableId', description: 'UUID da conta a pagar' })
+  @ApiParam({ name: 'installmentId', description: 'UUID da parcela' })
+  @ApiParam({ name: 'itemId', description: 'UUID do item' })
+  @ApiBody({ type: UpdateInstallmentItemBffDto })
+  @ApiResponse({ status: 200, description: 'Item atualizado com sucesso.' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos.' })
+  @ApiResponse({ status: 401, description: 'Token inválido ou expirado.' })
+  @ApiResponse({ status: 404, description: 'Item não encontrado.' })
+  async updateInstallmentItem(
+    @CurrentUser('accessToken') accessToken: string,
+    @Param('payableId') payableId: string,
+    @Param('installmentId') installmentId: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: UpdateInstallmentItemBffDto
+  ) {
+    return this.payablesService.updateInstallmentItem(
+      accessToken,
+      payableId,
+      installmentId,
+      itemId,
+      dto
+    );
+  }
+
+  /**
+   * Delete an installment item.
+   */
+  @Delete(':payableId/installments/:installmentId/items/:itemId')
+  @ApiOperation({ summary: 'Excluir item da parcela' })
+  @ApiParam({ name: 'payableId', description: 'UUID da conta a pagar' })
+  @ApiParam({ name: 'installmentId', description: 'UUID da parcela' })
+  @ApiParam({ name: 'itemId', description: 'UUID do item' })
+  @ApiResponse({ status: 200, description: 'Item excluído com sucesso.' })
+  @ApiResponse({ status: 401, description: 'Token inválido ou expirado.' })
+  @ApiResponse({ status: 404, description: 'Item não encontrado.' })
+  async deleteInstallmentItem(
+    @CurrentUser('accessToken') accessToken: string,
+    @Param('payableId') payableId: string,
+    @Param('installmentId') installmentId: string,
+    @Param('itemId') itemId: string
+  ) {
+    return this.payablesService.deleteInstallmentItem(
+      accessToken,
+      payableId,
+      installmentId,
+      itemId
+    );
   }
 }

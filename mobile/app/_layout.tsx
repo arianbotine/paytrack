@@ -1,6 +1,34 @@
 import '../global.css';
 import { useEffect } from 'react';
+import { LogBox } from 'react-native';
 import { Stack } from 'expo-router';
+
+// @gorhom/bottom-sheet v5 fires this warning on first mount for every
+// BottomSheetModal before the native node is registered — it's harmless.
+LogBox.ignoreLogs(["Couldn't find the scrollable node handle id!"]);
+
+if (__DEV__) {
+  const g = globalThis as typeof globalThis & {
+    __paytrackWarnPatched?: boolean;
+    __paytrackOriginalWarn?: typeof console.warn;
+  };
+
+  if (!g.__paytrackWarnPatched) {
+    g.__paytrackWarnPatched = true;
+    g.__paytrackOriginalWarn = console.warn;
+
+    console.warn = (...args: unknown[]) => {
+      const firstArg = args[0];
+      if (
+        typeof firstArg === 'string' &&
+        firstArg.includes("Couldn't find the scrollable node handle id!")
+      ) {
+        return;
+      }
+      g.__paytrackOriginalWarn?.(...args);
+    };
+  }
+}
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';

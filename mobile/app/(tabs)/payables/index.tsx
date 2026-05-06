@@ -7,31 +7,31 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { STATUS_LABELS } from '../../src/lib/formatters';
+import { STATUS_LABELS } from '../../../src/lib/formatters';
 import {
   FilterChip,
   AdvancedFilterChip,
   formatMonthYear,
-} from '../../src/shared/components/FilterChip';
-import { ScreenContainer } from '../../src/shared/components/ScreenContainer';
-import { Text } from '../../src/shared/components/Text';
-import { EmptyState } from '../../src/shared/components/EmptyState';
-import { LoadingState } from '../../src/shared/components/LoadingState';
-import { PaymentModal } from '../../src/shared/components/PaymentModal';
-import { EditInstallmentSheet } from '../../src/shared/components/EditInstallmentSheet';
-import { MonthPickerSheet } from '../../src/shared/components/MonthPickerSheet';
-import { SearchablePickerSheet } from '../../src/shared/components/SearchablePickerSheet';
-import { CreatePayableSheet } from '../../src/features/payables/components/CreatePayableSheet';
-import { PayableCard } from '../../src/features/payables/components/PayableCard';
+} from '../../../src/shared/components/FilterChip';
+import { ScreenContainer } from '../../../src/shared/components/ScreenContainer';
+import { Text } from '../../../src/shared/components/Text';
+import { EmptyState } from '../../../src/shared/components/EmptyState';
+import { LoadingState } from '../../../src/shared/components/LoadingState';
+import { PaymentModal } from '../../../src/shared/components/PaymentModal';
+import { EditInstallmentSheet } from '../../../src/shared/components/EditInstallmentSheet';
+import { MonthPickerSheet } from '../../../src/shared/components/MonthPickerSheet';
+import { SearchablePickerSheet } from '../../../src/shared/components/SearchablePickerSheet';
+import { CreatePayableSheet } from '../../../src/features/payables/components/CreatePayableSheet';
+import { PayableCard } from '../../../src/features/payables/components/PayableCard';
 import {
   usePayables,
   type PayableStatusFilter,
-} from '../../src/features/payables/use-payables';
-import { usePayInstallment } from '../../src/features/payables/use-pay-installment';
-import { usePayable } from '../../src/features/payables/use-payable';
-import { useUpdatePayableInstallment } from '../../src/features/payables/use-update-payable-installment';
-import { useVendors } from '../../src/features/vendors/use-vendors';
-import type { PayableListItem } from '../../src/lib/types';
+} from '../../../src/features/payables/use-payables';
+import { usePayInstallment } from '../../../src/features/payables/use-pay-installment';
+import { usePayable } from '../../../src/features/payables/use-payable';
+import { useUpdatePayableInstallment } from '../../../src/features/payables/use-update-payable-installment';
+import { useVendors } from '../../../src/features/vendors/use-vendors';
+import type { PayableListItem } from '../../../src/lib/types';
 
 const FILTER_OPTIONS: { value: PayableStatusFilter; label: string }[] = [
   { value: 'ALL', label: 'Todos' },

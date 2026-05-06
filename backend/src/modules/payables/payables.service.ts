@@ -64,6 +64,7 @@ export class PayablesService {
                 tag: { select: { id: true, name: true, color: true } },
               },
             },
+            _count: { select: { lineItems: true } },
             lineItems: {
               include: {
                 tags: {

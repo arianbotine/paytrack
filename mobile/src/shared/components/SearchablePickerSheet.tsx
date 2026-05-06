@@ -10,9 +10,12 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  FlatList,
 } from 'react-native';
-import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from './Text';
@@ -137,84 +140,84 @@ export function SearchablePickerSheet({
         </View>
 
         {/* List */}
-        <FlatList<PickerItem>
-          data={filteredItems}
-          keyExtractor={(item: PickerItem) => item.id}
+        <BottomSheetScrollView
           keyboardShouldPersistTaps="handled"
           style={{ flex: 1 }}
           contentContainerStyle={{
             paddingHorizontal: 20,
             paddingBottom: showCreateNew ? 8 : 32,
           }}
-          ListEmptyComponent={
-            isLoading ? (
-              <View className="items-center py-8">
-                <ActivityIndicator size="small" color="#4F46E5" />
-              </View>
-            ) : trimmed.length > 0 && !showCreateNew ? (
-              <View className="items-center py-8">
-                <Text variant="body" className="text-neutral-400">
-                  Nenhum resultado para "{trimmed}"
-                </Text>
-              </View>
-            ) : null
-          }
-          ListFooterComponent={
-            showCreateNew ? (
-              <View style={{ paddingBottom: 32 }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    onCreateNew(trimmed);
-                    onClose();
-                  }}
-                  className="flex-row items-center py-4 mt-1 border-t border-neutral-100"
-                  activeOpacity={0.7}
-                >
-                  <View className="w-8 h-8 rounded-full bg-primary-50 items-center justify-center mr-3">
-                    <MaterialCommunityIcons
-                      name="plus"
-                      size={18}
-                      color="#4F46E5"
-                    />
-                  </View>
-                  <Text
-                    variant="body"
-                    className="text-primary-700 flex-1"
-                    weight="semibold"
-                  >
-                    Criar "{trimmed}"
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ) : null
-          }
-          renderItem={({ item }: { item: PickerItem }) => (
-            <TouchableOpacity
-              onPress={() => {
-                onSelect(item);
-                onClose();
-              }}
-              className="flex-row items-center py-3.5 border-b border-neutral-100"
-              activeOpacity={0.7}
-            >
-              <View className="w-8 h-8 rounded-full bg-neutral-100 items-center justify-center mr-3">
-                <MaterialCommunityIcons
-                  name="account-outline"
-                  size={16}
-                  color="#616161"
-                />
-              </View>
-              <Text variant="body" className="text-neutral-800 flex-1">
-                {item.name}
+        >
+          {isLoading ? (
+            <View className="items-center py-8">
+              <ActivityIndicator size="small" color="#4F46E5" />
+            </View>
+          ) : filteredItems.length === 0 &&
+            trimmed.length > 0 &&
+            !showCreateNew ? (
+            <View className="items-center py-8">
+              <Text variant="body" className="text-neutral-400">
+                Nenhum resultado para "{trimmed}"
               </Text>
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={18}
-                color="#BDBDBD"
-              />
-            </TouchableOpacity>
+            </View>
+          ) : (
+            filteredItems.map(item => (
+              <TouchableOpacity
+                key={item.id}
+                onPress={() => {
+                  onSelect(item);
+                  onClose();
+                }}
+                className="flex-row items-center py-3.5 border-b border-neutral-100"
+                activeOpacity={0.7}
+              >
+                <View className="w-8 h-8 rounded-full bg-neutral-100 items-center justify-center mr-3">
+                  <MaterialCommunityIcons
+                    name="account-outline"
+                    size={16}
+                    color="#616161"
+                  />
+                </View>
+                <Text variant="body" className="text-neutral-800 flex-1">
+                  {item.name}
+                </Text>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={18}
+                  color="#BDBDBD"
+                />
+              </TouchableOpacity>
+            ))
           )}
-        />
+
+          {showCreateNew && (
+            <View style={{ paddingBottom: 32 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  onCreateNew(trimmed);
+                  onClose();
+                }}
+                className="flex-row items-center py-4 mt-1 border-t border-neutral-100"
+                activeOpacity={0.7}
+              >
+                <View className="w-8 h-8 rounded-full bg-primary-50 items-center justify-center mr-3">
+                  <MaterialCommunityIcons
+                    name="plus"
+                    size={18}
+                    color="#4F46E5"
+                  />
+                </View>
+                <Text
+                  variant="body"
+                  className="text-primary-700 flex-1"
+                  weight="semibold"
+                >
+                  Criar "{trimmed}"
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </BottomSheetScrollView>
       </View>
     </BottomSheetModal>
   );

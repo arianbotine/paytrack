@@ -238,3 +238,98 @@ export class CreatePayableBffDto {
   @IsString({ each: true })
   tagIds?: string[];
 }
+
+export class CreateInstallmentItemBffDto {
+  @ApiProperty({
+    example: 'Serviço de consultoria',
+    description: 'Descrição do item (máx. 200 caracteres)',
+    maxLength: 200,
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'Descrição é obrigatória' })
+  description!: string;
+
+  @ApiProperty({
+    example: 500.5,
+    description: 'Valor do item',
+    minimum: 0.01,
+  })
+  @IsNumber()
+  @Min(0.01)
+  @Type(() => Number)
+  amount!: number;
+
+  @ApiPropertyOptional({
+    example: ['uuid-tag-1'],
+    description: 'IDs das tags a associar ao item',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tagIds?: string[];
+
+  @ApiPropertyOptional({
+    example: 0,
+    description: 'Ordem de exibição do item',
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  sortOrder?: number;
+
+  @ApiPropertyOptional({
+    example: 3,
+    description:
+      'Distribuir o item em N parcelas consecutivas. Padrão: 1 (apenas a parcela atual).',
+    minimum: 1,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  splitCount?: number;
+
+  @ApiPropertyOptional({
+    example: false,
+    description:
+      'Forçar ajuste do valor das parcelas caso a capacidade seja excedida.',
+  })
+  @IsOptional()
+  forceAdjustInstallmentAmount?: boolean;
+}
+
+export class UpdateInstallmentItemBffDto {
+  @ApiPropertyOptional({
+    example: 'Descrição atualizada',
+    maxLength: 200,
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ example: 550.0, minimum: 0.01 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0.01)
+  @Type(() => Number)
+  amount?: number;
+
+  @ApiPropertyOptional({
+    example: ['uuid-tag-1'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tagIds?: string[];
+
+  @ApiPropertyOptional({ example: 1, minimum: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  sortOrder?: number;
+}

@@ -173,6 +173,7 @@ export class PayableQueryFilterBuilder {
               tag: { select: { id: true, name: true, color: true } },
             },
           },
+          _count: { select: { lineItems: true } },
         },
         orderBy: { installmentNumber: 'asc' },
       },

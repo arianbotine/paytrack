@@ -5,14 +5,12 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
+import { View, TextInput, TouchableOpacity, Alert } from 'react-native';
 import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
-} from 'react-native';
-import { BottomSheetModal, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -205,7 +203,7 @@ export function CreateReceivableSheet({
         keyboardBlurBehavior="restore"
         handleIndicatorStyle={{ backgroundColor: '#e0e0e0', width: 40 }}
       >
-        <ScrollView
+        <BottomSheetScrollView
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{
             paddingHorizontal: 20,
@@ -582,7 +580,7 @@ export function CreateReceivableSheet({
             loading={isPending}
             onPress={handleSubmit(onSubmit)}
           />
-        </ScrollView>
+        </BottomSheetScrollView>
       </BottomSheetModal>
 
       {/* Customer Picker */}
