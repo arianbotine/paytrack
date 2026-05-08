@@ -4,6 +4,7 @@ import {
   GetPaymentsReportDetailsUseCase,
   GetInstallmentItemsReportUseCase,
   GetInstallmentItemsGroupedReportUseCase,
+  GetInstallmentItemsGroupedByTagReportUseCase,
 } from './use-cases';
 import {
   PaymentsReportFilterDto,
@@ -12,6 +13,7 @@ import {
   InstallmentItemsReportFilterDto,
   InstallmentItemsReportResponseDto,
   InstallmentItemsGroupedResponseDto,
+  InstallmentItemsGroupedByTagResponseDto,
 } from './dto';
 
 @Injectable()
@@ -20,7 +22,8 @@ export class ReportsService {
     private readonly getPaymentsReportUseCase: GetPaymentsReportUseCase,
     private readonly getPaymentsReportDetailsUseCase: GetPaymentsReportDetailsUseCase,
     private readonly getInstallmentItemsReportUseCase: GetInstallmentItemsReportUseCase,
-    private readonly getInstallmentItemsGroupedReportUseCase: GetInstallmentItemsGroupedReportUseCase
+    private readonly getInstallmentItemsGroupedReportUseCase: GetInstallmentItemsGroupedReportUseCase,
+    private readonly getInstallmentItemsGroupedByTagReportUseCase: GetInstallmentItemsGroupedByTagReportUseCase
   ) {}
 
   async getPaymentsReport(
@@ -55,6 +58,16 @@ export class ReportsService {
     filters: InstallmentItemsReportFilterDto
   ): Promise<InstallmentItemsGroupedResponseDto> {
     return this.getInstallmentItemsGroupedReportUseCase.execute(
+      organizationId,
+      filters
+    );
+  }
+
+  async getInstallmentItemsGroupedByTagReport(
+    organizationId: string,
+    filters: InstallmentItemsReportFilterDto
+  ): Promise<InstallmentItemsGroupedByTagResponseDto> {
+    return this.getInstallmentItemsGroupedByTagReportUseCase.execute(
       organizationId,
       filters
     );

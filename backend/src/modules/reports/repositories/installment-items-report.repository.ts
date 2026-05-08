@@ -119,4 +119,14 @@ export class InstallmentItemsReportRepository {
 
     return data as unknown as InstallmentItemRaw[];
   }
+
+  async findTagsByIds(
+    organizationId: string,
+    tagIds: string[]
+  ): Promise<Array<{ id: string; name: string; color: string | null }>> {
+    return this.prisma.tag.findMany({
+      where: { id: { in: tagIds }, organizationId },
+      select: { id: true, name: true, color: true },
+    });
+  }
 }

@@ -11,6 +11,7 @@ import {
   GetPaymentsReportDetailsUseCase,
   GetInstallmentItemsReportUseCase,
   GetInstallmentItemsGroupedReportUseCase,
+  GetInstallmentItemsGroupedByTagReportUseCase,
 } from './use-cases';
 import { DatabaseModule } from '../../infrastructure/database/database.module';
 
@@ -27,6 +28,7 @@ import { DatabaseModule } from '../../infrastructure/database/database.module';
     GetPaymentsReportDetailsUseCase,
     GetInstallmentItemsReportUseCase,
     GetInstallmentItemsGroupedReportUseCase,
+    GetInstallmentItemsGroupedByTagReportUseCase,
   ],
   exports: [ReportsService],
 })

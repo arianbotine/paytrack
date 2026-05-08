@@ -158,3 +158,21 @@ export interface InstallmentItemsGroupedResponse {
   total: number;
   summary: InstallmentItemsGroupedSummary;
 }
+
+// ============================================================
+// Installment Items Grouped by Tag
+// ============================================================
+
+export interface InstallmentItemTagGroupSummary {
+  tagId: string;
+  tagName: string;
+  tagColor: string | null;
+  totalAmount: number;
+  itemCount: number;
+  installmentCount: number;
+  payableCount: number;
+}
+
+export interface InstallmentItemsGroupedByTagResponse {
+  data: InstallmentItemTagGroupSummary[];
+}

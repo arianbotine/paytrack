@@ -33,6 +33,7 @@ import CategoryIcon from '@mui/icons-material/Category';
 import {
   useInstallmentItemsReport,
   useInstallmentItemsGroupedReport,
+  useInstallmentItemsGroupedByTagReport,
   useReportTags,
 } from '../hooks/useReports';
 import { ReportCard } from '../components/ReportCard';
@@ -120,6 +121,12 @@ export default function InstallmentItemsReportPage() {
     { tagIds: appliedTagIds },
     appliedTagIds.length > 0 && groupByDescription
   );
+
+  const { data: groupedByTagData, isLoading: isGroupedByTagLoading } =
+    useInstallmentItemsGroupedByTagReport(
+      { tagIds: appliedTagIds },
+      appliedTagIds.length > 0
+    );
 
   function handleApply() {
     setPage(0);
@@ -388,6 +395,242 @@ export default function InstallmentItemsReportPage() {
             )}
           </Grid>
         )}
+
+      {/* Per-tag summary panel */}
+      {!isQueryPending && (groupedByTagData || isGroupedByTagLoading) && (
+        <Paper sx={{ p: 2.5, mb: 3, borderRadius: 2 }}>
+          <Box display="flex" alignItems="center" gap={1} mb={2.5}>
+            <LabelIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+            <Typography variant="subtitle2" fontWeight={700}>
+              Totais por Tag
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.disabled"
+              sx={{ ml: 0.5 }}
+            >
+              Um item com múltiplas tags aparece em cada grupo
+            </Typography>
+          </Box>
+          <Box
+            display="grid"
+            sx={{
+              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+              gap: 2,
+            }}
+          >
+            {isGroupedByTagLoading &&
+              appliedTagIds.map((_, i) => (
+                <Box
+                  key={i}
+                  sx={{
+                    borderRadius: 2.5,
+                    overflow: 'hidden',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Skeleton variant="rectangular" height={6} />
+                  <Box sx={{ p: 2 }}>
+                    <Skeleton variant="text" width="45%" height={18} />
+                    <Skeleton
+                      variant="text"
+                      width="75%"
+                      height={40}
+                      sx={{ mt: 0.5 }}
+                    />
+                    <Skeleton
+                      variant="rectangular"
+                      height={4}
+                      sx={{ mt: 1.5, borderRadius: 1 }}
+                    />
+                    <Box display="flex" gap={1} mt={2}>
+                      <Skeleton variant="rounded" width={50} height={22} />
+                      <Skeleton variant="rounded" width={60} height={22} />
+                      <Skeleton variant="rounded" width={50} height={22} />
+                    </Box>
+                  </Box>
+                </Box>
+              ))}
+            {!isGroupedByTagLoading &&
+              (() => {
+                const grandTotal = groupedByTagData!.data.reduce(
+                  (s, g) => s + g.totalAmount,
+                  0
+                );
+                return groupedByTagData!.data.map(group => {
+                  const color = group.tagColor ?? '#888';
+                  const pct =
+                    grandTotal > 0
+                      ? Math.round((group.totalAmount / grandTotal) * 100)
+                      : 0;
+                  return (
+                    <Box
+                      key={group.tagId}
+                      sx={{
+                        borderRadius: 2.5,
+                        overflow: 'hidden',
+                        border: '1px solid',
+                        borderColor: alpha(color, 0.25),
+                        bgcolor: 'background.paper',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        transition: 'box-shadow 0.2s',
+                        '&:hover': {
+                          boxShadow: `0 4px 20px ${alpha(color, 0.18)}`,
+                        },
+                      }}
+                    >
+                      {/* Colored top bar */}
+                      <Box
+                        sx={{
+                          height: 6,
+                          background: `linear-gradient(90deg, ${color} 0%, ${alpha(color, 0.5)} 100%)`,
+                        }}
+                      />
+
+                      <Box sx={{ p: 2, flexGrow: 1 }}>
+                        {/* Tag name */}
+                        <Box
+                          display="flex"
+                          alignItems="center"
+                          gap={0.75}
+                          mb={1}
+                        >
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              bgcolor: color,
+                              flexShrink: 0,
+                            }}
+                          />
+                          <Typography
+                            variant="caption"
+                            fontWeight={700}
+                            noWrap
+                            sx={{
+                              color,
+                              textTransform: 'uppercase',
+                              letterSpacing: 0.8,
+                              fontSize: '0.68rem',
+                            }}
+                          >
+                            {group.tagName}
+                          </Typography>
+                        </Box>
+
+                        {/* Amount */}
+                        <Typography
+                          variant="h5"
+                          fontWeight={800}
+                          sx={{
+                            color: 'text.primary',
+                            lineHeight: 1.15,
+                            mb: 1.5,
+                            fontSize: { xs: '1.15rem', sm: '1.35rem' },
+                          }}
+                        >
+                          {new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                          }).format(group.totalAmount)}
+                        </Typography>
+
+                        {/* Progress bar */}
+                        <Box
+                          sx={{
+                            height: 4,
+                            borderRadius: 2,
+                            bgcolor: alpha(color, 0.12),
+                            mb: 0.5,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              height: '100%',
+                              width: `${pct}%`,
+                              borderRadius: 2,
+                              background: `linear-gradient(90deg, ${color} 0%, ${alpha(color, 0.6)} 100%)`,
+                              transition: 'width 0.6s ease',
+                            }}
+                          />
+                        </Box>
+                        <Typography
+                          variant="caption"
+                          color="text.disabled"
+                          sx={{ display: 'block', mb: 2, fontSize: '0.68rem' }}
+                        >
+                          {pct}% do total pesquisado
+                        </Typography>
+
+                        {/* Pill counters */}
+                        <Box
+                          display="grid"
+                          sx={{
+                            gridTemplateColumns: 'repeat(3, 1fr)',
+                            gap: 0.75,
+                          }}
+                        >
+                          {[
+                            { label: 'itens', value: group.itemCount },
+                            {
+                              label: 'parcelas',
+                              value: group.installmentCount,
+                            },
+                            { label: 'contas', value: group.payableCount },
+                          ].map(({ label, value }) => (
+                            <Box
+                              key={label}
+                              sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                py: 0.75,
+                                px: 0.5,
+                                borderRadius: 2,
+                                bgcolor: alpha(color, 0.08),
+                                border: '1px solid',
+                                borderColor: alpha(color, 0.2),
+                              }}
+                            >
+                              <Typography
+                                variant="caption"
+                                fontWeight={800}
+                                sx={{
+                                  color,
+                                  fontSize: '0.85rem',
+                                  lineHeight: 1.1,
+                                }}
+                              >
+                                {value}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.disabled"
+                                sx={{
+                                  fontSize: '0.62rem',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: 0.4,
+                                  lineHeight: 1.4,
+                                }}
+                              >
+                                {label}
+                              </Typography>
+                            </Box>
+                          ))}
+                        </Box>
+                      </Box>
+                    </Box>
+                  );
+                });
+              })()}
+          </Box>
+        </Paper>
+      )}
 
       {/* Initial empty state */}
       {isQueryPending && (

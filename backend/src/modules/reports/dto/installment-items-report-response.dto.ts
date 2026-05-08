@@ -81,3 +81,20 @@ export class InstallmentItemsGroupedResponseDto {
   @ApiProperty({ type: InstallmentItemsGroupedSummaryDto })
   summary!: InstallmentItemsGroupedSummaryDto;
 }
+
+// ─── Grouped by tag ────────────────────────────────────────────────────────
+
+export class InstallmentItemTagGroupSummaryDto {
+  @ApiProperty() tagId!: string;
+  @ApiProperty() tagName!: string;
+  @ApiPropertyOptional({ nullable: true }) tagColor!: string | null;
+  @ApiProperty() totalAmount!: number;
+  @ApiProperty() itemCount!: number;
+  @ApiProperty() installmentCount!: number;
+  @ApiProperty() payableCount!: number;
+}
+
+export class InstallmentItemsGroupedByTagResponseDto {
+  @ApiProperty({ type: [InstallmentItemTagGroupSummaryDto] })
+  data!: InstallmentItemTagGroupSummaryDto[];
+}

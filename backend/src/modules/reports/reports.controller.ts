@@ -14,6 +14,7 @@ import {
   InstallmentItemsReportFilterDto,
   InstallmentItemsReportResponseDto,
   InstallmentItemsGroupedResponseDto,
+  InstallmentItemsGroupedByTagResponseDto,
 } from './dto';
 
 @ApiTags('Relatórios')
@@ -90,6 +91,26 @@ export class ReportsController {
     @Query() filters: InstallmentItemsReportFilterDto
   ): Promise<InstallmentItemsGroupedResponseDto> {
     return this.reportsService.getInstallmentItemsGroupedReport(
+      organizationId,
+      filters
+    );
+  }
+
+  @Get('installment-items/grouped-by-tag')
+  @ApiOperation({
+    summary: 'Totais de itens de parcelas agrupados por cada tag pesquisada',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Totais por tag gerados com sucesso',
+    type: InstallmentItemsGroupedByTagResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Parâmetros inválidos' })
+  async getInstallmentItemsGroupedByTagReport(
+    @CurrentUser('organizationId') organizationId: string,
+    @Query() filters: InstallmentItemsReportFilterDto
+  ): Promise<InstallmentItemsGroupedByTagResponseDto> {
+    return this.reportsService.getInstallmentItemsGroupedByTagReport(
       organizationId,
       filters
     );
