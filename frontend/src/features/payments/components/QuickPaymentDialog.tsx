@@ -12,7 +12,6 @@ import {
   Select,
   MenuItem,
   Grid,
-  InputAdornment,
   Alert,
   Typography,
   useMediaQuery,
@@ -34,6 +33,7 @@ import {
   AttachMoney as MoneyIcon,
   LocalOffer as TagIcon,
 } from '@mui/icons-material';
+import { CurrencyField } from '../../../shared/components';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -352,25 +352,15 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
                     name="amount"
                     control={control}
                     render={({ field }) => (
-                      <TextField
-                        {...field}
+                      <CurrencyField
                         label="Valor"
-                        type="number"
                         fullWidth
                         required
+                        value={field.value}
+                        onChange={field.onChange}
                         error={!!errors.amount}
                         helperText={errors.amount?.message}
                         inputRef={amountRef}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">R$</InputAdornment>
-                          ),
-                        }}
-                        inputProps={{
-                          step: '0.01',
-                          min: '0.01',
-                          max: installmentInfo.pendingAmount,
-                        }}
                       />
                     )}
                   />
