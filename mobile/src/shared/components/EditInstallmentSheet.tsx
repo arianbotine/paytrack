@@ -16,6 +16,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Text } from './Text';
+import { CurrencyInput } from './CurrencyInput';
 import { Button } from './Button';
 import type {
   PayableInstallment,
@@ -76,7 +77,9 @@ export function EditInstallmentSheet({
   useEffect(() => {
     if (installment) {
       reset({
-        amount: canEditAmount ? String(installment.amount.toFixed(2)) : '',
+        amount: canEditAmount
+          ? installment.amount.toFixed(2).replace('.', ',')
+          : '',
         notes: installment.notes ?? '',
       });
     }
@@ -175,36 +178,16 @@ export function EditInstallmentSheet({
                   control={control}
                   name="amount"
                   render={({ field: { value, onChange, onBlur } }) => (
-                    <View
-                      className={`flex-row items-center bg-neutral-50 border rounded-xl px-4 py-3 mb-1 ${
-                        errors.amount ? 'border-red-400' : 'border-neutral-200'
-                      }`}
-                    >
-                      <Text
-                        variant="subheading"
-                        weight="semibold"
-                        className="text-neutral-500 mr-2"
-                      >
-                        R$
-                      </Text>
-                      <TextInput
-                        className="flex-1 text-lg font-sans-semibold text-neutral-900"
-                        value={value}
+                    <View className="mb-5">
+                      <CurrencyInput
+                        value={value ?? ''}
                         onChangeText={onChange}
                         onBlur={onBlur}
-                        keyboardType="decimal-pad"
-                        placeholder="0,00"
-                        placeholderTextColor="#9e9e9e"
+                        error={errors.amount?.message}
                       />
                     </View>
                   )}
                 />
-                {errors.amount && (
-                  <Text variant="caption" className="text-red-500 mb-3">
-                    {errors.amount.message}
-                  </Text>
-                )}
-                {!errors.amount && <View className="mb-5" />}
               </>
             ) : (
               <View className="flex-row items-center bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">

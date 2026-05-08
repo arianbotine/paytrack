@@ -17,6 +17,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from '@shared/components/Text';
+import { CurrencyInput } from '@shared/components/CurrencyInput';
 import { Button } from '@shared/components/Button';
 import { CalendarPicker } from '@shared/components/CalendarPicker';
 import { SearchablePickerSheet } from '@shared/components/SearchablePickerSheet';
@@ -299,34 +300,18 @@ export function CreatePayableSheet({
             >
               Valor *
             </Text>
-            <View className="flex-row items-center bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3">
-              <Text
-                variant="subheading"
-                weight="semibold"
-                className="text-neutral-500 mr-2"
-              >
-                R$
-              </Text>
-              <Controller
-                control={control}
-                name="amount"
-                render={({ field }) => (
-                  <TextInput
-                    className="flex-1 text-lg text-neutral-900"
-                    placeholder="0,00"
-                    placeholderTextColor="#9E9E9E"
-                    value={field.value}
-                    onChangeText={field.onChange}
-                    keyboardType="decimal-pad"
-                  />
-                )}
-              />
-            </View>
-            {errors.amount && (
-              <Text variant="caption" className="text-danger-600 mt-1">
-                {errors.amount.message}
-              </Text>
-            )}
+            <Controller
+              control={control}
+              name="amount"
+              render={({ field }) => (
+                <CurrencyInput
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  onBlur={field.onBlur}
+                  error={errors.amount?.message}
+                />
+              )}
+            />
           </View>
 
           {/* 1ª Data de Vencimento */}

@@ -1,5 +1,6 @@
 export { Text } from './Text';
 export { Button } from './Button';
+export { CurrencyInput } from './CurrencyInput';
 export { FilterChip, AdvancedFilterChip, formatMonthYear } from './FilterChip';
 export { Card } from './Card';
 export { StatusBadge } from './StatusBadge';

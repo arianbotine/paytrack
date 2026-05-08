@@ -5,7 +5,7 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
-import { View, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, TouchableOpacity, Alert } from 'react-native';
 import {
   BottomSheetModal,
   BottomSheetBackdrop,
@@ -14,6 +14,7 @@ import {
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from './Text';
+import { CurrencyInput } from './CurrencyInput';
 import { Button } from './Button';
 import { PaymentMethodPicker } from './PaymentMethodPicker';
 import { CalendarPicker } from './CalendarPicker';
@@ -155,22 +156,8 @@ export function PaymentModal({
         >
           Valor
         </Text>
-        <View className="flex-row items-center bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 mb-5">
-          <Text
-            variant="subheading"
-            weight="semibold"
-            className="text-neutral-500 mr-2"
-          >
-            R$
-          </Text>
-          <TextInput
-            className="flex-1 text-lg font-sans-semibold text-neutral-900"
-            value={amount}
-            onChangeText={setAmount}
-            keyboardType="decimal-pad"
-            placeholder="0,00"
-            placeholderTextColor="#9e9e9e"
-          />
+        <View className="mb-5">
+          <CurrencyInput value={amount} onChangeText={setAmount} />
         </View>
 
         {/* Payment date */}

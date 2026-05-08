@@ -84,6 +84,9 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const isEditing = !!receivable;
+  const hasRecordedReceipts =
+    !!receivable &&
+    (receivable.receivedAmount > 0 || receivable.status !== 'PENDING');
   const [paymentFormValid, setPaymentFormValid] = useState(true);
 
   const [isInstallment, setIsInstallment] = useState(false);
@@ -214,7 +217,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
       if (receivable) {
         // Configurar estado de parcelamento baseado na conta existente
         const hasMultipleInstallments = receivable.totalInstallments > 1;
-        setIsInstallment(hasMultipleInstallments);
+        setIsInstallment(hasMultipleInstallments && !hasRecordedReceipts);
 
         reset({
           amount: receivable.amount,
@@ -235,7 +238,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
         setIsInstallment(false);
       }
     }
-  }, [open, receivable, reset]);
+  }, [open, receivable, reset, hasRecordedReceipts]);
 
   const handleClose = () => {
     reset();
@@ -399,37 +402,38 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                         fullWidth
                         value={userInputValue}
                         onChange={setUserInputValue}
-                        disabled={isEditing && receivable?.receivedAmount !== 0}
+                        disabled={isEditing && hasRecordedReceipts}
                         error={!!errors.amount}
                         helperText={helperText}
                         InputProps={{
-                          endAdornment: isInstallment && (
-                            <InputAdornment position="end">
-                              <Tooltip
-                                title={`Alternar para valor ${userInputMode === 'total' ? 'por parcela' : 'total'}`}
-                                arrow
-                              >
-                                <IconButton
-                                  size="small"
-                                  onClick={() => {
-                                    setUserInputMode(
-                                      userInputMode === 'total'
-                                        ? 'perInstallment'
-                                        : 'total'
-                                    );
-                                  }}
-                                  sx={{
-                                    color: 'primary.main',
-                                    '&:hover': {
-                                      backgroundColor: 'primary.lighter',
-                                    },
-                                  }}
+                          endAdornment: isInstallment &&
+                            !hasRecordedReceipts && (
+                              <InputAdornment position="end">
+                                <Tooltip
+                                  title={`Alternar para valor ${userInputMode === 'total' ? 'por parcela' : 'total'}`}
+                                  arrow
                                 >
-                                  <SwapHoriz />
-                                </IconButton>
-                              </Tooltip>
-                            </InputAdornment>
-                          ),
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => {
+                                      setUserInputMode(
+                                        userInputMode === 'total'
+                                          ? 'perInstallment'
+                                          : 'total'
+                                      );
+                                    }}
+                                    sx={{
+                                      color: 'primary.main',
+                                      '&:hover': {
+                                        backgroundColor: 'primary.lighter',
+                                      },
+                                    }}
+                                  >
+                                    <SwapHoriz />
+                                  </IconButton>
+                                </Tooltip>
+                              </InputAdornment>
+                            ),
                         }}
                       />
                     );
