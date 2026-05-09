@@ -124,6 +124,19 @@ export const useReportCategories = () => {
   });
 };
 
+export const useReportPayableCategories = () => {
+  return useQuery<Category[], Error, Category[]>({
+    queryKey: ['categories', 'PAYABLE'],
+    queryFn: async (): Promise<Category[]> => {
+      const { data } = await api.get<Category[]>('/categories', {
+        params: { type: 'PAYABLE' },
+      });
+      return data;
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutos
+  });
+};
+
 export const useReportTags = () => {
   return useQuery<Tag[], Error, Tag[]>({
     queryKey: ['tags'],
@@ -161,6 +174,10 @@ export const useInstallmentItemsReport = (
   params: UseInstallmentItemsReportParams,
   enabled = true
 ) => {
+  const hasFilter =
+    (params.tagIds?.length ?? 0) > 0 ||
+    (params.categoryIds?.length ?? 0) > 0;
+
   return useQuery<
     InstallmentItemsReportResponse,
     Error,
@@ -168,28 +185,36 @@ export const useInstallmentItemsReport = (
   >({
     queryKey: ['reports', 'installment-items', params],
     queryFn: async (): Promise<InstallmentItemsReportResponse> => {
+      const queryParams: Record<string, string | number> = {
+        skip: params.skip ?? 0,
+        take: params.take ?? 50,
+      };
+      if (params.tagIds && params.tagIds.length > 0) {
+        queryParams.tagIds = params.tagIds.join(',');
+      }
+      if (params.categoryIds && params.categoryIds.length > 0) {
+        queryParams.categoryIds = params.categoryIds.join(',');
+      }
       const { data } = await api.get<InstallmentItemsReportResponse>(
         '/reports/installment-items',
-        {
-          params: {
-            tagIds: params.tagIds.join(','),
-            skip: params.skip ?? 0,
-            take: params.take ?? 50,
-          },
-        }
+        { params: queryParams }
       );
       return data;
     },
-    enabled: enabled && params.tagIds.length > 0,
+    enabled: enabled && hasFilter,
     staleTime: 0,
     gcTime: 0,
   });
 };
 
 export const useInstallmentItemsGroupedReport = (
-  params: Pick<UseInstallmentItemsReportParams, 'tagIds'>,
+  params: Pick<UseInstallmentItemsReportParams, 'tagIds' | 'categoryIds'>,
   enabled = true
 ) => {
+  const hasFilter =
+    (params.tagIds?.length ?? 0) > 0 ||
+    (params.categoryIds?.length ?? 0) > 0;
+
   return useQuery<
     InstallmentItemsGroupedResponse,
     Error,
@@ -197,26 +222,33 @@ export const useInstallmentItemsGroupedReport = (
   >({
     queryKey: ['reports', 'installment-items-grouped', params],
     queryFn: async (): Promise<InstallmentItemsGroupedResponse> => {
+      const queryParams: Record<string, string> = {};
+      if (params.tagIds && params.tagIds.length > 0) {
+        queryParams.tagIds = params.tagIds.join(',');
+      }
+      if (params.categoryIds && params.categoryIds.length > 0) {
+        queryParams.categoryIds = params.categoryIds.join(',');
+      }
       const { data } = await api.get<InstallmentItemsGroupedResponse>(
         '/reports/installment-items/grouped',
-        {
-          params: {
-            tagIds: params.tagIds.join(','),
-          },
-        }
+        { params: queryParams }
       );
       return data;
     },
-    enabled: enabled && params.tagIds.length > 0,
+    enabled: enabled && hasFilter,
     staleTime: 0,
     gcTime: 0,
   });
 };
 
 export const useInstallmentItemsGroupedByTagReport = (
-  params: Pick<UseInstallmentItemsReportParams, 'tagIds'>,
+  params: Pick<UseInstallmentItemsReportParams, 'tagIds' | 'categoryIds'>,
   enabled = true
 ) => {
+  const hasFilter =
+    (params.tagIds?.length ?? 0) > 0 ||
+    (params.categoryIds?.length ?? 0) > 0;
+
   return useQuery<
     InstallmentItemsGroupedByTagResponse,
     Error,
@@ -224,17 +256,20 @@ export const useInstallmentItemsGroupedByTagReport = (
   >({
     queryKey: ['reports', 'installment-items-grouped-by-tag', params],
     queryFn: async (): Promise<InstallmentItemsGroupedByTagResponse> => {
+      const queryParams: Record<string, string> = {};
+      if (params.tagIds && params.tagIds.length > 0) {
+        queryParams.tagIds = params.tagIds.join(',');
+      }
+      if (params.categoryIds && params.categoryIds.length > 0) {
+        queryParams.categoryIds = params.categoryIds.join(',');
+      }
       const { data } = await api.get<InstallmentItemsGroupedByTagResponse>(
         '/reports/installment-items/grouped-by-tag',
-        {
-          params: {
-            tagIds: params.tagIds.join(','),
-          },
-        }
+        { params: queryParams }
       );
       return data;
     },
-    enabled: enabled && params.tagIds.length > 0,
+    enabled: enabled && hasFilter,
     staleTime: 0,
     gcTime: 0,
   });

@@ -14,6 +14,7 @@ type InstallmentItemWithTags = {
   splitTotal: number | null;
   createdAt: Date;
   updatedAt: Date;
+  category: { id: string; name: string; color: string | null } | null;
   tags: Array<{
     tag: { id: string; name: string; color: string | null };
   }>;
@@ -62,6 +63,13 @@ export class ListPayableInstallmentItemsUseCase {
       },
       {
         include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+            },
+          },
           tags: {
             include: {
               tag: {
@@ -87,6 +95,9 @@ export class ListPayableInstallmentItemsUseCase {
       splitTotal: item.splitTotal ?? null,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
+      category: item.category
+        ? { id: item.category.id, name: item.category.name, color: item.category.color }
+        : null,
       tags: item.tags.map(itemTag => ({
         id: itemTag.tag.id,
         name: itemTag.tag.name,

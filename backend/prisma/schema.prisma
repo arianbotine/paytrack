@@ -172,9 +172,10 @@ model Category {
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
   // Relations
-  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  payables     Payable[]
-  receivables  Receivable[]
+  organization           Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payables               Payable[]
+  receivables            Receivable[]
+  payableInstallmentItems PayableInstallmentItem[]
 
   @@unique([organizationId, name, type])
   @@index([organizationId])
@@ -363,6 +364,7 @@ model PayableInstallmentItem {
   id                   String   @id @default(uuid())
   payableInstallmentId String   @map("payable_installment_id")
   organizationId       String   @map("organization_id")
+  categoryId           String?  @map("category_id")
   description          String
   amount               Decimal  @db.Decimal(15, 2)
   sortOrder            Int      @default(0) @map("sort_order")
@@ -373,13 +375,15 @@ model PayableInstallmentItem {
   updatedAt            DateTime @updatedAt @map("updated_at")
 
   // Relations
-  payableInstallment PayableInstallment     @relation(fields: [payableInstallmentId], references: [id], onDelete: Cascade)
-  organization       Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payableInstallment PayableInstallment         @relation(fields: [payableInstallmentId], references: [id], onDelete: Cascade)
+  organization       Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category           Category?                  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   tags               PayableInstallmentItemTag[]
 
   @@index([payableInstallmentId])
   @@index([organizationId, payableInstallmentId])
   @@index([payableInstallmentId, sortOrder])
+  @@index([categoryId])
   @@map("payable_installment_items")
 }
 

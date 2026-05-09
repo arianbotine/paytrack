@@ -315,6 +315,14 @@ export class CreateInstallmentItemDto {
   tagIds?: string[];
 
   @ApiPropertyOptional({
+    example: 'uuid-category-1',
+    description: 'Categoria do item da parcela (opcional)',
+  })
+  @IsUUID('4', { message: 'categoryId deve ser um UUID válido' })
+  @IsOptional()
+  categoryId?: string;
+
+  @ApiPropertyOptional({
     example: 1,
     description: 'Ordem de exibição do item na parcela',
   })

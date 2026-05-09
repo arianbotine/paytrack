@@ -19,9 +19,9 @@ export class GetInstallmentItemsReportUseCase {
     const skip = filters.skip ?? 0;
     const take = filters.take ?? 50;
 
-    const { data, total } = await this.repository.findItemsByTagIds(
+    const { data, total } = await this.repository.findItemsByFilters(
       organizationId,
-      filters.tagIds,
+      { tagIds: filters.tagIds, categoryIds: filters.categoryIds },
       skip,
       take
     );
@@ -44,6 +44,8 @@ export class GetInstallmentItemsReportUseCase {
         itemCreatedAt: item.createdAt.toISOString(),
         itemSplitIndex: item.splitIndex ?? null,
         itemSplitTotal: item.splitTotal ?? null,
+        itemCategoryId: item.category?.id ?? null,
+        itemCategoryName: item.category?.name ?? null,
         tags,
         installmentId: inst.id,
         installmentNumber: inst.installmentNumber,

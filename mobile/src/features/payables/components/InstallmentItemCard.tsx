@@ -81,11 +81,25 @@ export function InstallmentItemCard({
       {item.tags.length > 0 && (
         <View
           style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}
-          className="mb-2"
+          className="mb-1.5"
         >
           {item.tags.map(tag => (
             <TagChip key={tag.id} tag={tag} size="sm" />
           ))}
+        </View>
+      )}
+
+      {/* Category chip */}
+      {item.category && (
+        <View className="flex-row items-center mb-1.5">
+          <MaterialCommunityIcons
+            name="shape-outline"
+            size={12}
+            color="#737373"
+          />
+          <Text variant="caption" className="text-neutral-500 ml-1">
+            {item.category.name}
+          </Text>
         </View>
       )}
 

@@ -40,6 +40,7 @@ export class CreatePayableInstallmentItemUseCase {
     const normalizedTagIds = this.helpers.normalizeTagIds(dto.tagIds);
     const splitCount = dto.splitCount ?? 1;
     const forceAdjust = dto.forceAdjustInstallmentAmount ?? false;
+    const categoryId = dto.categoryId ?? null;
 
     if (splitCount === 1) {
       await this.createSingleItem(
@@ -49,6 +50,7 @@ export class CreatePayableInstallmentItemUseCase {
         normalizedDescription,
         normalizedTagIds,
         dto.amount,
+        categoryId,
         dto.sortOrder
       );
     } else {
@@ -59,6 +61,7 @@ export class CreatePayableInstallmentItemUseCase {
         normalizedDescription,
         normalizedTagIds,
         dto.amount,
+        categoryId,
         splitCount,
         forceAdjust
       );
@@ -80,6 +83,7 @@ export class CreatePayableInstallmentItemUseCase {
     description: string,
     tagIds: string[],
     amount: number,
+    categoryId: string | null,
     sortOrder?: number
   ) {
     await this.payablesRepository.transaction(async prisma => {
@@ -128,6 +132,7 @@ export class CreatePayableInstallmentItemUseCase {
           description,
           amount: MoneyUtils.toDecimal(amount),
           sortOrder: order,
+          ...(categoryId !== null && { categoryId }),
         },
       });
 
@@ -151,6 +156,7 @@ export class CreatePayableInstallmentItemUseCase {
     description: string,
     tagIds: string[],
     totalAmount: number,
+    categoryId: string | null,
     splitCount: number,
     forceAdjust: boolean
   ) {
@@ -325,6 +331,7 @@ export class CreatePayableInstallmentItemUseCase {
             splitIndex: idx + 1,
             splitTotal: splitCount,
             splitGroupId,
+            ...(categoryId !== null && { categoryId }),
           },
         });
 

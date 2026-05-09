@@ -16,9 +16,9 @@ export class GetInstallmentItemsGroupedReportUseCase {
     organizationId: string,
     filters: InstallmentItemsReportFilterDto
   ): Promise<InstallmentItemsGroupedResponseDto> {
-    const all = await this.repository.findAllItemsByTagIds(
+    const all = await this.repository.findAllItemsByFilters(
       organizationId,
-      filters.tagIds
+      { tagIds: filters.tagIds, categoryIds: filters.categoryIds }
     );
 
     const map = new Map<

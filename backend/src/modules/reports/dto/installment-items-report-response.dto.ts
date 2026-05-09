@@ -15,6 +15,8 @@ export class InstallmentItemReportRowDto {
   @ApiProperty() itemCreatedAt!: string;
   @ApiPropertyOptional({ nullable: true }) itemSplitIndex!: number | null;
   @ApiPropertyOptional({ nullable: true }) itemSplitTotal!: number | null;
+  @ApiPropertyOptional({ nullable: true }) itemCategoryId!: string | null;
+  @ApiPropertyOptional({ nullable: true }) itemCategoryName!: string | null;
   @ApiProperty({ type: [InstallmentItemTagDto] })
   tags!: InstallmentItemTagDto[];
 

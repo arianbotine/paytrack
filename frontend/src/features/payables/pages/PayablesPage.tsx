@@ -295,6 +295,7 @@ export const PayablesPage: React.FC = () => {
       description: string;
       amount: number;
       tagIds?: string[];
+      categoryId?: string;
       splitCount?: number;
       forceAdjustInstallmentAmount?: boolean;
     }) => {
@@ -316,6 +317,7 @@ export const PayablesPage: React.FC = () => {
         description?: string;
         amount?: number;
         tagIds?: string[];
+        categoryId?: string | null;
       }
     ) => {
       if (!selectedPayable || !selectedInstallment) return;
@@ -462,6 +464,7 @@ export const PayablesPage: React.FC = () => {
           installment={selectedInstallment}
           payable={selectedPayable}
           tags={tags}
+          categories={categories}
           isSubmitting={updateInstallmentMutation.isPending}
           installmentItems={installmentItemsResponse?.data || []}
           itemsSummary={installmentItemsResponse?.summary}

@@ -98,6 +98,10 @@ export interface InstallmentItemReportRow {
   itemAmount: number;
   itemSortOrder: number;
   itemCreatedAt: string;
+  itemSplitIndex: number | null;
+  itemSplitTotal: number | null;
+  itemCategoryId: string | null;
+  itemCategoryName: string | null;
   tags: InstallmentItemTag[];
   installmentId: string;
   installmentNumber: number;
@@ -128,7 +132,8 @@ export interface InstallmentItemsReportResponse {
 }
 
 export interface UseInstallmentItemsReportParams {
-  tagIds: string[];
+  tagIds?: string[];
+  categoryIds?: string[];
   skip?: number;
   take?: number;
 }

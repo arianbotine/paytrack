@@ -1,31 +1,48 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsString,
-  ArrayMinSize,
   IsInt,
   Min,
   Max,
   IsOptional,
+  IsUUID,
+  ArrayUnique,
+  ValidateIf,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
+function parseCommaSeparated(value: unknown): string[] | unknown {
+  if (typeof value === 'string') {
+    return value.split(',').filter((id: string) => id.trim());
+  }
+  return value;
+}
+
 export class InstallmentItemsReportFilterDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: [String],
-    description: 'IDs das tags para filtrar os itens (obrigatório, mín. 1)',
+    description: 'IDs das tags para filtrar os itens',
     example: ['uuid-1', 'uuid-2'],
   })
   @IsArray()
   @IsString({ each: true })
-  @ArrayMinSize(1)
-  @Transform(({ value }) => {
-    if (typeof value === 'string') {
-      return value.split(',').filter((id: string) => id.trim());
-    }
-    return value;
+  @ArrayUnique()
+  @IsOptional()
+  @Transform(({ value }) => parseCommaSeparated(value))
+  tagIds?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'IDs das categorias para filtrar os itens',
+    example: ['uuid-cat-1'],
   })
-  tagIds: string[];
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @ArrayUnique()
+  @IsOptional()
+  @Transform(({ value }) => parseCommaSeparated(value))
+  categoryIds?: string[];
 
   @ApiPropertyOptional({
     description: 'Número de registros a pular (paginação)',
@@ -54,4 +71,11 @@ export class InstallmentItemsReportFilterDto {
     value !== undefined ? Number.parseInt(value, 10) : 50
   )
   take?: number = 50;
+
+  hasAnyFilter(): boolean {
+    return (
+      (this.tagIds !== undefined && this.tagIds.length > 0) ||
+      (this.categoryIds !== undefined && this.categoryIds.length > 0)
+    );
+  }
 }

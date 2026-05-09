@@ -18,10 +18,14 @@ import { Button } from '@shared/components/Button';
 import { TagPickerSheet } from '@shared/components/TagPickerSheet';
 import { TagChip } from '@shared/components/TagChip';
 import { CreateTagSheet } from '@shared/components/CreateTagSheet';
+import { SearchablePickerSheet } from '@shared/components/SearchablePickerSheet';
+import { CreateCategorySheet } from '../../categories/components/CreateCategorySheet';
 import { useTags } from '../../tags/use-tags';
+import { useCategories } from '../../categories/use-categories';
 import type {
   InstallmentItem,
   Tag,
+  Category,
   CreateInstallmentItemInput,
   UpdateInstallmentItemInput,
   InstallmentItemsSummary,
@@ -64,9 +68,13 @@ export function AddEditItemSheet({
   const [amountRaw, setAmountRaw] = useState('');
   const [splitCount, setSplitCount] = useState(1);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [createTagOpen, setCreateTagOpen] = useState(false);
   const [pendingTagName, setPendingTagName] = useState('');
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
+  const [pendingCategoryName, setPendingCategoryName] = useState('');
   const [errors, setErrors] = useState<{
     description?: string;
     amount?: string;
@@ -76,6 +84,12 @@ export function AddEditItemSheet({
   const { data: tagsData } = useTags();
   const allTags: Tag[] = tagsData?.items ?? [];
 
+  const { data: categoriesData, isLoading: categoriesLoading } = useCategories('PAYABLE');
+  const categoryItems = (categoriesData?.items ?? []).map(c => ({
+    id: c.id,
+    name: c.name,
+  }));
+
   // Populate form when editing
   useEffect(() => {
     if (visible) {
@@ -84,11 +98,18 @@ export function AddEditItemSheet({
         setAmountRaw(item.amount.toFixed(2).replace('.', ','));
         setSelectedTags(item.tags);
         setSplitCount(1);
+        // Populate category if present
+        if (item.category) {
+          setSelectedCategory({ id: item.category.id, name: item.category.name, type: 'PAYABLE', color: item.category.color ?? '#6B7280' });
+        } else {
+          setSelectedCategory(null);
+        }
       } else {
         setDescription('');
         setAmountRaw('');
         setSelectedTags([]);
         setSplitCount(1);
+        setSelectedCategory(null);
       }
       setErrors({});
       sheetRef.current?.present();
@@ -144,6 +165,7 @@ export function AddEditItemSheet({
           description: description.trim(),
           amount,
           tagIds,
+          categoryId: selectedCategory?.id ?? null,
         };
         await onSave(payload);
       } else {
@@ -151,6 +173,7 @@ export function AddEditItemSheet({
           description: description.trim(),
           amount,
           tagIds: tagIds.length > 0 ? tagIds : undefined,
+          categoryId: selectedCategory?.id,
           splitCount: splitCount > 1 ? splitCount : undefined,
           forceAdjustInstallmentAmount: forceAdjust || undefined,
         };
@@ -440,6 +463,54 @@ export function AddEditItemSheet({
               </TouchableOpacity>
             </View>
 
+            {/* Category */}
+            <View>
+              <Text
+                variant="label"
+                weight="medium"
+                className="text-neutral-700 mb-1.5"
+              >
+                Categoria
+              </Text>
+              <TouchableOpacity
+                onPress={() => setCategoryPickerOpen(true)}
+                className="flex-row items-center bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3"
+                activeOpacity={0.7}
+              >
+                <MaterialCommunityIcons
+                  name="shape-outline"
+                  size={18}
+                  color="#9E9E9E"
+                />
+                <Text
+                  variant="body"
+                  className={`flex-1 ml-2 ${selectedCategory ? 'text-neutral-900' : 'text-neutral-400'}`}
+                >
+                  {selectedCategory ? selectedCategory.name : 'Opcional'}
+                </Text>
+                {selectedCategory ? (
+                  <TouchableOpacity
+                    onPress={e => {
+                      e.stopPropagation();
+                      setSelectedCategory(null);
+                    }}
+                  >
+                    <MaterialCommunityIcons
+                      name="close-circle"
+                      size={16}
+                      color="#9E9E9E"
+                    />
+                  </TouchableOpacity>
+                ) : (
+                  <MaterialCommunityIcons
+                    name="chevron-down"
+                    size={18}
+                    color="#9E9E9E"
+                  />
+                )}
+              </TouchableOpacity>
+            </View>
+
             {/* Save button */}
             <Button
               label={isEditMode ? 'Salvar alterações' : 'Adicionar item'}
@@ -482,6 +553,49 @@ export function AddEditItemSheet({
             setSelectedTags(prev => [...prev, newTag]);
             setCreateTagOpen(false);
           }}
+        />
+      )}
+
+      {/* Category picker */}
+      {categoryPickerOpen && (
+        <SearchablePickerSheet
+          visible={categoryPickerOpen}
+          title="Selecionar Categoria"
+          items={categoryItems}
+          isLoading={categoriesLoading}
+          searchPlaceholder="Buscar categoria..."
+          onSelect={item => {
+            const cat = categoriesData?.items.find(c => c.id === item.id);
+            setSelectedCategory(
+              cat ?? {
+                id: item.id,
+                name: item.name,
+                type: 'PAYABLE',
+                color: '#6B7280',
+              }
+            );
+            setCategoryPickerOpen(false);
+          }}
+          onCreateNew={name => {
+            setCategoryPickerOpen(false);
+            setPendingCategoryName(name);
+            setCreateCategoryOpen(true);
+          }}
+          onClose={() => setCategoryPickerOpen(false)}
+        />
+      )}
+
+      {/* Create category */}
+      {createCategoryOpen && (
+        <CreateCategorySheet
+          visible
+          initialName={pendingCategoryName}
+          type="PAYABLE"
+          onCreated={category => {
+            setSelectedCategory(category);
+            setCreateCategoryOpen(false);
+          }}
+          onClose={() => setCreateCategoryOpen(false)}
         />
       )}
     </>

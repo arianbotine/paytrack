@@ -6,7 +6,10 @@ export interface InstallmentItemRaw {
   description: string;
   amount: unknown;
   sortOrder: number;
+  splitIndex: number | null;
+  splitTotal: number | null;
   createdAt: Date;
+  category: { id: string; name: string; color: string | null } | null;
   tags: Array<{
     tag: { id: string; name: string; color: string | null };
   }>;
@@ -29,45 +32,62 @@ export interface InstallmentItemRaw {
   };
 }
 
+interface ItemFilters {
+  tagIds?: string[];
+  categoryIds?: string[];
+}
+
 @Injectable()
 export class InstallmentItemsReportRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findItemsByTagIds(
-    organizationId: string,
-    tagIds: string[],
-    skip: number,
-    take: number
-  ): Promise<{ data: InstallmentItemRaw[]; total: number }> {
-    const where = {
-      organizationId,
+  private buildWhere(organizationId: string, filters: ItemFilters) {
+    const where: Record<string, unknown> = { organizationId };
+
+    if (filters.tagIds && filters.tagIds.length > 0) {
+      where['tags'] = { some: { tagId: { in: filters.tagIds } } };
+    }
+
+    if (filters.categoryIds && filters.categoryIds.length > 0) {
+      where['categoryId'] = { in: filters.categoryIds };
+    }
+
+    return where;
+  }
+
+  private get itemInclude() {
+    return {
+      category: { select: { id: true, name: true, color: true } },
       tags: {
-        some: {
-          tagId: { in: tagIds },
+        include: {
+          tag: { select: { id: true, name: true, color: true } },
+        },
+      },
+      payableInstallment: {
+        include: {
+          payable: {
+            include: {
+              vendor: { select: { name: true } },
+              category: { select: { name: true } },
+            },
+          },
         },
       },
     };
+  }
+
+  async findItemsByFilters(
+    organizationId: string,
+    filters: ItemFilters,
+    skip: number,
+    take: number
+  ): Promise<{ data: InstallmentItemRaw[]; total: number }> {
+    const where = this.buildWhere(organizationId, filters);
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.payableInstallmentItem.findMany({
         where,
-        include: {
-          tags: {
-            include: {
-              tag: { select: { id: true, name: true, color: true } },
-            },
-          },
-          payableInstallment: {
-            include: {
-              payable: {
-                include: {
-                  vendor: { select: { name: true } },
-                  category: { select: { name: true } },
-                },
-              },
-            },
-          },
-        },
+        include: this.itemInclude,
         orderBy: [
           { payableInstallment: { dueDate: 'asc' } },
           { sortOrder: 'asc' },
@@ -81,36 +101,15 @@ export class InstallmentItemsReportRepository {
     return { data: data as unknown as InstallmentItemRaw[], total };
   }
 
-  async findAllItemsByTagIds(
+  async findAllItemsByFilters(
     organizationId: string,
-    tagIds: string[]
+    filters: ItemFilters
   ): Promise<InstallmentItemRaw[]> {
+    const where = this.buildWhere(organizationId, filters);
+
     const data = await this.prisma.payableInstallmentItem.findMany({
-      where: {
-        organizationId,
-        tags: {
-          some: {
-            tagId: { in: tagIds },
-          },
-        },
-      },
-      include: {
-        tags: {
-          include: {
-            tag: { select: { id: true, name: true, color: true } },
-          },
-        },
-        payableInstallment: {
-          include: {
-            payable: {
-              include: {
-                vendor: { select: { name: true } },
-                category: { select: { name: true } },
-              },
-            },
-          },
-        },
-      },
+      where,
+      include: this.itemInclude,
       orderBy: [
         { payableInstallment: { dueDate: 'asc' } },
         { sortOrder: 'asc' },

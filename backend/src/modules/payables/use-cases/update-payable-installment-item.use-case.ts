@@ -2,13 +2,13 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-} from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { UpdateInstallmentItemDto } from '../dto/payable.dto';
-import { PayablesRepository } from '../repositories';
-import { MoneyUtils } from '../../../shared/utils/money.utils';
-import { InstallmentItemHelpersService } from '../services/installment-item-helpers.service';
-import { ListPayableInstallmentItemsUseCase } from './list-payable-installment-items.use-case';
+} from "@nestjs/common";
+import { Prisma } from "@prisma/client";
+import { UpdateInstallmentItemDto } from "../dto/payable.dto";
+import { PayablesRepository } from "../repositories";
+import { MoneyUtils } from "../../../shared/utils/money.utils";
+import { InstallmentItemHelpersService } from "../services/installment-item-helpers.service";
+import { ListPayableInstallmentItemsUseCase } from "./list-payable-installment-items.use-case";
 
 @Injectable()
 export class UpdatePayableInstallmentItemUseCase {
@@ -55,13 +55,12 @@ export class UpdatePayableInstallmentItemUseCase {
       });
 
       if (!existingItem) {
-        throw new NotFoundException('Item da parcela não encontrado');
+        throw new NotFoundException("Item da parcela não encontrado");
       }
 
       const isSplitGroup = this.helpers.isSplitGroup(existingItem);
 
       if (isSplitGroup) {
-        // ── Propagate changes to all siblings of the split group ──────────
         const siblings = await prisma.payableInstallmentItem.findMany({
           where: {
             splitGroupId: existingItem.splitGroupId!,
@@ -75,7 +74,7 @@ export class UpdatePayableInstallmentItemUseCase {
         if (dto.description !== undefined) {
           const normalizedDescription = dto.description.trim();
           if (!normalizedDescription) {
-            throw new BadRequestException('Descrição do item é obrigatória');
+            throw new BadRequestException("Descrição do item é obrigatória");
           }
           updateData.description = normalizedDescription;
         }
@@ -86,6 +85,12 @@ export class UpdatePayableInstallmentItemUseCase {
 
         if (dto.sortOrder !== undefined) {
           updateData.sortOrder = dto.sortOrder;
+        }
+
+        if (dto.categoryId !== undefined) {
+          updateData.category = dto.categoryId
+            ? { connect: { id: dto.categoryId } }
+            : { disconnect: true };
         }
 
         for (const sibling of siblings) {
@@ -103,7 +108,6 @@ export class UpdatePayableInstallmentItemUseCase {
           }
         }
       } else {
-        // ── Original single-item update ────────────────────────────────────
         if (normalizedTagIds !== undefined) {
           await this.helpers.ensureTagsBelongToOrganization(
             prisma,
@@ -126,7 +130,7 @@ export class UpdatePayableInstallmentItemUseCase {
           );
           if (nextItemsTotal > Number(installment.amount)) {
             throw new BadRequestException(
-              'A soma dos itens da parcela não pode ser maior que o valor da parcela'
+              "A soma dos itens da parcela não pode ser maior que o valor da parcela"
             );
           }
         }
@@ -136,7 +140,7 @@ export class UpdatePayableInstallmentItemUseCase {
         if (dto.description !== undefined) {
           const normalizedDescription = dto.description.trim();
           if (!normalizedDescription) {
-            throw new BadRequestException('Descrição do item é obrigatória');
+            throw new BadRequestException("Descrição do item é obrigatória");
           }
           updateData.description = normalizedDescription;
         }
@@ -147,6 +151,12 @@ export class UpdatePayableInstallmentItemUseCase {
 
         if (dto.sortOrder !== undefined) {
           updateData.sortOrder = dto.sortOrder;
+        }
+
+        if (dto.categoryId !== undefined) {
+          updateData.category = dto.categoryId
+            ? { connect: { id: dto.categoryId } }
+            : { disconnect: true };
         }
 
         await prisma.payableInstallmentItem.update({

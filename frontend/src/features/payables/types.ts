@@ -37,6 +37,7 @@ export interface PayableInstallmentItem {
   splitTotal: number | null;
   createdAt: string;
   updatedAt: string;
+  category?: { id: string; name: string; color?: string | null } | null;
   tags: InstallmentItemTag[];
 }
 

@@ -39,6 +39,7 @@ import type {
   PayableInstallment,
   Payable,
   Tag,
+  Category,
   PayableInstallmentItem,
   PayableInstallmentItemsSummary,
   AffectedInstallmentCapacity,
@@ -63,6 +64,7 @@ interface EditInstallmentDialogProps {
   installment: PayableInstallment | null;
   payable: Payable | null;
   tags: Tag[];
+  categories: Category[];
   isSubmitting: boolean;
   installmentItems: PayableInstallmentItem[];
   itemsSummary?: PayableInstallmentItemsSummary;
@@ -72,6 +74,7 @@ interface EditInstallmentDialogProps {
     description: string;
     amount: number;
     tagIds?: string[];
+    categoryId?: string;
     splitCount?: number;
     forceAdjustInstallmentAmount?: boolean;
   }) => Promise<void>;
@@ -81,6 +84,7 @@ interface EditInstallmentDialogProps {
       description?: string;
       amount?: number;
       tagIds?: string[];
+      categoryId?: string | null;
     }
   ) => void;
   onDeleteItem: (itemId: string) => void;
@@ -93,6 +97,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
   installment,
   payable,
   tags,
+  categories,
   isSubmitting,
   installmentItems,
   itemsSummary,
@@ -110,6 +115,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
   const [newItemDescription, setNewItemDescription] = useState('');
   const [newItemAmount, setNewItemAmount] = useState<number | null>(null);
   const [newItemTagIds, setNewItemTagIds] = useState<string[]>([]);
+  const [newItemCategoryId, setNewItemCategoryId] = useState<string | null>(null);
   const [newItemSplitCount, setNewItemSplitCount] = useState(1);
   const [splitMissingAlert, setSplitMissingAlert] = useState<string | null>(
     null
@@ -122,6 +128,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
     description: string;
     amount: number;
     tagIds?: string[];
+    categoryId?: string;
     splitCount: number;
   } | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -130,6 +137,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
     null
   );
   const [editingItemTagIds, setEditingItemTagIds] = useState<string[]>([]);
+  const [editingItemCategoryId, setEditingItemCategoryId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
@@ -168,6 +176,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
     setNewItemDescription('');
     setNewItemAmount(null);
     setNewItemTagIds([]);
+    setNewItemCategoryId(null);
     setNewItemSplitCount(1);
     setSplitMissingAlert(null);
     setSplitPaidAlert(null);
@@ -177,6 +186,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
     setEditingItemDescription('');
     setEditingItemAmount(null);
     setEditingItemTagIds([]);
+    setEditingItemCategoryId(null);
     setShowAddForm(false);
     setDeleteConfirmId(null);
   }, [installment, reset]);
@@ -219,6 +229,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
     setNewItemDescription('');
     setNewItemAmount(null);
     setNewItemTagIds([]);
+    setNewItemCategoryId(null);
     setNewItemSplitCount(1);
     setSplitMissingAlert(null);
     setSplitPaidAlert(null);
@@ -257,6 +268,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
       description: newItemDescription.trim(),
       amount: newItemAmount ?? 0,
       tagIds: newItemTagIds.length > 0 ? newItemTagIds : undefined,
+      categoryId: newItemCategoryId ?? undefined,
       splitCount: newItemSplitCount > 1 ? newItemSplitCount : undefined,
     };
 
@@ -278,6 +290,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
           description: payload.description,
           amount: payload.amount,
           tagIds: payload.tagIds,
+          categoryId: payload.categoryId,
           splitCount: newItemSplitCount,
         });
         setSplitCapacityError(affected ?? []);
@@ -321,6 +334,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
     setEditingItemDescription(item.description);
     setEditingItemAmount(item.amount);
     setEditingItemTagIds(item.tags.map(tag => tag.id));
+    setEditingItemCategoryId(item.category?.id ?? null);
   };
 
   const handleCancelEditingItem = () => {
@@ -328,6 +342,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
     setEditingItemDescription('');
     setEditingItemAmount(null);
     setEditingItemTagIds([]);
+    setEditingItemCategoryId(null);
   };
 
   const handleSaveEditingItem = () => {
@@ -339,6 +354,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
       description: editingItemDescription.trim(),
       amount: editingItemAmount ?? undefined,
       tagIds: editingItemTagIds,
+      categoryId: editingItemCategoryId,
     });
 
     handleCancelEditingItem();
@@ -759,7 +775,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                                         disabled={isMutatingItems}
                                       />
                                     </Grid>
-                                    <Grid item xs={12} sm={3}>
+                                    <Grid item xs={12} sm={2}>
                                       <CurrencyField
                                         label="Valor"
                                         value={editingItemAmount || 0}
@@ -769,7 +785,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                                         disabled={isMutatingItems}
                                       />
                                     </Grid>
-                                    <Grid item xs={12} sm={3}>
+                                    <Grid item xs={12} sm={2}>
                                       <Autocomplete
                                         multiple
                                         options={tags}
@@ -788,6 +804,25 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                                           <TextField
                                             {...params}
                                             label="Tags"
+                                            placeholder="Selecione"
+                                          />
+                                        )}
+                                      />
+                                    </Grid>
+                                    <Grid item xs={12} sm={2}>
+                                      <Autocomplete
+                                        options={categories}
+                                        getOptionLabel={option => option.name}
+                                        value={categories.find(c => c.id === editingItemCategoryId) ?? null}
+                                        onChange={(_, newValue) => {
+                                          setEditingItemCategoryId(newValue?.id ?? null);
+                                        }}
+                                        size="small"
+                                        disabled={isMutatingItems}
+                                        renderInput={params => (
+                                          <TextField
+                                            {...params}
+                                            label="Categoria"
                                             placeholder="Selecione"
                                           />
                                         )}
@@ -959,6 +994,21 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                                         ))}
                                       </Box>
                                     )}
+                                    {item.category && (
+                                      <Box sx={{ mt: 0.5 }}>
+                                        <Chip
+                                          label={item.category.name}
+                                          size="small"
+                                          variant="outlined"
+                                          sx={{
+                                            borderColor: item.category.color || '#9e9e9e',
+                                            color: item.category.color || '#9e9e9e',
+                                            height: 20,
+                                            fontSize: '0.7rem',
+                                          }}
+                                        />
+                                      </Box>
+                                    )}
                                   </Box>
                                   <Box
                                     sx={{
@@ -1065,7 +1115,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                                 disabled={isMutatingItems || isSubmitting}
                               />
                             </Grid>
-                            <Grid item xs={12} sm={3}>
+                            <Grid item xs={12} sm={2}>
                               <Autocomplete
                                 multiple
                                 options={tags}
@@ -1082,6 +1132,25 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                                   <TextField
                                     {...params}
                                     label="Tags"
+                                    placeholder="Selecione"
+                                  />
+                                )}
+                              />
+                            </Grid>
+                            <Grid item xs={12} sm={2}>
+                              <Autocomplete
+                                options={categories}
+                                getOptionLabel={option => option.name}
+                                value={categories.find(c => c.id === newItemCategoryId) ?? null}
+                                onChange={(_, newValue) => {
+                                  setNewItemCategoryId(newValue?.id ?? null);
+                                }}
+                                size="small"
+                                disabled={isMutatingItems || isSubmitting}
+                                renderInput={params => (
+                                  <TextField
+                                    {...params}
+                                    label="Categoria"
                                     placeholder="Selecione"
                                   />
                                 )}
@@ -1121,6 +1190,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                                         setNewItemDescription('');
                                         setNewItemAmount(null);
                                         setNewItemTagIds([]);
+                                        setNewItemCategoryId(null);
                                         setNewItemSplitCount(1);
                                         setSplitMissingAlert(null);
                                       }}

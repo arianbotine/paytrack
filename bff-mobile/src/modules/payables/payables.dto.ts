@@ -7,6 +7,7 @@ import {
   IsArray,
   IsNotEmpty,
   IsInt,
+  IsUUID,
   Min,
   Max,
   Matches,
@@ -299,6 +300,14 @@ export class CreateInstallmentItemBffDto {
   })
   @IsOptional()
   forceAdjustInstallmentAmount?: boolean;
+
+  @ApiPropertyOptional({
+    example: 'uuid-category-1',
+    description: 'Categoria do item (opcional)',
+  })
+  @IsOptional()
+  @IsUUID('4')
+  categoryId?: string;
 }
 
 export class UpdateInstallmentItemBffDto {
@@ -332,4 +341,12 @@ export class UpdateInstallmentItemBffDto {
   @Min(0)
   @Type(() => Number)
   sortOrder?: number;
+
+  @ApiPropertyOptional({
+    example: 'uuid-category-1',
+    description: 'Categoria do item (opcional)',
+  })
+  @IsOptional()
+  @IsUUID('4')
+  categoryId?: string;
 }

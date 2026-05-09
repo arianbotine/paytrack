@@ -35,6 +35,7 @@ import {
   useInstallmentItemsGroupedReport,
   useInstallmentItemsGroupedByTagReport,
   useReportTags,
+  useReportPayableCategories,
 } from '../hooks/useReports';
 import { ReportCard } from '../components/ReportCard';
 import { exportInstallmentItemsReportToCSV } from '../utils/export-report';
@@ -92,10 +93,18 @@ interface TagOption {
   color: string;
 }
 
+interface CategoryOption {
+  id: string;
+  name: string;
+  color?: string;
+}
+
 export default function InstallmentItemsReportPage() {
   const theme = useTheme();
   const [selectedTags, setSelectedTags] = useState<TagOption[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<CategoryOption[]>([]);
   const [appliedTagIds, setAppliedTagIds] = useState<string[]>([]);
+  const [appliedCategoryIds, setAppliedCategoryIds] = useState<string[]>([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [groupByDescription, setGroupByDescription] = useState(false);
@@ -107,9 +116,18 @@ export default function InstallmentItemsReportPage() {
     color: (t as { id: string; name: string; color?: string }).color ?? '#888',
   }));
 
+  const { data: categoriesData } = useReportPayableCategories();
+  const categories: CategoryOption[] = (categoriesData ?? []).map(c => ({
+    id: c.id,
+    name: c.name,
+    color: c.color ?? '#888',
+  }));
+
+  const hasFilter = appliedTagIds.length > 0 || appliedCategoryIds.length > 0;
+
   const { data, isLoading, isFetching, isError } = useInstallmentItemsReport(
-    { tagIds: appliedTagIds, skip: page * rowsPerPage, take: rowsPerPage },
-    appliedTagIds.length > 0 && !groupByDescription
+    { tagIds: appliedTagIds, categoryIds: appliedCategoryIds, skip: page * rowsPerPage, take: rowsPerPage },
+    hasFilter && !groupByDescription
   );
 
   const {
@@ -118,19 +136,20 @@ export default function InstallmentItemsReportPage() {
     isFetching: isGroupedFetching,
     isError: isGroupedError,
   } = useInstallmentItemsGroupedReport(
-    { tagIds: appliedTagIds },
-    appliedTagIds.length > 0 && groupByDescription
+    { tagIds: appliedTagIds, categoryIds: appliedCategoryIds },
+    hasFilter && groupByDescription
   );
 
   const { data: groupedByTagData, isLoading: isGroupedByTagLoading } =
     useInstallmentItemsGroupedByTagReport(
-      { tagIds: appliedTagIds },
-      appliedTagIds.length > 0
+      { tagIds: appliedTagIds, categoryIds: appliedCategoryIds },
+      hasFilter
     );
 
   function handleApply() {
     setPage(0);
     setAppliedTagIds(selectedTags.map(t => t.id));
+    setAppliedCategoryIds(selectedCategories.map(c => c.id));
   }
 
   function handleToggleGroup(checked: boolean) {
@@ -146,7 +165,7 @@ export default function InstallmentItemsReportPage() {
     );
   }
 
-  const isQueryPending = appliedTagIds.length === 0;
+  const isQueryPending = !hasFilter;
   const activeLoading = groupByDescription
     ? isGroupedLoading || isGroupedFetching
     : isLoading || isFetching;
@@ -168,10 +187,10 @@ export default function InstallmentItemsReportPage() {
         </Box>
         <Box>
           <Typography variant="h5" fontWeight={700}>
-            Itens por Tag
+            Itens por Tag / Categoria
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Liste itens de parcelas filtrando por tag
+            Liste itens de parcelas filtrando por tag e/ou categoria
           </Typography>
         </Box>
       </Box>
@@ -240,13 +259,52 @@ export default function InstallmentItemsReportPage() {
                 size="small"
               />
             )}
-            sx={{ minWidth: 320, flex: 1 }}
+            sx={{ minWidth: 260, flex: 1 }}
             noOptionsText="Nenhuma tag encontrada"
+          />
+          <Autocomplete
+            multiple
+            options={categories}
+            getOptionLabel={option => option.name}
+            isOptionEqualToValue={(a, b) => a.id === b.id}
+            value={selectedCategories}
+            onChange={(_, newValue) => setSelectedCategories(newValue)}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => {
+                const { key, ...tagProps } = getTagProps({ index });
+                return (
+                  <Chip
+                    key={key}
+                    label={option.name}
+                    size="small"
+                    sx={{
+                      bgcolor: alpha(option.color ?? '#888', 0.15),
+                      borderColor: option.color ?? '#888',
+                      border: '1px solid',
+                      color: option.color ?? '#888',
+                    }}
+                    {...tagProps}
+                  />
+                );
+              })
+            }
+            renderInput={params => (
+              <TextField
+                {...params}
+                label="Categorias do Item"
+                placeholder={
+                  selectedCategories.length === 0 ? 'Selecione categorias' : ''
+                }
+                size="small"
+              />
+            )}
+            sx={{ minWidth: 260, flex: 1 }}
+            noOptionsText="Nenhuma categoria encontrada"
           />
           <Button
             variant="contained"
             onClick={handleApply}
-            disabled={selectedTags.length === 0}
+            disabled={selectedTags.length === 0 && selectedCategories.length === 0}
             sx={{ height: 40 }}
           >
             Consultar
@@ -420,7 +478,7 @@ export default function InstallmentItemsReportPage() {
             }}
           >
             {isGroupedByTagLoading &&
-              appliedTagIds.map((_, i) => (
+              Array.from({ length: Math.max(appliedTagIds.length, 1) }).map((_, i) => (
                 <Box
                   key={i}
                   sx={{
@@ -637,10 +695,10 @@ export default function InstallmentItemsReportPage() {
         <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 2 }}>
           <LabelIcon sx={{ fontSize: 56, color: 'text.disabled', mb: 1.5 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            Selecione ao menos uma tag
+            Selecione ao menos uma tag ou categoria
           </Typography>
           <Typography variant="body2" color="text.disabled">
-            Escolha uma ou mais tags no filtro acima e clique em Consultar.
+            Escolha tags e/ou categorias no filtro acima e clique em Consultar.
           </Typography>
         </Paper>
       )}
@@ -694,7 +752,7 @@ export default function InstallmentItemsReportPage() {
                   <TableRow>
                     <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
                       <Typography variant="body2" color="text.secondary">
-                        Nenhum item encontrado para as tags selecionadas.
+                        Nenhum item encontrado para os filtros selecionados.
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -776,6 +834,7 @@ export default function InstallmentItemsReportPage() {
                     Valor
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Tags</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Cat. Item</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Fornecedor</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Categoria</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Parcela</TableCell>
@@ -790,7 +849,7 @@ export default function InstallmentItemsReportPage() {
                 {(isLoading || isFetching) &&
                   Array.from({ length: 8 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 9 }).map((_, j) => (
+                      {Array.from({ length: 10 }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton variant="text" width="80%" />
                         </TableCell>
@@ -799,9 +858,9 @@ export default function InstallmentItemsReportPage() {
                   ))}
                 {!isLoading && !isFetching && data?.data.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={10} align="center" sx={{ py: 6 }}>
                       <Typography variant="body2" color="text.secondary">
-                        Nenhum item encontrado para as tags selecionadas.
+                        Nenhum item encontrado para os filtros selecionados.
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -851,6 +910,21 @@ export default function InstallmentItemsReportPage() {
                             />
                           ))}
                         </Box>
+                      </TableCell>
+                      <TableCell>
+                        {row.itemCategoryName ? (
+                          <Chip
+                            label={row.itemCategoryName}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              height: 20,
+                              fontSize: '0.68rem',
+                            }}
+                          />
+                        ) : (
+                          <Typography variant="body2" color="text.disabled">—</Typography>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">

@@ -80,6 +80,7 @@ export interface InstallmentItemPayload {
   description: string;
   amount: number;
   tagIds?: string[];
+  categoryId?: string;
   sortOrder?: number;
   splitCount?: number;
   forceAdjustInstallmentAmount?: boolean;
@@ -89,6 +90,7 @@ export interface UpdateInstallmentItemPayload {
   description?: string;
   amount?: number;
   tagIds?: string[];
+  categoryId?: string | null;
   sortOrder?: number;
 }
 

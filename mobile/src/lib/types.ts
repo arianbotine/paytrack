@@ -156,6 +156,7 @@ export interface InstallmentItem {
   splitTotal: number | null;
   createdAt: string;
   updatedAt: string;
+  category?: { id: string; name: string; color?: string | null } | null;
   tags: Tag[];
 }
 
@@ -174,6 +175,7 @@ export interface CreateInstallmentItemInput {
   description: string;
   amount: number;
   tagIds?: string[];
+  categoryId?: string;
   sortOrder?: number;
   splitCount?: number;
   forceAdjustInstallmentAmount?: boolean;
@@ -183,6 +185,7 @@ export interface UpdateInstallmentItemInput {
   description?: string;
   amount?: number;
   tagIds?: string[];
+  categoryId?: string | null;
   sortOrder?: number;
 }
 
