@@ -19,6 +19,7 @@ interface Category {
   id: string;
   name: string;
   type: 'PAYABLE' | 'RECEIVABLE';
+  color?: string;
 }
 
 interface Tag {
@@ -175,8 +176,7 @@ export const useInstallmentItemsReport = (
   enabled = true
 ) => {
   const hasFilter =
-    (params.tagIds?.length ?? 0) > 0 ||
-    (params.categoryIds?.length ?? 0) > 0;
+    (params.tagIds?.length ?? 0) > 0 || (params.categoryIds?.length ?? 0) > 0;
 
   return useQuery<
     InstallmentItemsReportResponse,
@@ -212,8 +212,7 @@ export const useInstallmentItemsGroupedReport = (
   enabled = true
 ) => {
   const hasFilter =
-    (params.tagIds?.length ?? 0) > 0 ||
-    (params.categoryIds?.length ?? 0) > 0;
+    (params.tagIds?.length ?? 0) > 0 || (params.categoryIds?.length ?? 0) > 0;
 
   return useQuery<
     InstallmentItemsGroupedResponse,
@@ -246,8 +245,7 @@ export const useInstallmentItemsGroupedByTagReport = (
   enabled = true
 ) => {
   const hasFilter =
-    (params.tagIds?.length ?? 0) > 0 ||
-    (params.categoryIds?.length ?? 0) > 0;
+    (params.tagIds?.length ?? 0) > 0 || (params.categoryIds?.length ?? 0) > 0;
 
   return useQuery<
     InstallmentItemsGroupedByTagResponse,
