@@ -1,6 +1,12 @@
-import { Controller, Get, HttpCode, HttpStatus, Res } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { HealthService } from './health.service';
+
+const STATUS_CODE_MAP: Record<string, HttpStatus> = {
+  ok: HttpStatus.OK,
+  starting: HttpStatus.ACCEPTED, // 202: backend acordando, tente novamente
+  unavailable: HttpStatus.SERVICE_UNAVAILABLE, // 503
+};
 
 @Controller('health')
 export class HealthController {
@@ -10,7 +16,7 @@ export class HealthController {
   async check(@Res() res: Response): Promise<void> {
     const report = await this.healthService.check();
     const statusCode =
-      report.status === 'ok' ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE;
+      STATUS_CODE_MAP[report.status] ?? HttpStatus.SERVICE_UNAVAILABLE;
     res.status(statusCode).json(report);
   }
 }
