@@ -1,4 +1,6 @@
+import { useCallback } from 'react';
 import { View, ScrollView, RefreshControl } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ScreenContainer } from '../../src/shared/components/ScreenContainer';
 import { Text } from '../../src/shared/components/Text';
@@ -31,6 +33,12 @@ export default function DashboardScreen() {
     clearEdit,
     handleEditSubmit,
   } = useDashboard();
+
+  useFocusEffect(
+    useCallback(() => {
+      query.refetch();
+    }, [query.refetch])
+  );
 
   if (query.isLoading) {
     return (

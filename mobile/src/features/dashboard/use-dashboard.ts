@@ -37,6 +37,7 @@ export function useDashboard() {
       return response.data;
     },
     enabled: !!organizationId,
+    staleTime: 0,
     select: (data: DashboardData): DashboardData => {
       const dedup = <T extends { id: string }>(items: T[]): T[] => [
         ...new Map(items.map(i => [i.id, i])).values(),
