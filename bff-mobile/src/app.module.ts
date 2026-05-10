@@ -11,6 +11,7 @@ import { CustomersModule } from './modules/customers/customers.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { TagsModule } from './modules/tags/tags.module';
 import { SharedModule } from './modules/shared/shared.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { SharedModule } from './modules/shared/shared.module';
     }),
     HttpClientModule,
     SharedModule,
+    HealthModule,
     AuthModule,
     DashboardModule,
     PayablesModule,

@@ -45,7 +45,9 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
-import { useAuthStore, api } from '../src/lib';
+import { useAuthStore } from '../src/lib';
+import { HealthGate } from '../src/shared/components/HealthGate';
+import { ServerKeepAliveProvider } from '../src/shared/context/server-keep-alive-context';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -81,9 +83,6 @@ export default function RootLayout() {
   useEffect(() => {
     loadStoredAuth();
     checkAndApplyUpdate();
-    // Warm-up: acorda o BFF e, em cascata, o backend no Render logo que o app abre.
-    // É fire-and-forget — erros são silenciados para não interferir com nada.
-    api.get('/health').catch(() => {});
   }, []);
 
   if (!fontsLoaded) return null;
@@ -93,10 +92,14 @@ export default function RootLayout() {
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <QueryClientProvider client={queryClient}>
           <BottomSheetModalProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(tabs)" />
-            </Stack>
+            <HealthGate>
+              <ServerKeepAliveProvider>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="(auth)" />
+                  <Stack.Screen name="(tabs)" />
+                </Stack>
+              </ServerKeepAliveProvider>
+            </HealthGate>
           </BottomSheetModalProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

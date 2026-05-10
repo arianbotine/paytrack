@@ -53,7 +53,8 @@ async function bootstrap() {
   const port = process.env.PORT || process.env.BFF_PORT || 3001;
   await app.listen(port);
 
-  console.log(`🚀 BFF Mobile running on http://localhost:${port}/bff`);
-  console.log(`📚 Swagger docs available at http://localhost:${port}/bff/docs`);
+  const url = await app.getUrl();
+  console.log(`🚀 BFF Mobile running on ${url}/bff`);
+  console.log(`📚 Swagger docs available at ${url}/bff/docs`);
 }
 bootstrap();
