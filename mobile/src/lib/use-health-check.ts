@@ -2,17 +2,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 
 const BFF_URL = process.env.EXPO_PUBLIC_BFF_URL || 'http://localhost:3001';
-const HEALTH_URL = `${BFF_URL}/bff/health`;
+const BACKEND_URL =
+  process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+
+const BFF_HEALTH_URL = `${BFF_URL}/bff/health`;
+const BACKEND_HEALTH_URL = `${BACKEND_URL}/api/health`;
 
 const POLL_INTERVAL_MS = 5_000;
-const TIMEOUT_MS = 180_000; // 3 minutes
+const OVERALL_TIMEOUT_MS = 180_000; // 3 minutos
 const REQUEST_TIMEOUT_MS = 5_000;
 
 export type HealthStatus = 'checking' | 'healthy' | 'timeout';
 
 export interface ServiceHealth {
-  status: string;
-  detail?: string;
+  status: 'ok' | 'unavailable';
 }
 
 export interface ServicesHealth {
@@ -27,6 +30,15 @@ export interface HealthCheckState {
   retry: () => void;
 }
 
+async function pingService(url: string): Promise<'ok' | 'unavailable'> {
+  try {
+    await axios.get(url, { timeout: REQUEST_TIMEOUT_MS });
+    return 'ok';
+  } catch {
+    return 'unavailable';
+  }
+}
+
 export function useHealthCheck(): HealthCheckState {
   const [status, setStatus] = useState<HealthStatus>('checking');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -34,9 +46,7 @@ export function useHealthCheck(): HealthCheckState {
 
   const cancelledRef = useRef(false);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const elapsedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
-    null
-  );
+  const elapsedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startTimeRef = useRef<number>(Date.now());
 
@@ -63,44 +73,42 @@ export function useHealthCheck(): HealthCheckState {
     setElapsedSeconds(0);
     setServices(null);
 
-    // Track elapsed seconds for progress display
     elapsedIntervalRef.current = setInterval(() => {
-      setElapsedSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000));
+      setElapsedSeconds(
+        Math.floor((Date.now() - startTimeRef.current) / 1000),
+      );
     }, 1000);
 
-    // Hard timeout after 3 minutes
     timeoutRef.current = setTimeout(() => {
       if (!cancelledRef.current) {
         clearTimers();
         setStatus('timeout');
       }
-    }, TIMEOUT_MS);
+    }, OVERALL_TIMEOUT_MS);
 
     const check = async () => {
       if (cancelledRef.current) return;
 
-      try {
-        const response = await axios.get<{
-          status: string;
-          services: ServicesHealth;
-        }>(HEALTH_URL, { timeout: REQUEST_TIMEOUT_MS });
+      const [bffStatus, backendStatus] = await Promise.all([
+        pingService(BFF_HEALTH_URL),
+        pingService(BACKEND_HEALTH_URL),
+      ]);
 
-        if (cancelledRef.current) return;
+      if (cancelledRef.current) return;
 
-        setServices(response.data.services ?? null);
+      const current: ServicesHealth = {
+        bff: { status: bffStatus },
+        backend: { status: backendStatus },
+      };
 
-        if (response.data.status === 'ok') {
-          clearTimers();
-          setStatus('healthy');
-        }
-      } catch {
-        if (!cancelledRef.current) {
-          setServices(null);
-        }
+      setServices(current);
+
+      if (bffStatus === 'ok' && backendStatus === 'ok') {
+        clearTimers();
+        setStatus('healthy');
       }
     };
 
-    // Check immediately, then poll
     check();
     pollIntervalRef.current = setInterval(check, POLL_INTERVAL_MS);
   }, [clearTimers]);

@@ -10,10 +10,9 @@ const TIMEOUT_SECONDS = 180;
 interface ServiceRowProps {
   label: string;
   status: string | undefined;
-  detail?: string;
 }
 
-function ServiceRow({ label, status, detail }: ServiceRowProps) {
+function ServiceRow({ label, status }: ServiceRowProps) {
   const isOk = status === 'ok';
   return (
     <View className="flex-row items-center mb-2">
@@ -32,15 +31,6 @@ function ServiceRow({ label, status, detail }: ServiceRowProps) {
           {isOk ? 'online' : 'iniciando'}
         </Text>
       </Text>
-      {!isOk && detail && (
-        <Text
-          variant="caption"
-          className="text-neutral-400 ml-1"
-          numberOfLines={1}
-        >
-          {detail}
-        </Text>
-      )}
     </View>
   );
 }
@@ -54,11 +44,7 @@ function ServicesStatus({ services }: ServicesStatusProps) {
   return (
     <View className="bg-white border border-neutral-200 rounded-xl px-4 py-3 mb-4 w-full">
       <ServiceRow label="BFF" status={services.bff?.status} />
-      <ServiceRow
-        label="Backend"
-        status={services.backend?.status}
-        detail={services.backend?.detail}
-      />
+      <ServiceRow label="Backend" status={services.backend?.status} />
     </View>
   );
 }

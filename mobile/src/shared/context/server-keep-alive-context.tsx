@@ -1,12 +1,11 @@
 /**
  * ServerKeepAliveContext
  *
- * Envia um ping ao BFF a cada PING_INTERVAL_MS enquanto o app está em uso,
- * evitando que o servidor gratuito (Render / Railway) durma por inatividade.
+ * Envia pings ao BFF e ao Backend a cada PING_INTERVAL_MS enquanto o app está
+ * em uso, evitando que os servidores gratuitos (Render) durmam por inatividade.
  *
  * Basta envolver a árvore com <ServerKeepAliveProvider> — nenhum estado
- * precisa ser consumido pelos filhos. O contexto fica aqui para facilitar
- * ajustes futuros (intervalo, URL, logs, etc.).
+ * precisa ser consumido pelos filhos.
  */
 
 import React, {
@@ -21,7 +20,12 @@ import axios from 'axios';
 // ─── Configurações ────────────────────────────────────────────────────────────
 
 const BFF_URL = process.env.EXPO_PUBLIC_BFF_URL || 'http://localhost:3001';
-const PING_URL = `${BFF_URL}/bff/health`;
+const BACKEND_URL =
+  process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+
+const BFF_PING_URL = `${BFF_URL}/bff/health`;
+const BACKEND_PING_URL = `${BACKEND_URL}/api/health`;
+
 const PING_INTERVAL_MS = 60_000; // 1 minuto
 const PING_TIMEOUT_MS = 8_000;
 
@@ -59,7 +63,11 @@ export function ServerKeepAliveProvider({
   useEffect(() => {
     const ping = async () => {
       try {
-        await axios.get(PING_URL, { timeout: PING_TIMEOUT_MS });
+        // Pinga BFF e Backend em paralelo para manter ambos ativos
+        await Promise.all([
+          axios.get(BFF_PING_URL, { timeout: PING_TIMEOUT_MS }),
+          axios.get(BACKEND_PING_URL, { timeout: PING_TIMEOUT_MS }),
+        ]);
         setLastPingAt(new Date());
         setStatus('ok');
       } catch {
@@ -67,7 +75,6 @@ export function ServerKeepAliveProvider({
       }
     };
 
-    // Dispara imediatamente ao montar e depois a cada PING_INTERVAL_MS
     ping();
     intervalRef.current = setInterval(ping, PING_INTERVAL_MS);
 
