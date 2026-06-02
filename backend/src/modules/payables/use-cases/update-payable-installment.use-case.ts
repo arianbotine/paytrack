@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { PayablesRepository } from '../repositories';
 import { AccountStatus } from '@prisma/client';
-import { CacheService } from '../../../shared/services/cache.service';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
 import { UpdateInstallmentDto } from '../dto/payable.dto';
 import { PayableStatus } from '../domain/payable-status.enum';
@@ -16,10 +15,7 @@ import { PayableStatus } from '../domain/payable-status.enum';
  */
 @Injectable()
 export class UpdatePayableInstallmentUseCase {
-  constructor(
-    private readonly repository: PayablesRepository,
-    private readonly cacheService: CacheService
-  ) {}
+  constructor(private readonly repository: PayablesRepository) {}
 
   async execute(
     payableId: string,
@@ -192,8 +188,6 @@ export class UpdatePayableInstallmentUseCase {
       }
     });
 
-    this.invalidateDashboardCache(organizationId);
-
     return this.repository.findFirst(
       { id: payableId, organizationId },
       {
@@ -226,10 +220,5 @@ export class UpdatePayableInstallmentUseCase {
         },
       }
     );
-  }
-
-  private invalidateDashboardCache(organizationId: string) {
-    const cacheKey = `dashboard:summary:${organizationId}`;
-    this.cacheService.del(cacheKey);
   }
 }

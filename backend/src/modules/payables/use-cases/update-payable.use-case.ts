@@ -7,7 +7,6 @@ import { PayablesRepository } from '../repositories';
 import { PayableInstallmentsManager } from '../domain';
 import { UpdatePayableDto } from '../dto/payable.dto';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
-import { CacheService } from '../../../shared/services/cache.service';
 import { AccountStatus } from '@prisma/client';
 
 /**
@@ -18,8 +17,7 @@ import { AccountStatus } from '@prisma/client';
 export class UpdatePayableUseCase {
   constructor(
     private readonly payablesRepository: PayablesRepository,
-    private readonly installmentsManager: PayableInstallmentsManager,
-    private readonly cacheService: CacheService
+    private readonly installmentsManager: PayableInstallmentsManager
   ) {}
 
   async execute(id: string, organizationId: string, dto: UpdatePayableDto) {
@@ -116,9 +114,6 @@ export class UpdatePayableUseCase {
 
       return updated;
     });
-
-    // Invalidar cache
-    this.cacheService.del(`dashboard:summary:${organizationId}`);
 
     // Buscar o payable atualizado com includes
     return this.payablesRepository.findFirst(

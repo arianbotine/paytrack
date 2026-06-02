@@ -16,12 +16,12 @@ export function MonthSummaryCard({ monthSummary: s }: MonthSummaryCardProps) {
   });
 
   const netBalance = s.receivedThisMonth - s.paidThisMonth;
+  const payTotal = s.toPayThisMonth + s.paidThisMonth;
   const payProgress =
-    s.toPayThisMonth > 0 ? Math.min(s.paidThisMonth / s.toPayThisMonth, 1) : 0;
+    payTotal > 0 ? Math.min(s.paidThisMonth / payTotal, 1) : 0;
+  const receiveTotal = s.toReceiveThisMonth + s.receivedThisMonth;
   const receiveProgress =
-    s.toReceiveThisMonth > 0
-      ? Math.min(s.receivedThisMonth / s.toReceiveThisMonth, 1)
-      : 0;
+    receiveTotal > 0 ? Math.min(s.receivedThisMonth / receiveTotal, 1) : 0;
 
   return (
     <View

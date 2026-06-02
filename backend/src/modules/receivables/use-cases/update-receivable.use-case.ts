@@ -6,7 +6,6 @@ import {
 import { Prisma } from '@prisma/client';
 import { ReceivablesRepository } from '../repositories';
 import { ReceivableInstallmentsManager } from '../domain';
-import { CacheService } from '../../../shared/services/cache.service';
 import { UpdateReceivableDto } from '../dto/receivable.dto';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
 import { generateInstallments } from '../../../shared/utils/account.utils';
@@ -19,8 +18,7 @@ import { generateInstallments } from '../../../shared/utils/account.utils';
 export class UpdateReceivableUseCase {
   constructor(
     private readonly repository: ReceivablesRepository,
-    private readonly installmentsManager: ReceivableInstallmentsManager,
-    private readonly cacheService: CacheService
+    private readonly installmentsManager: ReceivableInstallmentsManager
   ) {}
 
   async execute(id: string, organizationId: string, dto: UpdateReceivableDto) {
@@ -126,9 +124,6 @@ export class UpdateReceivableUseCase {
         },
       });
     });
-
-    // Invalidar cache
-    this.cacheService?.del(`dashboard:summary:${organizationId}`);
 
     return MoneyUtils.transformMoneyFields(updated, [
       'amount',

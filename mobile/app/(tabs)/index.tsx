@@ -105,7 +105,7 @@ export default function DashboardScreen() {
           >
             {data.payables.overdueItems.map(item => (
               <InstallmentRow
-                key={`payable-overdue-${item.id}`}
+                key={`payable-overdue-${item.installmentId ?? item.id}`}
                 item={item}
                 nameKey="vendorName"
                 amountColor="expense"
@@ -127,7 +127,7 @@ export default function DashboardScreen() {
           >
             {data.payables.upcomingItems.map(item => (
               <InstallmentRow
-                key={`payable-upcoming-${item.id}`}
+                key={`payable-upcoming-${item.installmentId ?? item.id}`}
                 item={item}
                 nameKey="vendorName"
                 amountColor="warning"
@@ -148,7 +148,7 @@ export default function DashboardScreen() {
           >
             {data.receivables.overdueItems.map(item => (
               <InstallmentRow
-                key={`receivable-overdue-${item.id}`}
+                key={`receivable-overdue-${item.installmentId ?? item.id}`}
                 item={item}
                 nameKey="customerName"
                 amountColor="income"
@@ -170,7 +170,7 @@ export default function DashboardScreen() {
           >
             {data.receivables.upcomingItems.map(item => (
               <InstallmentRow
-                key={`receivable-upcoming-${item.id}`}
+                key={`receivable-upcoming-${item.installmentId ?? item.id}`}
                 item={item}
                 nameKey="customerName"
                 amountColor="income"

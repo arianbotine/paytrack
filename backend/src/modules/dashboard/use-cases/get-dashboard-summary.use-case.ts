@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { CacheService } from '../../../shared/services/cache.service';
 import { DashboardCalculator, DateRangeCalculator } from '../domain';
 import { DashboardRepository } from '../repositories';
 
@@ -12,22 +11,11 @@ export class GetDashboardSummaryUseCase {
   constructor(
     private readonly repository: DashboardRepository,
     private readonly dashboardCalculator: DashboardCalculator,
-    private readonly dateRangeCalculator: DateRangeCalculator,
-    private readonly cacheService: CacheService
+    private readonly dateRangeCalculator: DateRangeCalculator
   ) {}
 
   async execute(organizationId: string, startDate?: string, endDate?: string) {
-    const cacheKey = `dashboard:summary:${organizationId}:${startDate || 'default'}:${endDate || 'default'}`;
-    const cacheTTL = Number.parseInt(
-      process.env.CACHE_TTL_DASHBOARD || '300',
-      10
-    );
-
-    return this.cacheService.getOrSet(
-      cacheKey,
-      async () => this.generateSummary(organizationId, startDate, endDate),
-      cacheTTL
-    );
+    return this.generateSummary(organizationId, startDate, endDate);
   }
 
   private async generateSummary(

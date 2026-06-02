@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CacheService } from '../../shared/services/cache.service';
 import { GetDashboardSummaryUseCase } from './use-cases';
 
 /**
@@ -11,8 +10,7 @@ export class DashboardService {
   private readonly logger = new Logger(DashboardService.name);
 
   constructor(
-    private readonly getDashboardSummaryUseCase: GetDashboardSummaryUseCase,
-    private readonly cacheService: CacheService
+    private readonly getDashboardSummaryUseCase: GetDashboardSummaryUseCase
   ) {}
 
   async getSummary(
@@ -25,10 +23,5 @@ export class DashboardService {
       startDate,
       endDate
     );
-  }
-
-  invalidateDashboardCache(organizationId: string) {
-    const cacheKey = `dashboard:summary:${organizationId}`;
-    this.cacheService.del(cacheKey);
   }
 }

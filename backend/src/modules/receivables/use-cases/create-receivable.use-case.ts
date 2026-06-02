@@ -4,7 +4,6 @@ import {
   ReceivablesRepository,
   ReceivableInstallmentsRepository,
 } from '../repositories';
-import { CacheService } from '../../../shared/services/cache.service';
 import { CreateReceivableDto } from '../dto/receivable.dto';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
 import { generateInstallments } from '../../../shared/utils/account.utils';
@@ -22,7 +21,6 @@ export class CreateReceivableUseCase {
   constructor(
     private readonly repository: ReceivablesRepository,
     private readonly installmentsRepository: ReceivableInstallmentsRepository,
-    private readonly cacheService: CacheService,
     private readonly createPaymentUseCase: CreatePaymentUseCase
   ) {}
 
@@ -110,9 +108,6 @@ export class CreateReceivableUseCase {
         },
       });
     });
-
-    // Invalidar cache do dashboard
-    this.cacheService?.del(`dashboard:summary:${organizationId}`);
 
     return MoneyUtils.transformMoneyFields(result!, [
       'amount',

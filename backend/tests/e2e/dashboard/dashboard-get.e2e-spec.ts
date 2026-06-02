@@ -1,8 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { PrismaService } from '../../../src/infrastructure/database/prisma.service';
 import request = require('supertest');
-import { CacheService } from '../../../src/shared/services/cache.service';
-import { DashboardService } from '../../../src/modules/dashboard/dashboard.service';
 import { Prisma } from '@prisma/client';
 import {
   setupE2ETest,
@@ -24,8 +22,6 @@ describe('Dashboard - GET (e2e)', () => {
   let testSchema: string;
   let accessToken: string;
   let organizationId: string;
-  let cacheService: CacheService;
-  let dashboardService: DashboardService;
   let payableFactory: PayableFactory;
   let receivableFactory: ReceivableFactory;
   let paymentFactory: PaymentFactory;
@@ -42,10 +38,6 @@ describe('Dashboard - GET (e2e)', () => {
     const auth = await createAuthenticatedUser(app, prisma);
     accessToken = auth.accessToken;
     organizationId = auth.organizationId;
-
-    // Inicializar serviços
-    cacheService = app.get(CacheService);
-    dashboardService = app.get(DashboardService);
 
     // Inicializar factories
     payableFactory = new PayableFactory(prisma);
@@ -69,9 +61,6 @@ describe('Dashboard - GET (e2e)', () => {
     await prisma.vendor.deleteMany({ where: { organizationId } });
     await prisma.customer.deleteMany({ where: { organizationId } });
     await prisma.category.deleteMany({ where: { organizationId } });
-
-    // Limpar cache do dashboard
-    cacheService.flush();
   });
 
   afterAll(async () => {
@@ -262,8 +251,6 @@ describe('Dashboard - GET (e2e)', () => {
       await prisma.payableInstallment.deleteMany({ where: { organizationId } });
       await prisma.payable.deleteMany({ where: { organizationId } });
       await prisma.vendor.deleteMany({ where: { organizationId } });
-      cacheService.flush();
-      dashboardService.invalidateDashboardCache(organizationId);
 
       // Criar payable vencido (data passada, status PENDING)
       const vendor = await vendorFactory.create({ organizationId });

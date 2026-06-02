@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { PayablesRepository } from '../repositories';
 import { AccountStatus } from '@prisma/client';
-import { CacheService } from '../../../shared/services/cache.service';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
 import { InstallmentsCalculator } from '../domain';
 import { PayableStatus } from '../domain/payable-status.enum';
@@ -18,7 +17,6 @@ import { PayableStatus } from '../domain/payable-status.enum';
 export class DeletePayableInstallmentUseCase {
   constructor(
     private readonly repository: PayablesRepository,
-    private readonly cacheService: CacheService,
     private readonly calculator: InstallmentsCalculator
   ) {}
 
@@ -138,8 +136,6 @@ export class DeletePayableInstallmentUseCase {
       });
     });
 
-    this.invalidateDashboardCache(organizationId);
-
     return this.repository.findFirst(
       { id: payableId, organizationId },
       {
@@ -155,10 +151,5 @@ export class DeletePayableInstallmentUseCase {
         },
       }
     );
-  }
-
-  private invalidateDashboardCache(organizationId: string) {
-    const cacheKey = `dashboard:summary:${organizationId}`;
-    this.cacheService.del(cacheKey);
   }
 }

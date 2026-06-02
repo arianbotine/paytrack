@@ -13,7 +13,6 @@ import {
 import { CreatePaymentDto, QuickPaymentDto } from '../dto/payment.dto';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
 import { parseDatetime } from '../../../shared/utils/date.utils';
-import { CacheService } from '../../../shared/services/cache.service';
 
 /**
  * Use Case: Criar um novo pagamento
@@ -26,8 +25,7 @@ export class CreatePaymentUseCase {
   constructor(
     private readonly paymentsRepository: PaymentsRepository,
     private readonly balanceManager: InstallmentBalanceManager,
-    private readonly allocationsValidator: PaymentAllocationsValidator,
-    private readonly cacheService: CacheService
+    private readonly allocationsValidator: PaymentAllocationsValidator
   ) {}
 
   async execute(organizationId: string, dto: CreatePaymentDto) {
@@ -117,13 +115,6 @@ export class CreatePaymentUseCase {
 
         return payment;
       });
-
-      // Invalidar cache do dashboard e das listas de contas
-      this.cacheService.del(`dashboard:summary:${organizationId}`);
-      await Promise.all([
-        this.cacheService.invalidate(`payables:list:${organizationId}`),
-        this.cacheService.invalidate(`receivables:list:${organizationId}`),
-      ]);
 
       return result;
     } catch (error) {

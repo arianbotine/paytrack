@@ -20,7 +20,6 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SerializationInterceptor } from './shared/interceptors/serialization.interceptor';
 import { IdempotencyInterceptor } from './shared/interceptors/idempotency.interceptor';
-import { CacheModule } from './shared/modules/cache.module';
 
 @Module({
   imports: [
@@ -34,7 +33,6 @@ import { CacheModule } from './shared/modules/cache.module';
         limit: 100, // 100 requests per minute (global default)
       },
     ]),
-    CacheModule, // Módulo de cache para interceptors globais
     DatabaseModule,
     AuthModule,
     UsersModule,

@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PayablesRepository } from '../repositories';
-import { CacheService } from '../../../shared/services/cache.service';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
 
 /**
@@ -11,7 +10,6 @@ import { PrismaService } from '../../../infrastructure/database/prisma.service';
 export class DeletePayableUseCase {
   constructor(
     private readonly payablesRepository: PayablesRepository,
-    private readonly cacheService: CacheService,
     private readonly prisma: PrismaService
   ) {}
 
@@ -50,9 +48,6 @@ export class DeletePayableUseCase {
     if (relatedPaymentIds.size > 0) {
       await this.cleanupOrphanedPayments(Array.from(relatedPaymentIds));
     }
-
-    // Invalidar cache
-    this.cacheService.del(`dashboard:summary:${organizationId}`);
 
     return payable;
   }

@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PaymentsRepository } from '../repositories';
 import { UpdatePaymentDto } from '../dto/payment.dto';
-import { CacheService } from '../../../shared/services/cache.service';
 
 /**
  * Use Case: Atualizar um pagamento
@@ -10,10 +9,7 @@ import { CacheService } from '../../../shared/services/cache.service';
  */
 @Injectable()
 export class UpdatePaymentUseCase {
-  constructor(
-    private readonly paymentsRepository: PaymentsRepository,
-    private readonly cacheService: CacheService
-  ) {}
+  constructor(private readonly paymentsRepository: PaymentsRepository) {}
 
   async execute(id: string, organizationId: string, dto: UpdatePaymentDto) {
     const result = await this.paymentsRepository.transaction(async tx => {
@@ -63,13 +59,6 @@ export class UpdatePaymentUseCase {
 
       return updatedPayment;
     });
-
-    // Invalidar cache do dashboard e das listas de contas
-    this.cacheService.del(`dashboard:summary:${organizationId}`);
-    await Promise.all([
-      this.cacheService.invalidate(`payables:list:${organizationId}`),
-      this.cacheService.invalidate(`receivables:list:${organizationId}`),
-    ]);
 
     return result;
   }

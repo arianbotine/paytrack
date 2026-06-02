@@ -4,7 +4,6 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ReceivablesRepository } from '../repositories';
-import { CacheService } from '../../../shared/services/cache.service';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
 import { UpdateInstallmentDto } from '../dto/receivable.dto';
 import { ReceivableStatus } from '../domain/receivable-status.enum';
@@ -15,10 +14,7 @@ import { ReceivableStatus } from '../domain/receivable-status.enum';
  */
 @Injectable()
 export class UpdateReceivableInstallmentUseCase {
-  constructor(
-    private readonly repository: ReceivablesRepository,
-    private readonly cacheService: CacheService
-  ) {}
+  constructor(private readonly repository: ReceivablesRepository) {}
 
   async execute(
     receivableId: string,
@@ -181,8 +177,6 @@ export class UpdateReceivableInstallmentUseCase {
       }
     });
 
-    this.invalidateDashboardCache(organizationId);
-
     return this.repository.findFirst(
       { id: receivableId, organizationId },
       {
@@ -205,10 +199,5 @@ export class UpdateReceivableInstallmentUseCase {
         },
       }
     );
-  }
-
-  private invalidateDashboardCache(organizationId: string) {
-    const cacheKey = `dashboard:summary:${organizationId}`;
-    this.cacheService.del(cacheKey);
   }
 }

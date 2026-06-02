@@ -6,7 +6,6 @@ import {
 import { InstallmentsCalculator } from '../domain';
 import { CreatePayableDto } from '../dto/payable.dto';
 import { MoneyUtils } from '../../../shared/utils/money.utils';
-import { CacheService } from '../../../shared/services/cache.service';
 import { CreatePaymentUseCase } from '../../payments/use-cases/create-payment.use-case';
 import { parseDatetime } from '../../../shared/utils/date.utils';
 
@@ -22,7 +21,6 @@ export class CreatePayableUseCase {
     private readonly payablesRepository: PayablesRepository,
     private readonly installmentsRepository: PayableInstallmentsRepository,
     private readonly calculator: InstallmentsCalculator,
-    private readonly cacheService: CacheService,
     private readonly createPaymentUseCase: CreatePaymentUseCase
   ) {}
 
@@ -96,9 +94,6 @@ export class CreatePayableUseCase {
 
       return payable;
     });
-
-    // Invalidar cache do dashboard
-    this.cacheService.del(`dashboard:summary:${organizationId}`);
 
     return result;
   }

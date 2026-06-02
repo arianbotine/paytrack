@@ -38,9 +38,23 @@ export function useDashboard() {
     },
     enabled: !!organizationId,
     staleTime: 0,
+    gcTime: 0,
     select: (data: DashboardData): DashboardData => {
-      const dedup = <T extends { id: string }>(items: T[]): T[] => [
-        ...new Map(items.map(i => [i.id, i])).values(),
+      const dedup = <
+        T extends {
+          id: string;
+          installmentId?: string | null;
+          dueDate?: string | null;
+        },
+      >(
+        items: T[]
+      ): T[] => [
+        ...new Map(
+          items.map(i => [
+            i.installmentId ?? `${i.id}:${i.dueDate ?? 'no-date'}`,
+            i,
+          ])
+        ).values(),
       ];
       return {
         ...data,

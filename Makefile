@@ -3,7 +3,7 @@
 
 SHELL := /bin/bash
 
-.PHONY: help setup setup-force db-up db-sync up down restart clean reset studio logs tests mobile-setup mobile-start mobile-start-prod mobile-dev
+.PHONY: help setup setup-force db-up db-sync up down restart clean reset studio logs tests mobile-setup mobile-start mobile-start-prod mobile-dev wsl-expose-ports
 
 # Variáveis
 DOCKER_COMPOSE := docker compose
@@ -49,6 +49,9 @@ help:
 	@echo "  mobile-start      - Iniciar Expo apontando para BFF local"
 	@echo "  mobile-start-prod - Iniciar Expo sem alterar o .env (usa URL atual)"
 	@echo "  mobile-dev        - Iniciar ambiente completo (backend + BFF + frontend)"
+	@echo ""
+	@echo "WSL2 (Windows):"
+	@echo "  wsl-expose-ports  - Expor portas 3000 e 3001 para a rede local via portproxy (requer UAC)"
 
 # Instalar dependências
 setup:
@@ -262,12 +265,19 @@ mobile-start: mobile-setup
 	@if [ ! -f $(MOBILE_DIR)/.env ]; then cp $(MOBILE_DIR)/.env.example $(MOBILE_DIR)/.env; echo "Criado mobile/.env a partir do .env.example — configure os EXPO_PUBLIC_GOOGLE_*_CLIENT_ID."; fi
 	@set -a && . ./.env && set +a && \
 		BFF_URL="http://$$MOBILE_HOST_IP:$(BFF_PORT)" && \
+		BACKEND_URL="http://$$MOBILE_HOST_IP:$(BACKEND_PORT)" && \
 		if grep -q "^EXPO_PUBLIC_BFF_URL=" $(MOBILE_DIR)/.env; then \
 			sed -i "s|^EXPO_PUBLIC_BFF_URL=.*|EXPO_PUBLIC_BFF_URL=$$BFF_URL|" $(MOBILE_DIR)/.env; \
 		else \
 			echo "EXPO_PUBLIC_BFF_URL=$$BFF_URL" >> $(MOBILE_DIR)/.env; \
+		fi && \
+		if grep -q "^EXPO_PUBLIC_BACKEND_URL=" $(MOBILE_DIR)/.env; then \
+			sed -i "s|^EXPO_PUBLIC_BACKEND_URL=.*|EXPO_PUBLIC_BACKEND_URL=$$BACKEND_URL|" $(MOBILE_DIR)/.env; \
+		else \
+			echo "EXPO_PUBLIC_BACKEND_URL=$$BACKEND_URL" >> $(MOBILE_DIR)/.env; \
 		fi
 	@echo "Usando EXPO_PUBLIC_BFF_URL=$(shell set -a && . ./.env && set +a && echo http://$$MOBILE_HOST_IP:$(BFF_PORT) 2>/dev/null || grep EXPO_PUBLIC_BFF_URL $(MOBILE_DIR)/.env 2>/dev/null || echo '(ver mobile/.env)')"
+	@echo "Usando EXPO_PUBLIC_BACKEND_URL=$(shell set -a && . ./.env && set +a && echo http://$$MOBILE_HOST_IP:$(BACKEND_PORT) 2>/dev/null || grep EXPO_PUBLIC_BACKEND_URL $(MOBILE_DIR)/.env 2>/dev/null || echo '(ver mobile/.env)')"
 	@-pkill -f "expo start" 2>/dev/null || true
 	@-pkill -f "metro" 2>/dev/null || true
 	@-lsof -ti:8081 | xargs kill -9 2>/dev/null || true
@@ -292,3 +302,11 @@ mobile-start-prod: mobile-setup
 mobile-dev: up
 	@echo ""
 	@echo "Execute 'make mobile-start' em outro terminal para iniciar o Expo."
+
+# Expor portas do WSL2 para a rede local (Windows) — requer UAC
+# Necessário após cada reinicialização do WSL pois o IP interno muda
+wsl-expose-ports:
+	@WSL_IP=$$(hostname -I | awk '{print $$1}') && \
+	echo "IP WSL2: $$WSL_IP" && \
+	powershell.exe -Command "Start-Process powershell -ArgumentList '-NoProfile -Command \"netsh interface portproxy delete v4tov4 listenport=3000 listenaddress=0.0.0.0 2>NUL; netsh interface portproxy delete v4tov4 listenport=3001 listenaddress=0.0.0.0 2>NUL; netsh interface portproxy add v4tov4 listenport=3000 listenaddress=0.0.0.0 connectport=3000 connectaddress=$$WSL_IP; netsh interface portproxy add v4tov4 listenport=3001 listenaddress=0.0.0.0 connectport=3001 connectaddress=$$WSL_IP; netsh advfirewall firewall delete rule name=WSL2-Backend-3000 >NUL 2>NUL; netsh advfirewall firewall add rule name=WSL2-Backend-3000 dir=in action=allow protocol=TCP localport=3000; netsh advfirewall firewall delete rule name=WSL2-BFF-3001 >NUL 2>NUL; netsh advfirewall firewall add rule name=WSL2-BFF-3001 dir=in action=allow protocol=TCP localport=3001\"' -Verb RunAs -Wait" && \
+	echo "Portas 3000 e 3001 expostas para a rede local."

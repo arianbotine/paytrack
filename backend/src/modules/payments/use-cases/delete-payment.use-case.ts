@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PaymentsRepository } from '../repositories';
 import { InstallmentBalanceManager } from '../domain';
-import { CacheService } from '../../../shared/services/cache.service';
 
 /**
  * Use Case: Deletar um pagamento
@@ -11,8 +10,7 @@ import { CacheService } from '../../../shared/services/cache.service';
 export class DeletePaymentUseCase {
   constructor(
     private readonly paymentsRepository: PaymentsRepository,
-    private readonly balanceManager: InstallmentBalanceManager,
-    private readonly cacheService: CacheService
+    private readonly balanceManager: InstallmentBalanceManager
   ) {}
 
   async execute(id: string, organizationId: string) {
@@ -50,13 +48,6 @@ export class DeletePaymentUseCase {
 
       return payment;
     });
-
-    // Invalidar cache do dashboard e das listas de contas
-    this.cacheService.del(`dashboard:summary:${organizationId}`);
-    await Promise.all([
-      this.cacheService.invalidate(`payables:list:${organizationId}`),
-      this.cacheService.invalidate(`receivables:list:${organizationId}`),
-    ]);
 
     return result;
   }

@@ -10,20 +10,24 @@ import { Reflector } from '@nestjs/core';
 import { Observable, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request, Response } from 'express';
-import { CacheService } from '../services/cache.service';
 import { IDEMPOTENT_KEY } from '../decorators/idempotent.decorator';
+
+interface CachedResponse {
+  status: number;
+  body: unknown;
+  expiresAt: number;
+}
 
 @Injectable()
 export class IdempotencyInterceptor implements NestInterceptor {
   private readonly logger = new Logger(IdempotencyInterceptor.name);
-  private readonly ttl: number;
+  private readonly store = new Map<string, CachedResponse>();
+  private readonly ttlMs: number;
 
-  constructor(
-    private readonly cacheService: CacheService,
-    private readonly reflector: Reflector
-  ) {
+  constructor(private readonly reflector: Reflector) {
     // TTL padrão: 1 hora (3600 segundos)
-    this.ttl = Number.parseInt(process.env.IDEMPOTENCY_TTL || '3600', 10);
+    this.ttlMs =
+      Number.parseInt(process.env.IDEMPOTENCY_TTL || '3600', 10) * 1000;
   }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -66,38 +70,40 @@ export class IdempotencyInterceptor implements NestInterceptor {
     // Cache key: idempotency:{organizationId}:{key}:{method}:{path}
     const cacheKey = `idempotency:${organizationId}:${idempotencyKey}:${method}:${request.path}`;
 
-    // Verificar se já existe resposta cacheada
-    const cachedResponse = this.cacheService.get<{
-      status: number;
-      body: any;
-    }>(cacheKey);
+    // Limpar entradas expiradas ocasionalmente
+    this.evictExpired();
 
-    if (cachedResponse) {
+    const cached = this.store.get(cacheKey);
+    if (cached) {
       this.logger.warn(
         `🔁 Request duplicado bloqueado: ${method} ${request.path} (key: ${idempotencyKey})`
       );
-
-      // Retornar resposta cacheada
-      response.status(cachedResponse.status);
-      return of(cachedResponse.body);
+      response.status(cached.status);
+      return of(cached.body);
     }
 
-    // Processar request e cachear resultado
+    // Processar request e armazenar resultado
     return next.handle().pipe(
       tap(responseBody => {
-        this.cacheService.set(
-          cacheKey,
-          {
-            status: response.statusCode,
-            body: responseBody,
-          },
-          this.ttl
-        );
+        this.store.set(cacheKey, {
+          status: response.statusCode,
+          body: responseBody,
+          expiresAt: Date.now() + this.ttlMs,
+        });
 
         this.logger.debug(
-          `💾 Resposta cacheada para idempotency-key: ${idempotencyKey} (TTL: ${this.ttl}s)`
+          `💾 Idempotency key registrada: ${idempotencyKey} (TTL: ${this.ttlMs / 1000}s)`
         );
       })
     );
+  }
+
+  private evictExpired(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.store.entries()) {
+      if (entry.expiresAt <= now) {
+        this.store.delete(key);
+      }
+    }
   }
 }
