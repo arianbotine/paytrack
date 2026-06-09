@@ -115,7 +115,9 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
   const [newItemDescription, setNewItemDescription] = useState('');
   const [newItemAmount, setNewItemAmount] = useState<number | null>(null);
   const [newItemTagIds, setNewItemTagIds] = useState<string[]>([]);
-  const [newItemCategoryId, setNewItemCategoryId] = useState<string | null>(null);
+  const [newItemCategoryId, setNewItemCategoryId] = useState<string | null>(
+    null
+  );
   const [newItemSplitCount, setNewItemSplitCount] = useState(1);
   const [splitMissingAlert, setSplitMissingAlert] = useState<string | null>(
     null
@@ -124,6 +126,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
   const [splitCapacityError, setSplitCapacityError] = useState<
     AffectedInstallmentCapacity[] | null
   >(null);
+  const [pendingAddAlert, setPendingAddAlert] = useState<string | null>(null);
   const [pendingSplitPayload, setPendingSplitPayload] = useState<{
     description: string;
     amount: number;
@@ -137,7 +140,9 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
     null
   );
   const [editingItemTagIds, setEditingItemTagIds] = useState<string[]>([]);
-  const [editingItemCategoryId, setEditingItemCategoryId] = useState<string | null>(null);
+  const [editingItemCategoryId, setEditingItemCategoryId] = useState<
+    string | null
+  >(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
@@ -181,6 +186,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
     setSplitMissingAlert(null);
     setSplitPaidAlert(null);
     setSplitCapacityError(null);
+    setPendingAddAlert(null);
     setPendingSplitPayload(null);
     setEditingItemId(null);
     setEditingItemDescription('');
@@ -192,6 +198,27 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
   }, [installment, reset]);
 
   const handleFormSubmit = (data: EditInstallmentFormData) => {
+    const hasDraftItem =
+      showAddForm &&
+      (newItemDescription.trim().length > 0 ||
+        (newItemAmount ?? 0) > 0 ||
+        newItemTagIds.length > 0 ||
+        newItemCategoryId !== null ||
+        newItemSplitCount > 1);
+
+    const hasPendingItemAddition = hasDraftItem || pendingSplitPayload !== null;
+    const hasItemInEditMode = editingItemId !== null;
+
+    if (hasPendingItemAddition || hasItemInEditMode) {
+      setPendingAddAlert(
+        hasItemInEditMode
+          ? 'Existe item em modo de edição. Salve ou cancele a edição do item antes de salvar a parcela.'
+          : 'Existe item pendente de adição. Salve o item ("Salvar item") ou cancele o formulário antes de salvar a parcela.'
+      );
+      return;
+    }
+
+    setPendingAddAlert(null);
     onSubmit(data);
   };
 
@@ -233,6 +260,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
     setNewItemSplitCount(1);
     setSplitMissingAlert(null);
     setSplitPaidAlert(null);
+    setPendingAddAlert(null);
     setShowAddForm(false);
   };
 
@@ -241,6 +269,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
 
     setSplitMissingAlert(null);
     setSplitPaidAlert(null);
+    setPendingAddAlert(null);
 
     // Frontend pre-validation: check sibling installments exist
     if (newItemSplitCount > 1 && installment && payable) {
@@ -294,6 +323,16 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
           splitCount: newItemSplitCount,
         });
         setSplitCapacityError(affected ?? []);
+      } else if (code === 'INSTALLMENTS_NOT_FOUND') {
+        const backendMessage = (
+          error as { response?: { data?: { message?: string | string[] } } }
+        )?.response?.data?.message;
+        const message = Array.isArray(backendMessage)
+          ? backendMessage[0]
+          : backendMessage ||
+            'As parcelas informadas não existem neste parcelamento.';
+
+        setSplitMissingAlert(message);
       } else if (code === 'PAID_INSTALLMENT_CANNOT_BE_ADJUSTED') {
         const paidNumbers = (
           error as {
@@ -536,6 +575,17 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                 <Grid item xs={12}>
                   <Divider sx={{ my: 1 }} />
                 </Grid>
+
+                {pendingAddAlert && (
+                  <Grid item xs={12}>
+                    <Alert
+                      severity="warning"
+                      onClose={() => setPendingAddAlert(null)}
+                    >
+                      {pendingAddAlert}
+                    </Alert>
+                  </Grid>
+                )}
 
                 <Grid item xs={12}>
                   <Typography variant="subtitle1" fontWeight={600}>
@@ -813,9 +863,15 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                                       <Autocomplete
                                         options={categories}
                                         getOptionLabel={option => option.name}
-                                        value={categories.find(c => c.id === editingItemCategoryId) ?? null}
+                                        value={
+                                          categories.find(
+                                            c => c.id === editingItemCategoryId
+                                          ) ?? null
+                                        }
                                         onChange={(_, newValue) => {
-                                          setEditingItemCategoryId(newValue?.id ?? null);
+                                          setEditingItemCategoryId(
+                                            newValue?.id ?? null
+                                          );
                                         }}
                                         size="small"
                                         disabled={isMutatingItems}
@@ -1001,8 +1057,10 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                                           size="small"
                                           variant="outlined"
                                           sx={{
-                                            borderColor: item.category.color || '#9e9e9e',
-                                            color: item.category.color || '#9e9e9e',
+                                            borderColor:
+                                              item.category.color || '#9e9e9e',
+                                            color:
+                                              item.category.color || '#9e9e9e',
                                             height: 20,
                                             fontSize: '0.7rem',
                                           }}
@@ -1141,7 +1199,11 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                               <Autocomplete
                                 options={categories}
                                 getOptionLabel={option => option.name}
-                                value={categories.find(c => c.id === newItemCategoryId) ?? null}
+                                value={
+                                  categories.find(
+                                    c => c.id === newItemCategoryId
+                                  ) ?? null
+                                }
                                 onChange={(_, newValue) => {
                                   setNewItemCategoryId(newValue?.id ?? null);
                                 }}
@@ -1193,6 +1255,7 @@ export const EditInstallmentDialog: React.FC<EditInstallmentDialogProps> = ({
                                         setNewItemCategoryId(null);
                                         setNewItemSplitCount(1);
                                         setSplitMissingAlert(null);
+                                        setPendingAddAlert(null);
                                       }}
                                       disabled={isMutatingItems || isSubmitting}
                                     >

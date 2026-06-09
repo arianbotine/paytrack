@@ -175,7 +175,14 @@ export const usePayableInstallmentItemOperations = () => {
       ) {
         return; // handled by the dialog
       }
-      showNotification('Erro ao criar item da parcela', 'error');
+      const backendMessage = (
+        error as { response?: { data?: { message?: string | string[] } } }
+      )?.response?.data?.message;
+      const message = Array.isArray(backendMessage)
+        ? backendMessage[0]
+        : backendMessage || 'Erro ao criar item da parcela';
+
+      showNotification(message, 'error');
     },
   });
 
