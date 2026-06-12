@@ -1,19 +1,10 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Grid,
-  Typography,
-  Skeleton,
-  Button,
-  Chip,
-  Divider,
-} from '@mui/material';
+import { Box, Grid, Typography, Skeleton, Chip, Divider } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
-  Refresh as RefreshIcon,
   CalendarToday as CalendarTodayIcon,
   Timeline as TimelineIcon,
   CheckCircle as CheckCircleIcon,
@@ -149,7 +140,6 @@ function DashboardSkeleton() {
 
 export function DashboardPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   const { startDate, endDate } = getCurrentMonthUTCRange();
 
@@ -213,15 +203,6 @@ export function DashboardPage() {
             <Typography variant="h4" fontWeight="bold">
               Dashboard
             </Typography>
-            <Button
-              variant="outlined"
-              startIcon={<RefreshIcon />}
-              onClick={() =>
-                queryClient.invalidateQueries({ queryKey: ['dashboard'] })
-              }
-            >
-              Atualizar
-            </Button>
           </Box>
           {/* Resumo do Mês Vigente */}
           <Box sx={{ mb: 4 }}>
