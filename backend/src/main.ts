@@ -50,6 +50,16 @@ async function bootstrap() {
       origin: frontendUrl,
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
       credentials: true,
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'Cookie',
+        'idempotency-key',
+        'X-Silent-Request',
+        'X-Health-Check',
+        'x-health-check',
+      ],
+      exposedHeaders: ['Set-Cookie'],
     });
   } else {
     // Em desenvolvimento: libera CORS completamente
@@ -63,6 +73,8 @@ async function bootstrap() {
         'Cookie',
         'idempotency-key',
         'X-Silent-Request',
+        'X-Health-Check',
+        'x-health-check',
       ],
       exposedHeaders: ['Set-Cookie'],
     });

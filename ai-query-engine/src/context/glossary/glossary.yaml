@@ -1,0 +1,9 @@
+entities:
+  faturamento:
+    description: Soma dos valores recebidos
+  cliente:
+    table: customers
+  pedido:
+    table: receivables
+  ticket_medio:
+    formula: faturamento / quantidade_de_pedidos

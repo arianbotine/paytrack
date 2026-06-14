@@ -51,6 +51,11 @@ const AdminUsersPage = lazy(() =>
     default: m.AdminUsersPage,
   }))
 );
+const AdminSystemSettingsPage = lazy(() =>
+  import('./features/admin/pages/AdminSystemSettingsPage').then(m => ({
+    default: m.AdminSystemSettingsPage,
+  }))
+);
 const CustomersPage = lazy(() =>
   import('./features/customers/pages/CustomersPage').then(m => ({
     default: m.CustomersPage,
@@ -170,6 +175,10 @@ function App() {
           >
             <Route index element={<AdminDashboardPage />} />
             <Route path="organizations" element={<AdminOrganizationsPage />} />
+            <Route
+              path="system-settings"
+              element={<AdminSystemSettingsPage />}
+            />
             <Route path="users" element={<AdminUsersPage />} />
           </Route>
           <Route

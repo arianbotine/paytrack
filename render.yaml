@@ -13,6 +13,65 @@
 
 services:
   # ----------------------------------------------------------------------------
+  # AI Query Engine - FastAPI (Python)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: paytrack-ai-query-engine
+    runtime: docker
+    rootDir: ai-query-engine
+    dockerfilePath: ./Dockerfile
+    region: oregon
+    plan: starter
+
+    healthCheckPath: /health
+
+    envVars:
+      - key: APP_ENV
+        value: production
+
+      - key: LOG_LEVEL
+        value: INFO
+
+      - key: POSTGRES_HOST
+        sync: false
+
+      - key: POSTGRES_PORT
+        value: 5432
+
+      - key: POSTGRES_DB
+        sync: false
+
+      - key: POSTGRES_USER
+        sync: false
+
+      - key: POSTGRES_PASSWORD
+        sync: false
+
+      - key: LLM_PROVIDER
+        value: gemini
+
+      - key: GEMINI_API_KEY
+        sync: false
+
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+
+      - key: OPENROUTER_API_KEY
+        sync: false
+
+      - key: OPENROUTER_MODEL
+        value: qwen/qwen3-8b:free
+
+      - key: QUERY_LIMIT
+        value: 100
+
+      - key: QUERY_TIMEOUT_SECONDS
+        value: 10
+
+      - key: AI_ENGINE_API_KEY
+        sync: false
+
+  # ----------------------------------------------------------------------------
   # Backend API - PayTrack (NestJS)
   # ----------------------------------------------------------------------------
   - type: web
@@ -44,6 +103,21 @@ services:
       # CORS Origins - Lista de origens permitidas separadas por vírgula
       - key: CORS_ORIGINS
         value: https://paytrack-five.vercel.app,https://paytrack-six.vercel.app,http://localhost:5173,http://localhost:3000
+
+      # URL pública do AI Query Engine (serviço independente)
+      - key: AI_SERVICE_URL
+        fromService:
+          type: web
+          name: paytrack-ai-query-engine
+          property: hostport
+
+      # Chave compartilhada para autenticação entre backend e AI Engine
+      - key: AI_SERVICE_API_KEY
+        sync: false
+
+      # Timeout de chamada para o AI Engine (ms)
+      - key: AI_SERVICE_TIMEOUT_MS
+        value: 15000
 
       # URL pública da própria API (usada pelo better-auth para montar redirect_uri)
       # IMPORTANTE: Atualize com a URL real do backend no Render

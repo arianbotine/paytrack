@@ -3,7 +3,7 @@
 
 SHELL := /bin/bash
 
-.PHONY: help setup setup-force db-up db-sync up down restart clean reset studio logs tests mobile-setup mobile-start mobile-start-prod mobile-dev wsl-expose-ports
+.PHONY: help setup setup-force ai-setup db-up db-sync ai-up ai-down up down restart clean reset studio logs logs-backend logs-frontend logs-db logs-bff logs-ai status tests mobile-setup mobile-start mobile-start-prod mobile-dev wsl-expose-ports
 
 # Variáveis
 DOCKER_COMPOSE := docker compose
@@ -11,6 +11,7 @@ BACKEND_DIR := backend
 FRONTEND_DIR := frontend
 BFF_DIR := bff-mobile
 MOBILE_DIR := mobile
+AI_DIR := ai-query-engine
 LOGS_DIR := logs
 DB_CONTAINER := db
 DB_USER := paytrack
@@ -18,6 +19,7 @@ DB_NAME := paytrack
 BACKEND_PORT := 3000
 FRONTEND_PORT := 5173
 BFF_PORT := 3001
+AI_PORT := 8000
 PRISMA_STUDIO_PORT := 5555
 
 # Comando padrão
@@ -28,6 +30,8 @@ help:
 	@echo "  db-up       - Iniciar container PostgreSQL e aguardar saúde"
 	@echo "  db-sync     - Sincronizar schema do banco e gerar cliente Prisma"
 	@echo "  up          - Iniciar backend e frontend em modo desenvolvimento"
+	@echo "  ai-up       - Iniciar AI Query Engine (nativo)"
+	@echo "  ai-down     - Parar AI Query Engine (nativo)"
 	@echo "  down        - Parar aplicações e banco de dados"
 	@echo "  restart     - Reiniciar aplicações (down + up)"
 	@echo "  clean       - Limpar logs, node_modules e builds"
@@ -38,6 +42,7 @@ help:
 	@echo "  logs-frontend - Mostrar últimas 300 linhas dos logs do frontend"
 	@echo "  logs-db     - Mostrar últimas 300 linhas dos logs do banco"
 	@echo "  logs-bff    - Mostrar últimas 300 linhas dos logs do BFF"
+	@echo "  logs-ai     - Mostrar últimas 300 linhas dos logs do AI Query Engine"
 	@echo "  status      - Mostrar status dos serviços"
 	@echo "  migrate     - Reset banco + sincronizar schema + executar migrações completas"
 	@echo "  migrate-deploy - Aplicar migrações pendentes (produção)"
@@ -73,7 +78,18 @@ setup:
 	else \
 		echo "Dependências do BFF já instaladas."; \
 	fi
+	@$(MAKE) ai-setup
 	@echo "Setup concluído."
+
+# Instalar dependências do AI Query Engine (Python)
+ai-setup:
+	@if [ ! -d "$(AI_DIR)/.venv" ]; then \
+		echo "Criando ambiente virtual do AI Query Engine..."; \
+		cd $(AI_DIR) && python3 -m venv .venv; \
+	fi
+	@echo "Instalando/atualizando dependências do AI Query Engine..."
+	@cd $(AI_DIR) && .venv/bin/pip install -r requirements.txt >/dev/null
+	@echo "Dependências do AI Query Engine prontas."
 
 # Forçar instalação de dependências
 setup-force:
@@ -108,8 +124,12 @@ up: setup db-up db-sync
 	@if [ ! -f .env ]; then cp .env.example .env; fi
 	@if [ ! -f $(BACKEND_DIR)/.env ]; then cp $(BACKEND_DIR)/.env.example $(BACKEND_DIR)/.env; echo "Criado backend/.env a partir do .env.example — revise as variáveis."; fi
 	@if [ ! -f $(BFF_DIR)/.env ]; then cp $(BFF_DIR)/.env.example $(BFF_DIR)/.env; echo "Criado bff-mobile/.env a partir do .env.example — revise as variáveis."; fi
+	@if [ ! -f $(AI_DIR)/.env ]; then cp $(AI_DIR)/.env.example $(AI_DIR)/.env; echo "Criado ai-query-engine/.env a partir do .env.example — revise as variáveis."; fi
 	@set -a && . .env && set +a
 	@mkdir -p $(LOGS_DIR)
+	@echo "Iniciando AI Query Engine..."
+	@cd $(AI_DIR) && (.venv/bin/python -m uvicorn src.main:app --host 0.0.0.0 --port $(AI_PORT) > ../$(LOGS_DIR)/ai-query-engine.log 2>&1 & echo $$! > ../$(LOGS_DIR)/.pids.ai)
+	@echo "AI Query Engine iniciado (PID: $$(cat $(LOGS_DIR)/.pids.ai))"
 	@echo "Iniciando backend..."
 	@cd $(BACKEND_DIR) && (npm run start:dev > ../$(LOGS_DIR)/backend.log 2>&1 & echo $$! > ../$(LOGS_DIR)/.pids.backend)
 	@echo "Backend iniciado (PID: $$(cat $(LOGS_DIR)/.pids.backend))"
@@ -126,8 +146,24 @@ up: setup db-up db-sync
 	@echo "  📄 API Docs:       http://localhost:$(BACKEND_PORT)/api/docs"
 	@echo "  🖥️  Frontend:       http://localhost:$(FRONTEND_PORT)"
 	@echo "  📱 BFF Mobile:     http://localhost:$(BFF_PORT)/bff"
+	@echo "  🤖 AI Query:       http://localhost:$(AI_PORT)"
 	@echo "  📚 BFF Swagger:    http://localhost:$(BFF_PORT)/bff/docs"
 	@echo "  🗄️  Prisma Studio:  http://localhost:$(PRISMA_STUDIO_PORT)"
+
+# Iniciar AI Query Engine nativamente
+ai-up: ai-setup db-up
+	@if [ ! -f $(AI_DIR)/.env ]; then cp $(AI_DIR)/.env.example $(AI_DIR)/.env; echo "Criado ai-query-engine/.env a partir do .env.example — revise as variáveis."; fi
+	@mkdir -p $(LOGS_DIR)
+	@echo "Iniciando AI Query Engine..."
+	@cd $(AI_DIR) && (.venv/bin/python -m uvicorn src.main:app --host 0.0.0.0 --port $(AI_PORT) > ../$(LOGS_DIR)/ai-query-engine.log 2>&1 & echo $$! > ../$(LOGS_DIR)/.pids.ai)
+	@echo "AI Query Engine disponível em http://localhost:$(AI_PORT) (PID: $$(cat $(LOGS_DIR)/.pids.ai))"
+
+# Parar AI Query Engine nativamente
+ai-down:
+	@echo "Parando AI Query Engine..."
+	@-if [ -f $(LOGS_DIR)/.pids.ai ]; then kill $$(cat $(LOGS_DIR)/.pids.ai) 2>/dev/null || true; rm -f $(LOGS_DIR)/.pids.ai; fi
+	@-lsof -ti:$(AI_PORT) | xargs kill -9 2>/dev/null || true
+	@echo "AI Query Engine parado."
 
 # Parar aplicações e banco
 down:
@@ -135,14 +171,17 @@ down:
 	@-if [ -f $(LOGS_DIR)/.pids.backend ]; then kill $$(cat $(LOGS_DIR)/.pids.backend) 2>/dev/null || true; rm -f $(LOGS_DIR)/.pids.backend; fi
 	@-if [ -f $(LOGS_DIR)/.pids.frontend ]; then kill $$(cat $(LOGS_DIR)/.pids.frontend) 2>/dev/null || true; rm -f $(LOGS_DIR)/.pids.frontend; fi
 	@-if [ -f $(LOGS_DIR)/.pids.bff ]; then kill $$(cat $(LOGS_DIR)/.pids.bff) 2>/dev/null || true; rm -f $(LOGS_DIR)/.pids.bff; fi
+	@-if [ -f $(LOGS_DIR)/.pids.ai ]; then kill $$(cat $(LOGS_DIR)/.pids.ai) 2>/dev/null || true; rm -f $(LOGS_DIR)/.pids.ai; fi
 	@-pkill -9 -f "nest start" || true
 	@-pkill -9 -f "vite" || true
+	@-pkill -f "uvicorn src.main:app" || true
 	@-pkill -f "expo start" || true
 	@-pkill -f "metro" || true
 	@sleep 2
 	@-lsof -ti:$(BACKEND_PORT) | xargs kill -9 2>/dev/null || true
 	@-lsof -ti:$(FRONTEND_PORT) | xargs kill -9 2>/dev/null || true
 	@-lsof -ti:$(BFF_PORT) | xargs kill -9 2>/dev/null || true
+	@-lsof -ti:$(AI_PORT) | xargs kill -9 2>/dev/null || true
 	@-lsof -ti:8081 | xargs kill -9 2>/dev/null || true
 	@-lsof -ti:8082 | xargs kill -9 2>/dev/null || true
 	@echo "Parando PostgreSQL..."
@@ -183,6 +222,8 @@ logs:
 	@echo "Mostrando últimas 300 linhas dos logs..."
 	@tail -n 300 $(LOGS_DIR)/backend.log
 	@tail -n 300 $(LOGS_DIR)/frontend.log
+	@tail -n 300 $(LOGS_DIR)/bff.log
+	@tail -n 300 $(LOGS_DIR)/ai-query-engine.log
 	@$(DOCKER_COMPOSE) logs --tail=300 $(DB_CONTAINER)
 
 # Logs individuais
@@ -194,6 +235,9 @@ logs-frontend:
 
 logs-db:
 	@$(DOCKER_COMPOSE) logs --tail=300 $(DB_CONTAINER)
+
+logs-ai:
+	@tail -n 300 $(LOGS_DIR)/ai-query-engine.log
 
 # Status dos serviços
 status:
@@ -219,6 +263,13 @@ status:
 	@echo "BFF Mobile:"
 	@if [ -f $(LOGS_DIR)/.pids.bff ] && kill -0 $$(cat $(LOGS_DIR)/.pids.bff) 2>/dev/null; then \
 		echo "  Rodando (PID: $$(cat $(LOGS_DIR)/.pids.bff))"; \
+	else \
+		echo "  Não está rodando"; \
+	fi
+	@echo ""
+	@echo "AI Query Engine:"
+	@if [ -f $(LOGS_DIR)/.pids.ai ] && kill -0 $$(cat $(LOGS_DIR)/.pids.ai) 2>/dev/null; then \
+		echo "  Rodando (PID: $$(cat $(LOGS_DIR)/.pids.ai))"; \
 	else \
 		echo "  Não está rodando"; \
 	fi

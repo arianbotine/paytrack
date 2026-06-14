@@ -48,6 +48,7 @@ import { useUIStore } from '@/lib/stores/uiStore';
 import { api } from '@/lib/api';
 import { OrganizationSwitcher } from '../OrganizationSwitcher';
 import { NotificationCenter } from '@/features/notifications/components/NotificationCenter';
+import { AiQueryFloatingChat } from '@/features/ai-query/components/AiQueryFloatingChat';
 
 const drawerWidth = 260;
 const miniWidth = 64;
@@ -429,6 +430,8 @@ export function MainLayout() {
       {orgSwitcherOpen && (
         <OrganizationSwitcher onClose={handleCloseOrgSwitcher} />
       )}
+
+      <AiQueryFloatingChat />
     </Box>
   );
 }

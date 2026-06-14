@@ -1,0 +1,170 @@
+{
+  "e13efa12-eeb0-462d-a30b-c3d5556c1437": {
+    "ddl": [],
+    "documentation": [
+      {
+        "content": "### Database Schema\n- audit_logs: id, organization_id, user_id, entity, entity_id, action, old_data, new_data, created_at\n- ba_account: id, account_id, provider_id, user_id, access_token, refresh_token, id_token, access_token_expires_at, refresh_token_expires_at, scope, password, created_at, updated_at\n- ba_session: id, expires_at, token, created_at, updated_at, ip_address, user_agent, user_id\n- ba_user: id, name, email, email_verified, image, created_at, updated_at\n- ba_verification: id, identifier, value, expires_at, created_at, updated_at\n- categories: id, organization_id, name, type, color, description, isActive, created_at, updated_at\n- customers: id, organization_id, name, document, email, phone, address, notes, isActive, created_at, updated_at\n- organizations: id, name, document, email, phone, address, isActive, created_at, updated_at, notification_lead_days, notification_polling_seconds, show_overdue_notifications\n- payable_installment_item_tags: payable_installment_item_id, tag_id\n- payable_installment_items: id, payable_installment_id, organization_id, description, amount, sort_order, created_at, updated_at, split_index, split_total, split_group_id, category_id\n- payable_installment_tags: payable_installment_id, tag_id\n- payable_installments: id, payable_id, organization_id, installment_number, total_installments, amount, paid_amount, due_date, status, created_at, updated_at, notes\n- payable_tags: payable_id, tag_id\n- payables: id, organization_id, vendor_id, category_id, amount, paid_amount, status, notes, total_installments, created_at, updated_at\n- payment_allocations: id, payment_id, payable_installment_id, receivable_installment_id, amount\n- payments: id, organization_id, amount, payment_date, payment_method, notes, created_at, updated_at, reference\n- receivable_installment_tags: receivable_installment_id, tag_id\n- receivable_installments: id, receivable_id, organization_id, installment_number, total_installments, amount, received_amount, due_date, status, created_at, updated_at, notes\n- receivable_tags: receivable_id, tag_id\n- receivables: id, organization_id, customer_id, category_id, amount, received_amount, status, notes, total_installments, created_at, updated_at\n- tags: id, organization_id, name, color, created_at, updated_at\n- user_organizations: id, user_id, organization_id, role, is_active, created_at, updated_at\n- users: id, email, password, name, is_system_admin, is_active, created_at, updated_at, last_login_at\n- vendors: id, organization_id, name, document, email, phone, address, notes, isActive, created_at, updated_at\n\n### Business Glossary\nentities:\n  faturamento:\n    description: Soma dos valores recebidos\n  cliente:\n    table: customers\n  pedido:\n    table: receivables\n  ticket_medio:\n    formula: faturamento / quantidade_de_pedidos\n\n\n### SQL Examples\nexamples:\n- question: Top 10 clientes\n  sql: SELECT customer_id, SUM(amount) AS total FROM receivable_installments WHERE\n    organization_id = '{organization_id}' GROUP BY customer_id ORDER BY total DESC\n    LIMIT 10\n- question: Faturamento mensal\n  sql: SELECT DATE_TRUNC('month', payment_date) AS month, SUM(amount) AS revenue FROM\n    payments WHERE organization_id = '{organization_id}' GROUP BY month ORDER BY month\n",
+        "created_at": "2026-06-13T11:52:32.398662+00:00",
+        "id": "doc_13c40956ad_8db7ce"
+      },
+      {
+        "content": "Faturamento e a soma de payments.amount considerando payment_date.",
+        "created_at": "2026-06-13T11:59:05.487093+00:00",
+        "id": "doc_ecfac8565e_b4d7f4"
+      },
+      {
+        "content": "Para analises mensais use DATE_TRUNC('month', payment_date).",
+        "created_at": "2026-06-13T11:59:05.505849+00:00",
+        "id": "doc_f5ff421772_f8c3d9"
+      },
+      {
+        "content": "Sempre aplicar organization_id nas tabelas com esse campo.",
+        "created_at": "2026-06-13T11:59:05.525011+00:00",
+        "id": "doc_8095e78fe1_d8fd99"
+      },
+      {
+        "content": "### Database Schema\n- audit_logs: id, organization_id, user_id, entity, entity_id, action, old_data, new_data, created_at\n- ba_account: id, account_id, provider_id, user_id, access_token, refresh_token, id_token, access_token_expires_at, refresh_token_expires_at, scope, password, created_at, updated_at\n- ba_session: id, expires_at, token, created_at, updated_at, ip_address, user_agent, user_id\n- ba_user: id, name, email, email_verified, image, created_at, updated_at\n- ba_verification: id, identifier, value, expires_at, created_at, updated_at\n- categories: id, organization_id, name, type, color, description, isActive, created_at, updated_at\n- customers: id, organization_id, name, document, email, phone, address, notes, isActive, created_at, updated_at\n- organizations: id, name, document, email, phone, address, isActive, created_at, updated_at, notification_lead_days, notification_polling_seconds, show_overdue_notifications\n- payable_installment_item_tags: payable_installment_item_id, tag_id\n- payable_installment_items: id, payable_installment_id, organization_id, description, amount, sort_order, created_at, updated_at, split_index, split_total, split_group_id, category_id\n- payable_installment_tags: payable_installment_id, tag_id\n- payable_installments: id, payable_id, organization_id, installment_number, total_installments, amount, paid_amount, due_date, status, created_at, updated_at, notes\n- payable_tags: payable_id, tag_id\n- payables: id, organization_id, vendor_id, category_id, amount, paid_amount, status, notes, total_installments, created_at, updated_at\n- payment_allocations: id, payment_id, payable_installment_id, receivable_installment_id, amount\n- payments: id, organization_id, amount, payment_date, payment_method, notes, created_at, updated_at, reference\n- receivable_installment_tags: receivable_installment_id, tag_id\n- receivable_installments: id, receivable_id, organization_id, installment_number, total_installments, amount, received_amount, due_date, status, created_at, updated_at, notes\n- receivable_tags: receivable_id, tag_id\n- receivables: id, organization_id, customer_id, category_id, amount, received_amount, status, notes, total_installments, created_at, updated_at\n- tags: id, organization_id, name, color, created_at, updated_at\n- user_organizations: id, user_id, organization_id, role, is_active, created_at, updated_at\n- users: id, email, password, name, is_system_admin, is_active, created_at, updated_at, last_login_at\n- vendors: id, organization_id, name, document, email, phone, address, notes, isActive, created_at, updated_at\n\n### Business Glossary\nentities:\n  faturamento:\n    description: Soma dos valores recebidos\n  cliente:\n    table: customers\n  pedido:\n    table: receivables\n  ticket_medio:\n    formula: faturamento / quantidade_de_pedidos\n\n\n### SQL Examples\nexamples:\n- question: Top 10 clientes\n  sql: SELECT customer_id, SUM(amount) AS total FROM receivable_installments WHERE\n    organization_id = '{organization_id}' GROUP BY customer_id ORDER BY total DESC\n    LIMIT 10\n- question: Faturamento mensal\n  sql: SELECT DATE_TRUNC('month', payment_date) AS month, SUM(amount) AS revenue FROM\n    payments WHERE organization_id = '{organization_id}' GROUP BY month ORDER BY month\n\n\n### Sample Entity Data\n- **Sample Customers**:\n  - ANDRESSA LEAL (id: c46d48b1-f604-45a5-9e26-50c51423858b)\n  - WEX (id: 0041ce72-5823-40b1-804b-b971dc167650)\n  - SIFAT SISTEMAS (id: 735bc736-34bb-4e1b-bf77-0653432c6b45)\n  - LUIZALABS - MAGALU (id: 6814b4f9-94d4-458e-bd92-2559462f15d8)\n  - KAEL BOTINE (id: ab91acae-84fe-4bb2-adf1-02f099a3c986)\n- **Sample Vendors**:\n  - ADM CONDOMINIO - HOT BEACH SUITES (id: b3297771-e7c9-4e46-a488-6c76c789b9a5)\n  - ADM CONDOMINIO - MARIA JACINTHA (id: 8aef25d7-c223-42d6-bf37-0bfd9f6705d8)\n  - CPFL (id: afb472aa-0821-4cf6-92d3-7a17f8494d2f)\n  - SEMAE (id: 0c46444b-5e13-4d08-aa75-31a7fea06ac1)\n  - PREFEITURA S\u00c3O JOS\u00c9 DO RIO PRETO (id: 1f9fc02e-5954-4f59-a125-f361cbc6c72d)",
+        "created_at": "2026-06-13T13:09:38.268237+00:00",
+        "id": "doc_34341b1fea_7cca36"
+      }
+    ],
+    "question_sql": [
+      {
+        "created_at": "2026-06-13T11:59:05.555304+00:00",
+        "id": "qsql_960c6c5c21_31eddd",
+        "question": "Qual o faturamento dos ultimos 6 meses?",
+        "sql": "SELECT DATE_TRUNC('month', payment_date) AS month, SUM(amount) AS revenue FROM payments WHERE organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' AND payment_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months' GROUP BY month ORDER BY month"
+      },
+      {
+        "created_at": "2026-06-13T11:59:05.575057+00:00",
+        "id": "qsql_d7c261cca3_d7aea7",
+        "question": "Qual o faturamento mensal dos ultimos 6 meses?",
+        "sql": "SELECT DATE_TRUNC('month', payment_date) AS month, SUM(amount) AS revenue FROM payments WHERE organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' AND payment_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months' GROUP BY month ORDER BY month"
+      },
+      {
+        "created_at": "2026-06-13T11:59:05.593808+00:00",
+        "id": "qsql_21eb03bc5f_5da87a",
+        "question": "Qual o faturamento total no periodo?",
+        "sql": "SELECT SUM(amount) AS total_revenue FROM payments WHERE organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' AND payment_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'"
+      },
+      {
+        "created_at": "2026-06-13T11:59:05.613598+00:00",
+        "id": "qsql_08f96709c6_c78db6",
+        "question": "Qual foi o faturamento deste mes?",
+        "sql": "SELECT SUM(amount) AS revenue_this_month FROM payments WHERE organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' AND payment_date >= DATE_TRUNC('month', CURRENT_DATE)"
+      },
+      {
+        "created_at": "2026-06-13T11:59:05.631266+00:00",
+        "id": "qsql_d2a8a7be73_1d30f2",
+        "question": "Qual foi o faturamento do mes passado?",
+        "sql": "SELECT SUM(amount) AS revenue_last_month FROM payments WHERE organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' AND payment_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month' AND payment_date < DATE_TRUNC('month', CURRENT_DATE)"
+      },
+      {
+        "created_at": "2026-06-13T11:59:05.649888+00:00",
+        "id": "qsql_0d2f14e928_de30c8",
+        "question": "Qual o top 10 clientes por recebimento?",
+        "sql": "SELECT r.customer_id, SUM(p.amount) AS total_received FROM payments p JOIN payment_allocations pa ON pa.payment_id = p.id JOIN receivable_installments ri ON ri.id = pa.receivable_installment_id JOIN receivables r ON r.id = ri.receivable_id WHERE p.organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' GROUP BY r.customer_id ORDER BY total_received DESC LIMIT 10"
+      },
+      {
+        "created_at": "2026-06-13T11:59:05.670014+00:00",
+        "id": "qsql_91557cfdf8_07d85e",
+        "question": "Quantos pagamentos foram feitos por mes nos ultimos 6 meses?",
+        "sql": "SELECT DATE_TRUNC('month', payment_date) AS month, COUNT(*) AS payments_count FROM payments WHERE organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' AND payment_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months' GROUP BY month ORDER BY month"
+      },
+      {
+        "created_at": "2026-06-13T11:59:05.690675+00:00",
+        "id": "qsql_1224dd2fa8_296608",
+        "question": "Qual o ticket medio dos pagamentos nos ultimos 6 meses?",
+        "sql": "SELECT AVG(amount) AS avg_payment_amount FROM payments WHERE organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' AND payment_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'"
+      },
+      {
+        "created_at": "2026-06-13T11:59:05.708788+00:00",
+        "id": "qsql_4f21e01f5d_ec3cc6",
+        "question": "Qual o valor total recebido por metodo de pagamento?",
+        "sql": "SELECT payment_method, SUM(amount) AS total_amount FROM payments WHERE organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' GROUP BY payment_method ORDER BY total_amount DESC"
+      },
+      {
+        "created_at": "2026-06-13T11:59:05.728391+00:00",
+        "id": "qsql_2a6e848f06_43a3df",
+        "question": "Mostre a evolucao do faturamento por mes",
+        "sql": "SELECT DATE_TRUNC('month', payment_date) AS month, SUM(amount) AS revenue FROM payments WHERE organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' GROUP BY month ORDER BY month"
+      },
+      {
+        "created_at": "2026-06-13T12:56:04.730242+00:00",
+        "id": "qsql_960d1caa2b_d64a77",
+        "question": "Qual o maior valor recebido do ultimo mes?",
+        "sql": "SELECT MAX(amount) AS max_last_month FROM payments WHERE organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' AND payment_date >= DATE_TRUNC('MONTH', CURRENT_DATE) - INTERVAL '1 MONTH' AND payment_date < DATE_TRUNC('MONTH', CURRENT_DATE) LIMIT 100"
+      },
+      {
+        "created_at": "2026-06-13T12:58:48.988207+00:00",
+        "id": "qsql_a44ca44417_349257",
+        "question": "no ultimo mes quanto recebi de kael augusto?",
+        "sql": "SELECT SUM(r.received_amount) AS total_received FROM receivables AS r JOIN customers AS c ON r.customer_id = c.id WHERE c.name = 'Kael Augusto' AND r.organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' AND r.created_at >= DATE_TRUNC('MONTH', CURRENT_DATE) - INTERVAL '1 MONTH' AND r.created_at < DATE_TRUNC('MONTH', CURRENT_DATE) LIMIT 100"
+      },
+      {
+        "created_at": "2026-06-13T12:59:30.378484+00:00",
+        "id": "qsql_a76af5b1f4_acd260",
+        "question": "e de kael botine?",
+        "sql": "SELECT SUM(r.received_amount) AS total_received FROM receivables AS r JOIN customers AS c ON r.customer_id = c.id WHERE c.name = 'Kael Botine' AND r.organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' AND r.created_at >= DATE_TRUNC('MONTH', CURRENT_DATE) - INTERVAL '1 MONTH' AND r.created_at < DATE_TRUNC('MONTH', CURRENT_DATE) LIMIT 100"
+      },
+      {
+        "created_at": "2026-06-13T13:04:51.899837+00:00",
+        "id": "qsql_7d47bb0855_f23522",
+        "question": "Quanto recebi de Kael Botine no \u00faltimo m\u00eas?",
+        "sql": "SELECT SUM(r.received_amount) AS total_received FROM receivables AS r JOIN customers AS c ON r.customer_id = c.id WHERE c.name = 'Kael Botine' AND r.organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' AND r.created_at >= DATE_TRUNC('MONTH', CURRENT_DATE) - INTERVAL '1 MONTH' AND r.created_at < DATE_TRUNC('MONTH', CURRENT_DATE) LIMIT 100"
+      },
+      {
+        "created_at": "2026-06-13T13:09:41.777173+00:00",
+        "id": "qsql_0c632642ba_000039",
+        "question": "Qual o maior valor recebido do ultimo m\u00eas?",
+        "sql": "SELECT MAX(amount) AS max_last_month FROM payments WHERE organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' AND payment_date >= DATE_TRUNC('MONTH', CURRENT_DATE) - INTERVAL '1 MONTH' AND payment_date < DATE_TRUNC('MONTH', CURRENT_DATE) LIMIT 100"
+      },
+      {
+        "created_at": "2026-06-13T13:17:40.456610+00:00",
+        "id": "qsql_3500587caf_14567e",
+        "question": "Quanto recebi do kael at\u00e9 agora?",
+        "sql": "SELECT SUM(r.received_amount) AS total_received FROM receivables AS r JOIN customers AS c ON r.customer_id = c.id WHERE UPPER(c.name) = UPPER('Kael Botine') AND r.organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' LIMIT 100"
+      },
+      {
+        "created_at": "2026-06-13T13:20:29.048121+00:00",
+        "id": "qsql_fb6ab6823c_ad3a13",
+        "question": "Quanto recebi do kael no ultimo m\u00eas?",
+        "sql": "SELECT SUM(r.received_amount) AS total_received FROM receivables AS r JOIN customers AS c ON r.customer_id = c.id WHERE UPPER(c.name) = UPPER('Kael Botine') AND r.organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' AND r.created_at >= DATE_TRUNC('MONTH', CURRENT_DATE) - INTERVAL '1 MONTH' AND r.created_at < DATE_TRUNC('MONTH', CURRENT_DATE) LIMIT 100"
+      },
+      {
+        "created_at": "2026-06-14T14:23:09.646346+00:00",
+        "id": "qsql_6cde8e5271_1e2b71",
+        "question": "qual o maior valor recebido no ultimo m\u00eas?",
+        "sql": "SELECT MAX(amount) AS max_last_month FROM payments WHERE organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' AND payment_date >= DATE_TRUNC('MONTH', CURRENT_DATE) - INTERVAL '1 MONTH' AND payment_date < DATE_TRUNC('MONTH', CURRENT_DATE) LIMIT 100"
+      },
+      {
+        "created_at": "2026-06-14T14:35:48.958611+00:00",
+        "id": "qsql_6a3e90a8c0_023546",
+        "question": "Quanto entrou por mes nos ultimos 6 meses?",
+        "sql": "SELECT DATE_TRUNC('MONTH', payment_date) AS month, SUM(amount) AS total_received FROM payments WHERE organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' AND payment_date >= DATE_TRUNC('MONTH', CURRENT_DATE) - INTERVAL '5 MONTHS' GROUP BY month ORDER BY month LIMIT 100"
+      },
+      {
+        "created_at": "2026-06-14T15:45:44.129468+00:00",
+        "id": "qsql_7ee997ecd9_9296dd",
+        "question": "Mostre os maiores clientes em valor recebido no trimestre.",
+        "sql": "SELECT c.name AS customer_name, SUM(r.received_amount) AS total_received FROM receivables AS r JOIN customers AS c ON r.customer_id = c.id WHERE r.organization_id = 'e13efa12-eeb0-462d-a30b-c3d5556c1437' AND r.created_at >= DATE_TRUNC('QUARTER', CURRENT_DATE) AND r.created_at < DATE_TRUNC('QUARTER', CURRENT_DATE) + INTERVAL '3 MONTH' GROUP BY c.name ORDER BY total_received DESC LIMIT 10"
+      }
+    ]
+  },
+  "org_smoke": {
+    "ddl": [],
+    "documentation": [
+      {
+        "content": "payables possui organization_id para isolamento multi-tenant",
+        "created_at": "2026-06-13T11:49:49.085203+00:00",
+        "id": "doc_aced023172_3beaf2"
+      },
+      {
+        "content": "### Database Schema\n- audit_logs: id, organization_id, user_id, entity, entity_id, action, old_data, new_data, created_at\n- ba_account: id, account_id, provider_id, user_id, access_token, refresh_token, id_token, access_token_expires_at, refresh_token_expires_at, scope, password, created_at, updated_at\n- ba_session: id, expires_at, token, created_at, updated_at, ip_address, user_agent, user_id\n- ba_user: id, name, email, email_verified, image, created_at, updated_at\n- ba_verification: id, identifier, value, expires_at, created_at, updated_at\n- categories: id, organization_id, name, type, color, description, isActive, created_at, updated_at\n- customers: id, organization_id, name, document, email, phone, address, notes, isActive, created_at, updated_at\n- organizations: id, name, document, email, phone, address, isActive, created_at, updated_at, notification_lead_days, notification_polling_seconds, show_overdue_notifications\n- payable_installment_item_tags: payable_installment_item_id, tag_id\n- payable_installment_items: id, payable_installment_id, organization_id, description, amount, sort_order, created_at, updated_at, split_index, split_total, split_group_id, category_id\n- payable_installment_tags: payable_installment_id, tag_id\n- payable_installments: id, payable_id, organization_id, installment_number, total_installments, amount, paid_amount, due_date, status, created_at, updated_at, notes\n- payable_tags: payable_id, tag_id\n- payables: id, organization_id, vendor_id, category_id, amount, paid_amount, status, notes, total_installments, created_at, updated_at\n- payment_allocations: id, payment_id, payable_installment_id, receivable_installment_id, amount\n- payments: id, organization_id, amount, payment_date, payment_method, notes, created_at, updated_at, reference\n- receivable_installment_tags: receivable_installment_id, tag_id\n- receivable_installments: id, receivable_id, organization_id, installment_number, total_installments, amount, received_amount, due_date, status, created_at, updated_at, notes\n- receivable_tags: receivable_id, tag_id\n- receivables: id, organization_id, customer_id, category_id, amount, received_amount, status, notes, total_installments, created_at, updated_at\n- tags: id, organization_id, name, color, created_at, updated_at\n- user_organizations: id, user_id, organization_id, role, is_active, created_at, updated_at\n- users: id, email, password, name, is_system_admin, is_active, created_at, updated_at, last_login_at\n- vendors: id, organization_id, name, document, email, phone, address, notes, isActive, created_at, updated_at\n\n### Business Glossary\nentities:\n  faturamento:\n    description: Soma dos valores recebidos\n  cliente:\n    table: customers\n  pedido:\n    table: receivables\n  ticket_medio:\n    formula: faturamento / quantidade_de_pedidos\n\n\n### SQL Examples\nexamples:\n- question: Top 10 clientes\n  sql: SELECT customer_id, SUM(amount) AS total FROM receivable_installments WHERE\n    organization_id = '{organization_id}' GROUP BY customer_id ORDER BY total DESC\n    LIMIT 10\n- question: Faturamento mensal\n  sql: SELECT DATE_TRUNC('month', payment_date) AS month, SUM(amount) AS revenue FROM\n    payments WHERE organization_id = '{organization_id}' GROUP BY month ORDER BY month\n",
+        "created_at": "2026-06-13T11:49:49.225537+00:00",
+        "id": "doc_13c40956ad_1d6715"
+      }
+    ],
+    "question_sql": []
+  }
+}

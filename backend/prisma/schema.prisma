@@ -97,6 +97,15 @@ model User {
   @@map("users")
 }
 
+model SystemSettings {
+  id                 String   @id @default("global")
+  aiQueryChatEnabled Boolean  @default(false) @map("ai_query_chat_enabled")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
+
 model UserOrganization {
   id             String   @id @default(uuid())
   userId         String   @map("user_id")

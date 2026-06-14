@@ -18,6 +18,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HealthModule } from './modules/health/health.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { AiQueryModule } from './modules/ai-query';
+import { SystemSettingsModule } from './modules/system-settings';
 import { SerializationInterceptor } from './shared/interceptors/serialization.interceptor';
 import { IdempotencyInterceptor } from './shared/interceptors/idempotency.interceptor';
 
@@ -48,6 +50,8 @@ import { IdempotencyInterceptor } from './shared/interceptors/idempotency.interc
     HealthModule,
     ReportsModule,
     NotificationsModule,
+    AiQueryModule,
+    SystemSettingsModule,
   ],
   providers: [
     {

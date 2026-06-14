@@ -1,0 +1,5 @@
+examples:
+  - question: Top 10 clientes
+    sql: SELECT customer_id, SUM(amount) AS total FROM receivable_installments WHERE organization_id = '{organization_id}' GROUP BY customer_id ORDER BY total DESC LIMIT 10
+  - question: Faturamento mensal
+    sql: SELECT DATE_TRUNC('month', payment_date) AS month, SUM(amount) AS revenue FROM payments WHERE organization_id = '{organization_id}' GROUP BY month ORDER BY month

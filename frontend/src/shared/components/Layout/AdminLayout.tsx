@@ -25,6 +25,7 @@ import {
   Dashboard as DashboardIcon,
   Business as BusinessIcon,
   People as PeopleIcon,
+  ToggleOn as ToggleOnIcon,
   ExitToApp as ExitToAppIcon,
   Home as HomeIcon,
   Lock as LockIcon,
@@ -40,6 +41,11 @@ const adminMenuItems = [
     text: 'Organizações',
     icon: <BusinessIcon />,
     path: '/admin/organizations',
+  },
+  {
+    text: 'Configurações',
+    icon: <ToggleOnIcon />,
+    path: '/admin/system-settings',
   },
   { text: 'Usuários', icon: <PeopleIcon />, path: '/admin/users' },
 ];

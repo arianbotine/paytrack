@@ -7,7 +7,12 @@ import {
   CardContent,
   CardActionArea,
 } from '@mui/material';
-import { Business, People, AdminPanelSettings } from '@mui/icons-material';
+import {
+  Business,
+  People,
+  AdminPanelSettings,
+  ToggleOn,
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
 export function AdminDashboardPage() {
@@ -27,6 +32,13 @@ export function AdminDashboardPage() {
       icon: <People sx={{ fontSize: 48 }} />,
       path: '/admin/users',
       color: 'secondary.main',
+    },
+    {
+      title: 'Configurações',
+      description: 'Controlar flags globais e liberações do sistema',
+      icon: <ToggleOn sx={{ fontSize: 48 }} />,
+      path: '/admin/system-settings',
+      color: 'success.main',
     },
   ];
 
@@ -48,7 +60,7 @@ export function AdminDashboardPage() {
 
       <Grid container spacing={3}>
         {adminSections.map(section => (
-          <Grid item xs={12} sm={6} md={6} key={section.path}>
+          <Grid item xs={12} sm={6} md={4} key={section.path}>
             <Card>
               <CardActionArea onClick={() => navigate(section.path)}>
                 <CardContent sx={{ textAlign: 'center', py: 4 }}>
