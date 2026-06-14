@@ -868,9 +868,7 @@ export function AiQueryFloatingChat() {
     }
   };
 
-  const handleInputKeyDown = (
-    event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleInputKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       void handleSubmit();
