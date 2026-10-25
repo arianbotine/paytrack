@@ -105,6 +105,7 @@ export const paymentSchema = z
     ]),
     reference: z.string().optional(),
     notes: z.string().optional(),
+    confirmOverpayment: z.boolean().optional(),
     payableInstallmentId: z.string().optional(),
     receivableInstallmentId: z.string().optional(),
   })
@@ -129,6 +130,7 @@ export const getDefaultFormValues = (): PaymentFormData => ({
   method: 'PIX',
   reference: '',
   notes: '',
+  confirmOverpayment: false,
   payableInstallmentId: '',
   receivableInstallmentId: '',
 });

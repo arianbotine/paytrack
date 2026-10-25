@@ -28,6 +28,7 @@ import {
   getOrganizationStorage,
   setOrganizationStorage,
 } from '@/shared/utils/organization-storage';
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { QuickPaymentDialog } from '@/features/payments/components';
 import { usePaymentOperations } from '@/features/payments/hooks/usePayments';
@@ -38,6 +39,17 @@ import { useDueAlerts } from '../hooks/useDueAlerts';
 import type { DueAlertItem } from '../types';
 
 const DISMISSED_STORAGE_KEY = 'notifications:dismissed';
+
+type OverpaymentIssue = {
+  installmentId: string;
+  installmentNumber: number;
+  accountType: 'PAYABLE' | 'RECEIVABLE';
+  currentAmount: number;
+  currentPaidOrReceivedAmount: number;
+  remainingAmount: number;
+  allocationAmount: number;
+  extraAmount: number;
+};
 
 const getTagChipStyles = (
   color: string | null | undefined
@@ -68,6 +80,12 @@ export function NotificationCenter() {
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
   const [selectedAlert, setSelectedAlert] = useState<DueAlertItem | null>(null);
   const [quickPaymentDialogOpen, setQuickPaymentDialogOpen] = useState(false);
+  const [overpaymentConfirmOpen, setOverpaymentConfirmOpen] = useState(false);
+  const [pendingPaymentData, setPendingPaymentData] =
+    useState<PaymentFormData | null>(null);
+  const [overpaymentIssues, setOverpaymentIssues] = useState<
+    OverpaymentIssue[]
+  >([]);
 
   useEffect(() => {
     if (!organizationId) return;
@@ -86,6 +104,9 @@ export function NotificationCenter() {
   const { createMutation } = usePaymentOperations({
     onCreateSuccess: () => {
       setQuickPaymentDialogOpen(false);
+      setOverpaymentConfirmOpen(false);
+      setPendingPaymentData(null);
+      setOverpaymentIssues([]);
       setSelectedAlert(null);
     },
   });
@@ -126,7 +147,41 @@ export function NotificationCenter() {
   };
 
   const handleQuickPaymentSubmit = (data: PaymentFormData) => {
-    createMutation.mutate(data);
+    createMutation.mutate(data, {
+      onError: error => {
+        const code = (error as { response?: { data?: { code?: string } } })
+          ?.response?.data?.code;
+
+        if (code === 'OVERPAYMENT_CONFIRMATION_REQUIRED') {
+          const issues = (
+            error as {
+              response?: {
+                data?: { overpayments?: OverpaymentIssue[] };
+              };
+            }
+          )?.response?.data?.overpayments;
+
+          setPendingPaymentData(data);
+          setOverpaymentIssues(issues ?? []);
+          setOverpaymentConfirmOpen(true);
+        }
+      },
+    });
+  };
+
+  const handleConfirmOverpayment = () => {
+    if (!pendingPaymentData) return;
+
+    createMutation.mutate({
+      ...pendingPaymentData,
+      confirmOverpayment: true,
+    });
+  };
+
+  const handleCancelOverpayment = () => {
+    setOverpaymentConfirmOpen(false);
+    setPendingPaymentData(null);
+    setOverpaymentIssues([]);
   };
 
   const handleViewAccount = (alert: DueAlertItem) => {
@@ -397,8 +452,29 @@ export function NotificationCenter() {
         onSubmit={handleQuickPaymentSubmit}
         onClose={() => {
           setQuickPaymentDialogOpen(false);
+          setOverpaymentConfirmOpen(false);
+          setPendingPaymentData(null);
+          setOverpaymentIssues([]);
           setSelectedAlert(null);
         }}
+      />
+
+      <ConfirmDialog
+        open={overpaymentConfirmOpen}
+        title="Valor maior que a conta"
+        message={
+          overpaymentIssues.length > 0
+            ? `O valor informado é maior que o saldo da conta. Se continuar, o sistema vai atualizar o valor da parcela para ${
+                overpaymentIssues.length > 1
+                  ? 'os valores informados'
+                  : 'o valor informado'
+              } e registrar o pagamento/recebimento. Deseja confirmar?`
+            : 'O valor informado é maior que o saldo da conta. Se continuar, o sistema vai atualizar o valor da parcela e registrar o pagamento/recebimento. Deseja confirmar?'
+        }
+        confirmLabel="Confirmar e Registrar"
+        onConfirm={handleConfirmOverpayment}
+        onCancel={handleCancelOverpayment}
+        isLoading={createMutation.isPending}
       />
     </>
   );

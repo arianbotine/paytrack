@@ -1,8 +1,8 @@
 import {
   Injectable,
   BadRequestException,
-  NotFoundException,
   Logger,
+  HttpException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PaymentsRepository } from '../repositories';
@@ -30,7 +30,7 @@ export class CreatePaymentUseCase {
 
   async execute(organizationId: string, dto: CreatePaymentDto) {
     try {
-      const { allocations, ...paymentData } = dto;
+      const { allocations, confirmOverpayment = false, ...paymentData } = dto;
 
       // Validar estrutura das alocações
       this.allocationsValidator.validateAllocationTargets(allocations);
@@ -43,6 +43,13 @@ export class CreatePaymentUseCase {
           tx,
           organizationId,
           allocations
+        );
+
+        await this.allocationsValidator.validateOverpaymentAndGetIssues(
+          tx,
+          organizationId,
+          allocations,
+          confirmOverpayment
         );
 
         // Criar pagamento
@@ -102,13 +109,19 @@ export class CreatePaymentUseCase {
             await this.balanceManager.updatePayableInstallmentBalance(
               tx,
               allocation.payableInstallmentId,
-              allocation.amount
+              allocation.amount,
+              {
+                allowOverpaymentAdjustment: confirmOverpayment,
+              }
             );
           } else if (allocation.receivableInstallmentId) {
             await this.balanceManager.updateReceivableInstallmentBalance(
               tx,
               allocation.receivableInstallmentId,
-              allocation.amount
+              allocation.amount,
+              {
+                allowOverpaymentAdjustment: confirmOverpayment,
+              }
             );
           }
         }
@@ -143,10 +156,7 @@ export class CreatePaymentUseCase {
         );
       }
 
-      if (
-        error instanceof BadRequestException ||
-        error instanceof NotFoundException
-      ) {
+      if (error instanceof HttpException) {
         throw error;
       }
 
@@ -175,7 +185,7 @@ export class CreatePaymentUseCase {
     organizationId: string,
     dto: CreatePaymentDto
   ) {
-    const { allocations, ...paymentData } = dto;
+    const { allocations, confirmOverpayment = false, ...paymentData } = dto;
 
     // Validar estrutura das alocações
     this.allocationsValidator.validateAllocationTargets(allocations);
@@ -186,6 +196,13 @@ export class CreatePaymentUseCase {
       tx,
       organizationId,
       allocations
+    );
+
+    await this.allocationsValidator.validateOverpaymentAndGetIssues(
+      tx,
+      organizationId,
+      allocations,
+      confirmOverpayment
     );
 
     // Criar pagamento
@@ -213,13 +230,19 @@ export class CreatePaymentUseCase {
         await this.balanceManager.updatePayableInstallmentBalance(
           tx,
           allocation.payableInstallmentId,
-          allocation.amount
+          allocation.amount,
+          {
+            allowOverpaymentAdjustment: confirmOverpayment,
+          }
         );
       } else if (allocation.receivableInstallmentId) {
         await this.balanceManager.updateReceivableInstallmentBalance(
           tx,
           allocation.receivableInstallmentId,
-          allocation.amount
+          allocation.amount,
+          {
+            allowOverpaymentAdjustment: confirmOverpayment,
+          }
         );
       }
     }
@@ -246,6 +269,7 @@ export class QuickPaymentUseCase {
       paymentMethod: dto.paymentMethod,
       reference: dto.reference,
       notes: dto.notes,
+      confirmOverpayment: dto.confirmOverpayment,
       allocations: [
         {
           ...(dto.type === 'payable'

@@ -1,6 +1,7 @@
 import {
   IsNumber,
   IsEnum,
+  IsBoolean,
   IsOptional,
   IsDateString,
   IsArray,
@@ -70,6 +71,15 @@ export class CreatePaymentDto {
   @ValidateNested({ each: true })
   @Type(() => QuickPaymentAllocationDto)
   allocations!: QuickPaymentAllocationDto[];
+
+  @ApiPropertyOptional({
+    example: false,
+    description:
+      'Confirma registro quando o valor informado excede o valor restante da parcela/conta',
+  })
+  @IsBoolean()
+  @IsOptional()
+  confirmOverpayment?: boolean;
 }
 
 export class QuickPaymentDto {
@@ -110,6 +120,15 @@ export class QuickPaymentDto {
   @ApiPropertyOptional({ example: 'Observações' })
   @IsOptional()
   notes?: string;
+
+  @ApiPropertyOptional({
+    example: false,
+    description:
+      'Confirma registro quando o valor informado excede o valor restante da parcela/conta',
+  })
+  @IsBoolean()
+  @IsOptional()
+  confirmOverpayment?: boolean;
 }
 
 export class PaymentFilterDto {

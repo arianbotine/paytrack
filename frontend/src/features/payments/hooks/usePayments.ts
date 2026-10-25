@@ -140,6 +140,12 @@ export const useCreatePayment = (onSuccess?: () => void) => {
   const queryClient = useQueryClient();
   const { showNotification } = useUIStore();
 
+  const isOverpaymentConfirmationRequiredError = (error: unknown) => {
+    const code = (error as { response?: { data?: { code?: string } } })
+      ?.response?.data?.code;
+    return code === 'OVERPAYMENT_CONFIRMATION_REQUIRED';
+  };
+
   return useMutation({
     mutationFn: (data: PaymentFormData) => {
       const payload = {
@@ -148,6 +154,7 @@ export const useCreatePayment = (onSuccess?: () => void) => {
         paymentMethod: data.method,
         reference: data.reference || undefined,
         notes: data.notes || undefined,
+        confirmOverpayment: data.confirmOverpayment || undefined,
         allocations: [
           {
             amount: data.amount,
@@ -160,7 +167,11 @@ export const useCreatePayment = (onSuccess?: () => void) => {
           },
         ],
       };
-      return api.post('/payments', payload);
+      return api.post('/payments', payload, {
+        headers: {
+          'X-Silent-Request': 'true',
+        },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: paymentKeys.all });
@@ -171,7 +182,12 @@ export const useCreatePayment = (onSuccess?: () => void) => {
       showNotification('Pagamento registrado com sucesso!', 'success');
       onSuccess?.();
     },
-    onError: () => {
+    onError: error => {
+      // This error is expected in the overpayment flow and handled by callers via confirmation dialog.
+      if (isOverpaymentConfirmationRequiredError(error)) {
+        return;
+      }
+
       showNotification('Erro ao registrar pagamento', 'error');
     },
   });

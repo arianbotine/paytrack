@@ -29,6 +29,17 @@ import type {
 } from '../types';
 import type { PaymentFormData } from '../../payments/types';
 
+type OverpaymentIssue = {
+  installmentId: string;
+  installmentNumber: number;
+  accountType: 'PAYABLE' | 'RECEIVABLE';
+  currentAmount: number;
+  currentPaidOrReceivedAmount: number;
+  remainingAmount: number;
+  allocationAmount: number;
+  extraAmount: number;
+};
+
 export const ReceivablesPage: React.FC = () => {
   // State
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -38,6 +49,12 @@ export const ReceivablesPage: React.FC = () => {
   const [paymentHistoryDialogOpen, setPaymentHistoryDialogOpen] =
     useState(false);
   const [quickPaymentDialogOpen, setQuickPaymentDialogOpen] = useState(false);
+  const [overpaymentConfirmOpen, setOverpaymentConfirmOpen] = useState(false);
+  const [pendingPaymentData, setPendingPaymentData] =
+    useState<PaymentFormData | null>(null);
+  const [overpaymentIssues, setOverpaymentIssues] = useState<
+    OverpaymentIssue[]
+  >([]);
   const [selectedReceivable, setSelectedReceivable] =
     useState<Receivable | null>(null);
   const [selectedInstallment, setSelectedInstallment] =
@@ -112,6 +129,9 @@ export const ReceivablesPage: React.FC = () => {
   const handleCloseQuickPaymentDialog = useCallback(() => {
     setQuickPaymentDialogOpen(false);
     setSelectedInstallment(null);
+    setOverpaymentConfirmOpen(false);
+    setPendingPaymentData(null);
+    setOverpaymentIssues([]);
   }, []);
 
   const handleViewPayments = useCallback((receivable: Receivable) => {
@@ -176,10 +196,44 @@ export const ReceivablesPage: React.FC = () => {
 
   const handleQuickPaymentSubmit = useCallback(
     (data: PaymentFormData) => {
-      createMutation.mutate(data);
+      createMutation.mutate(data, {
+        onError: error => {
+          const code = (error as { response?: { data?: { code?: string } } })
+            ?.response?.data?.code;
+
+          if (code === 'OVERPAYMENT_CONFIRMATION_REQUIRED') {
+            const issues = (
+              error as {
+                response?: {
+                  data?: { overpayments?: OverpaymentIssue[] };
+                };
+              }
+            )?.response?.data?.overpayments;
+
+            setPendingPaymentData(data);
+            setOverpaymentIssues(issues ?? []);
+            setOverpaymentConfirmOpen(true);
+          }
+        },
+      });
     },
     [createMutation]
   );
+
+  const handleConfirmOverpayment = useCallback(() => {
+    if (!pendingPaymentData) return;
+
+    createMutation.mutate({
+      ...pendingPaymentData,
+      confirmOverpayment: true,
+    });
+  }, [createMutation, pendingPaymentData]);
+
+  const handleCancelOverpayment = useCallback(() => {
+    setOverpaymentConfirmOpen(false);
+    setPendingPaymentData(null);
+    setOverpaymentIssues([]);
+  }, []);
 
   const handleStatusChange = useCallback((status: string[]) => {
     setStatusFilter(status);
@@ -374,6 +428,24 @@ export const ReceivablesPage: React.FC = () => {
           onConfirm={confirmDeleteInstallment}
           onCancel={handleCloseDeleteInstallmentDialog}
           isLoading={isDeletingInstallment}
+        />
+
+        <ConfirmDialog
+          open={overpaymentConfirmOpen}
+          title="Valor maior que a conta"
+          message={
+            overpaymentIssues.length > 0
+              ? `O valor informado é maior que o saldo da conta. Se continuar, o sistema vai atualizar o valor da parcela para ${
+                  overpaymentIssues.length > 1
+                    ? 'os valores informados'
+                    : 'o valor informado'
+                } e registrar o recebimento. Deseja confirmar?`
+              : 'O valor informado é maior que o saldo da conta. Se continuar, o sistema vai atualizar o valor da parcela e registrar o recebimento. Deseja confirmar?'
+          }
+          confirmLabel="Confirmar e Registrar"
+          onConfirm={handleConfirmOverpayment}
+          onCancel={handleCancelOverpayment}
+          isLoading={isCreating}
         />
 
         <PaymentHistoryDialog

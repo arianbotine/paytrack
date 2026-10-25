@@ -10,6 +10,10 @@ import { MONEY_COMPARISON_THRESHOLD } from '../../../shared/constants';
  */
 @Injectable()
 export class InstallmentBalanceManager {
+  private roundCurrency(value: number): number {
+    return Math.round(value * 100) / 100;
+  }
+
   private validateAmountDoesNotExceedRemaining(
     amountToAdd: number,
     remainingAmount: number,
@@ -47,7 +51,8 @@ export class InstallmentBalanceManager {
   async updatePayableInstallmentBalance(
     tx: Prisma.TransactionClient,
     installmentId: string,
-    amountToAdd: number
+    amountToAdd: number,
+    options?: { allowOverpaymentAdjustment?: boolean }
   ): Promise<void> {
     const installment = await tx.payableInstallment.findUnique({
       where: { id: installmentId },
@@ -61,24 +66,35 @@ export class InstallmentBalanceManager {
       0,
       Number(installment.amount) - Number(installment.paidAmount)
     );
-    this.validateAmountDoesNotExceedRemaining(
-      amountToAdd,
-      remainingAmount,
-      'pagar'
-    );
+    if (!options?.allowOverpaymentAdjustment) {
+      this.validateAmountDoesNotExceedRemaining(
+        amountToAdd,
+        remainingAmount,
+        'pagar'
+      );
+    }
 
-    const newPaidAmount = Number(installment.paidAmount) + amountToAdd;
-    const totalAmount = Number(installment.amount);
+    let nextInstallmentAmount = Number(installment.amount);
+    const nextPaidAmount = Number(installment.paidAmount) + amountToAdd;
+    if (
+      options?.allowOverpaymentAdjustment &&
+      nextPaidAmount > nextInstallmentAmount
+    ) {
+      nextInstallmentAmount = this.roundCurrency(nextPaidAmount);
+    }
+
+    const totalAmount = nextInstallmentAmount;
 
     const newStatus = this.calculateInstallmentStatus(
-      newPaidAmount,
+      nextPaidAmount,
       totalAmount
     );
 
     await tx.payableInstallment.update({
       where: { id: installmentId },
       data: {
-        paidAmount: MoneyUtils.toDecimal(newPaidAmount),
+        amount: MoneyUtils.toDecimal(nextInstallmentAmount),
+        paidAmount: MoneyUtils.toDecimal(nextPaidAmount),
         status: newStatus,
       },
     });
@@ -93,7 +109,8 @@ export class InstallmentBalanceManager {
   async updateReceivableInstallmentBalance(
     tx: Prisma.TransactionClient,
     installmentId: string,
-    amountToAdd: number
+    amountToAdd: number,
+    options?: { allowOverpaymentAdjustment?: boolean }
   ): Promise<void> {
     const installment = await tx.receivableInstallment.findUnique({
       where: { id: installmentId },
@@ -109,24 +126,35 @@ export class InstallmentBalanceManager {
       0,
       Number(installment.amount) - Number(installment.receivedAmount)
     );
-    this.validateAmountDoesNotExceedRemaining(
-      amountToAdd,
-      remainingAmount,
-      'receber'
-    );
+    if (!options?.allowOverpaymentAdjustment) {
+      this.validateAmountDoesNotExceedRemaining(
+        amountToAdd,
+        remainingAmount,
+        'receber'
+      );
+    }
 
-    const newReceivedAmount = Number(installment.receivedAmount) + amountToAdd;
-    const totalAmount = Number(installment.amount);
+    let nextInstallmentAmount = Number(installment.amount);
+    const nextReceivedAmount = Number(installment.receivedAmount) + amountToAdd;
+    if (
+      options?.allowOverpaymentAdjustment &&
+      nextReceivedAmount > nextInstallmentAmount
+    ) {
+      nextInstallmentAmount = this.roundCurrency(nextReceivedAmount);
+    }
+
+    const totalAmount = nextInstallmentAmount;
 
     const newStatus = this.calculateInstallmentStatus(
-      newReceivedAmount,
+      nextReceivedAmount,
       totalAmount
     );
 
     await tx.receivableInstallment.update({
       where: { id: installmentId },
       data: {
-        receivedAmount: MoneyUtils.toDecimal(newReceivedAmount),
+        amount: MoneyUtils.toDecimal(nextInstallmentAmount),
+        receivedAmount: MoneyUtils.toDecimal(nextReceivedAmount),
         status: newStatus,
       },
     });
@@ -165,9 +193,15 @@ export class InstallmentBalanceManager {
       new Decimal(0)
     );
 
+    const totalAmount = installments.reduce(
+      (sum, i) => sum.plus(i.amount),
+      new Decimal(0)
+    );
+
     await tx.payable.update({
       where: { id: payableId },
       data: {
+        amount: totalAmount,
         paidAmount: totalPaid,
         status: newStatus,
       },
@@ -204,9 +238,15 @@ export class InstallmentBalanceManager {
       new Decimal(0)
     );
 
+    const totalAmount = installments.reduce(
+      (sum, i) => sum.plus(i.amount),
+      new Decimal(0)
+    );
+
     await tx.receivable.update({
       where: { id: receivableId },
       data: {
+        amount: totalAmount,
         receivedAmount: totalReceived,
         status: newStatus,
       },
