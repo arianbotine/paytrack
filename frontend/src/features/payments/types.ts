@@ -79,6 +79,7 @@ export const PAYMENT_METHODS = [
   { value: 'BOLETO', label: 'Boleto' },
   { value: 'CHECK', label: 'Cheque' },
   { value: 'ACCOUNT_DEBIT', label: 'Débito em Conta' },
+  { value: 'ACCOUNT_CREDIT', label: 'Crédito em Conta' },
   { value: 'OTHER', label: 'Outro' },
 ] as const;
 
@@ -99,6 +100,7 @@ export const paymentSchema = z
       'BOLETO',
       'CHECK',
       'ACCOUNT_DEBIT',
+      'ACCOUNT_CREDIT',
       'OTHER',
     ]),
     reference: z.string().optional(),

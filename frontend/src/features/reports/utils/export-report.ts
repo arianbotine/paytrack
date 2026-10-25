@@ -248,6 +248,7 @@ const METHOD_LABELS: Record<string, string> = {
   BOLETO: 'Boleto',
   CHECK: 'Cheque',
   ACCOUNT_DEBIT: 'Débito em Conta',
+  ACCOUNT_CREDIT: 'Crédito em Conta',
   OTHER: 'Outro',
 };
 

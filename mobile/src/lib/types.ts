@@ -201,6 +201,7 @@ export type PaymentMethod =
   | 'BOLETO'
   | 'CHECK'
   | 'ACCOUNT_DEBIT'
+  | 'ACCOUNT_CREDIT'
   | 'OTHER';
 
 // API Response wrapper

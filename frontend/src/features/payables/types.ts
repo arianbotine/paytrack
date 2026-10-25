@@ -132,6 +132,7 @@ const paymentOnAccountSchema = z
         'BOLETO',
         'CHECK',
         'ACCOUNT_DEBIT',
+        'ACCOUNT_CREDIT',
         'OTHER',
         '',
       ])

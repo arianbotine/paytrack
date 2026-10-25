@@ -34,6 +34,7 @@ export function translatePaymentMethod(method: string): string {
     BOLETO: 'Boleto',
     CHECK: 'Cheque',
     ACCOUNT_DEBIT: 'Débito em Conta',
+    ACCOUNT_CREDIT: 'Crédito em Conta',
     OTHER: 'Outro',
   };
   return map[method] ?? method;
@@ -64,5 +65,6 @@ export const PAYMENT_METHODS: Array<{
   { value: 'BOLETO', label: 'Boleto', icon: 'barcode' },
   { value: 'CHECK', label: 'Cheque', icon: 'checkbook' },
   { value: 'ACCOUNT_DEBIT', label: 'Déb. Conta', icon: 'bank-outline' },
+  { value: 'ACCOUNT_CREDIT', label: 'Créd. Conta', icon: 'bank-plus' },
   { value: 'OTHER', label: 'Outro', icon: 'dots-horizontal' },
 ];

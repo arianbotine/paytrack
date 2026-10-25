@@ -30,6 +30,7 @@ export enum PaymentMethod {
   BOLETO = 'BOLETO',
   CHECK = 'CHECK',
   ACCOUNT_DEBIT = 'ACCOUNT_DEBIT',
+  ACCOUNT_CREDIT = 'ACCOUNT_CREDIT',
   OTHER = 'OTHER',
 }
 

@@ -52,6 +52,7 @@ const paymentMethodLabels: Record<string, string> = {
   BANK_SLIP: 'Boleto',
   CHECK: 'Cheque',
   ACCOUNT_DEBIT: 'Débito em Conta',
+  ACCOUNT_CREDIT: 'Crédito em Conta',
   OTHER: 'Outro',
 };
 
@@ -67,6 +68,7 @@ const paymentMethodColors: Record<
   BANK_SLIP: 'default',
   CHECK: 'default',
   ACCOUNT_DEBIT: 'primary',
+  ACCOUNT_CREDIT: 'success',
   OTHER: 'default',
 };
 
