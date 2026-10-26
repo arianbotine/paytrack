@@ -6,7 +6,7 @@
 # ------------------------------------------------------------------------------
 # Stage 1: Builder - Instala dependências e compila o TypeScript
 # ------------------------------------------------------------------------------
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -29,7 +29,7 @@ RUN npm run build
 # ------------------------------------------------------------------------------
 # Stage 2: Production - Imagem final otimizada
 # ------------------------------------------------------------------------------
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 
 WORKDIR /app
 
