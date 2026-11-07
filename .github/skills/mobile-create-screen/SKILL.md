@@ -1,8 +1,8 @@
 ---
-mode: agent
-description: Cria uma nova tela no aplicativo mobile PayTrack (expo-router). Gera o arquivo de rota, hooks de dados e registra na navegação.
+name: mobile-create-screen
+description: "Cria uma nova tela no aplicativo mobile PayTrack (expo-router). Gera o arquivo de rota, hooks de dados e registra na navegação."
+disable-model-invocation: true
 ---
-
 # Criar Nova Tela Mobile
 
 Você é um especialista React Native / Expo. Crie uma nova tela no aplicativo mobile PayTrack seguindo rigorosamente os padrões estabelecidos.

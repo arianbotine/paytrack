@@ -5,6 +5,10 @@ import { PageHeader } from '../../../shared/components/PageHeader';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { PaymentHistoryDialog } from '../../../shared/components/PaymentHistoryDialog';
 import {
+  AppendInstallmentsDialog,
+  type AppendInstallmentsPayload,
+} from '../../../shared/components/AppendInstallmentsDialog';
+import {
   ReceivablesTable,
   ReceivableFormDialog,
   ReceivableFilters,
@@ -28,6 +32,7 @@ import type {
   ReceivableInstallment,
 } from '../types';
 import type { PaymentFormData } from '../../payments/types';
+import { getInstallmentSequenceLength } from '../../../shared/utils/installmentUtils';
 
 type OverpaymentIssue = {
   installmentId: string;
@@ -43,6 +48,8 @@ type OverpaymentIssue = {
 export const ReceivablesPage: React.FC = () => {
   // State
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [receivableToAppendInstallments, setReceivableToAppendInstallments] =
+    useState<Receivable | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteInstallmentDialogOpen, setDeleteInstallmentDialogOpen] =
     useState(false);
@@ -115,6 +122,10 @@ export const ReceivablesPage: React.FC = () => {
     setSelectedReceivable(null);
   }, []);
 
+  const handleCloseAppendInstallmentsDialog = useCallback(() => {
+    setReceivableToAppendInstallments(null);
+  }, []);
+
   const handleCloseDeleteDialog = useCallback(() => {
     setDeleteDialogOpen(false);
     setSelectedReceivable(null);
@@ -148,6 +159,7 @@ export const ReceivablesPage: React.FC = () => {
     submitReceivable,
     deleteMutation,
     deleteInstallmentMutation,
+    appendInstallmentsMutation,
     updateInstallmentMutation,
     isSubmitting,
     isDeleting,
@@ -157,6 +169,7 @@ export const ReceivablesPage: React.FC = () => {
     onUpdateSuccess: handleCloseDialog,
     onDeleteSuccess: handleCloseDeleteDialog,
     onDeleteInstallmentSuccess: handleCloseDeleteInstallmentDialog,
+    onAppendInstallmentsSuccess: handleCloseAppendInstallmentsDialog,
     onUpdateInstallmentSuccess: () => {
       setEditInstallmentDialogOpen(false);
       setEditingReceivable(null);
@@ -277,6 +290,25 @@ export const ReceivablesPage: React.FC = () => {
     []
   );
 
+  const handleOpenAppendInstallmentsDialog = useCallback(
+    (receivable: Receivable) => {
+      setReceivableToAppendInstallments(receivable);
+    },
+    []
+  );
+
+  const handleAppendInstallmentsSubmit = useCallback(
+    (data: AppendInstallmentsPayload) => {
+      if (receivableToAppendInstallments) {
+        appendInstallmentsMutation.mutate({
+          accountId: receivableToAppendInstallments.id,
+          data,
+        });
+      }
+    },
+    [appendInstallmentsMutation, receivableToAppendInstallments]
+  );
+
   const confirmDeleteInstallment = useCallback(() => {
     if (selectedReceivable && selectedInstallment) {
       deleteInstallmentMutation.mutate({
@@ -343,6 +375,13 @@ export const ReceivablesPage: React.FC = () => {
     [updateInstallmentMutation, editingReceivable, selectedInstallment]
   );
 
+  const receivableInstallmentCount = receivableToAppendInstallments
+    ? getInstallmentSequenceLength(
+        receivableToAppendInstallments.installments,
+        receivableToAppendInstallments.totalInstallments
+      )
+    : 0;
+
   return (
     <AnimatedPage>
       <Box>
@@ -392,6 +431,7 @@ export const ReceivablesPage: React.FC = () => {
           onUpdateInstallment={handleUpdateInstallment}
           onUpdateInstallmentDueDate={handleUpdateInstallmentDueDate}
           onEditInstallment={handleEditInstallment}
+          onAppendInstallments={handleOpenAppendInstallmentsDialog}
         />
 
         <ReceivableFormDialog
@@ -488,6 +528,27 @@ export const ReceivablesPage: React.FC = () => {
             setEditingReceivable(null);
             setSelectedInstallment(null);
           }}
+        />
+
+        <AppendInstallmentsDialog
+          open={!!receivableToAppendInstallments}
+          accountType="receivable"
+          accountName={receivableToAppendInstallments?.customer.name || ''}
+          currentAmount={receivableToAppendInstallments?.amount || 0}
+          currentInstallmentCount={receivableInstallmentCount}
+          lastDueDate={
+            receivableToAppendInstallments?.installments.reduce<string | null>(
+              (latest, installment) =>
+                !latest || installment.dueDate > latest
+                  ? installment.dueDate
+                  : latest,
+              null
+            ) || null
+          }
+          maxInstallmentCount={Math.max(0, 120 - receivableInstallmentCount)}
+          isSubmitting={appendInstallmentsMutation.isPending}
+          onSubmit={handleAppendInstallmentsSubmit}
+          onClose={handleCloseAppendInstallmentsDialog}
         />
       </Box>
     </AnimatedPage>

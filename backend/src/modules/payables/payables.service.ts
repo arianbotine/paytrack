@@ -4,6 +4,7 @@ import {
   UpdatePayableDto,
   PayableFilterDto,
   UpdateInstallmentDto,
+  AppendPayableInstallmentsDto,
   CreateInstallmentItemDto,
   UpdateInstallmentItemDto,
 } from './dto/payable.dto';
@@ -15,6 +16,7 @@ import {
   GetPayablePaymentsUseCase,
   DeletePayableInstallmentUseCase,
   UpdatePayableInstallmentUseCase,
+  AppendPayableInstallmentsUseCase,
   ListPayableInstallmentItemsUseCase,
   CreatePayableInstallmentItemUseCase,
   UpdatePayableInstallmentItemUseCase,
@@ -39,6 +41,7 @@ export class PayablesService {
     private readonly getPayablePaymentsUseCase: GetPayablePaymentsUseCase,
     private readonly deletePayableInstallmentUseCase: DeletePayableInstallmentUseCase,
     private readonly updatePayableInstallmentUseCase: UpdatePayableInstallmentUseCase,
+    private readonly appendPayableInstallmentsUseCase: AppendPayableInstallmentsUseCase,
     private readonly listPayableInstallmentItemsUseCase: ListPayableInstallmentItemsUseCase,
     private readonly createPayableInstallmentItemUseCase: CreatePayableInstallmentItemUseCase,
     private readonly updatePayableInstallmentItemUseCase: UpdatePayableInstallmentItemUseCase,
@@ -131,6 +134,18 @@ export class PayablesService {
       installmentId,
       organizationId,
       updateDto
+    );
+  }
+
+  async appendInstallments(
+    payableId: string,
+    organizationId: string,
+    dto: AppendPayableInstallmentsDto
+  ) {
+    return this.appendPayableInstallmentsUseCase.execute(
+      payableId,
+      organizationId,
+      dto
     );
   }
 

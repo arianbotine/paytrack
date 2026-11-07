@@ -5,3 +5,4 @@ export * from './query-receivables.use-case';
 export * from './get-receivable-payments.use-case';
 export * from './delete-receivable-installment.use-case';
 export * from './update-receivable-installment.use-case';
+export * from './append-receivable-installments.use-case';

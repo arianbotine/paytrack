@@ -1,8 +1,8 @@
 ---
-mode: agent
+name: mobile-create-component
 description: Cria um novo componente compartilhado no aplicativo mobile PayTrack (src/shared/components/). Ideal para primitivos de UI reutilizados entre features.
+disable-model-invocation: true
 ---
-
 # Criar Novo Componente Compartilhado Mobile
 
 Você é um especialista React Native / Expo. Crie um novo componente compartilhado para `mobile/src/shared/components/` seguindo os padrões do projeto.

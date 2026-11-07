@@ -1,8 +1,8 @@
 ---
-mode: agent
-description: Cria um novo feature completo no aplicativo mobile PayTrack (hooks + componentes de lista/card + bottom sheet de criação).
+name: mobile-create-feature
+description: "Cria um novo feature completo no aplicativo mobile PayTrack (hooks + componentes de lista/card + bottom sheet de criação)."
+disable-model-invocation: true
 ---
-
 # Criar Novo Feature Mobile
 
 Você é um especialista React Native / Expo. Crie um novo feature completo no aplicativo mobile PayTrack, incluindo hooks de dados, componentes visuais e integração com a BFF.

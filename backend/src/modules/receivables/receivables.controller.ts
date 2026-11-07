@@ -15,6 +15,7 @@ import {
   UpdateReceivableDto,
   ReceivableFilterDto,
   UpdateInstallmentDto,
+  AppendReceivableInstallmentsDto,
 } from './dto/receivable.dto';
 import { CurrentUser, Roles } from '../../shared/decorators';
 import { Idempotent } from '../../shared/decorators/idempotent.decorator';
@@ -97,6 +98,22 @@ export class ReceivablesController {
       receivableId,
       installmentId,
       organizationId
+    );
+  }
+
+  @Post(':receivableId/installments')
+  @Idempotent()
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'Adicionar parcelas a uma conta em aberto' })
+  async appendInstallments(
+    @Param('receivableId') receivableId: string,
+    @CurrentUser('organizationId') organizationId: string,
+    @Body() dto: AppendReceivableInstallmentsDto
+  ) {
+    return this.receivablesService.appendInstallments(
+      receivableId,
+      organizationId,
+      dto
     );
   }
 

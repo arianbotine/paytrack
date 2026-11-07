@@ -63,6 +63,9 @@ setup:
 	@if [ ! -d "$(BACKEND_DIR)/node_modules" ]; then \
 		echo "Instalando dependências do backend..."; \
 		cd $(BACKEND_DIR) && npm install; \
+	elif [ ! -f "$(BACKEND_DIR)/node_modules/.bin/prisma" ] || [ ! -f "$(BACKEND_DIR)/node_modules/prisma/build/prisma_schema_build_bg.wasm" ]; then \
+		echo "Instalação do Prisma incompleta. Reinstalando dependências do backend..."; \
+		cd $(BACKEND_DIR) && npm ci; \
 	else \
 		echo "Dependências do backend já instaladas."; \
 	fi

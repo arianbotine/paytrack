@@ -4,6 +4,7 @@ import {
   UpdateReceivableDto,
   ReceivableFilterDto,
   UpdateInstallmentDto,
+  AppendReceivableInstallmentsDto,
 } from './dto/receivable.dto';
 import {
   CreateReceivableUseCase,
@@ -13,6 +14,7 @@ import {
   GetReceivablePaymentsUseCase,
   DeleteReceivableInstallmentUseCase,
   UpdateReceivableInstallmentUseCase,
+  AppendReceivableInstallmentsUseCase,
 } from './use-cases';
 
 /**
@@ -31,7 +33,8 @@ export class ReceivablesService {
     private readonly queryReceivablesUseCase: QueryReceivablesUseCase,
     private readonly getReceivablePaymentsUseCase: GetReceivablePaymentsUseCase,
     private readonly deleteReceivableInstallmentUseCase: DeleteReceivableInstallmentUseCase,
-    private readonly updateReceivableInstallmentUseCase: UpdateReceivableInstallmentUseCase
+    private readonly updateReceivableInstallmentUseCase: UpdateReceivableInstallmentUseCase,
+    private readonly appendReceivableInstallmentsUseCase: AppendReceivableInstallmentsUseCase
   ) {}
 
   async findAll(organizationId: string, filters?: ReceivableFilterDto) {
@@ -88,6 +91,18 @@ export class ReceivablesService {
       installmentId,
       organizationId,
       updateDto
+    );
+  }
+
+  async appendInstallments(
+    receivableId: string,
+    organizationId: string,
+    dto: AppendReceivableInstallmentsDto
+  ) {
+    return this.appendReceivableInstallmentsUseCase.execute(
+      receivableId,
+      organizationId,
+      dto
     );
   }
 }

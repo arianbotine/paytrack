@@ -10,6 +10,7 @@ import {
   Max,
   IsInt,
   Validate,
+  ArrayUnique,
   ArrayMinSize,
   ArrayMaxSize,
   ValidateNested,
@@ -72,6 +73,35 @@ export class CreatePaymentOnAccountDto {
   @IsString()
   @IsOptional()
   notes?: string;
+}
+
+export class AppendReceivableInstallmentsDto {
+  @ApiProperty({
+    example: 10000,
+    description: 'Valor adicional total em centavos (R$ 100,00 = 10000)',
+  })
+  @IsInt()
+  @Min(1)
+  @Max(999999999999999)
+  @Type(() => Number)
+  amountCents!: number;
+
+  @ApiProperty({ example: 3, minimum: 1, maximum: 120 })
+  @IsInt()
+  @Min(1)
+  @Max(120)
+  @Type(() => Number)
+  installmentCount!: number;
+
+  @ApiProperty({ type: [String], example: ['2026-04-15', '2026-05-15'] })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(120)
+  @ArrayUnique()
+  @IsDateString({}, { each: true })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { each: true })
+  @Validate(IsDateArrayAscendingConstraint)
+  dueDates!: string[];
 }
 
 export class CreateReceivableDto {

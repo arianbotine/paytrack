@@ -68,3 +68,28 @@ export function generateInstallments(
 
   return installments;
 }
+
+export function calculateInstallmentAmountsFromCents(
+  totalAmountCents: number,
+  count: number
+): Decimal[] {
+  if (
+    !Number.isSafeInteger(totalAmountCents) ||
+    totalAmountCents <= 0 ||
+    !Number.isInteger(count) ||
+    count <= 0 ||
+    totalAmountCents < count
+  ) {
+    throw new RangeError('Valor e quantidade de parcelas inválidos');
+  }
+
+  const baseCents = Math.floor(totalAmountCents / count);
+  const remainderCents = totalAmountCents % count;
+
+  return Array.from({ length: count }, (_, index) => {
+    const cents = index === count - 1 ? baseCents + remainderCents : baseCents;
+    const wholeUnits = Math.floor(cents / 100);
+    const fractionalUnits = String(cents % 100).padStart(2, '0');
+    return new Decimal(`${wholeUnits}.${fractionalUnits}`);
+  });
+}

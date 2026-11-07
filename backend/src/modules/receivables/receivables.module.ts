@@ -23,6 +23,7 @@ import {
   GetReceivablePaymentsUseCase,
   DeleteReceivableInstallmentUseCase,
   UpdateReceivableInstallmentUseCase,
+  AppendReceivableInstallmentsUseCase,
 } from './use-cases';
 
 @Module({
@@ -48,6 +49,7 @@ import {
     GetReceivablePaymentsUseCase,
     DeleteReceivableInstallmentUseCase,
     UpdateReceivableInstallmentUseCase,
+    AppendReceivableInstallmentsUseCase,
   ],
   exports: [ReceivablesService],
 })

@@ -8,6 +8,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Button,
   IconButton,
   Chip,
   Tooltip,
@@ -39,6 +40,7 @@ import {
   LocalOffer as LocalOfferIcon,
   Comment as CommentIcon,
   EditNote as EditNoteIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StatusChip } from '../../../shared/components/StatusChip';
@@ -78,6 +80,7 @@ interface ReceivablesTableProps {
     receivable: Receivable,
     installment: ReceivableInstallment
   ) => void;
+  onAppendInstallments?: (receivable: Receivable) => void;
 }
 
 const MotionTableRow = motion.create(TableRow);
@@ -96,6 +99,7 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
   onUpdateInstallment,
   onUpdateInstallmentDueDate,
   onEditInstallment,
+  onAppendInstallments,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -125,6 +129,14 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
   }, [hasNextPage, isFetchingNextPage, onLoadMore]);
 
   const filteredAccounts = receivables;
+
+  const hasOpenInstallment = (receivable: Receivable) =>
+    receivable.status !== 'PAID' &&
+    receivable.installments.some(
+      installment =>
+        installment.status !== 'PAID' &&
+        installment.amount > installment.receivedAmount
+    );
 
   const toggleRow = (id: string) => {
     setExpandedRows(prev => {
@@ -458,6 +470,19 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                 </Typography>
                               </AccordionSummary>
                               <AccordionDetails>
+                                {onAppendInstallments &&
+                                  hasOpenInstallment(account) && (
+                                    <Button
+                                      size="small"
+                                      startIcon={<AddIcon />}
+                                      onClick={() =>
+                                        onAppendInstallments(account)
+                                      }
+                                      sx={{ mb: 1 }}
+                                    >
+                                      Adicionar parcelas
+                                    </Button>
+                                  )}
                                 {installments.map((installment, idx) => (
                                   <Box key={installment.id}>
                                     {idx > 0 && <Divider sx={{ my: 1 }} />}
@@ -1022,6 +1047,19 @@ export const ReceivablesTable: React.FC<ReceivablesTableProps> = ({
                                   >
                                     Parcelas
                                   </Typography>
+                                  {onAppendInstallments &&
+                                    hasOpenInstallment(account) && (
+                                      <Button
+                                        size="small"
+                                        startIcon={<AddIcon />}
+                                        onClick={() =>
+                                          onAppendInstallments(account)
+                                        }
+                                        sx={{ mb: 1 }}
+                                      >
+                                        Adicionar parcelas
+                                      </Button>
+                                    )}
                                   <Table size="small">
                                     <TableHead>
                                       <TableRow>

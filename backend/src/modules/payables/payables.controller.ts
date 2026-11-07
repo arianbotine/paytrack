@@ -15,6 +15,7 @@ import {
   UpdatePayableDto,
   PayableFilterDto,
   UpdateInstallmentDto,
+  AppendPayableInstallmentsDto,
   CreateInstallmentItemDto,
   UpdateInstallmentItemDto,
 } from './dto/payable.dto';
@@ -99,6 +100,22 @@ export class PayablesController {
       payableId,
       installmentId,
       organizationId
+    );
+  }
+
+  @Post(':payableId/installments')
+  @Idempotent()
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
+  @ApiOperation({ summary: 'Adicionar parcelas a uma conta em aberto' })
+  async appendInstallments(
+    @Param('payableId') payableId: string,
+    @CurrentUser('organizationId') organizationId: string,
+    @Body() dto: AppendPayableInstallmentsDto
+  ) {
+    return this.payablesService.appendInstallments(
+      payableId,
+      organizationId,
+      dto
     );
   }
 

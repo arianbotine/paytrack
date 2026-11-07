@@ -279,6 +279,40 @@ export const useDeleteInstallment = (
   });
 };
 
+export const useAppendInstallments = (
+  config: UseAccountsConfig,
+  onSuccess?: () => void
+) => {
+  const queryClient = useQueryClient();
+  const { showNotification } = useUIStore();
+  const keys = createAccountKeys(config.queryKeyPrefix);
+
+  return useMutation({
+    mutationFn: ({
+      accountId,
+      data,
+    }: {
+      accountId: string;
+      data: {
+        amountCents: number;
+        installmentCount: number;
+        dueDates: string[];
+      };
+    }) => api.post(`${config.endpoint}/${accountId}/installments`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.all });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showNotification('Parcelas adicionadas com sucesso!', 'success');
+      onSuccess?.();
+    },
+    onError: (error: ApiError) => {
+      const message =
+        error.response?.data?.message || 'Erro ao adicionar parcelas';
+      showNotification(message, 'error');
+    },
+  });
+};
+
 export const useUpdateInstallment = (
   config: UseAccountsConfig,
   onSuccess?: () => void
@@ -331,6 +365,7 @@ export const useAccountOperations = <T>(
     onUpdateSuccess?: () => void;
     onDeleteSuccess?: () => void;
     onDeleteInstallmentSuccess?: () => void;
+    onAppendInstallmentsSuccess?: () => void;
     onUpdateInstallmentSuccess?: () => void;
   }
 ) => {
@@ -341,6 +376,10 @@ export const useAccountOperations = <T>(
   const deleteInstallmentMutation = useDeleteInstallment(
     config,
     callbacks?.onDeleteInstallmentSuccess
+  );
+  const appendInstallmentsMutation = useAppendInstallments(
+    config,
+    callbacks?.onAppendInstallmentsSuccess
   );
   const updateInstallmentMutation = useUpdateInstallment(
     config,
@@ -406,11 +445,13 @@ export const useAccountOperations = <T>(
     updateMutation,
     deleteMutation,
     deleteInstallmentMutation,
+    appendInstallmentsMutation,
     updateInstallmentMutation,
     submitAccount,
     isSubmitting: createMutation.isPending || updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isDeletingInstallment: deleteInstallmentMutation.isPending,
+    isAppendingInstallments: appendInstallmentsMutation.isPending,
     isUpdatingInstallment: updateInstallmentMutation.isPending,
   };
 };

@@ -1,0 +1,15 @@
+{
+	"mcpServers": {
+		"paytrack-postgres": {
+			"type": "stdio",
+			"command": "/home/arian/.nvm/versions/node/v22.13.1/bin/node",
+			"args": [
+				"/home/arian/.nvm/versions/node/v22.13.1/bin/mcp-server-postgres",
+				"postgresql://paytrack:paytrack123@localhost:5433/paytrack"
+			],
+			"tools": [
+				"*"
+			]
+		}
+	}
+}

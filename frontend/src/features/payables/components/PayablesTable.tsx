@@ -8,6 +8,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Button,
   IconButton,
   Chip,
   Tooltip,
@@ -40,6 +41,7 @@ import {
   Comment as CommentIcon,
   LocalOffer as LocalOfferIcon,
   ListAlt as ListAltIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StatusChip } from '../../../shared/components/StatusChip';
@@ -69,6 +71,7 @@ interface PayablesTableProps {
     payable: Payable,
     installment: PayableInstallment
   ) => void;
+  onAppendInstallments?: (payable: Payable) => void;
   onUpdateInstallment?: (
     payable: Payable,
     installment: PayableInstallment,
@@ -90,6 +93,17 @@ function getInstallmentTextColor(
   if (installmentNumber === 1) return 'primary.main';
   if (installmentNumber === totalInstallments) return 'success.main';
   return 'text.primary';
+}
+
+function hasOpenInstallment(payable: Payable): boolean {
+  return (
+    payable.status !== 'PAID' &&
+    payable.installments.some(
+      installment =>
+        installment.status !== 'PAID' &&
+        installment.amount > installment.paidAmount
+    )
+  );
 }
 
 function getBorderColor(index: number, totalLength: number): string {
@@ -398,6 +412,7 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
   onViewPayments,
   onDeleteInstallment,
   onEditInstallment,
+  onAppendInstallments,
   onUpdateInstallment,
   onUpdateInstallmentDueDate,
 }) => {
@@ -740,6 +755,17 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                         </Typography>
                       </AccordionSummary>
                       <AccordionDetails>
+                        {onAppendInstallments &&
+                          hasOpenInstallment(account) && (
+                            <Button
+                              size="small"
+                              startIcon={<AddIcon />}
+                              onClick={() => onAppendInstallments(account)}
+                              sx={{ mb: 1 }}
+                            >
+                              Adicionar parcelas
+                            </Button>
+                          )}
                         {installments.map((installment, idx) => (
                           <MobileInstallmentItem
                             key={installment.id}
@@ -1095,6 +1121,19 @@ export const PayablesTable: React.FC<PayablesTableProps> = ({
                                   >
                                     Parcelas
                                   </Typography>
+                                  {onAppendInstallments &&
+                                    hasOpenInstallment(account) && (
+                                      <Button
+                                        size="small"
+                                        startIcon={<AddIcon />}
+                                        onClick={() =>
+                                          onAppendInstallments(account)
+                                        }
+                                        sx={{ mb: 1 }}
+                                      >
+                                        Adicionar parcelas
+                                      </Button>
+                                    )}
                                   <Table size="small">
                                     <TableHead>
                                       <TableRow>

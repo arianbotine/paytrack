@@ -5,6 +5,10 @@ import { PageHeader } from '../../../shared/components/PageHeader';
 import { ConfirmDialog } from '../../../shared/components/ConfirmDialog';
 import { PaymentHistoryDialog } from '../../../shared/components/PaymentHistoryDialog';
 import {
+  AppendInstallmentsDialog,
+  type AppendInstallmentsPayload,
+} from '../../../shared/components/AppendInstallmentsDialog';
+import {
   PayablesTable,
   PayableFormDialog,
   PayableFilters,
@@ -26,6 +30,7 @@ import {
 import { QuickPaymentDialog } from '../../payments/components';
 import type { Payable, PayableFormData, PayableInstallment } from '../types';
 import type { PaymentFormData } from '../../payments/types';
+import { getInstallmentSequenceLength } from '../../../shared/utils/installmentUtils';
 
 type OverpaymentIssue = {
   installmentId: string;
@@ -41,6 +46,8 @@ type OverpaymentIssue = {
 export const PayablesPage: React.FC = () => {
   // State
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [payableToAppendInstallments, setPayableToAppendInstallments] =
+    useState<Payable | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteInstallmentDialogOpen, setDeleteInstallmentDialogOpen] =
     useState(false);
@@ -118,6 +125,10 @@ export const PayablesPage: React.FC = () => {
     setSelectedPayable(null);
   }, []);
 
+  const handleCloseAppendInstallmentsDialog = useCallback(() => {
+    setPayableToAppendInstallments(null);
+  }, []);
+
   const handleCloseDeleteDialog = useCallback(() => {
     setDeleteDialogOpen(false);
     setSelectedPayable(null);
@@ -152,6 +163,7 @@ export const PayablesPage: React.FC = () => {
     submitPayable,
     deleteMutation,
     deleteInstallmentMutation,
+    appendInstallmentsMutation,
     updateInstallmentMutation,
     isSubmitting,
     isDeleting,
@@ -161,6 +173,7 @@ export const PayablesPage: React.FC = () => {
     onUpdateSuccess: handleCloseDialog,
     onDeleteSuccess: handleCloseDeleteDialog,
     onDeleteInstallmentSuccess: handleCloseDeleteInstallmentDialog,
+    onAppendInstallmentsSuccess: handleCloseAppendInstallmentsDialog,
     onUpdateInstallmentSuccess: handleCloseEditInstallmentDialog,
   });
 
@@ -286,6 +299,22 @@ export const PayablesPage: React.FC = () => {
     []
   );
 
+  const handleOpenAppendInstallmentsDialog = useCallback((payable: Payable) => {
+    setPayableToAppendInstallments(payable);
+  }, []);
+
+  const handleAppendInstallmentsSubmit = useCallback(
+    (data: AppendInstallmentsPayload) => {
+      if (payableToAppendInstallments) {
+        appendInstallmentsMutation.mutate({
+          accountId: payableToAppendInstallments.id,
+          data,
+        });
+      }
+    },
+    [appendInstallmentsMutation, payableToAppendInstallments]
+  );
+
   const handleEditInstallment = useCallback(
     (payable: Payable, installment: PayableInstallment) => {
       setSelectedPayable(payable);
@@ -399,6 +428,13 @@ export const PayablesPage: React.FC = () => {
     [deleteInstallmentItemMutation, selectedPayable, selectedInstallment]
   );
 
+  const payableInstallmentCount = payableToAppendInstallments
+    ? getInstallmentSequenceLength(
+        payableToAppendInstallments.installments,
+        payableToAppendInstallments.totalInstallments
+      )
+    : 0;
+
   return (
     <AnimatedPage>
       <Box>
@@ -445,6 +481,7 @@ export const PayablesPage: React.FC = () => {
           onPayment={handlePayment}
           onViewPayments={handleViewPayments}
           onDeleteInstallment={handleDeleteInstallment}
+          onAppendInstallments={handleOpenAppendInstallmentsDialog}
           onEditInstallment={handleEditInstallment}
           onUpdateInstallment={handleUpdateInstallment}
           onUpdateInstallmentDueDate={handleUpdateInstallmentDueDate}
@@ -547,6 +584,27 @@ export const PayablesPage: React.FC = () => {
           onDeleteItem={handleDeleteInstallmentItem}
           onSubmit={handleEditInstallmentSubmit}
           onClose={handleCloseEditInstallmentDialog}
+        />
+
+        <AppendInstallmentsDialog
+          open={!!payableToAppendInstallments}
+          accountType="payable"
+          accountName={payableToAppendInstallments?.vendor.name || ''}
+          currentAmount={payableToAppendInstallments?.amount || 0}
+          currentInstallmentCount={payableInstallmentCount}
+          lastDueDate={
+            payableToAppendInstallments?.installments.reduce<string | null>(
+              (latest, installment) =>
+                !latest || installment.dueDate > latest
+                  ? installment.dueDate
+                  : latest,
+              null
+            ) || null
+          }
+          maxInstallmentCount={Math.max(0, 120 - payableInstallmentCount)}
+          isSubmitting={appendInstallmentsMutation.isPending}
+          onSubmit={handleAppendInstallmentsSubmit}
+          onClose={handleCloseAppendInstallmentsDialog}
         />
       </Box>
     </AnimatedPage>

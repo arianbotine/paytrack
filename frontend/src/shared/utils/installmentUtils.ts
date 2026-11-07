@@ -20,6 +20,16 @@ export interface InstallmentProgress {
   paidInstallments: number[]; // números das parcelas pagas
 }
 
+export function getInstallmentSequenceLength(
+  installments: Array<{ installmentNumber: number }>,
+  declaredTotal = 0
+): number {
+  return installments.reduce(
+    (maximum, installment) => Math.max(maximum, installment.installmentNumber),
+    declaredTotal
+  );
+}
+
 /**
  * Gera datas de vencimento mensais a partir de uma data inicial
  * Calcula as datas no frontend e retorna em formato UTC (YYYY-MM-DD)
