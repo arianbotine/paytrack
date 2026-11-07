@@ -15,6 +15,8 @@ import {
   InstallmentItemsReportResponseDto,
   InstallmentItemsGroupedResponseDto,
   InstallmentItemsGroupedByTagResponseDto,
+  PendingAccountsReportFilterDto,
+  PendingAccountsReportResponseDto,
 } from './dto';
 
 @ApiTags('Relatórios')
@@ -111,6 +113,24 @@ export class ReportsController {
     @Query() filters: InstallmentItemsReportFilterDto
   ): Promise<InstallmentItemsGroupedByTagResponseDto> {
     return this.reportsService.getInstallmentItemsGroupedByTagReport(
+      organizationId,
+      filters
+    );
+  }
+
+  @Get('pending-accounts')
+  @ApiOperation({ summary: 'Relatório de contas pendentes a pagar e receber' })
+  @ApiResponse({
+    status: 200,
+    description: 'Relatório gerado com sucesso',
+    type: PendingAccountsReportResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Parâmetros inválidos' })
+  async getPendingAccountsReport(
+    @CurrentUser('organizationId') organizationId: string,
+    @Query() filters: PendingAccountsReportFilterDto
+  ): Promise<PendingAccountsReportResponseDto> {
+    return this.reportsService.getPendingAccountsReport(
       organizationId,
       filters
     );

@@ -16,6 +16,86 @@ export interface DateRange {
   endDate: string;
 }
 
+export type PendingAccountsPeriodPreset =
+  | 'next7'
+  | 'next15'
+  | 'next30'
+  | 'thisMonth'
+  | 'nextMonth'
+  | 'allUpcoming'
+  | 'allOverdue'
+  | 'overdue7'
+  | 'overdue30'
+  | 'lastMonth';
+
+function formatLocalDateInput(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function calculatePendingAccountsDateRange(
+  preset: PendingAccountsPeriodPreset
+): DateRange {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (preset === 'allUpcoming' || preset === 'allOverdue') {
+    return { startDate: '', endDate: '' };
+  }
+
+  if (preset === 'thisMonth') {
+    return {
+      startDate: formatLocalDateInput(
+        new Date(today.getFullYear(), today.getMonth(), 1)
+      ),
+      endDate: formatLocalDateInput(
+        new Date(today.getFullYear(), today.getMonth() + 1, 0)
+      ),
+    };
+  }
+
+  if (preset === 'nextMonth') {
+    return {
+      startDate: formatLocalDateInput(
+        new Date(today.getFullYear(), today.getMonth() + 1, 1)
+      ),
+      endDate: formatLocalDateInput(
+        new Date(today.getFullYear(), today.getMonth() + 2, 0)
+      ),
+    };
+  }
+
+  if (preset === 'lastMonth') {
+    return {
+      startDate: formatLocalDateInput(
+        new Date(today.getFullYear(), today.getMonth() - 1, 1)
+      ),
+      endDate: formatLocalDateInput(
+        new Date(today.getFullYear(), today.getMonth(), 0)
+      ),
+    };
+  }
+
+  const overdue = preset === 'overdue7' || preset === 'overdue30';
+  const dayCount = preset.endsWith('7') ? 7 : preset.endsWith('15') ? 15 : 30;
+  const start = new Date(today);
+  const end = new Date(today);
+
+  if (overdue) {
+    start.setDate(today.getDate() - dayCount);
+    end.setDate(today.getDate() - 1);
+  } else {
+    end.setDate(today.getDate() + dayCount - 1);
+  }
+
+  return {
+    startDate: formatLocalDateInput(start),
+    endDate: formatLocalDateInput(end),
+  };
+}
+
 /**
  * Calcula o intervalo de datas para um período predefinido
  */

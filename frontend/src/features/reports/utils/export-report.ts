@@ -3,6 +3,8 @@ import type {
   PaymentsReportDetailsResponse,
   ReportFilters,
   InstallmentItemsReportResponse,
+  PendingAccountReportRow,
+  PendingAccountsReportFilters,
 } from '../types';
 
 /**
@@ -412,5 +414,69 @@ export function exportInstallmentItemsReportToCSV(
 
   const csvContent = convertToCSV([...header, ...rows]);
   const filename = `relatorio-itens-por-tag_${new Date().toISOString().split('T')[0]}.csv`;
+  downloadCSV(csvContent, filename);
+}
+
+export function exportPendingAccountsReportToCSV(
+  data: PendingAccountReportRow[],
+  filters: PendingAccountsReportFilters
+): void {
+  const typeLabels = {
+    ALL: 'Todas',
+    PAYABLE: 'A pagar',
+    RECEIVABLE: 'A receber',
+  };
+  const dueStatusLabels = {
+    UPCOMING: 'A vencer',
+    OVERDUE: 'Em atraso',
+  };
+  const rows: string[][] = [
+    ['RELATÓRIO DE CONTAS PENDENTES'],
+    ['Tipo:', typeLabels[filters.type]],
+    ['Situação:', dueStatusLabels[filters.dueStatus]],
+    [
+      'Vencimento:',
+      filters.startDate || filters.endDate
+        ? `${filters.startDate ? formatDate(filters.startDate) : 'Sem início'} a ${filters.endDate ? formatDate(filters.endDate) : 'Sem fim'}`
+        : 'Todos',
+    ],
+    ['Gerado em:', new Date().toLocaleString('pt-BR')],
+    [''],
+    [
+      'Tipo',
+      'Fornecedor / Cliente',
+      'Conta',
+      'ID da Conta',
+      'Parcela',
+      'Vencimento',
+      'Status',
+      'Valor Original',
+      'Valor Pago / Recebido',
+      'Saldo em Aberto',
+      'Categoria',
+      'Observações da Parcela',
+    ],
+    ...data.map(item => [
+      item.type === 'PAYABLE' ? 'A pagar' : 'A receber',
+      item.counterpartyName,
+      item.accountNotes || '',
+      item.accountId,
+      `${item.installmentNumber}/${item.totalInstallments}`,
+      formatDate(item.dueDate),
+      item.isOverdue
+        ? 'Vencida'
+        : item.status === 'PARTIAL'
+          ? 'Parcial'
+          : 'Pendente',
+      formatCurrency(item.amount),
+      formatCurrency(item.settledAmount),
+      formatCurrency(item.outstandingAmount),
+      item.categoryName || '',
+      item.installmentNotes || '',
+    ]),
+  ];
+
+  const csvContent = convertToCSV(rows);
+  const filename = `relatorio-contas-pendentes_${new Date().toISOString().slice(0, 10)}.csv`;
   downloadCSV(csvContent, filename);
 }

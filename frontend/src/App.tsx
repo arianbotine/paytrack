@@ -116,6 +116,11 @@ const InstallmentItemsReportPage = lazy(() =>
     default: m.default,
   }))
 );
+const PendingAccountsReportPage = lazy(() =>
+  import('./features/reports/pages/PendingAccountsReportPage').then(m => ({
+    default: m.default,
+  }))
+);
 const OrganizationSettingsPage = lazy(() =>
   import('./features/organization/pages/OrganizationSettingsPage').then(m => ({
     default: m.OrganizationSettingsPage,
@@ -201,6 +206,10 @@ function App() {
             <Route
               path="reports/installment-items"
               element={<InstallmentItemsReportPage />}
+            />
+            <Route
+              path="reports/pending-accounts"
+              element={<PendingAccountsReportPage />}
             />
             <Route path="payables" element={<PayablesPage />} />
             <Route path="receivables" element={<ReceivablesPage />} />

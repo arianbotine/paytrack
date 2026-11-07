@@ -5,6 +5,7 @@ import {
   GetInstallmentItemsReportUseCase,
   GetInstallmentItemsGroupedReportUseCase,
   GetInstallmentItemsGroupedByTagReportUseCase,
+  GetPendingAccountsReportUseCase,
 } from './use-cases';
 import {
   PaymentsReportFilterDto,
@@ -14,6 +15,8 @@ import {
   InstallmentItemsReportResponseDto,
   InstallmentItemsGroupedResponseDto,
   InstallmentItemsGroupedByTagResponseDto,
+  PendingAccountsReportFilterDto,
+  PendingAccountsReportResponseDto,
 } from './dto';
 
 @Injectable()
@@ -23,7 +26,8 @@ export class ReportsService {
     private readonly getPaymentsReportDetailsUseCase: GetPaymentsReportDetailsUseCase,
     private readonly getInstallmentItemsReportUseCase: GetInstallmentItemsReportUseCase,
     private readonly getInstallmentItemsGroupedReportUseCase: GetInstallmentItemsGroupedReportUseCase,
-    private readonly getInstallmentItemsGroupedByTagReportUseCase: GetInstallmentItemsGroupedByTagReportUseCase
+    private readonly getInstallmentItemsGroupedByTagReportUseCase: GetInstallmentItemsGroupedByTagReportUseCase,
+    private readonly getPendingAccountsReportUseCase: GetPendingAccountsReportUseCase
   ) {}
 
   async getPaymentsReport(
@@ -68,6 +72,16 @@ export class ReportsService {
     filters: InstallmentItemsReportFilterDto
   ): Promise<InstallmentItemsGroupedByTagResponseDto> {
     return this.getInstallmentItemsGroupedByTagReportUseCase.execute(
+      organizationId,
+      filters
+    );
+  }
+
+  async getPendingAccountsReport(
+    organizationId: string,
+    filters: PendingAccountsReportFilterDto
+  ): Promise<PendingAccountsReportResponseDto> {
+    return this.getPendingAccountsReportUseCase.execute(
       organizationId,
       filters
     );

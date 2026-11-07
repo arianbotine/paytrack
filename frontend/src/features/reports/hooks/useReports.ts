@@ -8,6 +8,8 @@ import type {
   UseInstallmentItemsReportParams,
   InstallmentItemsGroupedResponse,
   InstallmentItemsGroupedByTagResponse,
+  PendingAccountsReportFilters,
+  PendingAccountsReportResponse,
 } from '../types';
 
 interface UsePaymentsReportParams extends ReportFilters {
@@ -92,6 +94,45 @@ export async function fetchAllPaymentsReportDetails(
 
   return { data: allItems, total: firstPage.total };
 }
+
+export async function fetchAllPendingAccountsReport(
+  filters: PendingAccountsReportFilters
+): Promise<PendingAccountsReportResponse> {
+  const take = 100;
+  const { data: firstPage } = await api.get<PendingAccountsReportResponse>(
+    '/reports/pending-accounts',
+    { params: { ...filters, skip: 0, take } }
+  );
+  const allItems = [...firstPage.data];
+
+  for (let skip = take; skip < firstPage.total; skip += take) {
+    const { data: page } = await api.get<PendingAccountsReportResponse>(
+      '/reports/pending-accounts',
+      { params: { ...filters, skip, take } }
+    );
+    allItems.push(...page.data);
+  }
+
+  return { ...firstPage, data: allItems };
+}
+
+export const usePendingAccountsReport = (
+  params: PendingAccountsReportFilters,
+  enabled = true
+) => {
+  return useQuery<PendingAccountsReportResponse, Error>({
+    queryKey: ['reports', 'pending-accounts', params],
+    queryFn: async (): Promise<PendingAccountsReportResponse> => {
+      const { data } = await api.get<PendingAccountsReportResponse>(
+        '/reports/pending-accounts',
+        { params }
+      );
+      return data;
+    },
+    enabled,
+    staleTime: 60 * 1000,
+  });
+};
 
 export const usePaymentsReport = (params: UsePaymentsReportParams) => {
   return useQuery<PaymentsReportResponse, Error, PaymentsReportResponse>({

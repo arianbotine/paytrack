@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import PaymentIcon from '@mui/icons-material/Payment';
 import ListAltIcon from '@mui/icons-material/ListAlt';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 
 interface ReportCardItem {
   id: string;
@@ -40,6 +41,14 @@ export default function ReportsPage() {
       description: 'Liste itens de parcelas filtrando por tag',
       icon: <ListAltIcon fontSize="large" color="primary" />,
       path: '/reports/installment-items',
+      enabled: true,
+    },
+    {
+      id: 'pending-accounts',
+      title: 'Contas Pendentes',
+      description: 'Consulte saldos em aberto a pagar e a receber',
+      icon: <HourglassEmptyIcon fontSize="large" color="primary" />,
+      path: '/reports/pending-accounts',
       enabled: true,
     },
   ];

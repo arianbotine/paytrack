@@ -4,6 +4,7 @@ import { ReportsService } from './reports.service';
 import {
   PaymentsReportsRepository,
   InstallmentItemsReportRepository,
+  PendingAccountsReportRepository,
 } from './repositories';
 import { PeriodCalculator, ReportCalculator } from './domain';
 import {
@@ -12,6 +13,7 @@ import {
   GetInstallmentItemsReportUseCase,
   GetInstallmentItemsGroupedReportUseCase,
   GetInstallmentItemsGroupedByTagReportUseCase,
+  GetPendingAccountsReportUseCase,
 } from './use-cases';
 import { DatabaseModule } from '../../infrastructure/database/database.module';
 
@@ -22,6 +24,7 @@ import { DatabaseModule } from '../../infrastructure/database/database.module';
     ReportsService,
     PaymentsReportsRepository,
     InstallmentItemsReportRepository,
+    PendingAccountsReportRepository,
     PeriodCalculator,
     ReportCalculator,
     GetPaymentsReportUseCase,
@@ -29,6 +32,7 @@ import { DatabaseModule } from '../../infrastructure/database/database.module';
     GetInstallmentItemsReportUseCase,
     GetInstallmentItemsGroupedReportUseCase,
     GetInstallmentItemsGroupedByTagReportUseCase,
+    GetPendingAccountsReportUseCase,
   ],
   exports: [ReportsService],
 })

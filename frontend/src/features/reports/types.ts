@@ -82,6 +82,49 @@ export interface PaymentsReportDetailsResponse {
   total: number;
 }
 
+export type PendingAccountType = 'ALL' | 'PAYABLE' | 'RECEIVABLE';
+export type PendingAccountsDueStatus = 'UPCOMING' | 'OVERDUE';
+
+export interface PendingAccountsReportFilters {
+  type: PendingAccountType;
+  dueStatus: PendingAccountsDueStatus;
+  startDate?: string;
+  endDate?: string;
+  skip?: number;
+  take?: number;
+}
+
+export interface PendingAccountReportRow {
+  type: Exclude<PendingAccountType, 'ALL'>;
+  accountId: string;
+  installmentId: string;
+  counterpartyName: string;
+  categoryName: string | null;
+  installmentNumber: number;
+  totalInstallments: number;
+  dueDate: string;
+  amount: number;
+  settledAmount: number;
+  outstandingAmount: number;
+  status: 'PENDING' | 'PARTIAL';
+  isOverdue: boolean;
+  accountNotes: string | null;
+  installmentNotes: string | null;
+}
+
+export interface PendingAccountsReportSummary {
+  payableCount: number;
+  receivableCount: number;
+  payableOutstandingAmount: number;
+  receivableOutstandingAmount: number;
+}
+
+export interface PendingAccountsReportResponse {
+  data: PendingAccountReportRow[];
+  total: number;
+  summary: PendingAccountsReportSummary;
+}
+
 // ============================================================
 // Installment Items Report
 // ============================================================
