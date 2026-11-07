@@ -72,6 +72,27 @@ function toUTCDateParams(
   };
 }
 
+export async function fetchAllPaymentsReportDetails(
+  filters: ReportFilters
+): Promise<PaymentsReportDetailsResponse> {
+  const take = 100;
+  const { data: firstPage } = await api.get<PaymentsReportDetailsResponse>(
+    '/reports/payments/details',
+    { params: toUTCDateParams({ ...filters, skip: 0, take }) }
+  );
+  const allItems = [...firstPage.data];
+
+  for (let skip = take; skip < firstPage.total; skip += take) {
+    const { data: page } = await api.get<PaymentsReportDetailsResponse>(
+      '/reports/payments/details',
+      { params: toUTCDateParams({ ...filters, skip, take }) }
+    );
+    allItems.push(...page.data);
+  }
+
+  return { data: allItems, total: firstPage.total };
+}
+
 export const usePaymentsReport = (params: UsePaymentsReportParams) => {
   return useQuery<PaymentsReportResponse, Error, PaymentsReportResponse>({
     queryKey: ['reports', 'payments', params],

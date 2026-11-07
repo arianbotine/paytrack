@@ -24,6 +24,7 @@ import TableRowsIcon from '@mui/icons-material/TableRows';
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import { useTheme } from '@mui/material/styles';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { useUIStore } from '@/lib/stores/uiStore';
 import {
   getOrganizationStorage,
   setOrganizationStorage,
@@ -32,6 +33,7 @@ import {
 import {
   usePaymentsReport,
   usePaymentsReportDetails,
+  fetchAllPaymentsReportDetails,
   useReportCategories,
   useReportTags,
   useReportVendors,
@@ -54,6 +56,7 @@ import type { ReportFilters, ChartType } from '../types';
 export default function PaymentsReportPage() {
   const theme = useTheme();
   const user = useAuthStore(state => state.user);
+  const showNotification = useUIStore(state => state.showNotification);
   const organizationId = user?.currentOrganization?.id;
 
   // Estado de filtros com valores padrões adequados
@@ -125,6 +128,7 @@ export default function PaymentsReportPage() {
   // Paginação da aba de detalhes — não persistida, reseta ao trocar filtros
   const [detailsPage, setDetailsPage] = useState(0);
   const [detailsRowsPerPage, setDetailsRowsPerPage] = useState(10);
+  const [detailsExporting, setDetailsExporting] = useState(false);
 
   // Persist filters and chart type com escopo de organização
   useEffect(() => {
@@ -199,9 +203,25 @@ export default function PaymentsReportPage() {
     exportPaymentsReportToCSV(data, filters, buildFilterLabels());
   };
 
-  const handleExportDetails = () => {
+  const handleExportDetails = async () => {
     if (!detailsData) return;
-    exportPaymentsReportDetailsToCSV(detailsData, filters, buildFilterLabels());
+
+    setDetailsExporting(true);
+    try {
+      const allDetails = await fetchAllPaymentsReportDetails(filters);
+      exportPaymentsReportDetailsToCSV(
+        allDetails,
+        filters,
+        buildFilterLabels()
+      );
+    } catch {
+      showNotification(
+        'Não foi possível exportar os detalhes. Tente novamente.',
+        'error'
+      );
+    } finally {
+      setDetailsExporting(false);
+    }
   };
 
   // Fetch data — visão geral
@@ -302,12 +322,13 @@ export default function PaymentsReportPage() {
                   startIcon={<FileDownloadIcon />}
                   onClick={handleExportDetails}
                   disabled={
+                    detailsExporting ||
                     detailsLoading ||
                     !detailsData ||
                     detailsData.data.length === 0
                   }
                 >
-                  Exportar Detalhes
+                  {detailsExporting ? 'Exportando...' : 'Exportar Detalhes'}
                 </Button>
               </span>
             </Tooltip>
