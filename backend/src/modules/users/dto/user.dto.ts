@@ -55,6 +55,23 @@ export class AssociateUserDto {
   role!: UserRole;
 }
 
+export class UpdateSystemUserDto {
+  @ApiPropertyOptional({ example: 'joao@empresa.com' })
+  @IsEmail({}, { message: 'Email inválido' })
+  @IsOptional()
+  email?: string;
+
+  @ApiPropertyOptional({ example: 'João Silva' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({ example: 'x' })
+  @IsString()
+  @IsOptional()
+  password?: string;
+}
+
 export class UserResponseDto {
   id!: string;
   email!: string;

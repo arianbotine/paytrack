@@ -7,7 +7,12 @@ import {
 import * as bcrypt from 'bcryptjs';
 import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/database/prisma.service';
-import { CreateUserDto, UpdateUserDto, UpdateProfileDto } from './dto/user.dto';
+import {
+  CreateUserDto,
+  UpdateUserDto,
+  UpdateProfileDto,
+  UpdateSystemUserDto,
+} from './dto/user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
@@ -387,6 +392,48 @@ export class UsersService {
     });
 
     return user;
+  }
+
+  async updateSystemUser(userId: string, updateDto: UpdateSystemUserDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    if (updateDto.email) {
+      const existingUser = await this.prisma.user.findFirst({
+        where: {
+          email: updateDto.email,
+          NOT: { id: userId },
+        },
+      });
+
+      if (existingUser) {
+        throw new ConflictException('Email já cadastrado no sistema');
+      }
+    }
+
+    const userData: Prisma.UserUpdateInput = {};
+    if (updateDto.email !== undefined) userData.email = updateDto.email;
+    if (updateDto.name !== undefined) userData.name = updateDto.name;
+    if (updateDto.password !== undefined) {
+      userData.password = await bcrypt.hash(updateDto.password, 10);
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: userData,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isSystemAdmin: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   }
 
   async associateUserWithOrganization(

@@ -7,8 +7,8 @@ export class ChangePasswordDto {
   @MinLength(1, { message: 'Senha atual é obrigatória' })
   currentPassword!: string;
 
-  @ApiProperty({ example: 'novaSenha456' })
+  @ApiProperty({ example: 'x' })
   @IsString()
-  @MinLength(6, { message: 'Nova senha deve ter no mínimo 6 caracteres' })
+  @MinLength(1, { message: 'Nova senha é obrigatória' })
   newPassword!: string;
 }

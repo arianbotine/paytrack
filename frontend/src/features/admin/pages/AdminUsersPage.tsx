@@ -12,6 +12,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  ButtonGroup,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -22,7 +23,7 @@ import {
   MenuItem,
   CircularProgress,
 } from '@mui/material';
-import { Add, Link as LinkIcon } from '@mui/icons-material';
+import { Add, Edit, Link as LinkIcon } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -68,9 +69,18 @@ const createUserSchema = z
 
 type CreateUserFormData = z.infer<typeof createUserSchema>;
 
+const updateUserSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório').max(100),
+  email: z.string().email('E-mail inválido'),
+  password: z.string().optional(),
+});
+
+type UpdateUserFormData = z.infer<typeof updateUserSchema>;
+
 export function AdminUsersPage() {
   const queryClient = useQueryClient();
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openAssociateDialog, setOpenAssociateDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [error, setError] = useState('');
@@ -84,6 +94,15 @@ export function AdminUsersPage() {
     formState: { errors: createErrors },
   } = useForm<CreateUserFormData>({
     resolver: zodResolver(createUserSchema),
+  });
+
+  const {
+    register: registerUpdate,
+    handleSubmit: handleSubmitUpdate,
+    reset: resetUpdate,
+    formState: { errors: updateErrors },
+  } = useForm<UpdateUserFormData>({
+    resolver: zodResolver(updateUserSchema),
   });
 
   const passwordValue = watchCreate('password');
@@ -147,6 +166,22 @@ export function AdminUsersPage() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async (data: UpdateUserFormData) => {
+      return api.patch(`/admin/users/${selectedUser?.id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setOpenEditDialog(false);
+      setSelectedUser(null);
+      resetUpdate();
+      setError('');
+    },
+    onError: (err: any) => {
+      setError(err.response?.data?.message || 'Erro ao atualizar usuário');
+    },
+  });
+
   const onSubmitCreate = (data: CreateUserFormData) => {
     // Remove confirmPassword before sending to API
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -156,6 +191,18 @@ export function AdminUsersPage() {
 
   const onSubmitAssociate = (data: any) => {
     associateMutation.mutate(data);
+  };
+
+  const onSubmitUpdate = (data: UpdateUserFormData) => {
+    const updateData = data.password ? data : { ...data, password: undefined };
+    updateMutation.mutate(updateData);
+  };
+
+  const handleOpenEdit = (user: User) => {
+    setSelectedUser(user);
+    resetUpdate({ name: user.name, email: user.email, password: '' });
+    setOpenEditDialog(true);
+    setError('');
   };
 
   const handleOpenAssociate = (user: User) => {
@@ -194,21 +241,37 @@ export function AdminUsersPage() {
                 <TableCell>Nome</TableCell>
                 <TableCell>Email</TableCell>
                 <TableCell>Organizações</TableCell>
-                <TableCell>Admin Sistema</TableCell>
                 <TableCell align="right">Ações</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
+                  <TableCell colSpan={4} align="center">
                     Carregando...
                   </TableCell>
                 </TableRow>
               )}
               {users?.map(user => (
                 <TableRow key={user.id}>
-                  <TableCell>{user.name}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2">{user.name}</Typography>
+                      {user.isSystemAdmin && (
+                        <Chip
+                          label="Admin"
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            height: 20,
+                            fontSize: '0.7rem',
+                            color: 'text.secondary',
+                            borderColor: 'divider',
+                          }}
+                        />
+                      )}
+                    </Box>
+                  </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     {user.organizations.length > 0 ? (
@@ -227,19 +290,21 @@ export function AdminUsersPage() {
                       </Typography>
                     )}
                   </TableCell>
-                  <TableCell>
-                    {user.isSystemAdmin && (
-                      <Chip label="Sim" color="error" size="small" />
-                    )}
-                  </TableCell>
                   <TableCell align="right">
-                    <Button
-                      size="small"
-                      startIcon={<LinkIcon />}
-                      onClick={() => handleOpenAssociate(user)}
-                    >
-                      Associar
-                    </Button>
+                    <ButtonGroup size="small" variant="outlined">
+                      <Button
+                        startIcon={<Edit />}
+                        onClick={() => handleOpenEdit(user)}
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        startIcon={<LinkIcon />}
+                        onClick={() => handleOpenAssociate(user)}
+                      >
+                        Associar
+                      </Button>
+                    </ButtonGroup>
                   </TableCell>
                 </TableRow>
               ))}
@@ -337,6 +402,75 @@ export function AdminUsersPage() {
               }
             >
               Criar
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      <Dialog
+        open={openEditDialog}
+        onClose={() => {
+          setOpenEditDialog(false);
+          setSelectedUser(null);
+          resetUpdate();
+          setError('');
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <form onSubmit={handleSubmitUpdate(onSubmitUpdate)}>
+          <DialogTitle>Editar Usuário</DialogTitle>
+          <DialogContent>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+            <TextField
+              fullWidth
+              label="Nome"
+              margin="normal"
+              required
+              error={!!updateErrors.name}
+              helperText={updateErrors.name?.message}
+              {...registerUpdate('name')}
+            />
+            <TextField
+              fullWidth
+              label="Email"
+              type="email"
+              margin="normal"
+              required
+              error={!!updateErrors.email}
+              helperText={updateErrors.email?.message}
+              {...registerUpdate('email')}
+            />
+            <TextField
+              fullWidth
+              label="Nova Senha"
+              type="password"
+              margin="normal"
+              error={!!updateErrors.password}
+              helperText={updateErrors.password?.message}
+              {...registerUpdate('password')}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => setOpenEditDialog(false)}
+              disabled={updateMutation.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={updateMutation.isPending}
+              startIcon={
+                updateMutation.isPending ? <CircularProgress size={16} /> : null
+              }
+            >
+              Salvar
             </Button>
           </DialogActions>
         </form>

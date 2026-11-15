@@ -3,7 +3,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  MinLength,
   IsUUID,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
@@ -17,7 +16,6 @@ export class LoginDto {
   @ApiProperty({ example: 'admin123' })
   @IsString()
   @IsNotEmpty({ message: 'Senha é obrigatória' })
-  @MinLength(6, { message: 'Senha deve ter no mínimo 6 caracteres' })
   password!: string;
 }
 

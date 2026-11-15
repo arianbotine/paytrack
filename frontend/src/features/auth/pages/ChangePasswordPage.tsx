@@ -16,7 +16,6 @@ import {
   Visibility,
   VisibilityOff,
   Lock as LockIcon,
-  Check as CheckIcon,
 } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,9 +29,7 @@ import { PageHeader } from '../../../shared/components/PageHeader';
 const passwordSchema = z
   .object({
     currentPassword: z.string().min(1, 'Senha atual é obrigatória'),
-    newPassword: z
-      .string()
-      .min(6, 'Nova senha deve ter no mínimo 6 caracteres'),
+    newPassword: z.string().min(1, 'Nova senha é obrigatória'),
     confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória'),
   })
   .refine(data => data.newPassword === data.confirmPassword, {
@@ -53,7 +50,6 @@ export const ChangePasswordPage: React.FC = () => {
     control,
     handleSubmit,
     reset,
-    watch,
     formState: { errors },
   } = useForm<PasswordFormData>({
     resolver: zodResolver(passwordSchema),
@@ -63,8 +59,6 @@ export const ChangePasswordPage: React.FC = () => {
       confirmPassword: '',
     },
   });
-
-  const newPassword = watch('newPassword');
 
   const mutation = useMutation({
     mutationFn: (data: { currentPassword: string; newPassword: string }) =>
@@ -85,33 +79,6 @@ export const ChangePasswordPage: React.FC = () => {
       currentPassword: data.currentPassword,
       newPassword: data.newPassword,
     });
-  };
-
-  // Password strength indicators
-  const hasMinLength = newPassword.length >= 6;
-  const hasUpperCase = /[A-Z]/.test(newPassword);
-  const hasLowerCase = /[a-z]/.test(newPassword);
-  const hasNumber = /\d/.test(newPassword);
-
-  const passwordStrength = [
-    hasMinLength,
-    hasUpperCase,
-    hasLowerCase,
-    hasNumber,
-  ].filter(Boolean).length;
-
-  const getStrengthColor = () => {
-    if (passwordStrength === 0) return 'default';
-    if (passwordStrength <= 2) return 'error';
-    if (passwordStrength === 3) return 'warning';
-    return 'success';
-  };
-
-  const getStrengthText = () => {
-    if (passwordStrength === 0) return '';
-    if (passwordStrength <= 2) return 'Fraca';
-    if (passwordStrength === 3) return 'Média';
-    return 'Forte';
   };
 
   return (
@@ -148,9 +115,6 @@ export const ChangePasswordPage: React.FC = () => {
               </Box>
               <Typography variant="h6" gutterBottom>
                 Criar Nova Senha
-              </Typography>
-              <Typography variant="body2" color="text.secondary" align="center">
-                Sua senha deve ter no mínimo 6 caracteres
               </Typography>
             </Box>
 
@@ -221,105 +185,6 @@ export const ChangePasswordPage: React.FC = () => {
                     />
                   )}
                 />
-
-                {newPassword && (
-                  <Box>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      gutterBottom
-                    >
-                      Força da senha:{' '}
-                      <Typography
-                        component="span"
-                        variant="caption"
-                        color={`${getStrengthColor()}.main`}
-                        fontWeight="bold"
-                      >
-                        {getStrengthText()}
-                      </Typography>
-                    </Typography>
-                    <Box sx={{ mt: 1 }}>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1,
-                          mb: 0.5,
-                        }}
-                      >
-                        <CheckIcon
-                          fontSize="small"
-                          color={hasMinLength ? 'success' : 'disabled'}
-                        />
-                        <Typography
-                          variant="caption"
-                          color={
-                            hasMinLength ? 'text.primary' : 'text.disabled'
-                          }
-                        >
-                          Mínimo 6 caracteres
-                        </Typography>
-                      </Box>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1,
-                          mb: 0.5,
-                        }}
-                      >
-                        <CheckIcon
-                          fontSize="small"
-                          color={hasUpperCase ? 'success' : 'disabled'}
-                        />
-                        <Typography
-                          variant="caption"
-                          color={
-                            hasUpperCase ? 'text.primary' : 'text.disabled'
-                          }
-                        >
-                          Letra maiúscula
-                        </Typography>
-                      </Box>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1,
-                          mb: 0.5,
-                        }}
-                      >
-                        <CheckIcon
-                          fontSize="small"
-                          color={hasLowerCase ? 'success' : 'disabled'}
-                        />
-                        <Typography
-                          variant="caption"
-                          color={
-                            hasLowerCase ? 'text.primary' : 'text.disabled'
-                          }
-                        >
-                          Letra minúscula
-                        </Typography>
-                      </Box>
-                      <Box
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                      >
-                        <CheckIcon
-                          fontSize="small"
-                          color={hasNumber ? 'success' : 'disabled'}
-                        />
-                        <Typography
-                          variant="caption"
-                          color={hasNumber ? 'text.primary' : 'text.disabled'}
-                        >
-                          Número
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Box>
-                )}
 
                 <Controller
                   name="confirmPassword"

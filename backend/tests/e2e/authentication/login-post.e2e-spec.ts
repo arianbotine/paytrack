@@ -21,7 +21,7 @@ describe('Auth - Login (e2e)', () => {
     // Criar dados de teste manualmente (não usar helper pois queremos testar login)
     const organizationId = randomUUID();
     email = `test_${randomUUID()}@example.com`;
-    password = 'testpassword';
+    password = 'x';
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await prisma.organization.create({

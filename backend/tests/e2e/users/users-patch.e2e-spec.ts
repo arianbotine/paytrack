@@ -160,7 +160,7 @@ describe('Users - PATCH (e2e)', () => {
     it('deve alterar senha do usuário logado', async () => {
       const changePasswordData = {
         currentPassword: 'testpassword123', // Senha padrão do helper
-        newPassword: 'novaSenha456',
+        newPassword: 'x',
       };
 
       return request(app.getHttpServer())

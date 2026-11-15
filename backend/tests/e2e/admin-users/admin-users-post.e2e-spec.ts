@@ -64,7 +64,7 @@ describe('Admin Users - POST (e2e)', () => {
       const userData = {
         email: `regular-${Date.now()}@example.com`,
         name: 'Regular User',
-        password: 'password123',
+        password: 'x',
         role: 'ACCOUNTANT',
       };
 

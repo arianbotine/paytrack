@@ -15,6 +15,7 @@ import {
   UpdateUserDto,
   UpdateProfileDto,
   AssociateUserDto,
+  UpdateSystemUserDto,
 } from './dto/user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { CurrentUser, Roles } from '../../shared/decorators';
@@ -113,6 +114,15 @@ export class AdminUsersController {
   @ApiOperation({ summary: '[Admin] Criar usuário sem organização' })
   async createUser(@Body() createDto: CreateUserDto) {
     return this.usersService.createSystemUser(createDto);
+  }
+
+  @Patch(':userId')
+  @ApiOperation({ summary: '[Admin] Atualizar usuário' })
+  async updateUser(
+    @Param('userId') userId: string,
+    @Body() updateDto: UpdateSystemUserDto
+  ) {
+    return this.usersService.updateSystemUser(userId, updateDto);
   }
 
   @Post(':userId/organizations/:organizationId')
