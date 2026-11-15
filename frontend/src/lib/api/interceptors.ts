@@ -60,6 +60,10 @@ export function setupRefreshInterceptor(instance: AxiosInstance) {
         requestUrl.includes('/auth/login') ||
         requestUrl.includes('/auth/refresh');
 
+      if (requestUrl.includes('/auth/login')) {
+        throw error;
+      }
+
       // Skip refresh para requisições de auth ou sem token
       if (isAuthRequest || !useAuthStore.getState().accessToken) {
         useAuthStore.getState().logout();
