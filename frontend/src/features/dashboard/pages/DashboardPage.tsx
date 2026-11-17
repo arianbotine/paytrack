@@ -1,7 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Grid, Typography, Skeleton, Chip, Divider } from '@mui/material';
+import {
+  Box,
+  Grid,
+  Typography,
+  Skeleton,
+  Chip,
+  CircularProgress,
+  Divider,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+} from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
@@ -11,7 +24,12 @@ import {
 } from '@mui/icons-material';
 import { AxiosError } from 'axios';
 import { api } from '@/lib/api';
+import { useAuthStore } from '@/lib/stores/authStore';
 import { AnimatedPage, ErrorBoundary } from '../../../shared/components';
+import {
+  getOrganizationStorage,
+  setOrganizationStorage,
+} from '../../../shared/utils/organization-storage';
 import {
   SummaryCard,
   BalanceCard,
@@ -74,6 +92,16 @@ function getCurrentMonthUTCRange(): { startDate: string; endDate: string } {
   return {
     startDate: startLocal.toISOString(),
     endDate: endLocal.toISOString(),
+  };
+}
+
+function getYearUTCRange(year: number): {
+  startDate: string;
+  endDate: string;
+} {
+  return {
+    startDate: new Date(Date.UTC(year, 0, 1)).toISOString(),
+    endDate: new Date(Date.UTC(year + 1, 0, 1) - 1).toISOString(),
   };
 }
 
@@ -140,14 +168,53 @@ function DashboardSkeleton() {
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const user = useAuthStore(state => state.user);
+  const organizationId = user?.currentOrganization?.id;
+  const [projectionPeriod, setProjectionPeriod] = useState(() => {
+    if (!organizationId) return 'all';
+    const stored = getOrganizationStorage<string>(
+      organizationId,
+      'dashboard:projectionPeriod'
+    );
+    return stored === 'all' || /^\d{4}$/.test(stored ?? '') ? stored! : 'all';
+  });
+  const [projectionOptionsOpen, setProjectionOptionsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!organizationId) return;
+    const stored = getOrganizationStorage<string>(
+      organizationId,
+      'dashboard:projectionPeriod'
+    );
+    setProjectionPeriod(
+      stored === 'all' || /^\d{4}$/.test(stored ?? '') ? stored! : 'all'
+    );
+  }, [organizationId]);
+
+  const projectionYear =
+    projectionPeriod === 'all' ? undefined : Number(projectionPeriod);
+  const projectionRange = projectionYear
+    ? getYearUTCRange(projectionYear)
+    : undefined;
 
   const { startDate, endDate } = getCurrentMonthUTCRange();
 
   const { data, isLoading, error } = useQuery<DashboardData>({
-    queryKey: ['dashboard', startDate, endDate],
+    queryKey: [
+      'dashboard',
+      startDate,
+      endDate,
+      projectionRange?.startDate,
+      projectionRange?.endDate,
+    ],
     queryFn: async () => {
       const response = await api.get('/dashboard', {
-        params: { startDate, endDate },
+        params: {
+          startDate,
+          endDate,
+          projectionStartDate: projectionRange?.startDate,
+          projectionEndDate: projectionRange?.endDate,
+        },
       });
       return response.data;
     },
@@ -156,6 +223,35 @@ export function DashboardPage() {
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
   });
+
+  const {
+    data: projectionYears = [],
+    isFetching: isFetchingProjectionYears,
+    isError: isProjectionYearsError,
+  } = useQuery<number[]>({
+    queryKey: ['dashboard', 'projection-years', organizationId],
+    queryFn: async () => {
+      const response = await api.get<number[]>('/dashboard/projection-years');
+      return response.data;
+    },
+    enabled: projectionOptionsOpen && !!organizationId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (
+      !projectionYear ||
+      !organizationId ||
+      !data ||
+      data.balance.toReceive !== 0 ||
+      data.balance.toPay !== 0
+    ) {
+      return;
+    }
+
+    setProjectionPeriod('all');
+    setOrganizationStorage(organizationId, 'dashboard:projectionPeriod', 'all');
+  }, [data, organizationId, projectionYear]);
 
   useEffect(() => {
     if (error) {
@@ -166,6 +262,18 @@ export function DashboardPage() {
       }
     }
   }, [error, navigate]);
+
+  const handleProjectionPeriodChange = (event: SelectChangeEvent) => {
+    const period = event.target.value;
+    setProjectionPeriod(period);
+    if (organizationId) {
+      setOrganizationStorage(
+        organizationId,
+        'dashboard:projectionPeriod',
+        period
+      );
+    }
+  };
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -279,6 +387,7 @@ export function DashboardPage() {
               sx={{
                 display: 'flex',
                 alignItems: 'center',
+                flexWrap: 'wrap',
                 gap: 1,
                 mb: 2,
               }}
@@ -287,17 +396,66 @@ export function DashboardPage() {
               <Typography variant="h6" fontWeight="bold">
                 Visão Projetada
               </Typography>
-              <Chip
-                label="Todos os períodos"
+              <FormControl
                 size="small"
-                color="info"
-                variant="outlined"
-                sx={{ fontWeight: 600 }}
-              />
+                sx={{
+                  minWidth: { xs: 0, sm: 170 },
+                  width: { xs: '100%', sm: 'auto' },
+                  maxWidth: { xs: 270, sm: '100%' },
+                  flexBasis: { xs: '100%', sm: 'auto' },
+                  ml: { xs: 0, sm: 'auto' },
+                }}
+              >
+                <InputLabel id="projection-period-label">Período</InputLabel>
+                <Select
+                  labelId="projection-period-label"
+                  id="projection-period"
+                  value={projectionPeriod}
+                  label="Período"
+                  onChange={handleProjectionPeriodChange}
+                  onOpen={() => setProjectionOptionsOpen(true)}
+                  onClose={() => setProjectionOptionsOpen(false)}
+                >
+                  <MenuItem value="all">Todos os períodos</MenuItem>
+                  {projectionYear &&
+                    !projectionYears.includes(projectionYear) && (
+                      <MenuItem
+                        value={String(projectionYear)}
+                        sx={{ display: 'none' }}
+                      >
+                        {projectionYear}
+                      </MenuItem>
+                    )}
+                  {isFetchingProjectionYears && (
+                    <MenuItem disabled value="__loading">
+                      <CircularProgress size={16} sx={{ mr: 1 }} />
+                      Carregando anos...
+                    </MenuItem>
+                  )}
+                  {isProjectionYearsError && (
+                    <MenuItem disabled value="__error">
+                      Não foi possível carregar os anos
+                    </MenuItem>
+                  )}
+                  {!isFetchingProjectionYears &&
+                    !isProjectionYearsError &&
+                    projectionYears.length === 0 && (
+                      <MenuItem disabled value="__empty">
+                        Nenhuma conta registrada
+                      </MenuItem>
+                    )}
+                  {projectionYears.map(year => (
+                    <MenuItem key={year} value={String(year)}>
+                      {year}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Box>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Saldo e fluxo de caixa considerando todos os períodos (passado,
-              presente e futuro)
+              {projectionYear
+                ? `Saldo e fluxo de caixa considerando contas com vencimento em ${projectionYear}`
+                : 'Saldo e fluxo de caixa considerando todos os períodos (passado, presente e futuro)'}
             </Typography>
 
             {/* Balance Card */}

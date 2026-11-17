@@ -68,6 +68,40 @@ describe('Dashboard - GET (e2e)', () => {
   });
 
   describe('GET /dashboard', () => {
+    describe('GET /dashboard/projection-years', () => {
+      it('deve retornar anos vazios quando não há parcelas', async () => {
+        const response = await request(app.getHttpServer())
+          .get('/api/dashboard/projection-years')
+          .set('Authorization', `Bearer ${accessToken}`)
+          .expect(200);
+
+        expect(response.body).toEqual([]);
+      });
+
+      it('deve listar anos únicos de contas a pagar e receber', async () => {
+        const vendor = await vendorFactory.create({ organizationId });
+        const customer = await customerFactory.create({ organizationId });
+
+        await payableFactory.create({
+          organizationId,
+          vendorId: vendor.id,
+          dueDate: new Date('2030-07-01T12:00:00.000Z'),
+        });
+        await receivableFactory.create({
+          organizationId,
+          customerId: customer.id,
+          dueDate: new Date('2028-07-01T12:00:00.000Z'),
+        });
+
+        const response = await request(app.getHttpServer())
+          .get('/api/dashboard/projection-years')
+          .set('Authorization', `Bearer ${accessToken}`)
+          .expect(200);
+
+        expect(response.body).toEqual([2030, 2028]);
+      });
+    });
+
     it('deve retornar dashboard vazio quando não há dados', async () => {
       const response = await request(app.getHttpServer())
         .get('/api/dashboard')

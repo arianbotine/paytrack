@@ -10,6 +10,26 @@ import { PrismaService } from '../../../infrastructure/database/prisma.service';
 export class DashboardRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getProjectionYears(organizationId: string): Promise<number[]> {
+    const rows = await this.prisma.$queryRaw<Array<{ year: number }>>(
+      Prisma.sql`
+        SELECT account_year AS year
+        FROM (
+          SELECT EXTRACT(YEAR FROM due_date)::int AS account_year
+          FROM payable_installments
+          WHERE organization_id = ${organizationId}
+          UNION
+          SELECT EXTRACT(YEAR FROM due_date)::int AS account_year
+          FROM receivable_installments
+          WHERE organization_id = ${organizationId}
+        ) AS installment_years
+        ORDER BY account_year DESC
+      `
+    );
+
+    return rows.map(({ year }) => year);
+  }
+
   /**
    * Agrupa installments de payables por status no período especificado
    */
@@ -57,11 +77,18 @@ export class DashboardRepository {
   /**
    * Agrupa todos os installments de payables por status (sem filtro de data)
    */
-  async getAllPayableInstallmentsSummary(organizationId: string) {
+  async getAllPayableInstallmentsSummary(
+    organizationId: string,
+    startDate?: Date,
+    endDate?: Date
+  ) {
     return this.prisma.payableInstallment.groupBy({
       by: ['status'],
       where: {
         organizationId,
+        ...(startDate && endDate
+          ? { dueDate: { gte: startDate, lte: endDate } }
+          : {}),
       },
       _sum: { amount: true, paidAmount: true },
       _count: true,
@@ -71,11 +98,18 @@ export class DashboardRepository {
   /**
    * Agrupa todos os installments de receivables por status (sem filtro de data)
    */
-  async getAllReceivableInstallmentsSummary(organizationId: string) {
+  async getAllReceivableInstallmentsSummary(
+    organizationId: string,
+    startDate?: Date,
+    endDate?: Date
+  ) {
     return this.prisma.receivableInstallment.groupBy({
       by: ['status'],
       where: {
         organizationId,
+        ...(startDate && endDate
+          ? { dueDate: { gte: startDate, lte: endDate } }
+          : {}),
       },
       _sum: { amount: true, receivedAmount: true },
       _count: true,

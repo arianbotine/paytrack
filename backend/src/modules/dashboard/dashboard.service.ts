@@ -13,15 +13,23 @@ export class DashboardService {
     private readonly getDashboardSummaryUseCase: GetDashboardSummaryUseCase
   ) {}
 
+  async getProjectionYears(organizationId: string) {
+    return this.getDashboardSummaryUseCase.getProjectionYears(organizationId);
+  }
+
   async getSummary(
     organizationId: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    projectionStartDate?: string,
+    projectionEndDate?: string
   ) {
     return this.getDashboardSummaryUseCase.execute(
       organizationId,
       startDate,
-      endDate
+      endDate,
+      projectionStartDate,
+      projectionEndDate
     );
   }
 }

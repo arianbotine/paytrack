@@ -14,14 +14,32 @@ export class GetDashboardSummaryUseCase {
     private readonly dateRangeCalculator: DateRangeCalculator
   ) {}
 
-  async execute(organizationId: string, startDate?: string, endDate?: string) {
-    return this.generateSummary(organizationId, startDate, endDate);
+  async getProjectionYears(organizationId: string) {
+    return this.repository.getProjectionYears(organizationId);
+  }
+
+  async execute(
+    organizationId: string,
+    startDate?: string,
+    endDate?: string,
+    projectionStartDate?: string,
+    projectionEndDate?: string
+  ) {
+    return this.generateSummary(
+      organizationId,
+      startDate,
+      endDate,
+      projectionStartDate,
+      projectionEndDate
+    );
   }
 
   private async generateSummary(
     organizationId: string,
     startDateStr?: string,
-    endDateStr?: string
+    endDateStr?: string,
+    projectionStartDateStr?: string,
+    projectionEndDateStr?: string
   ) {
     // Calcular datas usando DateRangeCalculator
     const todayUTC = this.dateRangeCalculator.getTodayUTC();
@@ -41,6 +59,12 @@ export class GetDashboardSummaryUseCase {
       ? new Date(startDateStr)
       : startOfCurrentMonth;
     const paidPeriodEnd = endDateStr ? new Date(endDateStr) : endOfCurrentMonth;
+    const projectionStartDate = projectionStartDateStr
+      ? new Date(projectionStartDateStr)
+      : undefined;
+    const projectionEndDate = projectionEndDateStr
+      ? new Date(projectionEndDateStr)
+      : undefined;
 
     // Executar queries em paralelo através do repository
     const [
@@ -84,8 +108,16 @@ export class GetDashboardSummaryUseCase {
         todayUTC,
         upcomingDeadline
       ),
-      this.repository.getAllPayableInstallmentsSummary(organizationId),
-      this.repository.getAllReceivableInstallmentsSummary(organizationId),
+      this.repository.getAllPayableInstallmentsSummary(
+        organizationId,
+        projectionStartDate,
+        projectionEndDate
+      ),
+      this.repository.getAllReceivableInstallmentsSummary(
+        organizationId,
+        projectionStartDate,
+        projectionEndDate
+      ),
       this.repository.getPaidAmountsByPeriod(
         organizationId,
         paidPeriodStart,
