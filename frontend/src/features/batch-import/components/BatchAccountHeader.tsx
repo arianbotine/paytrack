@@ -1,4 +1,10 @@
-import { Chip, Box, CircularProgress, Tooltip } from '@mui/material';
+import {
+  Chip,
+  Box,
+  CircularProgress,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
   ErrorOutline as ErrorOutlineIcon,
@@ -26,50 +32,52 @@ export const BatchAccountHeader: React.FC<BatchAccountHeaderProps> = ({
   errorMessage,
 }) => {
   return (
-    <>
-      {/* Número da Conta */}
-      <Chip
-        label={`#${index + 1}`}
-        size="small"
-        sx={{
-          position: 'absolute',
-          top: 8,
-          left: 8,
-          bgcolor: 'primary.main',
-          color: 'white',
-          fontWeight: 'bold',
-          fontSize: '0.75rem',
-        }}
-      />
-
-      {/* Status Icon */}
-      <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
-        {isProcessing && <CircularProgress size={24} />}
-        {isSuccess && (
-          <Tooltip title="Processada com sucesso">
-            <CheckCircleIcon color="success" sx={{ fontSize: 28 }} />
-          </Tooltip>
-        )}
-        {isError && (
-          <Tooltip title={errorMessage || 'Erro ao processar'}>
-            <ErrorOutlineIcon color="error" sx={{ fontSize: 28 }} />
-          </Tooltip>
-        )}
-        {!isProcessing &&
-          !isSuccess &&
-          !isError &&
-          (isAccountValid ? (
-            <Tooltip title="Pronto para processar">
-              <CheckCircleIcon sx={{ color: 'success.light', fontSize: 28 }} />
-            </Tooltip>
-          ) : (
-            <Tooltip title="Preencha todos os campos obrigatórios">
-              <ErrorOutlineIcon
-                sx={{ color: 'warning.main', fontSize: 28, opacity: 0.5 }}
-              />
-            </Tooltip>
-          ))}
-      </Box>
-    </>
+    <Box
+      sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}
+    >
+      <Typography component="h3" variant="subtitle1" fontWeight={600}>
+        Conta {index + 1}
+      </Typography>
+      {isProcessing ? (
+        <Chip
+          size="small"
+          color="primary"
+          icon={<CircularProgress size={16} color="inherit" />}
+          label="Processando"
+        />
+      ) : isSuccess ? (
+        <Chip
+          size="small"
+          color="success"
+          icon={<CheckCircleIcon />}
+          label="Processada"
+        />
+      ) : isError ? (
+        <Tooltip title={errorMessage || 'Revise os campos desta conta'} arrow>
+          <Chip
+            size="small"
+            color="error"
+            icon={<ErrorOutlineIcon />}
+            label="Revise os campos"
+          />
+        </Tooltip>
+      ) : isAccountValid ? (
+        <Chip
+          size="small"
+          color="success"
+          variant="outlined"
+          icon={<CheckCircleIcon />}
+          label="Pronta para processar"
+        />
+      ) : (
+        <Chip
+          size="small"
+          color="warning"
+          variant="outlined"
+          icon={<ErrorOutlineIcon />}
+          label="Preencha os campos obrigatórios"
+        />
+      )}
+    </Box>
   );
 };

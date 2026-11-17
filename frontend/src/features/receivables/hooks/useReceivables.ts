@@ -102,12 +102,32 @@ export const useLatestReceivableByCategory = (
 
       return latestReceivable
         ? {
+            accountId: latestReceivable.id,
             amount: latestReceivable.amount,
             tagIds: latestReceivable.tags.map(({ tag }) => tag.id),
           }
         : null;
     },
     enabled: enabled && !!customerId && !!categoryId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useLatestReceivablePaymentMethod = (
+  receivableId?: string,
+  enabled = true
+) => {
+  return useQuery({
+    queryKey: ['receivables', 'latest-payment-method', receivableId],
+    queryFn: async () => {
+      if (!receivableId) return null;
+
+      const response = await api.get<Array<{ paymentMethod: string }>>(
+        `/receivables/${receivableId}/payments`
+      );
+      return response.data[0]?.paymentMethod ?? null;
+    },
+    enabled: enabled && !!receivableId,
     staleTime: 5 * 60 * 1000,
   });
 };

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../lib/api';
 import { BatchAccount, AccountType } from '../types';
 import { validateAllAccounts } from '../utils/batchValidation';
@@ -20,6 +20,7 @@ export function useBatchProcess(
   onUpdateAccount: (accountId: string, updates: Partial<BatchAccount>) => void,
   onRemoveAccount: (accountId: string) => void
 ) {
+  const queryClient = useQueryClient();
   const [result, setResult] = useState<ProcessResult>({
     successCount: 0,
     errorCount: 0,
@@ -68,6 +69,18 @@ export function useBatchProcess(
           await createReceivableMutation.mutateAsync(payload);
         }
 
+        const resource = accountType === 'payable' ? 'payables' : 'receivables';
+        const entityId =
+          accountType === 'payable' ? account.vendorId : account.customerId;
+        if (entityId) {
+          void queryClient.invalidateQueries({
+            queryKey: [resource, 'latest-account', entityId],
+          });
+          void queryClient.invalidateQueries({
+            queryKey: [resource, 'latest-tags', entityId],
+          });
+        }
+
         // Marcar como sucesso
         onUpdateAccount(account.id, {
           status: 'success',
@@ -101,6 +114,7 @@ export function useBatchProcess(
       accountType,
       createPayableMutation,
       createReceivableMutation,
+      queryClient,
       onUpdateAccount,
       onRemoveAccount,
     ]
@@ -128,7 +142,7 @@ export function useBatchProcess(
       validation.errors.forEach(error => {
         onUpdateAccount(error.accountId, {
           status: 'error',
-          errorMessage: error.errors.join('; '),
+          errorMessage: error.errors.join('\n'),
         });
       });
       return;

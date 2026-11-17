@@ -33,11 +33,22 @@ const paymentOnAccountSchema = z
       if (!data.installmentNumbers || data.installmentNumbers.length === 0) {
         return true;
       }
-      return !!data.paymentDate && !!data.paymentMethod;
+      return !!data.paymentDate;
     },
     {
-      message:
-        'Data e método de pagamento são obrigatórios quando parcelas são selecionadas',
+      message: 'Informe a data do pagamento.',
+      path: ['paymentDate'],
+    }
+  )
+  .refine(
+    data => {
+      if (!data.installmentNumbers || data.installmentNumbers.length === 0) {
+        return true;
+      }
+      return !!data.paymentMethod;
+    },
+    {
+      message: 'Selecione o método de pagamento.',
       path: ['paymentMethod'],
     }
   )
@@ -49,7 +60,7 @@ const paymentOnAccountSchema = z
       return selected <= now;
     },
     {
-      message: 'Data do pagamento não pode ser futura',
+      message: 'A data do pagamento não pode ser futura.',
       path: ['paymentDate'],
     }
   )
@@ -62,14 +73,28 @@ const paymentOnAccountSchema = z
 
 // Schema base para validação de uma conta no lote
 const batchAccountBaseSchema = z.object({
-  amount: z.number().positive('Valor deve ser positivo'),
+  amount: z
+    .number({
+      required_error: 'Informe o valor total da conta.',
+      invalid_type_error: 'Informe um valor válido.',
+    })
+    .positive('Informe um valor maior que zero.'),
   categoryId: z.string().optional(),
   tagIds: z.array(z.string()).optional(),
   notes: z.string().optional(),
-  installmentCount: z.number().int().min(1).max(120),
+  installmentCount: z
+    .number({
+      required_error: 'Informe o número de parcelas.',
+      invalid_type_error: 'Informe um número de parcelas válido.',
+    })
+    .int('Informe um número inteiro de parcelas.')
+    .min(1, 'Informe pelo menos uma parcela.')
+    .max(120, 'O limite é 120 parcelas.'),
   dueDates: z
-    .array(z.string())
-    .min(1, 'Pelo menos uma data de vencimento é necessária')
+    .array(z.string(), {
+      required_error: 'Informe uma data de vencimento.',
+    })
+    .min(1, 'Informe uma data de vencimento.')
     .refine(
       dates => {
         // Validar que as datas estão em ordem crescente
@@ -80,22 +105,51 @@ const batchAccountBaseSchema = z.object({
         }
         return true;
       },
-      { message: 'As datas de vencimento devem estar em ordem crescente' }
+      { message: 'Organize as datas de vencimento em ordem crescente.' }
     ),
   payment: paymentOnAccountSchema.optional(),
 });
 
 // Schema para payables (contas a pagar)
 const payableAccountSchema = batchAccountBaseSchema.extend({
-  vendorId: z.string().min(1, 'Credor é obrigatório'),
+  vendorId: z
+    .string({
+      required_error: 'Selecione um credor para esta conta.',
+      invalid_type_error: 'Selecione um credor válido.',
+    })
+    .min(1, 'Selecione um credor para esta conta.'),
   customerId: z.undefined().optional(),
 });
 
 // Schema para receivables (contas a receber)
 const receivableAccountSchema = batchAccountBaseSchema.extend({
-  customerId: z.string().min(1, 'Devedor é obrigatório'),
+  customerId: z
+    .string({
+      required_error: 'Selecione um devedor para esta conta.',
+      invalid_type_error: 'Selecione um devedor válido.',
+    })
+    .min(1, 'Selecione um devedor para esta conta.'),
   vendorId: z.undefined().optional(),
 });
+
+const REQUIRED_FIELD_MESSAGES: Record<string, string> = {
+  amount: 'Informe o valor total da conta.',
+  vendorId: 'Selecione um credor para esta conta.',
+  customerId: 'Selecione um devedor para esta conta.',
+  installmentCount: 'Informe o número de parcelas.',
+  dueDates: 'Informe uma data de vencimento.',
+  paymentDate: 'Informe a data do pagamento.',
+  paymentMethod: 'Selecione o método de pagamento.',
+};
+
+function formatValidationErrors(errors: z.ZodIssue[]): string[] {
+  return errors.map(error => {
+    const field = String(error.path[error.path.length - 1] ?? '');
+    return error.message === 'Required'
+      ? REQUIRED_FIELD_MESSAGES[field] || 'Preencha este campo obrigatório.'
+      : error.message;
+  });
+}
 
 export interface ValidationError {
   accountId: string;
@@ -145,14 +199,9 @@ export function validateAllAccounts(
     });
 
     if (!result.success) {
-      const accountErrors = result.error.errors.map(err => {
-        const field = err.path.join('.');
-        return field ? `${field}: ${err.message}` : err.message;
-      });
-
       errors.push({
         accountId: account.id,
-        errors: accountErrors,
+        errors: formatValidationErrors(result.error.errors),
       });
     }
   }
@@ -194,8 +243,5 @@ export function validateSingleAccount(
     return [];
   }
 
-  return result.error.errors.map(err => {
-    const field = err.path.join('.');
-    return field ? `${field}: ${err.message}` : err.message;
-  });
+  return formatValidationErrors(result.error.errors);
 }

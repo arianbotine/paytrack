@@ -14,11 +14,15 @@ import {
   Collapse,
   Divider,
   Chip,
+  InputAdornment,
+  OutlinedInput,
+  Tooltip,
 } from '@mui/material';
 import {
   Payment as PaymentIcon,
   ExpandMore as ExpandMoreIcon,
   CheckCircle as CheckCircleIcon,
+  ErrorOutline as AutoFilledMethodIcon,
 } from '@mui/icons-material';
 import { BatchAccount } from '../types';
 import { PAYMENT_METHODS } from '../../payments/types';
@@ -29,6 +33,8 @@ interface BatchAccountPaymentSectionProps {
   account: BatchAccount;
   isDisabled: boolean;
   showPayment: boolean;
+  suggestedPaymentMethod?: string | null;
+  autoFilledPaymentMethod: boolean;
   paymentLabels: {
     title: string;
     verb: string;
@@ -52,6 +58,8 @@ export const BatchAccountPaymentSection: React.FC<
   account,
   isDisabled,
   showPayment,
+  suggestedPaymentMethod,
+  autoFilledPaymentMethod,
   paymentLabels,
   totalPaymentAmount,
   formatCurrency,
@@ -115,7 +123,7 @@ export const BatchAccountPaymentSection: React.FC<
 
         <Collapse in={showPayment}>
           <Divider />
-          <Box sx={{ p: 2.5 }}>
+          <Box sx={{ p: { xs: 2, sm: 3 } }}>
             <Grid container spacing={2.5}>
               {/* Seleção de Parcelas */}
               <Grid item xs={12}>
@@ -253,7 +261,7 @@ export const BatchAccountPaymentSection: React.FC<
                   }
                   disabled={isDisabled}
                   fullWidth
-                  size="small"
+                  size="medium"
                   InputLabelProps={{ shrink: true }}
                   inputProps={{
                     max: getNowLocalDatetimeInput(),
@@ -262,10 +270,45 @@ export const BatchAccountPaymentSection: React.FC<
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth size="small" disabled={isDisabled}>
+                <FormControl fullWidth size="medium" disabled={isDisabled}>
                   <InputLabel>Método de Pagamento</InputLabel>
                   <Select
-                    value={account.payment?.paymentMethod || ''}
+                    value={
+                      account.payment?.paymentMethod ||
+                      suggestedPaymentMethod ||
+                      ''
+                    }
+                    sx={
+                      autoFilledPaymentMethod
+                        ? {
+                            '& .MuiSelect-iconOutlined': {
+                              right: 38,
+                            },
+                          }
+                        : undefined
+                    }
+                    input={
+                      <OutlinedInput
+                        label="Método de Pagamento"
+                        endAdornment={
+                          autoFilledPaymentMethod ? (
+                            <InputAdornment position="end">
+                              <Tooltip
+                                title="Método preenchido com base no último pagamento desta conta. Você pode alterá-lo."
+                                arrow
+                              >
+                                <AutoFilledMethodIcon
+                                  fontSize="small"
+                                  color="action"
+                                  aria-label="Método preenchido automaticamente"
+                                  sx={{ cursor: 'help' }}
+                                />
+                              </Tooltip>
+                            </InputAdornment>
+                          ) : undefined
+                        }
+                      />
+                    }
                     onChange={e =>
                       onPaymentFieldChange('paymentMethod', e.target.value)
                     }
@@ -289,7 +332,7 @@ export const BatchAccountPaymentSection: React.FC<
                   }
                   disabled={isDisabled}
                   fullWidth
-                  size="small"
+                  size="medium"
                   placeholder="Número do comprovante, PIX, etc."
                 />
               </Grid>
@@ -301,7 +344,7 @@ export const BatchAccountPaymentSection: React.FC<
                   onChange={e => onPaymentFieldChange('notes', e.target.value)}
                   disabled={isDisabled}
                   fullWidth
-                  size="small"
+                  size="medium"
                   multiline
                   rows={2}
                   placeholder="Informações adicionais sobre o pagamento..."

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Grid, IconButton, Tooltip } from '@mui/material';
+import { Box, IconButton, Tooltip } from '@mui/material';
 import {
   Delete as DeleteIcon,
   Refresh as RefreshIcon,
@@ -32,15 +32,12 @@ export const BatchAccountActions: React.FC<BatchAccountActionsProps> = ({
   onRemove,
 }) => {
   return (
-    <Grid
-      item
-      xs={12}
-      md={2}
+    <Box
       sx={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-end',
-        gap: 0.5,
+        gap: 0.75,
       }}
     >
       {onDuplicate && !isDisabled && (
@@ -48,7 +45,8 @@ export const BatchAccountActions: React.FC<BatchAccountActionsProps> = ({
           <IconButton
             color="primary"
             onClick={() => onDuplicate(accountId)}
-            size="small"
+            size="medium"
+            aria-label="Duplicar conta"
           >
             <ContentCopyIcon fontSize="small" />
           </IconButton>
@@ -59,7 +57,8 @@ export const BatchAccountActions: React.FC<BatchAccountActionsProps> = ({
           <IconButton
             color="primary"
             onClick={() => onRetry(accountId)}
-            size="small"
+            size="medium"
+            aria-label="Tentar novamente"
           >
             <RefreshIcon />
           </IconButton>
@@ -70,12 +69,13 @@ export const BatchAccountActions: React.FC<BatchAccountActionsProps> = ({
           <IconButton
             color="error"
             onClick={() => onRemove(accountId)}
-            size="small"
+            size="medium"
+            aria-label="Remover conta"
           >
             <DeleteIcon />
           </IconButton>
         </Tooltip>
       )}
-    </Grid>
+    </Box>
   );
 };

@@ -30,6 +30,7 @@ import { useCustomers } from '../../receivables/hooks/useReceivables';
 import { useRelatedData } from '../../../shared/hooks/useAccounts';
 import { getTodayLocalInput } from '../../../shared/utils/dateUtils';
 import type { Category } from '../../payables/types';
+import { validateSingleAccount } from '../utils/batchValidation';
 
 export default function BatchImportPage() {
   // State principal
@@ -59,9 +60,24 @@ export default function BatchImportPage() {
     (accountId: string, updates: Partial<BatchAccount>) => {
       setState(prev => ({
         ...prev,
-        accounts: prev.accounts.map(acc =>
-          acc.id === accountId ? { ...acc, ...updates } : acc
-        ),
+        accounts: prev.accounts.map(acc => {
+          if (acc.id !== accountId) return acc;
+
+          const updatedAccount = { ...acc, ...updates };
+          if (acc.status !== 'error' || 'status' in updates) {
+            return updatedAccount;
+          }
+
+          const errors = validateSingleAccount(
+            updatedAccount,
+            prev.accountType
+          );
+          return {
+            ...updatedAccount,
+            status: errors.length > 0 ? 'error' : 'idle',
+            errorMessage: errors.length > 0 ? errors.join('\n') : undefined,
+          };
+        }),
       }));
     },
     []
@@ -373,8 +389,9 @@ export default function BatchImportPage() {
                 display: 'flex',
                 gap: 1.5,
                 flexShrink: 0,
+                flexWrap: { xs: 'wrap', sm: 'nowrap' },
                 '& .MuiButton-root': {
-                  minWidth: { xs: '100%', sm: 'auto' },
+                  minWidth: 'auto',
                 },
               }}
             >

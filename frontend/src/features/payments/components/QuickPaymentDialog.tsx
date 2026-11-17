@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Box,
   Button,
@@ -23,10 +23,14 @@ import {
   Stack,
   alpha,
   CircularProgress,
+  InputAdornment,
+  OutlinedInput,
+  Tooltip,
 } from '@mui/material';
 import {
   RequestQuote as ReceivableIcon,
   AccountBalance as PayableIcon,
+  ErrorOutline as AutoFilledMethodIcon,
   Event as EventIcon,
   Person as PersonIcon,
   Business as BusinessIcon,
@@ -46,6 +50,10 @@ import { PAYMENT_METHODS, paymentSchema, getDefaultFormValues } from '../types';
 import type { PaymentFormData } from '../types';
 import type { ReceivableInstallment } from '../../receivables/types';
 import type { PayableInstallment } from '../../payables/types';
+import {
+  usePayablePayments,
+  useReceivablePayments,
+} from '../hooks/usePayments';
 
 interface QuickPaymentDialogProps {
   open: boolean;
@@ -67,11 +75,44 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const amountRef = useRef<HTMLInputElement>(null);
+  const methodManuallyChanged = useRef(false);
+  const [autoFilledMethod, setAutoFilledMethod] = useState(false);
+
+  const payableId =
+    type === 'PAYABLE' && installment && 'payable' in installment
+      ? installment.payable?.id
+      : undefined;
+  const receivableId =
+    type === 'RECEIVABLE' && installment && 'receivable' in installment
+      ? installment.receivable?.id
+      : undefined;
+  const {
+    data: payablePayments = [],
+    isLoading: isLoadingPayablePayments,
+    isError: isPayablePaymentsError,
+  } = usePayablePayments(open ? payableId : undefined);
+  const {
+    data: receivablePayments = [],
+    isLoading: isLoadingReceivablePayments,
+    isError: isReceivablePaymentsError,
+  } = useReceivablePayments(open ? receivableId : undefined);
+  const latestPaymentMethodValue =
+    type === 'PAYABLE'
+      ? payablePayments[0]?.paymentMethod
+      : receivablePayments[0]?.paymentMethod;
+  const latestPaymentMethod = PAYMENT_METHODS.find(
+    method => method.value === latestPaymentMethodValue
+  )?.value;
+  const isLoadingPaymentHistory =
+    type === 'PAYABLE' ? isLoadingPayablePayments : isLoadingReceivablePayments;
+  const paymentHistoryError =
+    type === 'PAYABLE' ? isPayablePaymentsError : isReceivablePaymentsError;
 
   const {
     control,
     handleSubmit,
     reset,
+    setValue,
     watch,
     formState: { errors },
   } = useForm<PaymentFormData>({
@@ -118,6 +159,8 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
       const defaultValues = getDefaultFormValues();
       const pendingAmount = installmentInfo?.pendingAmount || 0;
 
+      methodManuallyChanged.current = false;
+      setAutoFilledMethod(false);
       reset({
         ...defaultValues,
         amount: pendingAmount,
@@ -127,6 +170,13 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
       });
     }
   }, [open, installment, type, reset, installmentInfo]);
+
+  useEffect(() => {
+    if (!open || !latestPaymentMethod || methodManuallyChanged.current) return;
+
+    setValue('method', latestPaymentMethod, { shouldDirty: false });
+    setAutoFilledMethod(true);
+  }, [latestPaymentMethod, open, payableId, receivableId, setValue]);
 
   const handleClose = () => {
     reset();
@@ -347,6 +397,14 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
 
               {/* Formulário de pagamento */}
               <Grid container spacing={2}>
+                {paymentHistoryError && !isLoadingPaymentHistory && (
+                  <Grid item xs={12}>
+                    <Alert severity="warning" sx={{ py: 0.25 }}>
+                      Não foi possível carregar o método do último pagamento.
+                      Escolha o método manualmente.
+                    </Alert>
+                  </Grid>
+                )}
                 <Grid item xs={12}>
                   <Controller
                     name="amount"
@@ -400,7 +458,46 @@ export const QuickPaymentDialog: React.FC<QuickPaymentDialogProps> = ({
                     render={({ field }) => (
                       <FormControl fullWidth required error={!!errors.method}>
                         <InputLabel>Forma de Pagamento</InputLabel>
-                        <Select {...field} label="Forma de Pagamento">
+                        <Select
+                          {...field}
+                          label="Forma de Pagamento"
+                          sx={
+                            autoFilledMethod
+                              ? {
+                                  '& .MuiSelect-iconOutlined': {
+                                    right: 38,
+                                  },
+                                }
+                              : undefined
+                          }
+                          input={
+                            <OutlinedInput
+                              label="Forma de Pagamento"
+                              endAdornment={
+                                autoFilledMethod ? (
+                                  <InputAdornment position="end">
+                                    <Tooltip
+                                      title="Método preenchido com base no último pagamento desta conta. Você pode alterá-lo."
+                                      arrow
+                                    >
+                                      <AutoFilledMethodIcon
+                                        fontSize="small"
+                                        color="action"
+                                        aria-label="Método preenchido automaticamente"
+                                        sx={{ cursor: 'help' }}
+                                      />
+                                    </Tooltip>
+                                  </InputAdornment>
+                                ) : undefined
+                              }
+                            />
+                          }
+                          onChange={event => {
+                            methodManuallyChanged.current = true;
+                            setAutoFilledMethod(false);
+                            field.onChange(event);
+                          }}
+                        >
                           {PAYMENT_METHODS.map(method => (
                             <MenuItem key={method.value} value={method.value}>
                               {method.label}

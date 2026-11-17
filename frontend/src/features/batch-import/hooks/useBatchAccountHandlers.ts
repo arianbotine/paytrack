@@ -87,7 +87,7 @@ export function useBatchAccountHandlers(
    * Handler para toggle de parcelas no registro de pagamento
    */
   const handleTogglePaymentInstallment = useCallback(
-    (installmentNumber: number) => {
+    (installmentNumber: number, suggestedPaymentMethod = '') => {
       const current = account.payment?.installmentNumbers || [];
       const isSelected = current.includes(installmentNumber);
 
@@ -98,7 +98,7 @@ export function useBatchAccountHandlers(
       handleFieldChange('payment', {
         installmentNumbers: newNumbers,
         paymentDate: account.payment?.paymentDate || getNowLocalDatetimeInput(),
-        paymentMethod: account.payment?.paymentMethod || '',
+        paymentMethod: account.payment?.paymentMethod || suggestedPaymentMethod,
         reference: account.payment?.reference,
         notes: account.payment?.notes,
       });

@@ -107,12 +107,32 @@ export const useLatestPayableByCategory = (
 
       return latestPayable
         ? {
+            accountId: latestPayable.id,
             amount: latestPayable.amount,
             tagIds: latestPayable.tags.map(({ tag }) => tag.id),
           }
         : null;
     },
     enabled: enabled && !!vendorId && !!categoryId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useLatestPayablePaymentMethod = (
+  payableId?: string,
+  enabled = true
+) => {
+  return useQuery({
+    queryKey: ['payables', 'latest-payment-method', payableId],
+    queryFn: async () => {
+      if (!payableId) return null;
+
+      const response = await api.get<Array<{ paymentMethod: string }>>(
+        `/payables/${payableId}/payments`
+      );
+      return response.data[0]?.paymentMethod ?? null;
+    },
+    enabled: enabled && !!payableId,
     staleTime: 5 * 60 * 1000,
   });
 };
