@@ -28,6 +28,14 @@ import { BatchAccount, AccountType } from '../types';
 import type { Vendor, Category, Tag } from '../../payables/types';
 import type { Customer } from '../../receivables/types';
 
+const CategoryLoadingIcon = ({ className }: { className?: string }) => (
+  <CircularProgress
+    className={className}
+    size={18}
+    aria-label="Carregando categoria"
+  />
+);
+
 interface BatchAccountFormFieldsProps {
   account: BatchAccount;
   accountType: AccountType;
@@ -159,6 +167,7 @@ export const BatchAccountFormFields: React.FC<BatchAccountFormFieldsProps> = ({
             onValidateField(field, value?.id);
           }}
           options={entityList}
+          getOptionKey={option => option.id}
           getOptionLabel={option => option.name}
           disabled={isDisabled}
           renderInput={params => (
@@ -183,6 +192,9 @@ export const BatchAccountFormFields: React.FC<BatchAccountFormFieldsProps> = ({
               value={account.categoryId || ''}
               onChange={e => onCategoryChange(e.target.value || undefined)}
               label="Categoria"
+              IconComponent={
+                isFetchingLatestEntityAccount ? CategoryLoadingIcon : undefined
+              }
               sx={{
                 transition: theme.transitions.create(['background-color'], {
                   duration: 250,

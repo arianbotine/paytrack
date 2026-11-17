@@ -28,6 +28,7 @@ import {
   Tooltip,
   CircularProgress,
 } from '@mui/material';
+import { createFilterOptions } from '@mui/material/Autocomplete';
 import {
   CalendarToday,
   AttachMoney,
@@ -58,6 +59,22 @@ import {
   useLatestPayableAccount,
   useLatestPayableByCategory,
 } from '../hooks/usePayables';
+
+const filterVendorsFromStart = createFilterOptions<Vendor>({
+  matchFrom: 'start',
+  ignoreAccents: true,
+});
+const filterVendorsAfterTyping: typeof filterVendorsFromStart = (
+  options,
+  state
+) => (state.inputValue.trim() ? filterVendorsFromStart(options, state) : []);
+const CategoryLoadingIcon = ({ className }: { className?: string }) => (
+  <CircularProgress
+    className={className}
+    size={18}
+    aria-label="Carregando categoria"
+  />
+);
 
 interface PayableFormDialogProps {
   open: boolean;
@@ -91,6 +108,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
   >('total');
   const [quickCategoryOpen, setQuickCategoryOpen] = useState(false);
   const [quickTagOpen, setQuickTagOpen] = useState(false);
+  const [vendorSearchValue, setVendorSearchValue] = useState('');
   const [copiedTagSourceKey, setCopiedTagSourceKey] = useState<string | null>(
     null
   );
@@ -99,6 +117,10 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
   >(null);
   const [categoryManuallyChanged, setCategoryManuallyChanged] = useState(false);
   const [categoryAutoApplied, setCategoryAutoApplied] = useState(false);
+
+  useEffect(() => {
+    if (!open) setVendorSearchValue('');
+  }, [open]);
 
   // Helper function to determine grid size based on installment count
   const getGridSize = (installmentCount: number = 1) => {
@@ -408,6 +430,8 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                     render={({ field }) => (
                       <Autocomplete
                         options={vendors}
+                        filterOptions={filterVendorsAfterTyping}
+                        getOptionKey={vendor => vendor.id}
                         getOptionLabel={vendor => vendor.name}
                         isOptionEqualToValue={(option, value) =>
                           option.id === value.id
@@ -419,8 +443,15 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                         onChange={(_, vendor) =>
                           field.onChange(vendor?.id ?? '')
                         }
+                        onInputChange={(_, value) =>
+                          setVendorSearchValue(value)
+                        }
                         onBlur={field.onBlur}
-                        noOptionsText="Nenhum credor encontrado"
+                        noOptionsText={
+                          vendorSearchValue.trim()
+                            ? `Nenhum credor encontrado para "${vendorSearchValue.trim()}"`
+                            : 'Digite para buscar um credor'
+                        }
                         renderInput={params => (
                           <TextField
                             {...params}
@@ -446,6 +477,11 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                           <Select
                             {...field}
                             label="Categoria"
+                            IconComponent={
+                              isFetchingLatestAccount
+                                ? CategoryLoadingIcon
+                                : undefined
+                            }
                             onChange={event => {
                               setCategoryManuallyChanged(true);
                               setCategoryAutoApplied(false);

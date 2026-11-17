@@ -28,6 +28,7 @@ import {
   Tooltip,
   CircularProgress,
 } from '@mui/material';
+import { createFilterOptions } from '@mui/material/Autocomplete';
 import {
   CalendarToday,
   AttachMoney,
@@ -65,6 +66,22 @@ import {
   useLatestReceivableByCategory,
 } from '../hooks/useReceivables';
 
+const filterCustomersFromStart = createFilterOptions<Customer>({
+  matchFrom: 'start',
+  ignoreAccents: true,
+});
+const filterCustomersAfterTyping: typeof filterCustomersFromStart = (
+  options,
+  state
+) => (state.inputValue.trim() ? filterCustomersFromStart(options, state) : []);
+const CategoryLoadingIcon = ({ className }: { className?: string }) => (
+  <CircularProgress
+    className={className}
+    size={18}
+    aria-label="Carregando categoria"
+  />
+);
+
 interface ReceivableFormDialogProps {
   open: boolean;
   receivable: Receivable | null;
@@ -101,6 +118,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
   >('total');
   const [quickCategoryOpen, setQuickCategoryOpen] = useState(false);
   const [quickTagOpen, setQuickTagOpen] = useState(false);
+  const [customerSearchValue, setCustomerSearchValue] = useState('');
   const [copiedTagSourceKey, setCopiedTagSourceKey] = useState<string | null>(
     null
   );
@@ -109,6 +127,10 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
   >(null);
   const [categoryManuallyChanged, setCategoryManuallyChanged] = useState(false);
   const [categoryAutoApplied, setCategoryAutoApplied] = useState(false);
+
+  useEffect(() => {
+    if (!open) setCustomerSearchValue('');
+  }, [open]);
 
   // Helper function to determine grid size based on installment count
   const getGridSize = (installmentCount: number = 1) => {
@@ -404,6 +426,8 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                     render={({ field }) => (
                       <Autocomplete
                         options={customers}
+                        filterOptions={filterCustomersAfterTyping}
+                        getOptionKey={customer => customer.id}
                         getOptionLabel={customer => customer.name}
                         isOptionEqualToValue={(option, value) =>
                           option.id === value.id
@@ -416,8 +440,15 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                         onChange={(_, customer) =>
                           field.onChange(customer?.id ?? '')
                         }
+                        onInputChange={(_, value) =>
+                          setCustomerSearchValue(value)
+                        }
                         onBlur={field.onBlur}
-                        noOptionsText="Nenhum devedor encontrado"
+                        noOptionsText={
+                          customerSearchValue.trim()
+                            ? `Nenhum devedor encontrado para "${customerSearchValue.trim()}"`
+                            : 'Digite para buscar um devedor'
+                        }
                         renderInput={params => (
                           <TextField
                             {...params}
@@ -443,6 +474,11 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                           <Select
                             {...field}
                             label="Categoria"
+                            IconComponent={
+                              isFetchingLatestAccount
+                                ? CategoryLoadingIcon
+                                : undefined
+                            }
                             onChange={event => {
                               setCategoryManuallyChanged(true);
                               setCategoryAutoApplied(false);
