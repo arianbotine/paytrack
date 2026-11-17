@@ -5,7 +5,7 @@ import {
   Box,
   alpha,
 } from '@mui/material';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useEffect } from 'react';
 
 interface LoadingOverlayProps {
@@ -17,6 +17,8 @@ export function LoadingOverlay({
   open,
   message,
 }: Readonly<LoadingOverlayProps>) {
+  const shouldReduceMotion = useReducedMotion();
+
   // Blur active element when overlay opens to prevent focus retention issues with aria-hidden
   useEffect(() => {
     if (open && document.activeElement instanceof HTMLElement) {
@@ -36,12 +38,23 @@ export function LoadingOverlay({
           }}
         >
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
+            initial={shouldReduceMotion ? false : { scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            exit={
+              shouldReduceMotion
+                ? { scale: 1, opacity: 1 }
+                : { scale: 0.9, opacity: 0 }
+            }
+            transition={
+              shouldReduceMotion
+                ? { duration: 0 }
+                : { type: 'spring', stiffness: 300, damping: 25 }
+            }
           >
             <Box
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
               sx={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -49,7 +62,11 @@ export function LoadingOverlay({
                 gap: 2,
               }}
             >
-              <CircularProgress size={48} thickness={4} />
+              <CircularProgress
+                size={48}
+                thickness={4}
+                aria-label={message ?? 'Carregando'}
+              />
               {message && (
                 <Typography variant="body2" color="text.secondary">
                   {message}
@@ -74,6 +91,9 @@ export function InlineLoading({
 }: Readonly<InlineLoadingProps>) {
   return (
     <Box
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
       sx={{
         display: 'flex',
         alignItems: 'center',
@@ -82,7 +102,11 @@ export function InlineLoading({
         py: 4,
       }}
     >
-      <CircularProgress size={size} thickness={4} />
+      <CircularProgress
+        size={size}
+        thickness={4}
+        aria-label={message ?? 'Carregando'}
+      />
       {message && (
         <Typography variant="body2" color="text.secondary">
           {message}

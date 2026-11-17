@@ -1,5 +1,6 @@
 import { createTheme, alpha } from '@mui/material/styles';
 import { PaletteMode } from '@mui/material';
+import type { Theme } from '@mui/material/styles';
 
 declare module '@mui/material/styles' {
   interface BreakpointOverrides {
@@ -73,35 +74,32 @@ const getDesignTokens = (mode: PaletteMode) => ({
 const getTypography = () => ({
   fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
   h1: {
-    fontSize: 'clamp(1.875rem, 4vw, 2.5rem)',
+    fontSize: '2rem',
     fontWeight: 700,
-    letterSpacing: '-0.02em',
     lineHeight: 1.2,
   },
   h2: {
-    fontSize: 'clamp(1.5rem, 3vw, 2rem)',
+    fontSize: '1.75rem',
     fontWeight: 700,
-    letterSpacing: '-0.01em',
     lineHeight: 1.3,
   },
   h3: {
-    fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
+    fontSize: '1.5rem',
     fontWeight: 600,
-    letterSpacing: '-0.01em',
     lineHeight: 1.3,
   },
   h4: {
-    fontSize: 'clamp(1.125rem, 2vw, 1.5rem)',
+    fontSize: '1.25rem',
     fontWeight: 600,
     lineHeight: 1.4,
   },
   h5: {
-    fontSize: 'clamp(1rem, 1.5vw, 1.25rem)',
+    fontSize: '1.125rem',
     fontWeight: 600,
     lineHeight: 1.4,
   },
   h6: {
-    fontSize: 'clamp(0.875rem, 1.25vw, 1rem)',
+    fontSize: '1rem',
     fontWeight: 600,
     lineHeight: 1.5,
   },
@@ -120,8 +118,10 @@ const getTypography = () => ({
 });
 
 // Get shadows configuration
-const getShadows = () =>
-  [
+const getShadows = (): Theme['shadows'] => {
+  const repeatedShadow = '0 25px 50px -12px rgb(0 0 0 / 0.25)';
+
+  return [
     'none',
     '0 1px 2px 0 rgb(0 0 0 / 0.05)',
     '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
@@ -129,8 +129,9 @@ const getShadows = () =>
     '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
     '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
     '0 25px 50px -12px rgb(0 0 0 / 0.25)',
-    ...new Array(18).fill('0 25px 50px -12px rgb(0 0 0 / 0.25)'),
-  ] as any;
+    ...Array.from({ length: 18 }, () => repeatedShadow),
+  ] as Theme['shadows'];
+};
 
 // Get transitions configuration
 const getTransitions = () => ({
@@ -276,27 +277,34 @@ const getTableComponents = (mode: PaletteMode) => ({
   },
 });
 
+const getScrollbarStyles = (mode: PaletteMode) => ({
+  scrollbarColor: `${mode === 'light' ? '#94a3b8' : '#64748b'} transparent`,
+  scrollbarWidth: 'thin' as const,
+  '&::-webkit-scrollbar': {
+    width: '8px',
+    height: '8px',
+  },
+  '&::-webkit-scrollbar-track': {
+    backgroundColor: 'transparent',
+  },
+  '&::-webkit-scrollbar-thumb': {
+    backgroundColor: mode === 'light' ? '#cbd5e1' : '#475569',
+    backgroundClip: 'content-box',
+    border: '2px solid transparent',
+    borderRadius: '999px',
+    transition: 'background-color 160ms ease',
+  },
+  '&::-webkit-scrollbar-thumb:hover': {
+    backgroundColor: mode === 'light' ? '#94a3b8' : '#64748b',
+  },
+});
+
 // Get components configuration
 const getComponents = (mode: PaletteMode) => ({
   MuiCssBaseline: {
     styleOverrides: {
-      body: {
-        scrollbarWidth: 'thin',
-        '&::-webkit-scrollbar': {
-          width: '8px',
-          height: '8px',
-        },
-        '&::-webkit-scrollbar-track': {
-          background: 'transparent',
-        },
-        '&::-webkit-scrollbar-thumb': {
-          background: mode === 'light' ? '#cbd5e1' : '#475569',
-          borderRadius: '4px',
-        },
-        '&::-webkit-scrollbar-thumb:hover': {
-          background: mode === 'light' ? '#94a3b8' : '#64748b',
-        },
-      },
+      body: getScrollbarStyles(mode),
+      '*': getScrollbarStyles(mode),
     },
   },
   MuiButton: {
@@ -447,6 +455,7 @@ const getComponents = (mode: PaletteMode) => ({
   MuiDrawer: {
     styleOverrides: {
       paper: {
+        borderRadius: 0,
         borderRight: `1px solid ${mode === 'light' ? '#e2e8f0' : '#334155'}`,
       },
     },
@@ -457,6 +466,7 @@ const getComponents = (mode: PaletteMode) => ({
         backgroundColor: mode === 'light' ? '#ffffff' : '#1e293b',
         color: mode === 'light' ? '#0f172a' : '#f1f5f9',
         boxShadow: 'none',
+        borderRadius: 0,
       },
     },
   },
@@ -577,6 +587,16 @@ const getComponents = (mode: PaletteMode) => ({
 export const getTheme = (mode: PaletteMode) =>
   createTheme({
     ...getDesignTokens(mode),
+    breakpoints: {
+      values: {
+        xs: 0,
+        sm: 600,
+        tablet: 768,
+        md: 900,
+        lg: 1200,
+        xl: 1536,
+      },
+    },
     typography: getTypography(),
     shape: {
       borderRadius: 10,

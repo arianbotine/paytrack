@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Box, Typography, Button, alpha } from '@mui/material';
 import {
   Inbox as InboxIcon,
@@ -6,8 +6,9 @@ import {
   Error as ErrorIcon,
   CloudOff as CloudOffIcon,
   Add as AddIcon,
+  Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 type EmptyStateVariant = 'empty' | 'no-results' | 'error' | 'offline';
 
@@ -34,6 +35,13 @@ const variantColors: Record<EmptyStateVariant, string> = {
   offline: 'text.secondary',
 };
 
+const variantActionIcons: Record<EmptyStateVariant, ReactNode> = {
+  empty: <AddIcon />,
+  'no-results': <SearchOffIcon />,
+  error: <RefreshIcon />,
+  offline: <RefreshIcon />,
+};
+
 export function EmptyState({
   variant = 'empty',
   title,
@@ -44,12 +52,13 @@ export function EmptyState({
 }: Readonly<EmptyStateProps>) {
   const iconToRender = icon || variantIcons[variant];
   const iconColor = variantColors[variant];
+  const shouldReduceMotion = useReducedMotion();
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
+      transition={{ duration: shouldReduceMotion ? 0 : 0.3, ease: 'easeOut' }}
     >
       <Box
         sx={{
@@ -100,7 +109,7 @@ export function EmptyState({
         {actionLabel && onAction && (
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
+            startIcon={variantActionIcons[variant]}
             onClick={onAction}
             sx={{ mt: 1 }}
           >

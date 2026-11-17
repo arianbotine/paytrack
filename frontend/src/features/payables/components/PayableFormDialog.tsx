@@ -16,7 +16,6 @@ import {
   Autocomplete,
   InputAdornment,
   Alert,
-  FormHelperText,
   useMediaQuery,
   useTheme,
   FormControlLabel,
@@ -35,6 +34,8 @@ import {
   Numbers,
   SwapHoriz,
   Add as AddIcon,
+  ContentCopy,
+  Check as CheckIcon,
 } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -53,6 +54,10 @@ import { CurrencyField } from '../../../shared/components';
 import { QuickCreateCategory } from '../../../shared/components/QuickCreateCategory';
 import { QuickCreateTag } from '../../../shared/components/QuickCreateTag';
 import { InlinePaymentForm } from '../../../shared/components/InlinePaymentForm';
+import {
+  useLatestPayableAccount,
+  useLatestPayableByCategory,
+} from '../hooks/usePayables';
 
 interface PayableFormDialogProps {
   open: boolean;
@@ -86,6 +91,14 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
   >('total');
   const [quickCategoryOpen, setQuickCategoryOpen] = useState(false);
   const [quickTagOpen, setQuickTagOpen] = useState(false);
+  const [copiedTagSourceKey, setCopiedTagSourceKey] = useState<string | null>(
+    null
+  );
+  const [copiedAmountSourceKey, setCopiedAmountSourceKey] = useState<
+    string | null
+  >(null);
+  const [categoryManuallyChanged, setCategoryManuallyChanged] = useState(false);
+  const [categoryAutoApplied, setCategoryAutoApplied] = useState(false);
 
   // Helper function to determine grid size based on installment count
   const getGridSize = (installmentCount: number = 1) => {
@@ -132,6 +145,84 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
   const installmentCount = watch('installmentCount');
   const amount = watch('amount');
   const firstDueDate = watch('firstDueDate');
+  const vendorId = watch('vendorId');
+  const selectedCategoryId = watch('categoryId');
+  const { data: latestPayable, isFetching: isFetchingLatestAccount } =
+    useLatestPayableAccount(vendorId, open && !isEditing);
+  const {
+    data: latestCategoryAccount,
+    isFetching: isFetchingLatestTags,
+    isError: hasLatestTagsError,
+  } = useLatestPayableByCategory(
+    vendorId,
+    selectedCategoryId,
+    open && !isEditing
+  );
+  const latestTagIds = latestCategoryAccount?.tagIds ?? [];
+  const currentTagSourceKey = `${vendorId ?? ''}:${selectedCategoryId ?? ''}`;
+
+  useEffect(() => {
+    if (!open || isEditing) return;
+
+    setValue('categoryId', '');
+    setCategoryManuallyChanged(false);
+    setCategoryAutoApplied(false);
+    setCopiedTagSourceKey(null);
+    setCopiedAmountSourceKey(null);
+  }, [vendorId, open, isEditing, setValue]);
+
+  useEffect(() => {
+    if (
+      !open ||
+      isEditing ||
+      !vendorId ||
+      isFetchingLatestAccount ||
+      latestPayable === undefined ||
+      categoryManuallyChanged
+    ) {
+      return;
+    }
+
+    const categoryId = latestPayable?.categoryId ?? '';
+    setValue('categoryId', categoryId);
+
+    if (!categoryId) return;
+
+    setCategoryAutoApplied(true);
+    const timeoutId = window.setTimeout(
+      () => setCategoryAutoApplied(false),
+      1800
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    open,
+    isEditing,
+    vendorId,
+    isFetchingLatestAccount,
+    latestPayable,
+    categoryManuallyChanged,
+    setValue,
+  ]);
+
+  const copyLatestTags = () => {
+    if (!vendorId || !selectedCategoryId || latestTagIds.length === 0) return;
+
+    setValue('tagIds', latestTagIds, {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true,
+    });
+    setCopiedTagSourceKey(`${vendorId}:${selectedCategoryId}`);
+  };
+
+  const copyLatestAmount = () => {
+    const latestAmount = latestCategoryAccount?.amount;
+    if (!vendorId || !selectedCategoryId || latestAmount == null) return;
+
+    setUserInputMode('total');
+    setUserInputValue(latestAmount);
+    setCopiedAmountSourceKey(currentTagSourceKey);
+  };
 
   // Calcular valores baseado no modo de entrada do usuário
   useEffect(() => {
@@ -210,6 +301,7 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
 
   useEffect(() => {
     if (open) {
+      setCopiedTagSourceKey(null);
       if (payable) {
         // Configurar estado de parcelamento baseado na conta existente
         const hasMultipleInstallments = payable.totalInstallments > 1;
@@ -314,21 +406,31 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                     name="vendorId"
                     control={control}
                     render={({ field }) => (
-                      <FormControl fullWidth error={!!errors.vendorId}>
-                        <InputLabel>Credor</InputLabel>
-                        <Select {...field} label="Credor">
-                          {vendors.map(vendor => (
-                            <MenuItem key={vendor.id} value={vendor.id}>
-                              {vendor.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                        {errors.vendorId && (
-                          <FormHelperText>
-                            {errors.vendorId.message}
-                          </FormHelperText>
+                      <Autocomplete
+                        options={vendors}
+                        getOptionLabel={vendor => vendor.name}
+                        isOptionEqualToValue={(option, value) =>
+                          option.id === value.id
+                        }
+                        value={
+                          vendors.find(vendor => vendor.id === field.value) ??
+                          null
+                        }
+                        onChange={(_, vendor) =>
+                          field.onChange(vendor?.id ?? '')
+                        }
+                        onBlur={field.onBlur}
+                        noOptionsText="Nenhum credor encontrado"
+                        renderInput={params => (
+                          <TextField
+                            {...params}
+                            inputRef={field.ref}
+                            label="Credor"
+                            error={!!errors.vendorId}
+                            helperText={errors.vendorId?.message}
+                          />
                         )}
-                      </FormControl>
+                      />
                     )}
                   />
                 </Grid>
@@ -341,7 +443,35 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                       render={({ field }) => (
                         <FormControl fullWidth>
                           <InputLabel>Categoria</InputLabel>
-                          <Select {...field} label="Categoria">
+                          <Select
+                            {...field}
+                            label="Categoria"
+                            onChange={event => {
+                              setCategoryManuallyChanged(true);
+                              setCategoryAutoApplied(false);
+                              setCopiedTagSourceKey(null);
+                              setCopiedAmountSourceKey(null);
+                              field.onChange(event);
+                            }}
+                            sx={{
+                              transition: theme.transitions.create(
+                                ['background-color'],
+                                { duration: 250 }
+                              ),
+                              backgroundColor: categoryAutoApplied
+                                ? 'action.selected'
+                                : 'transparent',
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                transition: theme.transitions.create(
+                                  ['border-color'],
+                                  { duration: 250 }
+                                ),
+                                borderColor: categoryAutoApplied
+                                  ? 'success.main'
+                                  : undefined,
+                              },
+                            }}
+                          >
                             <MenuItem value="">Sem categoria</MenuItem>
                             {categories.map(category => (
                               <MenuItem key={category.id} value={category.id}>
@@ -393,36 +523,99 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                     label={currencyFieldLabel}
                     fullWidth
                     value={userInputValue}
-                    onChange={setUserInputValue}
+                    onChange={value => {
+                      setUserInputValue(value);
+                      setCopiedAmountSourceKey(null);
+                    }}
                     disabled={isEditing && payable?.paidAmount !== 0}
                     error={!!errors.amount}
                     helperText={currencyFieldHelperText}
                     InputProps={{
-                      endAdornment: isInstallment && (
+                      endAdornment: (isInstallment || !isEditing) && (
                         <InputAdornment position="end">
-                          <Tooltip
-                            title={`Alternar para valor ${userInputMode === 'total' ? 'por parcela' : 'total'}`}
-                            arrow
+                          <Stack
+                            direction="row"
+                            alignItems="center"
+                            spacing={0.25}
                           >
-                            <IconButton
-                              size="small"
-                              onClick={() => {
-                                setUserInputMode(
-                                  userInputMode === 'total'
-                                    ? 'perInstallment'
-                                    : 'total'
-                                );
-                              }}
-                              sx={{
-                                color: 'primary.main',
-                                '&:hover': {
-                                  backgroundColor: 'primary.lighter',
-                                },
-                              }}
-                            >
-                              <SwapHoriz />
-                            </IconButton>
-                          </Tooltip>
+                            {isInstallment && (
+                              <Tooltip
+                                title={`Alternar para valor ${userInputMode === 'total' ? 'por parcela' : 'total'}`}
+                                arrow
+                              >
+                                <IconButton
+                                  size="small"
+                                  onClick={() => {
+                                    setUserInputMode(
+                                      userInputMode === 'total'
+                                        ? 'perInstallment'
+                                        : 'total'
+                                    );
+                                  }}
+                                  sx={{
+                                    color: 'primary.main',
+                                    '&:hover': {
+                                      backgroundColor: 'primary.lighter',
+                                    },
+                                  }}
+                                >
+                                  <SwapHoriz />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                            {!isEditing && (
+                              <Tooltip
+                                title={
+                                  !vendorId
+                                    ? 'Selecione um credor para buscar o valor'
+                                    : !selectedCategoryId
+                                      ? 'Selecione uma categoria para buscar o valor'
+                                      : isFetchingLatestTags
+                                        ? 'Buscando valor da última conta...'
+                                        : hasLatestTagsError
+                                          ? 'Não foi possível carregar o valor da última conta'
+                                          : latestCategoryAccount === null
+                                            ? 'Nenhuma conta anterior encontrada para esta categoria'
+                                            : copiedAmountSourceKey ===
+                                                currentTagSourceKey
+                                              ? 'Valor da última conta copiado'
+                                              : 'Copiar valor da última conta'
+                                }
+                                arrow
+                              >
+                                <span>
+                                  <IconButton
+                                    size="small"
+                                    onClick={copyLatestAmount}
+                                    disabled={
+                                      !vendorId ||
+                                      !selectedCategoryId ||
+                                      isFetchingLatestTags ||
+                                      hasLatestTagsError ||
+                                      latestCategoryAccount?.amount == null
+                                    }
+                                    aria-label="Copiar valor da última conta deste credor e categoria"
+                                    sx={{
+                                      color:
+                                        copiedAmountSourceKey ===
+                                        currentTagSourceKey
+                                          ? 'success.main'
+                                          : 'primary.main',
+                                    }}
+                                  >
+                                    {isFetchingLatestTags ? (
+                                      <CircularProgress size={18} />
+                                    ) : copiedAmountSourceKey ===
+                                      currentTagSourceKey ? (
+                                      <CheckIcon />
+                                    ) : (
+                                      <ContentCopy />
+                                    )}
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            )}
+                          </Stack>
                         </InputAdornment>
                       ),
                     }}
@@ -506,6 +699,57 @@ export const PayableFormDialog: React.FC<PayableFormDialogProps> = ({
                       >
                         <AddIcon />
                       </IconButton>
+                    </Tooltip>
+                    <Tooltip
+                      title={
+                        !vendorId
+                          ? 'Selecione um credor para buscar tags'
+                          : !selectedCategoryId
+                            ? 'Selecione uma categoria para buscar tags'
+                            : isFetchingLatestTags
+                              ? 'Buscando tags da última conta...'
+                              : hasLatestTagsError
+                                ? 'Não foi possível carregar as tags da última conta'
+                                : latestCategoryAccount === null
+                                  ? 'Nenhuma conta anterior encontrada para esta categoria'
+                                  : latestTagIds.length === 0
+                                    ? 'A última conta desta categoria não possui tags'
+                                    : copiedTagSourceKey === currentTagSourceKey
+                                      ? 'Tags copiadas da última conta'
+                                      : 'Copiar tags da última conta'
+                      }
+                      arrow
+                    >
+                      <span>
+                        <IconButton
+                          onClick={copyLatestTags}
+                          disabled={
+                            !vendorId ||
+                            !selectedCategoryId ||
+                            isFetchingLatestTags ||
+                            hasLatestTagsError ||
+                            latestCategoryAccount === null ||
+                            latestCategoryAccount === undefined ||
+                            latestTagIds.length === 0
+                          }
+                          aria-label="Copiar tags da última conta deste credor e categoria"
+                          sx={{
+                            mt: 0.5,
+                            color:
+                              copiedTagSourceKey === currentTagSourceKey
+                                ? 'success.main'
+                                : 'primary.main',
+                          }}
+                        >
+                          {isFetchingLatestTags ? (
+                            <CircularProgress size={20} />
+                          ) : copiedTagSourceKey === currentTagSourceKey ? (
+                            <CheckIcon />
+                          ) : (
+                            <ContentCopy />
+                          )}
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   </Box>
                 </Grid>

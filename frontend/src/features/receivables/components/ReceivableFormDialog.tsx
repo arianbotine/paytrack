@@ -15,7 +15,6 @@ import {
   Grid,
   Autocomplete,
   InputAdornment,
-  FormHelperText,
   useMediaQuery,
   useTheme,
   Alert,
@@ -35,6 +34,8 @@ import {
   Numbers,
   SwapHoriz,
   Add as AddIcon,
+  ContentCopy,
+  Check as CheckIcon,
 } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -59,6 +60,10 @@ import { CurrencyField } from '../../../shared/components';
 import { QuickCreateCategory } from '../../../shared/components/QuickCreateCategory';
 import { QuickCreateTag } from '../../../shared/components/QuickCreateTag';
 import { InlinePaymentForm } from '../../../shared/components/InlinePaymentForm';
+import {
+  useLatestReceivableAccount,
+  useLatestReceivableByCategory,
+} from '../hooks/useReceivables';
 
 interface ReceivableFormDialogProps {
   open: boolean;
@@ -96,6 +101,14 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
   >('total');
   const [quickCategoryOpen, setQuickCategoryOpen] = useState(false);
   const [quickTagOpen, setQuickTagOpen] = useState(false);
+  const [copiedTagSourceKey, setCopiedTagSourceKey] = useState<string | null>(
+    null
+  );
+  const [copiedAmountSourceKey, setCopiedAmountSourceKey] = useState<
+    string | null
+  >(null);
+  const [categoryManuallyChanged, setCategoryManuallyChanged] = useState(false);
+  const [categoryAutoApplied, setCategoryAutoApplied] = useState(false);
 
   // Helper function to determine grid size based on installment count
   const getGridSize = (installmentCount: number = 1) => {
@@ -141,6 +154,84 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
   const amount = watch('amount');
   const installmentCount = watch('installmentCount') || 1;
   const firstDueDate = watch('firstDueDate');
+  const customerId = watch('customerId');
+  const selectedCategoryId = watch('categoryId');
+  const { data: latestReceivable, isFetching: isFetchingLatestAccount } =
+    useLatestReceivableAccount(customerId, open && !isEditing);
+  const {
+    data: latestCategoryAccount,
+    isFetching: isFetchingLatestTags,
+    isError: hasLatestTagsError,
+  } = useLatestReceivableByCategory(
+    customerId,
+    selectedCategoryId,
+    open && !isEditing
+  );
+  const latestTagIds = latestCategoryAccount?.tagIds ?? [];
+  const currentTagSourceKey = `${customerId ?? ''}:${selectedCategoryId ?? ''}`;
+
+  useEffect(() => {
+    if (!open || isEditing) return;
+
+    setValue('categoryId', '');
+    setCategoryManuallyChanged(false);
+    setCategoryAutoApplied(false);
+    setCopiedTagSourceKey(null);
+    setCopiedAmountSourceKey(null);
+  }, [customerId, open, isEditing, setValue]);
+
+  useEffect(() => {
+    if (
+      !open ||
+      isEditing ||
+      !customerId ||
+      isFetchingLatestAccount ||
+      latestReceivable === undefined ||
+      categoryManuallyChanged
+    ) {
+      return;
+    }
+
+    const categoryId = latestReceivable?.categoryId ?? '';
+    setValue('categoryId', categoryId);
+
+    if (!categoryId) return;
+
+    setCategoryAutoApplied(true);
+    const timeoutId = window.setTimeout(
+      () => setCategoryAutoApplied(false),
+      1800
+    );
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    open,
+    isEditing,
+    customerId,
+    isFetchingLatestAccount,
+    latestReceivable,
+    categoryManuallyChanged,
+    setValue,
+  ]);
+
+  const copyLatestTags = () => {
+    if (!customerId || !selectedCategoryId || latestTagIds.length === 0) return;
+
+    setValue('tagIds', latestTagIds, {
+      shouldDirty: true,
+      shouldTouch: true,
+      shouldValidate: true,
+    });
+    setCopiedTagSourceKey(`${customerId}:${selectedCategoryId}`);
+  };
+
+  const copyLatestAmount = () => {
+    const latestAmount = latestCategoryAccount?.amount;
+    if (!customerId || !selectedCategoryId || latestAmount == null) return;
+
+    setUserInputMode('total');
+    setUserInputValue(latestAmount);
+    setCopiedAmountSourceKey(currentTagSourceKey);
+  };
 
   // Calcular valores baseado no modo de entrada do usuário
   useEffect(() => {
@@ -214,6 +305,7 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
 
   useEffect(() => {
     if (open) {
+      setCopiedTagSourceKey(null);
       if (receivable) {
         // Configurar estado de parcelamento baseado na conta existente
         const hasMultipleInstallments = receivable.totalInstallments > 1;
@@ -310,21 +402,32 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                     name="customerId"
                     control={control}
                     render={({ field }) => (
-                      <FormControl fullWidth error={!!errors.customerId}>
-                        <InputLabel>Devedor</InputLabel>
-                        <Select {...field} label="Devedor">
-                          {customers.map(customer => (
-                            <MenuItem key={customer.id} value={customer.id}>
-                              {customer.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                        {errors.customerId && (
-                          <FormHelperText>
-                            {errors.customerId.message}
-                          </FormHelperText>
+                      <Autocomplete
+                        options={customers}
+                        getOptionLabel={customer => customer.name}
+                        isOptionEqualToValue={(option, value) =>
+                          option.id === value.id
+                        }
+                        value={
+                          customers.find(
+                            customer => customer.id === field.value
+                          ) ?? null
+                        }
+                        onChange={(_, customer) =>
+                          field.onChange(customer?.id ?? '')
+                        }
+                        onBlur={field.onBlur}
+                        noOptionsText="Nenhum devedor encontrado"
+                        renderInput={params => (
+                          <TextField
+                            {...params}
+                            inputRef={field.ref}
+                            label="Devedor"
+                            error={!!errors.customerId}
+                            helperText={errors.customerId?.message}
+                          />
                         )}
-                      </FormControl>
+                      />
                     )}
                   />
                 </Grid>
@@ -337,7 +440,35 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                       render={({ field }) => (
                         <FormControl fullWidth>
                           <InputLabel>Categoria</InputLabel>
-                          <Select {...field} label="Categoria">
+                          <Select
+                            {...field}
+                            label="Categoria"
+                            onChange={event => {
+                              setCategoryManuallyChanged(true);
+                              setCategoryAutoApplied(false);
+                              setCopiedTagSourceKey(null);
+                              setCopiedAmountSourceKey(null);
+                              field.onChange(event);
+                            }}
+                            sx={{
+                              transition: theme.transitions.create(
+                                ['background-color'],
+                                { duration: 250 }
+                              ),
+                              backgroundColor: categoryAutoApplied
+                                ? 'action.selected'
+                                : 'transparent',
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                transition: theme.transitions.create(
+                                  ['border-color'],
+                                  { duration: 250 }
+                                ),
+                                borderColor: categoryAutoApplied
+                                  ? 'success.main'
+                                  : undefined,
+                              },
+                            }}
+                          >
                             <MenuItem value="">Sem categoria</MenuItem>
                             {categories.map(category => (
                               <MenuItem key={category.id} value={category.id}>
@@ -401,39 +532,102 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                         label={amountLabel}
                         fullWidth
                         value={userInputValue}
-                        onChange={setUserInputValue}
+                        onChange={value => {
+                          setUserInputValue(value);
+                          setCopiedAmountSourceKey(null);
+                        }}
                         disabled={isEditing && hasRecordedReceipts}
                         error={!!errors.amount}
                         helperText={helperText}
                         InputProps={{
-                          endAdornment: isInstallment &&
-                            !hasRecordedReceipts && (
-                              <InputAdornment position="end">
-                                <Tooltip
-                                  title={`Alternar para valor ${userInputMode === 'total' ? 'por parcela' : 'total'}`}
-                                  arrow
-                                >
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => {
-                                      setUserInputMode(
-                                        userInputMode === 'total'
-                                          ? 'perInstallment'
-                                          : 'total'
-                                      );
-                                    }}
-                                    sx={{
-                                      color: 'primary.main',
-                                      '&:hover': {
-                                        backgroundColor: 'primary.lighter',
-                                      },
-                                    }}
+                          endAdornment: (!isEditing ||
+                            (isInstallment && !hasRecordedReceipts)) && (
+                            <InputAdornment position="end">
+                              <Stack
+                                direction="row"
+                                alignItems="center"
+                                spacing={0.25}
+                              >
+                                {isInstallment && !hasRecordedReceipts && (
+                                  <Tooltip
+                                    title={`Alternar para valor ${userInputMode === 'total' ? 'por parcela' : 'total'}`}
+                                    arrow
                                   >
-                                    <SwapHoriz />
-                                  </IconButton>
-                                </Tooltip>
-                              </InputAdornment>
-                            ),
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => {
+                                        setUserInputMode(
+                                          userInputMode === 'total'
+                                            ? 'perInstallment'
+                                            : 'total'
+                                        );
+                                      }}
+                                      sx={{
+                                        color: 'primary.main',
+                                        '&:hover': {
+                                          backgroundColor: 'primary.lighter',
+                                        },
+                                      }}
+                                    >
+                                      <SwapHoriz />
+                                    </IconButton>
+                                  </Tooltip>
+                                )}
+                                {!isEditing && (
+                                  <Tooltip
+                                    title={
+                                      !customerId
+                                        ? 'Selecione um devedor para buscar o valor'
+                                        : !selectedCategoryId
+                                          ? 'Selecione uma categoria para buscar o valor'
+                                          : isFetchingLatestTags
+                                            ? 'Buscando valor da última conta...'
+                                            : hasLatestTagsError
+                                              ? 'Não foi possível carregar o valor da última conta'
+                                              : latestCategoryAccount === null
+                                                ? 'Nenhuma conta anterior encontrada para esta categoria'
+                                                : copiedAmountSourceKey ===
+                                                    currentTagSourceKey
+                                                  ? 'Valor da última conta copiado'
+                                                  : 'Copiar valor da última conta'
+                                    }
+                                    arrow
+                                  >
+                                    <span>
+                                      <IconButton
+                                        size="small"
+                                        onClick={copyLatestAmount}
+                                        disabled={
+                                          !customerId ||
+                                          !selectedCategoryId ||
+                                          isFetchingLatestTags ||
+                                          hasLatestTagsError ||
+                                          latestCategoryAccount?.amount == null
+                                        }
+                                        aria-label="Copiar valor da última conta deste devedor e categoria"
+                                        sx={{
+                                          color:
+                                            copiedAmountSourceKey ===
+                                            currentTagSourceKey
+                                              ? 'success.main'
+                                              : 'primary.main',
+                                        }}
+                                      >
+                                        {isFetchingLatestTags ? (
+                                          <CircularProgress size={18} />
+                                        ) : copiedAmountSourceKey ===
+                                          currentTagSourceKey ? (
+                                          <CheckIcon />
+                                        ) : (
+                                          <ContentCopy />
+                                        )}
+                                      </IconButton>
+                                    </span>
+                                  </Tooltip>
+                                )}
+                              </Stack>
+                            </InputAdornment>
+                          ),
                         }}
                       />
                     );
@@ -517,6 +711,57 @@ export const ReceivableFormDialog: React.FC<ReceivableFormDialogProps> = ({
                       >
                         <AddIcon />
                       </IconButton>
+                    </Tooltip>
+                    <Tooltip
+                      title={
+                        !customerId
+                          ? 'Selecione um devedor para buscar tags'
+                          : !selectedCategoryId
+                            ? 'Selecione uma categoria para buscar tags'
+                            : isFetchingLatestTags
+                              ? 'Buscando tags da última conta...'
+                              : hasLatestTagsError
+                                ? 'Não foi possível carregar as tags da última conta'
+                                : latestCategoryAccount === null
+                                  ? 'Nenhuma conta anterior encontrada para esta categoria'
+                                  : latestTagIds.length === 0
+                                    ? 'A última conta desta categoria não possui tags'
+                                    : copiedTagSourceKey === currentTagSourceKey
+                                      ? 'Tags copiadas da última conta'
+                                      : 'Copiar tags da última conta'
+                      }
+                      arrow
+                    >
+                      <span>
+                        <IconButton
+                          onClick={copyLatestTags}
+                          disabled={
+                            !customerId ||
+                            !selectedCategoryId ||
+                            isFetchingLatestTags ||
+                            hasLatestTagsError ||
+                            latestCategoryAccount === null ||
+                            latestCategoryAccount === undefined ||
+                            latestTagIds.length === 0
+                          }
+                          aria-label="Copiar tags da última conta deste devedor e categoria"
+                          sx={{
+                            mt: 0.5,
+                            color:
+                              copiedTagSourceKey === currentTagSourceKey
+                                ? 'success.main'
+                                : 'primary.main',
+                          }}
+                        >
+                          {isFetchingLatestTags ? (
+                            <CircularProgress size={20} />
+                          ) : copiedTagSourceKey === currentTagSourceKey ? (
+                            <CheckIcon />
+                          ) : (
+                            <ContentCopy />
+                          )}
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   </Box>
                 </Grid>

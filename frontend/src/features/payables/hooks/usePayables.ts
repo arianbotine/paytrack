@@ -72,6 +72,51 @@ export const usePayables = (params: UsePayablesParams) => {
   return useAccounts<PayablesResponse['data'][0]>(payablesConfig, params);
 };
 
+export const useLatestPayableAccount = (vendorId?: string, enabled = true) => {
+  return useQuery({
+    queryKey: ['payables', 'latest-account', vendorId],
+    queryFn: async () => {
+      const response = await api.get<PayablesResponse>('/payables', {
+        params: { vendorId, skip: 0, take: 1 },
+      });
+      const latestPayable = response.data.data[0];
+
+      if (!latestPayable) return null;
+
+      return {
+        categoryId: latestPayable.category?.id ?? '',
+      };
+    },
+    enabled: enabled && !!vendorId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useLatestPayableByCategory = (
+  vendorId?: string,
+  categoryId?: string,
+  enabled = true
+) => {
+  return useQuery({
+    queryKey: ['payables', 'latest-tags', vendorId, categoryId],
+    queryFn: async () => {
+      const response = await api.get<PayablesResponse>('/payables', {
+        params: { vendorId, categoryId, skip: 0, take: 1 },
+      });
+      const latestPayable = response.data.data[0];
+
+      return latestPayable
+        ? {
+            amount: latestPayable.amount,
+            tagIds: latestPayable.tags.map(({ tag }) => tag.id),
+          }
+        : null;
+    },
+    enabled: enabled && !!vendorId && !!categoryId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
 // ============================================================
 // Installment Items Query/Mutations
 // ============================================================

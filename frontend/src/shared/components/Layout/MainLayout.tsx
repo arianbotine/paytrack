@@ -51,7 +51,6 @@ import { NotificationCenter } from '@/features/notifications/components/Notifica
 import { AiQueryFloatingChat } from '@/features/ai-query/components/AiQueryFloatingChat';
 
 const drawerWidth = 260;
-const miniWidth = 64;
 
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
@@ -89,7 +88,6 @@ export function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('md', 'lg'));
 
   const { user, logout } = useAuthStore();
   const {
@@ -179,7 +177,7 @@ export function MainLayout() {
         >
           PayTrack
         </Typography>
-        {!isMobile && !isTablet && (
+        {!isMobile && (
           <IconButton onClick={toggleSidebar} size="small">
             <ChevronLeftIcon />
           </IconButton>
@@ -211,10 +209,7 @@ export function MainLayout() {
                 }}
               >
                 <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-                <ListItemText
-                  primary={item.text}
-                  sx={{ display: isTablet ? 'none' : 'block' }}
-                />
+                <ListItemText primary={item.text} />
               </ListItemButton>
             </ListItem>
           )
@@ -367,11 +362,8 @@ export function MainLayout() {
       <Box
         component="nav"
         sx={{
-          width: {
-            tablet: sidebarOpen ? miniWidth : 0,
-            md: sidebarOpen ? drawerWidth : 0,
-          },
-          flexShrink: { tablet: 0, md: 0 },
+          width: { md: sidebarOpen ? drawerWidth : 0 },
+          flexShrink: { md: 0 },
         }}
       >
         {/* Mobile drawer */}
@@ -413,6 +405,7 @@ export function MainLayout() {
         component="main"
         sx={{
           flexGrow: 1,
+          minWidth: 0,
           p: 3,
           width: { md: sidebarOpen ? `calc(100% - ${drawerWidth}px)` : '100%' },
           transition: theme.transitions.create(['margin', 'width'], {

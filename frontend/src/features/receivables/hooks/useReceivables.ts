@@ -5,6 +5,8 @@ import type {
   Category,
   Tag,
 } from '../types';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../../../lib/api';
 import {
   useAccounts,
   useRelatedData,
@@ -60,6 +62,54 @@ interface UseReceivablesParams {
 
 export const useReceivables = (params: UseReceivablesParams) => {
   return useAccounts<ReceivablesResponse['data'][0]>(receivablesConfig, params);
+};
+
+export const useLatestReceivableAccount = (
+  customerId?: string,
+  enabled = true
+) => {
+  return useQuery({
+    queryKey: ['receivables', 'latest-account', customerId],
+    queryFn: async () => {
+      const response = await api.get<ReceivablesResponse>('/receivables', {
+        params: { customerId, skip: 0, take: 1 },
+      });
+      const latestReceivable = response.data.data[0];
+
+      if (!latestReceivable) return null;
+
+      return {
+        categoryId: latestReceivable.category?.id ?? '',
+      };
+    },
+    enabled: enabled && !!customerId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useLatestReceivableByCategory = (
+  customerId?: string,
+  categoryId?: string,
+  enabled = true
+) => {
+  return useQuery({
+    queryKey: ['receivables', 'latest-tags', customerId, categoryId],
+    queryFn: async () => {
+      const response = await api.get<ReceivablesResponse>('/receivables', {
+        params: { customerId, categoryId, skip: 0, take: 1 },
+      });
+      const latestReceivable = response.data.data[0];
+
+      return latestReceivable
+        ? {
+            amount: latestReceivable.amount,
+            tagIds: latestReceivable.tags.map(({ tag }) => tag.id),
+          }
+        : null;
+    },
+    enabled: enabled && !!customerId && !!categoryId,
+    staleTime: 5 * 60 * 1000,
+  });
 };
 
 // ============================================================

@@ -6,6 +6,7 @@ import {
   TextField,
   MenuItem,
   Button,
+  Checkbox,
   Collapse,
   IconButton,
   Typography,
@@ -171,6 +172,51 @@ export function ReportFilters(props: ReportFiltersProps) {
     delete newFilters[field];
     setLocalFilters(newFilters);
   };
+
+  const renderSelectionActions = (
+    field: 'categoryIds' | 'tagIds' | 'vendorIds' | 'customerIds',
+    options: readonly { id: string }[],
+    selectedIds: string[] | undefined,
+    allLabel: string,
+    selectedLabel: string,
+    selectAllLabel: string
+  ) => (
+    <Stack
+      direction={{ xs: 'column', sm: 'row' }}
+      alignItems={{ xs: 'flex-start', sm: 'center' }}
+      justifyContent="space-between"
+      sx={{ mt: 0.5, px: 0.5 }}
+    >
+      <Typography variant="caption" color="text.secondary">
+        {selectedIds?.length
+          ? `${selectedIds.length} de ${options.length} ${selectedLabel}`
+          : allLabel}
+      </Typography>
+      <Box display="flex" gap={0.5} alignSelf={{ xs: 'flex-end', sm: 'auto' }}>
+        <Button
+          size="small"
+          onClick={() =>
+            handleMultiSelectChange(
+              field,
+              options.map(option => option.id)
+            )
+          }
+          disabled={
+            options.length === 0 || selectedIds?.length === options.length
+          }
+        >
+          {selectAllLabel}
+        </Button>
+        <Button
+          size="small"
+          onClick={() => handleClearFilter(field)}
+          disabled={!selectedIds?.length}
+        >
+          Limpar
+        </Button>
+      </Box>
+    </Stack>
+  );
 
   const handleReset = () => {
     const { startDate, endDate } = calculateDateRange('last30');
@@ -383,6 +429,7 @@ export function ReportFilters(props: ReportFiltersProps) {
                 <Autocomplete
                   multiple
                   size="small"
+                  limitTags={2}
                   options={categories}
                   getOptionLabel={option => option.name}
                   value={categories.filter(cat =>
@@ -394,11 +441,21 @@ export function ReportFilters(props: ReportFiltersProps) {
                       newValue.map(v => v.id)
                     )
                   }
+                  renderOption={(optionProps, option, { selected }) => (
+                    <li {...optionProps}>
+                      <Checkbox
+                        checked={selected}
+                        size="small"
+                        sx={{ mr: 1 }}
+                      />
+                      {option.name}
+                    </li>
+                  )}
                   renderInput={params => (
                     <TextField
                       {...params}
                       label="Categorias"
-                      placeholder="Selecione categorias"
+                      placeholder="Todas as categorias"
                       InputProps={{
                         ...params.InputProps,
                         startAdornment: (
@@ -430,6 +487,14 @@ export function ReportFilters(props: ReportFiltersProps) {
                   }
                   noOptionsText="Nenhuma categoria encontrada"
                 />
+                {renderSelectionActions(
+                  'categoryIds',
+                  categories,
+                  localFilters.categoryIds,
+                  'Todas as categorias',
+                  'categorias selecionadas',
+                  'Selecionar todas'
+                )}
               </Grid>
 
               {/* Tags */}
@@ -437,6 +502,7 @@ export function ReportFilters(props: ReportFiltersProps) {
                 <Autocomplete
                   multiple
                   size="small"
+                  limitTags={2}
                   options={tags}
                   getOptionLabel={option => option.name}
                   value={tags.filter(tag =>
@@ -448,11 +514,21 @@ export function ReportFilters(props: ReportFiltersProps) {
                       newValue.map(v => v.id)
                     )
                   }
+                  renderOption={(optionProps, option, { selected }) => (
+                    <li {...optionProps}>
+                      <Checkbox
+                        checked={selected}
+                        size="small"
+                        sx={{ mr: 1 }}
+                      />
+                      {option.name}
+                    </li>
+                  )}
                   renderInput={params => (
                     <TextField
                       {...params}
                       label="Tags"
-                      placeholder="Selecione tags"
+                      placeholder="Todas as tags"
                       InputProps={{
                         ...params.InputProps,
                         startAdornment: (
@@ -487,6 +563,14 @@ export function ReportFilters(props: ReportFiltersProps) {
                   }
                   noOptionsText="Nenhuma tag encontrada"
                 />
+                {renderSelectionActions(
+                  'tagIds',
+                  tags,
+                  localFilters.tagIds,
+                  'Todas as tags',
+                  'tags selecionadas',
+                  'Selecionar todas'
+                )}
               </Grid>
 
               {/* Fornecedores */}
@@ -494,6 +578,7 @@ export function ReportFilters(props: ReportFiltersProps) {
                 <Autocomplete
                   multiple
                   size="small"
+                  limitTags={2}
                   options={vendors}
                   getOptionLabel={option => option.name}
                   value={vendors.filter(vendor =>
@@ -505,11 +590,21 @@ export function ReportFilters(props: ReportFiltersProps) {
                       newValue.map(v => v.id)
                     )
                   }
+                  renderOption={(optionProps, option, { selected }) => (
+                    <li {...optionProps}>
+                      <Checkbox
+                        checked={selected}
+                        size="small"
+                        sx={{ mr: 1 }}
+                      />
+                      {option.name}
+                    </li>
+                  )}
                   renderInput={params => (
                     <TextField
                       {...params}
                       label="Fornecedores"
-                      placeholder="Selecione fornecedores"
+                      placeholder="Todos os fornecedores"
                       InputProps={{
                         ...params.InputProps,
                         startAdornment: (
@@ -541,6 +636,14 @@ export function ReportFilters(props: ReportFiltersProps) {
                   }
                   noOptionsText="Nenhum fornecedor encontrado"
                 />
+                {renderSelectionActions(
+                  'vendorIds',
+                  vendors,
+                  localFilters.vendorIds,
+                  'Todos os fornecedores',
+                  'fornecedores selecionados',
+                  'Selecionar todos'
+                )}
               </Grid>
 
               {/* Clientes/Devedores */}
@@ -548,6 +651,7 @@ export function ReportFilters(props: ReportFiltersProps) {
                 <Autocomplete
                   multiple
                   size="small"
+                  limitTags={2}
                   options={customers}
                   getOptionLabel={option => option.name}
                   value={customers.filter(customer =>
@@ -559,11 +663,21 @@ export function ReportFilters(props: ReportFiltersProps) {
                       newValue.map(v => v.id)
                     )
                   }
+                  renderOption={(optionProps, option, { selected }) => (
+                    <li {...optionProps}>
+                      <Checkbox
+                        checked={selected}
+                        size="small"
+                        sx={{ mr: 1 }}
+                      />
+                      {option.name}
+                    </li>
+                  )}
                   renderInput={params => (
                     <TextField
                       {...params}
                       label="Clientes/Devedores"
-                      placeholder="Selecione clientes"
+                      placeholder="Todos os clientes/devedores"
                       InputProps={{
                         ...params.InputProps,
                         startAdornment: (
@@ -595,6 +709,14 @@ export function ReportFilters(props: ReportFiltersProps) {
                   }
                   noOptionsText="Nenhum cliente encontrado"
                 />
+                {renderSelectionActions(
+                  'customerIds',
+                  customers,
+                  localFilters.customerIds,
+                  'Todos os clientes/devedores',
+                  'clientes/devedores selecionados',
+                  'Selecionar todos'
+                )}
               </Grid>
             </Grid>
           </Box>
